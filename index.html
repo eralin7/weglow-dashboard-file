@@ -415,31 +415,76 @@ function parseAdSpend(rows){
 }
 
 // ════════════════════════════════════════════════════════
+// SUPABASE
+// ════════════════════════════════════════════════════════
+const SUPABASE_URL = 'https://bdyakgmeibpdkisbiykt.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkeWFrZ21laWJwZGtpc2JpeWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTQzOTMsImV4cCI6MjA4Nzc5MDM5M30.nA187grJR6XFQRmTP6WOM-6-1dZK1EzYNNP2JH9aAMg';
+
+async function saveToSupabase(payload) {
+  // Upsert into weglow_data table with id=1 (single row)
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1`, {
+    method: 'DELETE',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+    }
+  });
+  const ins = await fetch(`${SUPABASE_URL}/rest/v1/weglow_data`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify({ id: 1, data: payload, updated_at: new Date().toISOString() })
+  });
+  if(!ins.ok) throw new Error(`Supabase error: ${ins.status}`);
+}
+
+// ════════════════════════════════════════════════════════
 // OPEN DASHBOARD
 // ════════════════════════════════════════════════════════
-function openDashboard(){
+async function openDashboard(){
   const pw = document.getElementById('progress-wrap');
   const pf = document.getElementById('progress-fill');
   const pl = document.getElementById('progress-label');
+  const btn = document.getElementById('go-btn');
   pw.style.display='block';
+  btn.disabled = true;
 
-  // Build combined dataset
-  let pct = 0;
-  const steps = ['Обработка Коллаген...','Обработка Ummi...','Обработка Кофе...','Обработка рекламы...','Готово!'];
-  let step = 0;
+  const steps = [
+    {pct:20, txt:'Обработка Коллаген...'},
+    {pct:40, txt:'Обработка Ummi...'},
+    {pct:60, txt:'Обработка Кофе...'},
+    {pct:75, txt:'Обработка рекламы...'},
+    {pct:85, txt:'Сохранение в облако...'},
+    {pct:100, txt:'Готово! ✓'},
+  ];
 
-  const interval = setInterval(()=>{
-    pct += 25;
-    pf.style.width = pct+'%';
-    pl.textContent = steps[Math.min(step++, steps.length-1)];
-    if(pct >= 100){
-      clearInterval(interval);
-      // Build final data payload
-      const payload = buildPayload();
-      sessionStorage.setItem('wg_data', JSON.stringify(payload));
-      setTimeout(()=>{ window.location.href='dashboard.html'; }, 400);
-    }
-  }, 300);
+  for(const s of steps.slice(0,4)){
+    pf.style.width = s.pct+'%';
+    pl.textContent = s.txt;
+    await new Promise(r=>setTimeout(r,250));
+  }
+
+  try {
+    pf.style.width = '85%';
+    pl.textContent = 'Сохранение в облако...';
+    const payload = buildPayload();
+    await saveToSupabase(payload);
+    // Also save to sessionStorage for immediate local use
+    sessionStorage.setItem('wg_data', JSON.stringify(payload));
+    pf.style.width = '100%';
+    pl.textContent = 'Готово! Данные обновлены для всех ✓';
+    await new Promise(r=>setTimeout(r,600));
+    window.location.href='dashboard.html';
+  } catch(e) {
+    pl.textContent = '⚠ Ошибка сохранения: ' + e.message;
+    pl.style.color = '#c0392b';
+    btn.disabled = false;
+    console.error(e);
+  }
 }
 
 function buildPayload(){
