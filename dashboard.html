@@ -511,10 +511,10 @@ function buildPresets() {
 }
 const PRESETS = buildPresets();
 
-// Current month key for default
+// Current month key for default — fallback to most recent month with data
 const _cm = _now(); 
 const _defaultKey = `m_${_cm.getFullYear()}_${_cm.getMonth()+1}`;
-const _defaultPreset = PRESETS[_defaultKey] || Object.values(PRESETS).find(p => p.key && p.key.startsWith('m_'));
+const _defaultPreset = PRESETS[_defaultKey] || PRESETS[Object.keys(PRESETS).filter(k=>k.startsWith('m_'))[0]] || {from:'01.02.2026',to:'28.02.2026',label:'Февраль 2026'};
 
 // ═══════════════════ STATE ════════════════════════════════════════
 let activeProd='all', activeMetric='budget', activeView='main';
@@ -642,7 +642,6 @@ function setAdPreset(p,el){
 function markActiveAd(el){
   document.querySelectorAll('#ad-filters .pill').forEach(b=>b.classList.remove('active'));
   if(el) el.classList.add('active');
-}
 }
 function applyAdCustom(){
   const from=isoToDisp(document.getElementById('ad-d-from').value);
