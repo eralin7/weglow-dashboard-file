@@ -324,11 +324,11 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
       <button class="pill prod-pill" onclick="setProd('coffee',this)"><div class="prod-dot" style="background:#b45309"></div>Кофе</button>
       <div class="pill-sep"></div>
       <span class="tb-label">Период:</span>
-      <button class="pill" onclick="setPreset('today',this)">Сегодня</button>
-      <button class="pill" onclick="setPreset('yesterday',this)">Вчера</button>
-      <button class="pill" onclick="setPreset('week',this)">7 дней</button>
+      <button class="pill period-pill" onclick="setPreset('today',this)">Сегодня</button>
+      <button class="pill period-pill" onclick="setPreset('yesterday',this)">Вчера</button>
+      <button class="pill period-pill" onclick="setPreset('week',this)">7 дней</button>
       <div id="main-month-pills" style="display:contents"></div>
-      <button class="pill" onclick="setPreset('custom',this)">📅 Диапазон</button>
+      <button class="pill period-pill" onclick="setPreset('custom',this)">📅 Диапазон</button>
       <div class="custom-wrap" id="custom-wrap">
         <input type="date" class="date-in" id="d-from" value="2026-02-01">
         <span style="color:var(--muted);font-size:12px">—</span>
@@ -344,11 +344,11 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
       <button class="pill" onclick="setMgrProd('Кофе',this)">Кофе</button>
       <div class="pill-sep"></div>
       <span class="tb-label">Период:</span>
-      <button class="pill" onclick="setMgrPreset('today',this)">Сегодня</button>
-      <button class="pill" onclick="setMgrPreset('yesterday',this)">Вчера</button>
-      <button class="pill" onclick="setMgrPreset('week',this)">7 дней</button>
+      <button class="pill period-pill" onclick="setMgrPreset('today',this)">Сегодня</button>
+      <button class="pill period-pill" onclick="setMgrPreset('yesterday',this)">Вчера</button>
+      <button class="pill period-pill" onclick="setMgrPreset('week',this)">7 дней</button>
       <div id="mgr-month-pills" style="display:contents"></div>
-      <button class="pill" onclick="setMgrPreset('mgr_custom',this)">📅 Диапазон</button>
+      <button class="pill period-pill" onclick="setMgrPreset('mgr_custom',this)">📅 Диапазон</button>
       <div class="custom-wrap" id="mgr-custom-wrap">
         <input type="date" class="date-in" id="mgr-d-from" value="2026-02-01">
         <span style="color:var(--muted);font-size:12px">—</span>
@@ -359,11 +359,11 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
     <!-- Ad filters (hidden by default) -->
     <div id="ad-filters" style="display:none;align-items:center;gap:6px;flex-wrap:wrap">
       <span class="tb-label">Период:</span>
-      <button class="pill" onclick="setAdPreset('today',this)">Сегодня</button>
-      <button class="pill" onclick="setAdPreset('yesterday',this)">Вчера</button>
-      <button class="pill" onclick="setAdPreset('week',this)">7 дней</button>
+      <button class="pill period-pill" onclick="setAdPreset('today',this)">Сегодня</button>
+      <button class="pill period-pill" onclick="setAdPreset('yesterday',this)">Вчера</button>
+      <button class="pill period-pill" onclick="setAdPreset('week',this)">7 дней</button>
       <div id="ad-month-pills" style="display:contents"></div>
-      <button class="pill" onclick="setAdPreset('ad_custom',this)">📅 Диапазон</button>
+      <button class="pill period-pill" onclick="setAdPreset('ad_custom',this)">📅 Диапазон</button>
       <div class="custom-wrap" id="ad-custom-wrap">
         <input type="date" class="date-in" id="ad-d-from" value="2026-02-01">
         <span style="color:var(--muted);font-size:12px">—</span>
@@ -511,10 +511,30 @@ function buildPresets() {
 }
 const PRESETS = buildPresets();
 
-// Current month key for default — fallback to most recent month with data
-const _cm = _now(); 
-const _defaultKey = `m_${_cm.getFullYear()}_${_cm.getMonth()+1}`;
-const _defaultPreset = PRESETS[_defaultKey] || PRESETS[Object.keys(PRESETS).filter(k=>k.startsWith('m_'))[0]] || {from:'01.02.2026',to:'28.02.2026',label:'Февраль 2026'};
+// Current month key — default to most recent month that has actual data
+const _cm = _now();
+const _currentKey = `m_${_cm.getFullYear()}_${_cm.getMonth()+1}`;
+// Find last month with data
+function _lastMonthWithData() {
+  const monthKeys = Object.keys(PRESETS).filter(k => k.startsWith('m_'));
+  for (const key of monthKeys) {
+    const p = PRESETS[key];
+    // Check if any product has data in this month
+    for (const prodKey of ['Коллаген','Ummi','Кофе']) {
+      const raw = RAW[prodKey] || {};
+      const dates = Object.keys(raw);
+      const [fy, fm] = key.replace('m_','').split('_').map(Number);
+      const hasData = dates.some(d => {
+        const [dd,mm,yy] = d.split('.').map(Number);
+        return yy === fy && mm === fm;
+      });
+      if (hasData) return key;
+    }
+  }
+  return monthKeys[0];
+}
+const _defaultKey = _lastMonthWithData() || _currentKey;
+const _defaultPreset = PRESETS[_defaultKey] || {from:'01.02.2026',to:'28.02.2026',label:'Февраль 2026'};
 
 // ═══════════════════ STATE ════════════════════════════════════════
 let activeProd='all', activeMetric='budget', activeView='main';
@@ -600,15 +620,16 @@ function switchView(v,el){
 // ═══════════════════ PERIOD PRESETS ═══════════════════════════════
 function setPreset(p,el){
   document.getElementById('custom-wrap').style.display='none';
-  if(p==='custom'){document.getElementById('custom-wrap').style.display='flex';markActiveMain(el);return;}
+  if(p==='custom'){document.getElementById('custom-wrap').style.display='flex';markActivePeriod(el);return;}
   activePeriod={...PRESETS[p],preset:p};
-  markActiveMain(el);
+  markActivePeriod(el);
   render();
 }
-function markActiveMain(el){
-  document.querySelectorAll('#global-filters .pill').forEach(b=>b.classList.remove('active'));
+function markActivePeriod(el){
+  document.querySelectorAll('#global-filters .period-pill').forEach(b=>b.classList.remove('active'));
   if(el) el.classList.add('active');
 }
+function markActiveMain(el){ markActivePeriod(el); }
 function applyCustom(){
   const from=isoToDisp(document.getElementById('d-from').value);
   const to=isoToDisp(document.getElementById('d-to').value);
@@ -623,7 +644,7 @@ function setMgrPreset(p,el){
   renderManagers();
 }
 function markActiveMgr(el){
-  document.querySelectorAll('#mgr-filters .pill').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#mgr-filters .period-pill').forEach(b=>b.classList.remove('active'));
   if(el) el.classList.add('active');
 }
 function applyMgrCustom(){
@@ -640,7 +661,7 @@ function setAdPreset(p,el){
   renderAdSpend();
 }
 function markActiveAd(el){
-  document.querySelectorAll('#ad-filters .pill').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#ad-filters .period-pill').forEach(b=>b.classList.remove('active'));
   if(el) el.classList.add('active');
 }
 function applyAdCustom(){
@@ -992,7 +1013,7 @@ function initDynamicUI() {
     monthKeys.forEach(key => {
       const p = PRESETS[key];
       const btn = document.createElement('button');
-      btn.className = 'pill' + (key === _defaultKey ? ' active' : '');
+      btn.className = 'pill period-pill' + (key === _defaultKey ? ' active' : '');
       btn.textContent = p.label;
       btn.onclick = function() { window[fn](key, this); };
       container.appendChild(btn);
