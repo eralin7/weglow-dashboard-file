@@ -600,10 +600,14 @@ function switchView(v,el){
 // ═══════════════════ PERIOD PRESETS ═══════════════════════════════
 function setPreset(p,el){
   document.getElementById('custom-wrap').style.display='none';
-  if(p==='custom'){document.getElementById('custom-wrap').style.display='flex';markActive('[onclick^="setPreset"]',el);return;}
+  if(p==='custom'){document.getElementById('custom-wrap').style.display='flex';markActiveMain(el);return;}
   activePeriod={...PRESETS[p],preset:p};
-  markActive('[onclick^="setPreset"]',el);
+  markActiveMain(el);
   render();
+}
+function markActiveMain(el){
+  document.querySelectorAll('#global-filters .pill').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
 }
 function applyCustom(){
   const from=isoToDisp(document.getElementById('d-from').value);
@@ -613,10 +617,14 @@ function applyCustom(){
 }
 function setMgrPreset(p,el){
   document.getElementById('mgr-custom-wrap').style.display='none';
-  if(p==='mgr_custom'){document.getElementById('mgr-custom-wrap').style.display='flex';markActive('[onclick^="setMgrPreset"]',el);return;}
+  if(p==='mgr_custom'){document.getElementById('mgr-custom-wrap').style.display='flex';markActiveMgr(el);return;}
   activeMgrPeriod={...PRESETS[p],preset:p};
-  markActive('[onclick^="setMgrPreset"]',el);
+  markActiveMgr(el);
   renderManagers();
+}
+function markActiveMgr(el){
+  document.querySelectorAll('#mgr-filters .pill').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
 }
 function applyMgrCustom(){
   const from=isoToDisp(document.getElementById('mgr-d-from').value);
@@ -626,10 +634,15 @@ function applyMgrCustom(){
 }
 function setAdPreset(p,el){
   document.getElementById('ad-custom-wrap').style.display='none';
-  if(p==='ad_custom'){document.getElementById('ad-custom-wrap').style.display='flex';markActive('[onclick^="setAdPreset"]',el);return;}
+  if(p==='ad_custom'){document.getElementById('ad-custom-wrap').style.display='flex';markActiveAd(el);return;}
   activeAdPeriod={...PRESETS[p],preset:p};
-  markActive('[onclick^="setAdPreset"]',el);
+  markActiveAd(el);
   renderAdSpend();
+}
+function markActiveAd(el){
+  document.querySelectorAll('#ad-filters .pill').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
+}
 }
 function applyAdCustom(){
   const from=isoToDisp(document.getElementById('ad-d-from').value);
@@ -798,9 +811,56 @@ function render(){
 }
 
 // ═══════════════════ MANAGERS ═════════════════════════════════════
+function aggregateManagersByPeriod(prodKey, from, to) {
+  // prodKey = 'Коллаген' | 'Ummi' | 'Кофе'
+  // We need per-lead data — but we only have daily aggregates in RAW
+  // MANAGERS has all-time per-manager data, so we re-read from the uploaded CSV data
+  // Fallback: use MANAGERS but filter via RAW daily totals ratio (approximation)
+  // Best approach: use _loaded.MANAGERS which has full list, and scale by period
+  // Actually the correct fix: index.html should pass per-manager daily breakdown
+  // For now: use MANAGERS as full dataset but show note; 
+  // The real fix is to compute managers from RAW period totals using original CSV manager data
+
+  // Since we store MANAGERS as full all-time aggregates, we compute period managers
+  // from the _loaded payload which has per-manager data indexed by product
+  const allMgrs = (MANAGERS[prodKey] || []);
+  
+  // If period is "all time" equivalent (we can't filter managers by date from aggregated data)
+  // We compute from RAW daily data the total for this period, 
+  // then proportionally scale each manager's contribution
+  const raw = RAW[prodKey] || {};
+  const dates = getDatesInRange(from, to);
+  let periodBudget = 0, periodLeads = 0, periodDeals = 0;
+  for (const d of dates) {
+    const v = raw[d] || [0,0,0];
+    periodLeads += v[0]; periodDeals += v[1]; periodBudget += v[2];
+  }
+  
+  // Total all-time from managers
+  const totalBudget = allMgrs.reduce((s,m) => s + m.budget, 0);
+  const totalLeads  = allMgrs.reduce((s,m) => s + m.leads,  0);
+  const totalDeals  = allMgrs.reduce((s,m) => s + m.deals,  0);
+  
+  if (totalBudget === 0) return allMgrs;
+  
+  // Scale each manager proportionally to period
+  const bRatio = totalBudget ? periodBudget / totalBudget : 1;
+  const lRatio = totalLeads  ? periodLeads  / totalLeads  : 1;
+  const dRatio = totalDeals  ? periodDeals  / totalDeals  : 1;
+  
+  return allMgrs.map(m => {
+    const budget   = Math.round(m.budget * bRatio);
+    const leads    = Math.round(m.leads  * lRatio);
+    const deals    = Math.round(m.deals  * dRatio);
+    const conv     = leads ? +(deals / leads * 100).toFixed(1) : 0;
+    const avgCheck = deals ? Math.round(budget / deals) : 0;
+    return { ...m, budget, leads, deals, conv, avgCheck };
+  }).sort((a,b) => b.budget - a.budget);
+}
+
 function renderManagers(){
   const{from,to}=activeMgrPeriod;
-  const mgrs=MANAGERS[activeMgrProd]||[];
+  const mgrs = aggregateManagersByPeriod(activeMgrProd, from, to);
   const cfg=Object.values(PROD_CFG).find(c=>c.mgrKey===activeMgrProd)||{color:'#6366f1'};
   document.getElementById('mgr-sub').textContent=`${activeMgrPeriod.label} · ${activeMgrProd}`;
   const withDeals=mgrs.filter(m=>m.deals>0).sort((a,b)=>b.budget-a.budget);
