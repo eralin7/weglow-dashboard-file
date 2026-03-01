@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>WEGLOW — Sales Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:     #0f1623;
+  --ink2:    #1e2840;
+  --slate:   #4a5568;
+  --muted:   #8896ae;
+  --line:    #e8ecf4;
+  --line2:   #f0f3fa;
+  --bg:      #f7f8fc;
+  --white:   #ffffff;
+  --col:     #1a56db;
+  --col-l:   #e8f0fe;
+  --ummi:    #0a7c5c;
+  --ummi-l:  #d1fae5;
+  --cof:     #b45309;
+  --cof-l:   #fef3c7;
+  --acc:     #6366f1;
+  --acc-l:   #eef2ff;
+  --red:     #c0392b;
+  --red-l:   #fde8e8;
+  --green:   #16a34a;
+  --green-l: #dcfce7;
+  --gold:    #ca8a04;
+  --gold-l:  #fefce8;
+  --shadow:  0 1px 3px rgba(15,22,35,.06), 0 4px 16px rgba(15,22,35,.08);
+  --shadow2: 0 2px 8px rgba(15,22,35,.08), 0 8px 32px rgba(15,22,35,.10);
+  --r: 14px;
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { font-size:15px; -webkit-font-smoothing:antialiased; }
+body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; }
+
+/* ─── LAYOUT ─────────────────────────────────────────── */
+.shell { display:flex; min-height:100vh; }
+
+/* ─── SIDEBAR ────────────────────────────────────────── */
+.sidebar {
+  width: 220px; flex-shrink:0;
+  background: var(--ink);
+  display:flex; flex-direction:column;
+  padding: 0 0 24px;
+  position:fixed; top:0; left:0; bottom:0;
+  z-index:100;
+}
+.sb-logo {
+  padding: 28px 24px 24px;
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.sb-logo h1 {
+  font-family:'Playfair Display',serif;
+  font-size:22px; font-weight:700;
+  letter-spacing:.5px;
+  color:#fff;
+  line-height:1;
+}
+.sb-logo .tagline { font-size:10px; color:rgba(255,255,255,.35); letter-spacing:2px; text-transform:uppercase; margin-top:5px; }
+.sb-date {
+  padding: 16px 24px;
+  border-bottom:1px solid rgba(255,255,255,.07);
+  font-size:11px; color:rgba(255,255,255,.4);
+  letter-spacing:.5px;
+}
+.sb-date strong { display:block; font-size:13px; color:rgba(255,255,255,.7); font-weight:500; margin-bottom:2px; }
+.sb-nav { padding:16px 12px; flex:1; }
+.sb-section { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,.25); padding:0 12px 8px; }
+.nav-item {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px; border-radius:9px;
+  color:rgba(255,255,255,.5); font-size:13px; font-weight:500;
+  cursor:pointer; transition:all .18s; margin-bottom:2px;
+  border:none; background:none; width:100%; text-align:left;
+}
+.nav-item:hover { background:rgba(255,255,255,.06); color:rgba(255,255,255,.8); }
+.nav-item.active { background:rgba(255,255,255,.1); color:#fff; }
+.nav-item .icon { font-size:16px; width:20px; text-align:center; }
+.sb-progress {
+  margin:0 12px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:10px;
+  padding:14px;
+}
+.sb-progress .sp-label { font-size:10px; color:rgba(255,255,255,.35); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; }
+.sp-bar { height:5px; background:rgba(255,255,255,.1); border-radius:3px; overflow:hidden; margin-bottom:6px; }
+.sp-fill { height:100%; border-radius:3px; background:linear-gradient(90deg,#6366f1,#818cf8); transition:width .5s; }
+.sp-nums { display:flex; justify-content:space-between; font-size:10px; color:rgba(255,255,255,.4); }
+.sp-nums strong { color:rgba(255,255,255,.7); }
+
+/* ─── MAIN ───────────────────────────────────────────── */
+.main { margin-left:220px; flex:1; display:flex; flex-direction:column; min-height:100vh; }
+
+/* ─── TOPBAR ─────────────────────────────────────────── */
+.topbar {
+  background:var(--white); border-bottom:1px solid var(--line);
+  padding:0 32px;
+  display:flex; align-items:center; justify-content:space-between;
+  height:60px; position:sticky; top:0; z-index:50;
+  box-shadow:0 1px 0 var(--line);
+}
+.topbar-title { font-size:15px; font-weight:600; color:var(--ink); }
+.topbar-filters { display:flex; align-items:center; gap:6px; }
+.tb-label { font-size:11px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-right:4px; }
+.pill {
+  padding:5px 14px; border-radius:20px;
+  border:1.5px solid var(--line); background:transparent;
+  color:var(--slate); font-family:'DM Sans',sans-serif; font-size:12px; font-weight:500;
+  cursor:pointer; transition:all .15s; white-space:nowrap;
+}
+.pill:hover { border-color:var(--acc); color:var(--acc); }
+.pill.active { border-color:var(--acc); background:var(--acc-l); color:var(--acc); font-weight:600; }
+.pill-sep { width:1px; height:18px; background:var(--line); margin:0 4px; }
+.prod-pill { display:flex; align-items:center; gap:6px; }
+.prod-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.custom-wrap { display:none; align-items:center; gap:6px; }
+.date-in {
+  background:var(--bg); border:1.5px solid var(--line); border-radius:8px;
+  color:var(--ink); font-family:'DM Sans',sans-serif; font-size:12px;
+  padding:5px 10px; outline:none; width:120px;
+}
+.date-in:focus { border-color:var(--acc); }
+.apply-btn {
+  padding:5px 12px; border-radius:8px; border:none;
+  background:var(--acc); color:#fff; font-family:'DM Sans',sans-serif;
+  font-size:12px; font-weight:600; cursor:pointer; transition:opacity .15s;
+}
+.apply-btn:hover { opacity:.85; }
+
+/* ─── PAGE BODY ──────────────────────────────────────── */
+.page { padding:28px 32px; }
+
+/* ─── VIEW HEADERS ───────────────────────────────────── */
+.view-hdr { margin-bottom:24px; }
+.view-hdr h2 { font-family:'Playfair Display',serif; font-size:28px; font-weight:600; color:var(--ink); letter-spacing:-.3px; }
+.view-hdr p { font-size:13px; color:var(--muted); margin-top:4px; }
+
+/* ─── KPI GRID ───────────────────────────────────────── */
+.kpi-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:12px; margin-bottom:24px; }
+.kpi-card {
+  background:var(--white); border-radius:var(--r);
+  box-shadow:var(--shadow); padding:18px 20px;
+  position:relative; overflow:hidden; transition:box-shadow .2s;
+  border:1px solid var(--line);
+}
+.kpi-card:hover { box-shadow:var(--shadow2); }
+.kpi-card::after {
+  content:''; position:absolute; bottom:0; left:0; right:0; height:3px;
+  background:var(--kc, var(--acc));
+}
+.kc-lbl { font-size:10px; font-weight:600; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
+.kc-val { font-family:'Playfair Display',serif; font-size:24px; font-weight:700; color:var(--ink); line-height:1; margin-bottom:6px; letter-spacing:-.3px; }
+.kc-sub { font-size:11px; color:var(--muted); }
+.kc-badge {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:3px 9px; border-radius:20px; font-size:10px; font-weight:700;
+  margin-top:8px;
+}
+.bg-g { background:var(--green-l); color:var(--green); }
+.bg-r { background:var(--red-l);   color:var(--red);   }
+.bg-y { background:var(--gold-l);  color:var(--gold);  }
+
+/* ─── SECTION LABEL ──────────────────────────────────── */
+.sec-label {
+  font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+  color:var(--muted); margin-bottom:12px;
+  display:flex; align-items:center; gap:10px;
+}
+.sec-label::after { content:''; flex:1; height:1px; background:var(--line); }
+
+/* ─── PLAN TABLE ─────────────────────────────────────── */
+.card {
+  background:var(--white); border-radius:var(--r);
+  border:1px solid var(--line); box-shadow:var(--shadow);
+  overflow:hidden;
+}
+.card-pad { padding:20px 24px; }
+table.dt { width:100%; border-collapse:collapse; }
+table.dt thead tr { border-bottom:2px solid var(--line); }
+table.dt th {
+  font-size:10px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase;
+  color:var(--muted); padding:12px 16px; text-align:right; white-space:nowrap;
+}
+table.dt th:first-child { text-align:left; }
+table.dt td { padding:13px 16px; font-size:13px; text-align:right; border-bottom:1px solid var(--line2); }
+table.dt tr:last-child td { border-bottom:none; }
+table.dt td:first-child { text-align:left; font-weight:600; }
+table.dt tr.tr-sum { background:linear-gradient(90deg,rgba(99,102,241,.03),transparent); }
+table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
+.prod-name { display:flex; align-items:center; gap:9px; }
+.bar-wrap { display:flex; align-items:center; gap:8px; justify-content:flex-end; }
+.bar-track { width:64px; height:4px; background:var(--line); border-radius:2px; overflow:hidden; }
+.bar-fill { height:100%; border-radius:2px; transition:width .4s; }
+
+/* ─── CHARTS ROW ─────────────────────────────────────── */
+.charts-row { display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-bottom:24px; }
+.card-hdr { padding:18px 24px 0; display:flex; align-items:center; justify-content:space-between; }
+.card-title { font-size:13px; font-weight:700; color:var(--ink); letter-spacing:-.1px; }
+.metric-tabs { display:flex; gap:4px; }
+.mt { padding:4px 12px; border-radius:6px; border:1px solid var(--line); background:none; color:var(--muted); font-family:'DM Sans',sans-serif; font-size:11px; font-weight:600; cursor:pointer; transition:all .15s; }
+.mt.active { background:var(--ink); color:#fff; border-color:var(--ink); }
+.chart-body { padding:16px 20px 18px; }
+
+/* ─── PRODUCT STATS ──────────────────────────────────── */
+.prod-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:24px; }
+.ps-card { background:var(--white); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow); overflow:hidden; }
+.ps-head { padding:14px 20px; display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--line2); }
+.ps-head .dot16 { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.ps-head-title { font-size:13px; font-weight:700; color:var(--ink); }
+.ps-body { padding:0 4px; }
+.ps-row { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; border-bottom:1px solid var(--line2); }
+.ps-row:last-child { border-bottom:none; }
+.ps-l { font-size:12px; color:var(--slate); }
+.ps-r { font-size:13px; font-weight:700; color:var(--ink); }
+
+/* ─── MANAGERS ───────────────────────────────────────── */
+.mgr-subfilters { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:20px; }
+.mgr-view { display:none; }
+.rank-icon { font-size:15px; }
+.mgr-bar-cell { display:flex; align-items:center; gap:8px; justify-content:flex-end; }
+.mb16 { height:4px; width:60px; background:var(--line); border-radius:2px; overflow:hidden; }
+.mb16-f { height:100%; border-radius:2px; }
+.mgr-charts-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:20px; }
+.tag { display:inline-block; padding:2px 9px; border-radius:12px; font-size:10px; font-weight:700; }
+
+/* ─── AD SPEND ───────────────────────────────────────── */
+.ad-view { display:none; }
+.ad-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:24px; }
+.ad-card { background:var(--white); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow); padding:20px 22px; }
+.ad-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--line2); }
+.ad-head-title { font-size:13px; font-weight:700; }
+.ad-kv { display:flex; justify-content:space-between; align-items:baseline; padding:8px 0; border-bottom:1px solid var(--line2); }
+.ad-kv:last-of-type { border-bottom:none; }
+.ad-kl { font-size:12px; color:var(--slate); }
+.ad-kv-val { font-size:13px; font-weight:700; }
+.ad-prog { margin:14px 0; }
+.ad-prog-bar { height:6px; background:var(--line); border-radius:3px; overflow:hidden; margin:6px 0; }
+.ad-prog-fill { height:100%; border-radius:3px; transition:width .5s; }
+.ad-prog-meta { display:flex; justify-content:space-between; font-size:10px; color:var(--muted); }
+.mini-chart { margin-top:14px; border-top:1px solid var(--line2); padding-top:12px; }
+.mini-label { font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+
+/* ─── PERIOD TAG ─────────────────────────────────────── */
+.period-badge { display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:20px; background:var(--acc-l); color:var(--acc); font-size:11px; font-weight:700; margin-bottom:20px; }
+
+/* ─── ANIMATIONS ─────────────────────────────────────── */
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+.kpi-card { animation:fadeIn .35s ease both; }
+.kpi-card:nth-child(1){animation-delay:.03s}.kpi-card:nth-child(2){animation-delay:.06s}
+.kpi-card:nth-child(3){animation-delay:.09s}.kpi-card:nth-child(4){animation-delay:.12s}
+.kpi-card:nth-child(5){animation-delay:.15s}.kpi-card:nth-child(6){animation-delay:.18s}
+.kpi-card:nth-child(7){animation-delay:.21s}
+
+/* ─── UTILITIES ──────────────────────────────────────── */
+.txt-col  { color:var(--col)  !important; }
+.txt-ummi { color:var(--ummi) !important; }
+.txt-cof  { color:var(--cof)  !important; }
+.txt-acc  { color:var(--acc)  !important; }
+.txt-g    { color:var(--green)!important; }
+.txt-r    { color:var(--red)  !important; }
+.txt-y    { color:var(--gold) !important; }
+.fw7      { font-weight:700; }
+.mb16     { margin-bottom:16px; }
+.mb20     { margin-bottom:20px; }
+.mb24     { margin-bottom:24px; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ═══ SIDEBAR ═══════════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="sb-logo">
+    <h1>WeGlow</h1>
+    <div class="tagline">Sales Intelligence</div>
+  </div>
+  <div style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.07)">
+    <a href="index.html" style="display:flex;align-items:center;gap:7px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);font-size:12px;font-weight:600;text-decoration:none;transition:all .15s" onmouseover="this.style.color='rgba(255,255,255,.85)'" onmouseout="this.style.color='rgba(255,255,255,.5)'">
+      <span style="font-size:14px">↑</span> Обновить данные
+    </a>
+    <div id="data-badge" style="margin-top:8px;font-size:10px;color:rgba(255,255,255,.3);padding:0 10px"></div>
+  </div>
+  <div class="sb-date">
+    <strong id="sb-today">27 февраля 2026</strong>
+    UTC+5 · Пятница
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-section">Навигация</div>
+    <button class="nav-item active" onclick="switchView('main',this)">
+      <span class="icon">◈</span> Дашборд
+    </button>
+    <button class="nav-item" onclick="switchView('managers',this)">
+      <span class="icon">◎</span> Менеджеры
+    </button>
+    <button class="nav-item" onclick="switchView('adspend',this)">
+      <span class="icon">◇</span> Реклама
+    </button>
+  </nav>
+  <div class="sb-progress">
+    <div class="sp-label">Февраль 2026</div>
+    <div class="sp-bar"><div class="sp-fill" id="sb-fill" style="width:96%"></div></div>
+    <div class="sp-nums"><span>1 фев</span><strong id="sb-day">27 / 28</strong></div>
+  </div>
+</aside>
+
+<!-- ═══ MAIN ═══════════════════════════════════════════════════ -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <header class="topbar" id="topbar">
+    <div class="topbar-title" id="tb-title">Обзор продаж</div>
+    <div id="global-filters" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      <span class="tb-label">Продукт:</span>
+      <button class="pill prod-pill active" onclick="setProd('all',this)"><div class="prod-dot" style="background:#6366f1"></div>Все</button>
+      <button class="pill prod-pill" onclick="setProd('col',this)"><div class="prod-dot" style="background:#1a56db"></div>Коллаген</button>
+      <button class="pill prod-pill" onclick="setProd('ummi',this)"><div class="prod-dot" style="background:#0a7c5c"></div>Ummi</button>
+      <button class="pill prod-pill" onclick="setProd('coffee',this)"><div class="prod-dot" style="background:#b45309"></div>Кофе</button>
+      <div class="pill-sep"></div>
+      <span class="tb-label">Период:</span>
+      <button class="pill" onclick="setPreset('today',this)">Сегодня</button>
+      <button class="pill" onclick="setPreset('week',this)">7 дней</button>
+      <button class="pill active" onclick="setPreset('feb26',this)">Февраль 2026</button>
+      <button class="pill" onclick="setPreset('jan26',this)">Январь 2026</button>
+      <button class="pill" onclick="setPreset('dec25',this)">Декабрь 2025</button>
+      <button class="pill" onclick="setPreset('nov25',this)">Ноябрь 2025</button>
+      <button class="pill" onclick="setPreset('custom',this)">📅 Диапазон</button>
+      <div class="custom-wrap" id="custom-wrap">
+        <input type="date" class="date-in" id="d-from" value="2026-02-01">
+        <span style="color:var(--muted);font-size:12px">—</span>
+        <input type="date" class="date-in" id="d-to" value="2026-02-27">
+        <button class="apply-btn" onclick="applyCustom()">Применить</button>
+      </div>
+    </div>
+    <!-- Managers filters (hidden by default) -->
+    <div id="mgr-filters" style="display:none;align-items:center;gap:6px;flex-wrap:wrap">
+      <span class="tb-label">Отдел:</span>
+      <button class="pill active" onclick="setMgrProd('Коллаген',this)">Коллаген</button>
+      <button class="pill" onclick="setMgrProd('Ummi',this)">Ummi</button>
+      <button class="pill" onclick="setMgrProd('Кофе',this)">Кофе</button>
+      <div class="pill-sep"></div>
+      <span class="tb-label">Период:</span>
+      <button class="pill" onclick="setMgrPreset('today',this)">Сегодня</button>
+      <button class="pill" onclick="setMgrPreset('week',this)">7 дней</button>
+      <button class="pill active" onclick="setMgrPreset('feb26',this)">Февраль 2026</button>
+      <button class="pill" onclick="setMgrPreset('jan26',this)">Январь 2026</button>
+      <button class="pill" onclick="setMgrPreset('dec25',this)">Декабрь 2025</button>
+      <button class="pill" onclick="setMgrPreset('mgr_custom',this)">📅 Диапазон</button>
+      <div class="custom-wrap" id="mgr-custom-wrap">
+        <input type="date" class="date-in" id="mgr-d-from" value="2026-02-01">
+        <span style="color:var(--muted);font-size:12px">—</span>
+        <input type="date" class="date-in" id="mgr-d-to" value="2026-02-28">
+        <button class="apply-btn" onclick="applyMgrCustom()">Применить</button>
+      </div>
+    </div>
+    <!-- Ad filters (hidden by default) -->
+    <div id="ad-filters" style="display:none;align-items:center;gap:6px;flex-wrap:wrap">
+      <span class="tb-label">Период:</span>
+      <button class="pill" onclick="setAdPreset('today',this)">Сегодня</button>
+      <button class="pill" onclick="setAdPreset('week',this)">7 дней</button>
+      <button class="pill active" onclick="setAdPreset('feb26',this)">Февраль 2026</button>
+      <button class="pill" onclick="setAdPreset('jan26',this)">Январь 2026</button>
+      <button class="pill" onclick="setAdPreset('dec25',this)">Декабрь 2025</button>
+      <button class="pill" onclick="setAdPreset('ad_custom',this)">📅 Диапазон</button>
+      <div class="custom-wrap" id="ad-custom-wrap">
+        <input type="date" class="date-in" id="ad-d-from" value="2026-02-01">
+        <span style="color:var(--muted);font-size:12px">—</span>
+        <input type="date" class="date-in" id="ad-d-to" value="2026-02-28">
+        <button class="apply-btn" onclick="applyAdCustom()">Применить</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- PAGE CONTENT -->
+  <div class="page">
+
+    <!-- ══ MAIN VIEW ══ -->
+    <div id="view-main">
+      <div class="view-hdr">
+        <h2 id="main-title">Ключевые показатели</h2>
+        <p id="main-sub">Февраль 2026 · Все продукты</p>
+      </div>
+      <div class="kpi-grid" id="kpi-grid"></div>
+      <div class="sec-label mb20">Выполнение плана</div>
+      <div class="card mb24">
+        <div id="plan-table"></div>
+      </div>
+      <div class="charts-row">
+        <div class="card">
+          <div class="card-hdr">
+            <span class="card-title" id="chart-lbl">Динамика продаж по дням</span>
+            <div class="metric-tabs">
+              <button class="mt active" onclick="setMetric('budget',this)">Выручка</button>
+              <button class="mt" onclick="setMetric('leads',this)">Лиды</button>
+              <button class="mt" onclick="setMetric('deals',this)">Сделки</button>
+            </div>
+          </div>
+          <div class="chart-body"><canvas id="lineChart" height="170"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><span class="card-title">Структура выручки</span></div>
+          <div class="chart-body"><canvas id="donutChart" height="220"></canvas></div>
+        </div>
+      </div>
+      <div class="sec-label mb20">Эффективность по продуктам</div>
+      <div class="prod-stats" id="prod-stats"></div>
+    </div>
+
+    <!-- ══ MANAGERS VIEW ══ -->
+    <div id="view-managers" class="mgr-view">
+      <div class="view-hdr">
+        <h2>Менеджеры</h2>
+        <p id="mgr-sub">Февраль 2026 · Коллаген</p>
+      </div>
+      <div class="card mb24">
+        <table class="dt">
+          <thead><tr>
+            <th style="width:40px;text-align:center">#</th>
+            <th style="text-align:left">Менеджер</th>
+            <th>Лиды</th><th>Сделки</th><th>Выручка</th>
+            <th>Конверсия</th><th>Ср. чек</th><th>Доля</th>
+          </tr></thead>
+          <tbody id="mgr-tbody"></tbody>
+        </table>
+      </div>
+      <div class="mgr-charts-3">
+        <div class="card"><div class="card-hdr"><span class="card-title">Топ по выручке</span></div><div class="chart-body"><canvas id="mgrBudget" height="200"></canvas></div></div>
+        <div class="card"><div class="card-hdr"><span class="card-title">Конверсия %</span></div><div class="chart-body"><canvas id="mgrConv" height="200"></canvas></div></div>
+        <div class="card"><div class="card-hdr"><span class="card-title">Средний чек ₸</span></div><div class="chart-body"><canvas id="mgrCheck" height="200"></canvas></div></div>
+      </div>
+    </div>
+
+    <!-- ══ AD SPEND VIEW ══ -->
+    <div id="view-adspend" class="ad-view">
+      <div class="view-hdr">
+        <h2>Расходы на рекламу</h2>
+        <p id="ad-sub">Февраль 2026</p>
+      </div>
+      <div class="ad-cards" id="ad-cards"></div>
+      <div class="card">
+        <div class="card-hdr"><span class="card-title" id="ad-chart-lbl">Динамика расходов — Февраль 2026</span></div>
+        <div class="chart-body"><canvas id="adChart" height="140"></canvas></div>
+      </div>
+    </div>
+
+  </div><!-- /page -->
+</div><!-- /main -->
+</div><!-- /shell -->
+
+<script>
+// ═══════════════════ DATA ═══════════════════════════════════════
+// Load from sessionStorage (uploaded via index.html) or fall back to embedded data
+let _loaded = null;
+try {
+  const _raw = sessionStorage.getItem('wg_data');
+  if (_raw) _loaded = JSON.parse(_raw);
+} catch(e) {}
+
+const RAW = _loaded ? _loaded.RAW : {"Коллаген":{"01.01.2025":[15,0,0],"01.01.2026":[154,2,140000],"01.02.2025":[33,0,0],"01.02.2026":[272,16,1373227],"01.03.2025":[90,0,0],"01.04.2025":[35,0,0],"01.05.2025":[25,0,0],"01.06.2025":[2,0,0],"01.07.2025":[35,0,0],"01.08.2025":[74,0,0],"01.09.2025":[48,0,0],"01.10.2025":[2,2,28000],"01.11.2025":[145,2,210000],"01.12.2025":[229,12,863600],"02.01.2025":[17,0,0],"02.01.2026":[161,5,324750],"02.02.2025":[36,0,0],"02.02.2026":[246,26,2012550],"02.03.2025":[91,0,0],"02.04.2025":[36,0,0],"02.05.2025":[20,0,0],"02.06.2025":[1,0,0],"02.07.2025":[45,0,0],"02.08.2025":[72,0,0],"02.09.2025":[43,0,0],"02.10.2025":[4,0,0],"02.11.2025":[91,3,196000],"02.12.2025":[248,9,938000],"03.01.2025":[4,0,0],"03.01.2026":[187,9,478600],"03.02.2025":[33,0,0],"03.02.2026":[216,34,2482100],"03.03.2025":[72,0,0],"03.04.2025":[43,0,0],"03.05.2025":[25,0,0],"03.06.2025":[14,0,0],"03.07.2025":[35,0,0],"03.08.2025":[83,0,0],"03.09.2025":[45,0,0],"03.10.2025":[6,5,434000],"03.11.2025":[85,11,908000],"03.12.2025":[219,13,767400],"04.01.2025":[78,0,0],"04.01.2026":[253,14,699300],"04.02.2025":[35,0,0],"04.02.2026":[145,20,1348075],"04.03.2025":[79,0,0],"04.04.2025":[43,0,0],"04.05.2025":[24,0,0],"04.06.2025":[71,0,0],"04.07.2025":[43,0,0],"04.08.2025":[93,0,0],"04.09.2025":[35,0,0],"04.10.2025":[0,9,434000],"04.11.2025":[95,7,644000],"04.12.2025":[176,8,538600],"05.01.2025":[130,0,0],"05.01.2026":[268,26,1485450],"05.02.2025":[69,0,0],"05.02.2026":[167,26,1838100],"05.03.2025":[32,0,0],"05.04.2025":[28,0,0],"05.05.2025":[23,0,0],"05.06.2025":[45,0,0],"05.07.2025":[32,0,0],"05.08.2025":[74,0,0],"05.09.2025":[5,0,0],"05.10.2025":[2,1,28000],"05.11.2025":[121,10,1284000],"05.12.2025":[204,25,1101600],"06.01.2025":[35,0,0],"06.01.2026":[338,27,2016500],"06.02.2025":[44,0,0],"06.02.2026":[185,22,1772351],"06.03.2025":[34,0,0],"06.04.2025":[29,0,0],"06.05.2025":[32,0,0],"06.06.2025":[27,0,0],"06.07.2025":[32,0,0],"06.08.2025":[88,0,0],"06.09.2025":[2,0,0],"06.10.2025":[56,15,842000],"06.11.2025":[457,32,3520000],"06.12.2025":[277,10,771100],"07.01.2025":[17,0,0],"07.01.2026":[171,15,1434700],"07.02.2025":[28,0,0],"07.02.2026":[247,15,1004900],"07.03.2025":[19,0,0],"07.04.2025":[35,0,0],"07.05.2025":[35,0,0],"07.06.2025":[31,0,0],"07.07.2025":[41,0,0],"07.08.2025":[90,0,0],"07.10.2025":[103,16,910000],"07.11.2025":[288,29,2829000],"07.12.2025":[260,7,512800],"08.01.2025":[15,0,0],"08.01.2026":[149,6,504800],"08.02.2025":[24,0,0],"08.02.2026":[162,13,1007600],"08.03.2025":[14,0,0],"08.04.2025":[28,0,0],"08.05.2025":[29,0,0],"08.06.2025":[24,0,0],"08.07.2025":[67,0,0],"08.08.2025":[84,0,0],"08.09.2025":[3,0,0],"08.10.2025":[108,13,514000],"08.11.2025":[238,18,1581000],"08.12.2025":[361,14,1496000],"09.01.2025":[42,0,0],"09.01.2026":[163,15,968100],"09.02.2025":[12,0,0],"09.02.2026":[65,24,1243200],"09.03.2025":[44,0,0],"09.04.2025":[41,0,0],"09.05.2025":[17,0,0],"09.06.2025":[26,0,0],"09.07.2025":[76,0,0],"09.08.2025":[79,0,0],"09.09.2025":[3,0,0],"09.10.2025":[127,24,828001],"09.11.2025":[357,46,3892000],"09.12.2025":[326,14,958750],"10.01.2025":[22,0,0],"10.01.2026":[160,15,1239500],"10.02.2025":[46,0,0],"10.02.2026":[169,35,2614925],"10.03.2025":[55,0,0],"10.04.2025":[29,0,0],"10.05.2025":[25,0,0],"10.06.2025":[45,0,0],"10.07.2025":[83,0,0],"10.08.2025":[73,0,0],"10.09.2025":[1,0,0],"10.10.2025":[139,120,1027000],"10.11.2025":[181,19,1871000],"10.12.2025":[232,13,1170400],"11.01.2025":[26,0,0],"11.01.2026":[161,12,984200],"11.02.2025":[36,0,0],"11.02.2026":[307,35,3117450],"11.03.2025":[26,0,0],"11.04.2025":[68,0,0],"11.05.2025":[30,0,0],"11.06.2025":[40,0,0],"11.07.2025":[80,0,0],"11.08.2025":[127,0,0],"11.09.2025":[1,0,0],"11.10.2025":[121,9,430000],"11.11.2025":[264,19,1675000],"11.12.2025":[194,7,927200],"12.01.2025":[34,0,0],"12.01.2026":[200,17,1377550],"12.02.2025":[24,0,0],"12.02.2026":[528,52,5248250],"12.03.2025":[12,0,0],"12.04.2025":[63,0,0],"12.05.2025":[23,0,0],"12.06.2025":[85,0,0],"12.07.2025":[80,0,0],"12.08.2025":[78,0,0],"12.09.2025":[3,0,0],"12.10.2025":[113,3,210000],"12.11.2025":[287,32,1522000],"12.12.2025":[77,7,843000],"13.01.2025":[36,0,0],"13.01.2026":[228,37,3331750],"13.02.2025":[39,0,0],"13.02.2026":[441,57,4859050],"13.03.2025":[26,0,0],"13.04.2025":[13,0,0],"13.05.2025":[29,0,0],"13.06.2025":[66,0,0],"13.07.2025":[73,0,0],"13.08.2025":[76,0,0],"13.09.2025":[2,0,0],"13.10.2025":[136,19,964000],"13.11.2025":[243,16,1218000],"13.12.2025":[174,5,388500],"14.01.2025":[27,0,0],"14.01.2026":[210,21,1817650],"14.02.2025":[39,0,0],"14.02.2026":[428,34,3095750],"14.03.2025":[33,0,0],"14.04.2025":[9,0,0],"14.05.2025":[32,0,0],"14.06.2025":[80,0,0],"14.07.2025":[81,0,0],"14.08.2025":[86,0,0],"14.09.2025":[2,0,0],"14.10.2025":[148,9,406000],"14.11.2025":[299,10,690000],"14.12.2025":[207,13,940050],"15.01.2025":[20,0,0],"15.01.2026":[147,22,2137500],"15.02.2025":[25,0,0],"15.02.2026":[365,50,4730275],"15.03.2025":[9,0,0],"15.04.2025":[9,0,0],"15.05.2025":[34,0,0],"15.06.2025":[95,0,0],"15.07.2025":[82,0,0],"15.08.2025":[88,0,0],"15.09.2025":[4,0,0],"15.10.2025":[169,22,1306000],"15.11.2025":[273,12,852000],"15.12.2025":[123,10,585100],"16.01.2025":[130,0,0],"16.01.2026":[180,17,1303700],"16.02.2025":[26,0,0],"16.02.2026":[333,16,1225925],"16.03.2025":[16,0,0],"16.04.2025":[4,0,0],"16.05.2025":[35,0,0],"16.06.2025":[100,0,0],"16.07.2025":[75,0,0],"16.08.2025":[91,0,0],"16.09.2025":[6,0,0],"16.10.2025":[172,17,754000],"16.11.2025":[247,5,392000],"16.12.2025":[70,13,1016600],"17.01.2025":[37,0,0],"17.01.2026":[188,10,981950],"17.02.2025":[47,0,0],"17.02.2026":[269,23,1603300],"17.03.2025":[13,0,0],"17.04.2025":[12,0,0],"17.05.2025":[37,0,0],"17.06.2025":[101,0,0],"17.07.2025":[64,0,0],"17.08.2025":[104,0,0],"17.09.2025":[2,0,0],"17.10.2025":[145,7,544000],"17.11.2025":[229,22,1692000],"17.12.2025":[179,7,376000],"18.01.2025":[26,0,0],"18.01.2026":[259,24,1643050],"18.02.2025":[55,0,0],"18.02.2026":[314,33,2537600],"18.03.2025":[43,0,0],"18.04.2025":[6,0,0],"18.05.2025":[25,0,0],"18.06.2025":[49,0,0],"18.07.2025":[88,0,0],"18.08.2025":[128,0,0],"18.09.2025":[4,0,0],"18.10.2025":[138,8,664000],"18.11.2025":[162,12,960000],"18.12.2025":[344,15,757050],"19.01.2025":[16,0,0],"19.01.2026":[128,16,1196675],"19.02.2025":[47,0,0],"19.02.2026":[285,19,1453000],"19.03.2025":[17,0,0],"19.04.2025":[16,0,0],"19.05.2025":[22,0,0],"19.06.2025":[59,0,0],"19.07.2025":[99,0,0],"19.08.2025":[96,0,0],"19.09.2025":[3,0,0],"19.10.2025":[107,4,177000],"19.11.2025":[158,12,779000],"19.12.2025":[222,32,1799650],"20.01.2025":[31,0,0],"20.01.2026":[153,21,1433450],"20.02.2025":[27,0,0],"20.02.2026":[238,24,1719200],"20.03.2025":[20,0,0],"20.04.2025":[2,0,0],"20.05.2025":[29,0,0],"20.06.2025":[41,0,0],"20.07.2025":[106,0,0],"20.08.2025":[79,0,0],"20.09.2025":[1,0,0],"20.10.2025":[4411,13,1088000],"20.11.2025":[191,10,826001],"20.12.2025":[280,19,1311250],"21.01.2025":[52,0,0],"21.01.2026":[266,20,1334050],"21.02.2025":[20,0,0],"21.02.2026":[229,29,1608400],"21.03.2025":[22,0,0],"21.04.2025":[12,0,0],"21.05.2025":[18,0,0],"21.06.2025":[40,0,0],"21.07.2025":[96,0,0],"21.08.2025":[55,0,0],"21.09.2025":[2,0,0],"21.10.2025":[152,19,1759000],"21.11.2025":[285,35,2110000],"21.12.2025":[246,11,616800],"22.01.2025":[31,0,0],"22.01.2026":[269,11,797700],"22.02.2025":[27,0,0],"22.02.2026":[244,15,1373400],"22.03.2025":[28,0,0],"22.04.2025":[26,0,0],"22.05.2025":[16,0,0],"22.06.2025":[53,0,0],"22.07.2025":[103,0,0],"22.08.2025":[59,0,0],"22.10.2025":[129,21,1574000],"22.11.2025":[246,48,3080000],"22.12.2025":[246,18,1885950],"23.01.2025":[33,0,0],"23.01.2026":[272,22,1752100],"23.02.2025":[18,0,0],"23.02.2026":[214,25,1727650],"23.03.2025":[27,0,0],"23.04.2025":[19,0,0],"23.05.2025":[12,0,0],"23.06.2025":[60,0,0],"23.07.2025":[92,0,0],"23.08.2025":[23,0,0],"23.09.2025":[3,0,0],"23.10.2025":[111,11,656000],"23.11.2025":[271,35,2184000],"23.12.2025":[334,16,1927350],"24.01.2025":[29,0,0],"24.01.2026":[276,27,2150800],"24.02.2025":[27,0,0],"24.02.2026":[170,32,2369900],"24.03.2025":[16,0,0],"24.04.2025":[25,0,0],"24.05.2025":[21,0,0],"24.06.2025":[69,0,0],"24.07.2025":[106,0,0],"24.09.2025":[3,0,0],"24.10.2025":[132,9,1070440],"24.11.2025":[264,23,1659000],"24.12.2025":[319,19,1507100],"25.01.2025":[37,0,0],"25.01.2026":[280,21,1689550],"25.02.2025":[41,0,0],"25.02.2026":[160,14,960400],"25.03.2025":[42,0,0],"25.04.2025":[38,0,0],"25.05.2025":[32,0,0],"25.06.2025":[31,0,0],"25.07.2025":[71,0,0],"25.08.2025":[218,0,0],"25.09.2025":[2,0,0],"25.10.2025":[142,11,1403000],"25.11.2025":[317,13,1360100],"25.12.2025":[293,14,1028350],"26.01.2025":[26,0,0],"26.01.2026":[281,25,1953400],"26.02.2025":[103,0,0],"26.02.2026":[180,36,2890801],"26.03.2025":[42,0,0],"26.04.2025":[39,0,0],"26.05.2025":[27,0,0],"26.06.2025":[29,0,0],"26.07.2025":[111,0,0],"26.08.2025":[174,0,0],"26.09.2025":[5,0,0],"26.10.2025":[121,9,741000],"26.11.2025":[249,15,1320800],"26.12.2025":[268,14,803000],"27.01.2025":[26,0,0],"27.01.2026":[211,24,1581650],"27.02.2025":[147,0,0],"27.02.2026":[10,1,84000],"27.03.2025":[42,0,0],"27.04.2025":[39,0,0],"27.05.2025":[27,0,0],"27.06.2025":[23,0,0],"27.07.2025":[113,0,0],"27.08.2025":[106,0,0],"27.10.2025":[39,7,476000],"27.11.2025":[217,15,991800],"27.12.2025":[275,15,1615850],"28.01.2025":[46,0,0],"28.01.2026":[192,16,910900],"28.02.2025":[92,0,0],"28.02.2026":[0,1,26000],"28.03.2025":[102,0,0],"28.04.2025":[56,0,0],"28.05.2025":[32,0,0],"28.06.2025":[39,0,0],"28.07.2025":[97,0,0],"28.08.2025":[49,0,0],"28.09.2025":[2,0,0],"28.10.2025":[159,6,588000],"28.11.2025":[142,12,1198400],"28.12.2025":[351,12,815500],"29.01.2025":[38,0,0],"29.01.2026":[222,29,2236050],"29.03.2025":[35,0,0],"29.04.2025":[32,0,0],"29.05.2025":[18,0,0],"29.06.2025":[27,0,0],"29.07.2025":[74,0,0],"29.08.2025":[24,0,0],"29.09.2025":[4,1,0],"29.10.2025":[270,9,560000],"29.11.2025":[233,6,504000],"29.12.2025":[267,14,757950],"30.01.2025":[50,0,0],"30.01.2026":[195,36,2990250],"30.03.2025":[39,0,0],"30.04.2025":[26,0,0],"30.05.2025":[4,0,0],"30.06.2025":[29,0,0],"30.07.2025":[75,0,0],"30.08.2025":[34,0,0],"30.09.2025":[1,1,26000],"30.10.2025":[131,13,1155000],"30.11.2025":[200,6,518000],"30.12.2025":[183,13,970050],"31.01.2025":[25,0,0],"31.01.2026":[189,24,1564700],"31.03.2025":[48,0,0],"31.05.2025":[1,0,0],"31.07.2025":[66,0,0],"31.08.2025":[42,0,0],"31.10.2025":[140,22,994000],"31.12.2025":[123,15,838850]},"Ummi":{"01.01.2026":[29,0,0],"01.02.2026":[1,0,0],"02.01.2026":[29,0,0],"02.02.2026":[182,5,654450],"02.12.2025":[1,0,0],"03.01.2026":[42,0,0],"03.02.2026":[93,5,440300],"03.12.2025":[66,1,94350],"04.01.2026":[53,0,0],"04.02.2026":[41,2,188700],"04.12.2025":[44,4,225700],"05.01.2026":[39,7,512450],"05.02.2026":[46,4,456700],"05.12.2025":[42,0,0],"06.01.2026":[26,0,0],"06.02.2026":[49,2,2],"06.12.2025":[31,1,94350],"07.01.2026":[36,6,846300],"07.02.2026":[63,1,63000],"07.12.2025":[22,0,0],"08.01.2026":[105,6,364700],"08.02.2026":[69,1,112600],"08.12.2025":[22,1,177600],"09.01.2026":[138,4,308950],"09.02.2026":[47,3,344101],"09.12.2025":[2,0,0],"10.01.2026":[131,4,111000],"10.02.2026":[116,2,37001],"10.12.2025":[4,1,125800],"11.01.2026":[92,2,177600],"11.02.2026":[196,4,290700],"11.12.2025":[14,1,94350],"12.01.2026":[126,7,546750],"12.02.2026":[247,15,1738650],"12.12.2025":[30,6,551300],"13.01.2026":[115,12,1213600],"13.02.2026":[133,4,377400],"13.12.2025":[74,1,177600],"14.01.2026":[83,5,694050],"14.02.2026":[159,7,632352],"15.01.2026":[44,4,345950],"15.02.2026":[135,7,1070200],"15.12.2025":[9,3,366300],"16.01.2026":[50,5,493950],"16.02.2025":[0,1,37000],"16.02.2026":[131,5,600950],"16.12.2025":[3,3,225700],"17.01.2026":[50,6,646950],"17.02.2026":[60,2,555000],"17.12.2025":[19,2,131350],"18.01.2026":[88,2,347800],"18.02.2026":[106,3,353350],"18.12.2025":[38,1,177600],"19.01.2026":[63,5,525650],"19.02.2026":[77,5,168352],"19.12.2025":[35,1,74000],"20.01.2026":[54,9,488402],"20.02.2026":[89,2,122350],"20.12.2025":[50,2,216100],"21.01.2026":[51,4,462501],"21.02.2026":[59,0,0],"21.12.2025":[29,0,0],"22.01.2026":[65,1,240500],"22.02.2026":[75,0,0],"22.12.2025":[41,6,602050],"23.01.2026":[59,7,534650],"23.02.2026":[97,5,440400],"23.12.2025":[37,4,168350],"24.01.2026":[27,9,845700],"24.02.2026":[111,6,432051],"24.12.2025":[55,1,37000],"25.01.2026":[58,3,442150],"25.02.2026":[138,10,819800],"25.12.2025":[27,1,37000],"26.01.2026":[61,5,382950],"26.02.2026":[63,5,392350],"26.12.2025":[29,5,569800],"27.01.2026":[74,2,74000],"27.02.2026":[4,0,0],"27.12.2025":[16,1,37000],"28.01.2026":[89,3,419600],"28.12.2025":[13,0,0],"29.01.2026":[26,4,288600],"29.12.2025":[12,0,0],"30.01.2026":[59,7,930851],"30.12.2025":[7,0,0],"31.01.2026":[24,4,397050],"31.12.2025":[15,0,0]},"Кофе":{"02.02.2026":[0,7,269500],"03.02.2026":[0,7,493850],"04.02.2026":[0,4,312900],"05.02.2026":[556,8,447300],"06.02.2026":[68,5,171350],"07.02.2026":[45,4,352500],"08.02.2026":[61,2,150500],"09.02.2026":[10,6,244650],"10.02.2026":[31,0,0],"11.02.2026":[108,6,487800],"12.02.2026":[124,6,695800],"13.02.2026":[95,5,505400],"14.02.2026":[101,4,154000],"15.02.2026":[152,7,722050],"16.02.2026":[93,0,0],"17.02.2026":[49,6,529870],"18.02.2026":[85,4,421820],"19.02.2026":[52,3,229400],"20.02.2026":[94,5,273950],"21.01.2026":[0,2,0],"21.02.2026":[58,2,105000],"22.01.2026":[0,3,5000],"22.02.2026":[70,4,182000],"23.01.2026":[0,2,0],"23.02.2026":[68,2,142450],"24.01.2026":[0,1,38500],"24.02.2026":[97,3,203350],"25.02.2026":[122,1,140000],"26.01.2026":[0,1,8500],"26.02.2026":[136,5,413000],"27.01.2026":[0,3,0],"27.02.2026":[5,0,0],"28.01.2026":[0,2,5000],"29.01.2026":[0,5,217000],"30.01.2026":[0,3,196350],"31.01.2026":[0,3,28000]}};
+
+const MANAGERS_STATIC = {"Коллаген":[{"name":"Пин 14 Шамид Халилли","leads":571,"deals":83,"budget":5702500,"conv":14.5,"avgCheck":68705},{"name":"пин 17 Таймир Туйгунов","leads":382,"deals":59,"budget":4965550,"conv":15.4,"avgCheck":84162},{"name":"пин 10 Айша","leads":378,"deals":51,"budget":4677800,"conv":13.5,"avgCheck":91722},{"name":"Пин 8 Асема","leads":335,"deals":56,"budget":4534975,"conv":16.7,"avgCheck":80982},{"name":"Пин 2 Санжар","leads":512,"deals":53,"budget":4082550,"conv":10.4,"avgCheck":77029},{"name":"пин 20 Жазира","leads":523,"deals":46,"budget":4051800,"conv":8.8,"avgCheck":88083},{"name":"пин 22 Асель","leads":453,"deals":35,"budget":3305850,"conv":7.7,"avgCheck":94453},{"name":"пин 16 Медина","leads":156,"deals":27,"budget":3006950,"conv":17.3,"avgCheck":111369},{"name":"Пин 6 Асем","leads":280,"deals":31,"budget":2746150,"conv":11.1,"avgCheck":88585},{"name":"Пин 4 Динара","leads":331,"deals":31,"budget":2618800,"conv":9.4,"avgCheck":84477},{"name":"пин 21 Жанар","leads":209,"deals":22,"budget":2218300,"conv":10.5,"avgCheck":100832},{"name":"Пин 34 Карина","leads":220,"deals":24,"budget":2076900,"conv":10.9,"avgCheck":86538},{"name":"Пин 7 Рахима","leads":157,"deals":18,"budget":1819500,"conv":11.5,"avgCheck":101083},{"name":"Пин 32 Айжан","leads":181,"deals":22,"budget":1532300,"conv":12.2,"avgCheck":69650},{"name":"Пин 1 Раушан","leads":334,"deals":26,"budget":1480775,"conv":7.8,"avgCheck":56953},{"name":"Пин 3 Ерсин","leads":156,"deals":16,"budget":1346850,"conv":10.3,"avgCheck":84178},{"name":"Пин 5 Тахир","leads":193,"deals":20,"budget":1257900,"conv":10.4,"avgCheck":62895},{"name":"пин 25 Ахмед","leads":98,"deals":14,"budget":1050000,"conv":14.3,"avgCheck":75000},{"name":"Пин 27 Эльнара","leads":114,"deals":8,"budget":662400,"conv":7.0,"avgCheck":82800},{"name":"Пин 36 Жан","leads":84,"deals":3,"budget":589925,"conv":3.6,"avgCheck":196642},{"name":"пин 23 Темирлан","leads":88,"deals":6,"budget":563000,"conv":6.8,"avgCheck":93833},{"name":"Пин 31 Ернур","leads":121,"deals":7,"budget":439700,"conv":5.8,"avgCheck":62814},{"name":"Пин 30 Диас","leads":12,"deals":4,"budget":274375,"conv":33.3,"avgCheck":68594},{"name":"пин 24 Кенес","leads":18,"deals":2,"budget":151725,"conv":11.1,"avgCheck":75862},{"name":"Пин 37 Аида","leads":42,"deals":3,"budget":150500,"conv":7.1,"avgCheck":50167},{"name":"РОП Айдана","leads":290,"deals":0,"budget":0,"conv":0,"avgCheck":0},{"name":"РОП Аслиддин","leads":40,"deals":0,"budget":0,"conv":0,"avgCheck":0}],"Ummi":[{"name":"Кирилл Рыжаков","leads":268,"deals":26,"budget":2506251,"conv":9.7,"avgCheck":96394},{"name":"Меруерт Мун","leads":246,"deals":23,"budget":1957300,"conv":9.3,"avgCheck":85100},{"name":"kids09@weglow.com Дания","leads":161,"deals":14,"budget":1644100,"conv":8.7,"avgCheck":117436},{"name":"Баглан Ертай","leads":366,"deals":11,"budget":1609500,"conv":3.0,"avgCheck":146318},{"name":"Курбанов Бакдаулет","leads":429,"deals":10,"budget":925250,"conv":2.3,"avgCheck":92525},{"name":"Аметжанова Алина","leads":157,"deals":7,"budget":629000,"conv":4.5,"avgCheck":89857},{"name":"Нурбол Абаков","leads":211,"deals":2,"budget":555000,"conv":0.9,"avgCheck":277500},{"name":"Ералин Джаримбетов","leads":49,"deals":2,"budget":427350,"conv":4.1,"avgCheck":213675},{"name":"Алиса Яковлева","leads":147,"deals":0,"budget":0,"conv":0,"avgCheck":0},{"name":"Расиль","leads":56,"deals":0,"budget":0,"conv":0,"avgCheck":0}],"Кофе":[{"name":"пин 1 Аскат","leads":451,"deals":24,"budget":1500350,"conv":5.3,"avgCheck":62515},{"name":"пин 2 Александр","leads":380,"deals":19,"budget":1379270,"conv":5.0,"avgCheck":72593},{"name":"пин 5 Ұлықбек","leads":282,"deals":19,"budget":1325300,"conv":6.7,"avgCheck":69753},{"name":"пин 6 Абдулазиз","leads":197,"deals":11,"budget":1100120,"conv":5.6,"avgCheck":100011},{"name":"пин 3 Абдурауф","leads":336,"deals":16,"budget":1087200,"conv":4.8,"avgCheck":67950},{"name":"пин 7 Роман","leads":194,"deals":11,"budget":969550,"conv":5.7,"avgCheck":88141},{"name":"Пин 8 Расул","leads":91,"deals":1,"budget":140000,"conv":1.1,"avgCheck":140000},{"name":"пин 4 Назира","leads":101,"deals":3,"budget":127400,"conv":3.0,"avgCheck":42467}]};
+const MANAGERS = _loaded ? _loaded.MANAGERS : MANAGERS_STATIC;
+
+const AD_SPEND_STATIC = {"Коллаген":{"01.02.2026":318000,"02.02.2026":327010,"03.02.2026":296270,"04.02.2026":172640,"05.02.2026":190840,"06.02.2026":267280,"07.02.2026":309920,"08.02.2026":267280,"09.02.2026":45240,"10.02.2026":353600,"11.02.2026":442000,"12.02.2026":624000,"13.02.2026":660920,"14.02.2026":589160,"15.02.2026":440440,"16.02.2026":534560,"17.02.2026":310960,"18.02.2026":424320,"19.02.2026":323440,"20.02.2026":327600,"21.02.2026":278200,"22.02.2026":278200,"23.02.2026":313560,"24.02.2026":364000,"25.02.2026":264160,"26.02.2026":229320},"Ummi":{"01.02.2026":163240,"02.02.2026":158470,"03.02.2026":124550,"04.02.2026":122720,"05.02.2026":157840,"06.02.2026":112320,"07.02.2026":130520,"08.02.2026":132080,"09.02.2026":46800,"10.02.2026":162760,"11.02.2026":166920,"12.02.2026":175240,"13.02.2026":305760,"14.02.2026":326040,"15.02.2026":251160,"16.02.2026":162760,"17.02.2026":120120,"18.02.2026":144040,"19.02.2026":121680,"20.02.2026":119600,"21.02.2026":109720,"22.02.2026":114920,"23.02.2026":145600,"24.02.2026":82160,"25.02.2026":100880,"26.02.2026":124800},"Кофе":{"01.02.2026":93280,"02.02.2026":96460,"03.02.2026":74200,"04.02.2026":62960,"05.02.2026":47230,"06.02.2026":47840,"07.02.2026":50960,"08.02.2026":61360,"09.02.2026":9360,"10.02.2026":52000,"11.02.2026":67600,"12.02.2026":197600,"13.02.2026":174200,"14.02.2026":187200,"15.02.2026":204360,"16.02.2026":88920,"17.02.2026":71240,"18.02.2026":91520,"19.02.2026":63920,"20.02.2026":106600,"21.02.2026":66560,"22.02.2026":92560,"23.02.2026":121160,"24.02.2026":130000,"25.02.2026":94640,"26.02.2026":107640}};
+const AD_SPEND = _loaded ? _loaded.AD_SPEND : AD_SPEND_STATIC;
+
+const PLANS = {'col':{'02.2026':60000000,'01.2026':60000000,'12.2025':60000000,'11.2025':60000000,'10.2025':60000000},'ummi':{'02.2026':30000000,'01.2026':30000000,'12.2025':30000000,'11.2025':30000000},'coffee':{'02.2026':15000000,'01.2026':15000000,'12.2025':15000000}};
+
+const PROD_CFG = {
+  col:    {name:'Коллаген', color:'#1a56db', rawKey:'Коллаген', mgrKey:'Коллаген'},
+  ummi:   {name:'Ummi',     color:'#0a7c5c', rawKey:'Ummi',     mgrKey:'Ummi'},
+  coffee: {name:'Кофе',     color:'#b45309', rawKey:'Кофе',     mgrKey:'Кофе'},
+};
+const PRESETS = {
+  today:  {from:'27.02.2026', to:'27.02.2026', label:'Сегодня, 27 февраля 2026'},
+  week:   {from:'21.02.2026', to:'27.02.2026', label:'7 дней'},
+  feb26:  {from:'01.02.2026', to:'28.02.2026', label:'Февраль 2026'},
+  jan26:  {from:'01.01.2026', to:'31.01.2026', label:'Январь 2026'},
+  dec25:  {from:'01.12.2025', to:'31.12.2025', label:'Декабрь 2025'},
+  nov25:  {from:'01.11.2025', to:'30.11.2025', label:'Ноябрь 2025'},
+  oct25:  {from:'01.10.2025', to:'31.10.2025', label:'Октябрь 2025'},
+};
+
+// ═══════════════════ STATE ════════════════════════════════════════
+let activeProd='all', activeMetric='budget', activeView='main';
+let activePeriod={...PRESETS.feb26, preset:'feb26'};
+let activeMgrProd='Коллаген', activeMgrPeriod={...PRESETS.feb26, preset:'feb26'};
+let activeAdPeriod={...PRESETS.feb26, preset:'feb26'};
+let chartLine=null, chartDonut=null, mgrCharts={}, adCharts={};
+
+// ═══════════════════ UTILS ════════════════════════════════════════
+const parseDate = s => { const [d,m,y]=s.split('.'); return new Date(+y,+m-1,+d); };
+const fmtDate   = d => `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+const isoToDisp = s => { const [y,m,d]=s.split('-'); return `${d}.${m}.${y}`; };
+const daysInMonth=(m,y)=>new Date(y,m,0).getDate();
+const getMonthKey=d=>`${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+const fmt=n=>Math.round(n).toLocaleString('ru-RU');
+const fmtM=n=>n>=1e6?(n/1e6).toFixed(2)+' М ₸':fmt(n)+' ₸';
+const fmtK=n=>n>=1e6?(n/1e6).toFixed(1)+'М':n>=1e3?(n/1e3).toFixed(0)+'К':String(n);
+function getDatesInRange(from,to){
+  const res=[]; let cur=parseDate(from); const end=parseDate(to);
+  while(cur<=end){res.push(fmtDate(cur));cur=new Date(cur.getTime()+86400000);}
+  return res;
+}
+function getPlan(p,mk){return(PLANS[p]&&PLANS[p][mk])||0;}
+function convCls(v){return v>=12?'txt-g':v>=8?'txt-y':'txt-r';}
+function pctBg(v){return v>=80?'bg-g':v>=50?'bg-y':'bg-r';}
+
+// ═══════════════════ AGGREGATE ════════════════════════════════════
+function aggregate(pk,from,to){
+  const raw=RAW[PROD_CFG[pk].rawKey]||{};
+  const dates=getDatesInRange(from,to);
+  let leads=0,deals=0,budget=0;
+  const dl={labels:[],leads:[],deals:[],budget:[]};
+  for(const d of dates){
+    const v=raw[d]||[0,0,0];
+    leads+=v[0];deals+=v[1];budget+=v[2];
+    dl.labels.push(d.slice(0,5));dl.leads.push(v[0]);dl.deals.push(v[1]);dl.budget.push(v[2]);
+  }
+  const fromD=parseDate(from);
+  const mk=getMonthKey(fromD);
+  const mt=daysInMonth(fromD.getMonth()+1,fromD.getFullYear());
+  const full=dates.length>=mt-1;
+  const plan=full?getPlan(pk,mk):getPlan(pk,mk)*(dates.length/mt);
+  // ad spend for period
+  const adData=AD_SPEND[PROD_CFG[pk].rawKey]||{};
+  const fD=parseDate(from),tD=parseDate(to);
+  const adTotal=Object.entries(adData).filter(([d])=>{try{const dd=parseDate(d);return dd>=fD&&dd<=tD;}catch(e){return false;}}).reduce((a,[,v])=>a+v,0);
+  return{leads,deals,budget,daily:dl,plan:Math.round(plan),adTotal,
+    conv:leads?+(deals/leads*100).toFixed(1):0,avgCheck:deals?Math.round(budget/deals):0};
+}
+function aggregateAll(from,to){
+  const parts={};['col','ummi','coffee'].forEach(k=>{parts[k]=aggregate(k,from,to);});
+  const dates=getDatesInRange(from,to);
+  const leads=Object.values(parts).reduce((a,p)=>a+p.leads,0);
+  const deals=Object.values(parts).reduce((a,p)=>a+p.deals,0);
+  const budget=Object.values(parts).reduce((a,p)=>a+p.budget,0);
+  const plan=Object.values(parts).reduce((a,p)=>a+p.plan,0);
+  const adTotal=Object.values(parts).reduce((a,p)=>a+p.adTotal,0);
+  const dl={labels:dates.map(d=>d.slice(0,5)),
+    leads:dates.map((_,i)=>Object.values(parts).reduce((a,p)=>a+p.daily.leads[i],0)),
+    deals:dates.map((_,i)=>Object.values(parts).reduce((a,p)=>a+p.daily.deals[i],0)),
+    budget:dates.map((_,i)=>Object.values(parts).reduce((a,p)=>a+p.daily.budget[i],0))};
+  return{leads,deals,budget,plan,adTotal,daily:dl,parts,
+    conv:leads?+(deals/leads*100).toFixed(1):0,avgCheck:deals?Math.round(budget/deals):0};
+}
+
+// ═══════════════════ VIEW SWITCH ══════════════════════════════════
+function switchView(v,el){
+  activeView=v;
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('view-main').style.display=v==='main'?'block':'none';
+  document.getElementById('view-managers').style.display=v==='managers'?'block':'none';
+  document.getElementById('view-adspend').style.display=v==='adspend'?'block':'none';
+  document.getElementById('global-filters').style.display=v==='main'?'flex':'none';
+  document.getElementById('mgr-filters').style.display=v==='managers'?'flex':'none';
+  document.getElementById('ad-filters').style.display=v==='adspend'?'flex':'none';
+  const titles={main:'Обзор продаж',managers:'Менеджеры',adspend:'Расходы на рекламу'};
+  document.getElementById('tb-title').textContent=titles[v];
+  if(v==='managers'){renderManagers();}
+  if(v==='adspend'){renderAdSpend();}
+}
+
+// ═══════════════════ PERIOD PRESETS ═══════════════════════════════
+function setPreset(p,el){
+  document.getElementById('custom-wrap').style.display='none';
+  if(p==='custom'){document.getElementById('custom-wrap').style.display='flex';markActive('[onclick^="setPreset"]',el);return;}
+  activePeriod={...PRESETS[p],preset:p};
+  markActive('[onclick^="setPreset"]',el);
+  render();
+}
+function applyCustom(){
+  const from=isoToDisp(document.getElementById('d-from').value);
+  const to=isoToDisp(document.getElementById('d-to').value);
+  activePeriod={from,to,label:`${from} — ${to}`,preset:'custom'};
+  render();
+}
+function setMgrPreset(p,el){
+  document.getElementById('mgr-custom-wrap').style.display='none';
+  if(p==='mgr_custom'){document.getElementById('mgr-custom-wrap').style.display='flex';markActive('[onclick^="setMgrPreset"]',el);return;}
+  activeMgrPeriod={...PRESETS[p],preset:p};
+  markActive('[onclick^="setMgrPreset"]',el);
+  renderManagers();
+}
+function applyMgrCustom(){
+  const from=isoToDisp(document.getElementById('mgr-d-from').value);
+  const to=isoToDisp(document.getElementById('mgr-d-to').value);
+  activeMgrPeriod={from,to,label:`${from} — ${to}`,preset:'mgr_custom'};
+  renderManagers();
+}
+function setAdPreset(p,el){
+  document.getElementById('ad-custom-wrap').style.display='none';
+  if(p==='ad_custom'){document.getElementById('ad-custom-wrap').style.display='flex';markActive('[onclick^="setAdPreset"]',el);return;}
+  activeAdPeriod={...PRESETS[p],preset:p};
+  markActive('[onclick^="setAdPreset"]',el);
+  renderAdSpend();
+}
+function applyAdCustom(){
+  const from=isoToDisp(document.getElementById('ad-d-from').value);
+  const to=isoToDisp(document.getElementById('ad-d-to').value);
+  activeAdPeriod={from,to,label:`${from} — ${to}`,preset:'ad_custom'};
+  renderAdSpend();
+}
+function markActive(sel,el){
+  document.querySelectorAll(sel).forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+}
+function setProd(p,el){
+  activeProd=p;
+  markActive('[onclick^="setProd"]',el);
+  render();
+}
+function setMetric(m,el){
+  activeMetric=m;
+  markActive('[onclick^="setMetric"]',el);
+  renderLine(lastStats);
+}
+function setMgrProd(p,el){
+  activeMgrProd=p;
+  markActive('[onclick^="setMgrProd"]',el);
+  renderManagers();
+}
+
+// ═══════════════════ RENDER KPI ═══════════════════════════════════
+function renderKPI(d){
+  const pct=d.plan?Math.round(d.budget/d.plan*100):0;
+  const drr=d.budget?+(d.adTotal/d.budget*100).toFixed(1):0;
+  const prodName=activeProd==='all'?'Все продукты':PROD_CFG[activeProd].name;
+  document.getElementById('main-title').textContent='Ключевые показатели';
+  document.getElementById('main-sub').textContent=`${activePeriod.label} · ${prodName}`;
+  const clr=activeProd==='all'?'#6366f1':PROD_CFG[activeProd].color;
+  const kpis=[
+    {l:'Выручка',v:fmtM(d.budget),s:`план ${fmtM(d.plan)}`,badge:`${pct}%`,bc:pctBg(pct),c:clr},
+    {l:'Лиды',v:fmt(d.leads),s:'дата создания',c:'#6366f1'},
+    {l:'Сделки',v:fmt(d.deals),s:'дата заказа',c:'#6366f1'},
+    {l:'Конверсия',v:`${d.conv}%`,s:'план 12%',badge:d.conv>=12?'В норме':'Ниже плана',bc:d.conv>=12?'bg-g':'bg-r',c:d.conv>=12?'#16a34a':'#c0392b'},
+    {l:'Средний чек',v:`${fmt(d.avgCheck)} ₸`,s:'план 80 000 ₸',badge:d.avgCheck>=80000?'В норме':'Ниже',bc:d.avgCheck>=80000?'bg-g':'bg-y',c:d.avgCheck>=80000?'#16a34a':'#ca8a04'},
+    {l:'Выполнение',v:`${pct}%`,s:'от плана',badge:pct>=100?'Выполнен':pct>=80?'Близко':'В процессе',bc:pctBg(pct),c:pct>=80?'#16a34a':'#ca8a04'},
+    {l:'Расходы рекл.',v:fmtM(d.adTotal),s:`ДРР ${drr}%`,badge:`${drr}%`,bc:drr<=15?'bg-g':drr<=25?'bg-y':'bg-r',c:drr<=15?'#16a34a':drr<=25?'#ca8a04':'#c0392b'},
+  ];
+  document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`
+    <div class="kpi-card" style="--kc:${k.c}">
+      <div class="kc-lbl">${k.l}</div>
+      <div class="kc-val" style="color:${k.c}">${k.v}</div>
+      <div class="kc-sub">${k.s||''}</div>
+      ${k.badge?`<div class="kc-badge ${k.bc}">${k.badge}</div>`:''}
+    </div>`).join('');
+}
+
+// ═══════════════════ RENDER PLAN TABLE ════════════════════════════
+function renderPlanTable(stats){
+  const keys=activeProd==='all'?['col','ummi','coffee']:[activeProd];
+  let rows=keys.map(k=>{
+    const d=stats.parts?stats.parts[k]:stats;
+    const cfg=PROD_CFG[k];
+    const pct=d.plan?Math.round(d.budget/d.plan*100):0;
+    const lag=d.budget-d.plan;
+    return`<tr>
+      <td><div class="prod-name"><div class="prod-dot" style="background:${cfg.color}"></div>${cfg.name}</div></td>
+      <td>${fmt(d.plan)}</td>
+      <td style="color:${cfg.color};font-weight:700">${fmt(d.budget)}</td>
+      <td><div class="bar-wrap">
+        <span class="${pct>=80?'txt-g':pct>=50?'txt-y':'txt-r'}" style="font-weight:700;font-size:13px;min-width:36px;text-align:right">${pct}%</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.min(pct,100)}%;background:${cfg.color}"></div></div>
+      </div></td>
+      <td style="color:${lag>=0?'#16a34a':'#c0392b'};font-weight:700">${lag>=0?'+':''}${fmt(lag)}</td>
+      <td>${fmt(d.leads)}</td><td>${fmt(d.deals)}</td>
+      <td class="${convCls(d.conv)}" style="font-weight:700">${d.conv}%</td>
+    </tr>`;
+  }).join('');
+  if(activeProd==='all'){
+    const a=stats;const pct=a.plan?Math.round(a.budget/a.plan*100):0;const lag=a.budget-a.plan;
+    rows+=`<tr class="tr-sum">
+      <td><div class="prod-name"><div class="prod-dot" style="background:#6366f1"></div><strong>ИТОГО</strong></div></td>
+      <td><strong>${fmt(a.plan)}</strong></td>
+      <td style="color:#6366f1;font-weight:700"><strong>${fmt(a.budget)}</strong></td>
+      <td><div class="bar-wrap"><span style="font-weight:700;font-size:13px;color:${pct>=80?'#16a34a':'#ca8a04'};min-width:36px;text-align:right">${pct}%</span><div class="bar-track"><div class="bar-fill" style="width:${Math.min(pct,100)}%;background:#6366f1"></div></div></div></td>
+      <td style="color:${lag>=0?'#16a34a':'#c0392b'};font-weight:700"><strong>${lag>=0?'+':''}${fmt(lag)}</strong></td>
+      <td><strong>${fmt(a.leads)}</strong></td><td><strong>${fmt(a.deals)}</strong></td>
+      <td class="${convCls(a.conv)}" style="font-weight:700"><strong>${a.conv}%</strong></td>
+    </tr>`;
+  }
+  document.getElementById('plan-table').innerHTML=`
+    <table class="dt"><thead><tr>
+      <th>Продукт</th><th>План ₸</th><th>Факт ₸</th><th>Выполнение</th>
+      <th>Отклонение</th><th>Лиды</th><th>Сделки</th><th>Конверсия</th>
+    </tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+// ═══════════════════ CHARTS ═══════════════════════════════════════
+let lastStats=null;
+const GRID='rgba(232,236,244,.9)', TICK='#8896ae', FONT="'DM Sans'";
+
+function renderLine(stats){
+  if(!stats)return;
+  const ctx=document.getElementById('lineChart').getContext('2d');
+  if(chartLine)chartLine.destroy();
+  const ml={budget:'Выручка по дням',leads:'Лиды по дням',deals:'Сделки по дням'};
+  document.getElementById('chart-lbl').textContent=ml[activeMetric];
+  let datasets=[];
+  if(activeProd==='all'){
+    ['col','ummi','coffee'].forEach(k=>{
+      const p=stats.parts[k];
+      datasets.push({label:PROD_CFG[k].name,data:p.daily[activeMetric],borderColor:PROD_CFG[k].color,backgroundColor:PROD_CFG[k].color+'18',borderWidth:2,fill:false,tension:.4,pointRadius:2.5,pointHoverRadius:5});
+    });
+  } else {
+    const p=stats.parts?stats.parts[activeProd]:stats;
+    datasets=[{label:PROD_CFG[activeProd].name,data:p.daily[activeMetric],borderColor:PROD_CFG[activeProd].color,backgroundColor:PROD_CFG[activeProd].color+'20',borderWidth:2.5,fill:true,tension:.4,pointRadius:2.5,pointHoverRadius:5}];
+  }
+  chartLine=new Chart(ctx,{type:'line',data:{labels:stats.daily.labels,datasets},options:{responsive:true,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:TICK,font:{family:FONT,size:11},boxWidth:10,padding:16}},tooltip:{callbacks:{label:c=>activeMetric==='budget'?` ${c.dataset.label}: ${fmt(c.raw)} ₸`:` ${c.dataset.label}: ${c.raw}`}}},scales:{x:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10},maxTicksLimit:16}},y:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10},callback:v=>activeMetric==='budget'?fmtK(v):v}}}}});
+}
+
+function renderDonut(stats){
+  const ctx=document.getElementById('donutChart').getContext('2d');
+  if(chartDonut)chartDonut.destroy();
+  let labels,data,colors;
+  if(activeProd==='all'){
+    labels=['Коллаген','Ummi','Кофе'];
+    data=['col','ummi','coffee'].map(k=>(stats.parts[k]||{budget:0}).budget);
+    colors=['#1a56db','#0a7c5c','#b45309'];
+  } else {
+    labels=[PROD_CFG[activeProd].name];data=[stats.budget];colors=[PROD_CFG[activeProd].color];
+  }
+  chartDonut=new Chart(ctx,{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:colors.map(c=>c+'cc'),borderColor:colors,borderWidth:2,borderRadius:4}]},options:{responsive:true,cutout:'72%',plugins:{legend:{position:'bottom',labels:{color:TICK,font:{family:FONT,size:11},padding:14,boxWidth:10}},tooltip:{callbacks:{label:c=>{const t=c.dataset.data.reduce((a,b)=>a+b,0);return ` ${(c.raw/1e6).toFixed(2)} М ₸ (${t?(c.raw/t*100).toFixed(1):0}%)`;} }}}}});
+}
+
+function renderProdStats(stats){
+  const keys=activeProd==='all'?['col','ummi','coffee']:[activeProd];
+  document.getElementById('prod-stats').style.gridTemplateColumns=`repeat(${keys.length},1fr)`;
+  document.getElementById('prod-stats').innerHTML=keys.map(k=>{
+    const d=stats.parts?stats.parts[k]:stats;
+    const cfg=PROD_CFG[k];
+    const pct=d.plan?Math.round(d.budget/d.plan*100):0;
+    const drr=d.budget?+(d.adTotal/d.budget*100).toFixed(1):0;
+    return`<div class="ps-card">
+      <div class="ps-head"><div class="dot16" style="background:${cfg.color}"></div><span class="ps-head-title">${cfg.name}</span></div>
+      <div class="ps-body">
+        <div class="ps-row"><span class="ps-l">Лиды</span><span class="ps-r">${fmt(d.leads)}</span></div>
+        <div class="ps-row"><span class="ps-l">Сделки</span><span class="ps-r">${fmt(d.deals)}</span></div>
+        <div class="ps-row"><span class="ps-l">Конверсия</span><span class="ps-r ${convCls(d.conv)}">${d.conv}%</span></div>
+        <div class="ps-row"><span class="ps-l">Ср. чек</span><span class="ps-r ${d.avgCheck>=80000?'txt-g':'txt-y'}">${fmt(d.avgCheck)} ₸</span></div>
+        <div class="ps-row"><span class="ps-l">Выручка</span><span class="ps-r" style="color:${cfg.color}">${fmtM(d.budget)}</span></div>
+        <div class="ps-row"><span class="ps-l">% плана</span><span class="ps-r ${pct>=80?'txt-g':pct>=50?'txt-y':'txt-r'}">${pct}%</span></div>
+        <div class="ps-row"><span class="ps-l">Реклама</span><span class="ps-r">${fmtM(d.adTotal)}</span></div>
+        <div class="ps-row"><span class="ps-l">ДРР</span><span class="ps-r ${drr<=15?'txt-g':drr<=25?'txt-y':'txt-r'}">${drr}%</span></div>
+      </div></div>`;
+  }).join('');
+}
+
+// ═══════════════════ MAIN RENDER ══════════════════════════════════
+function render(){
+  const{from,to}=activePeriod;
+  let stats;
+  if(activeProd==='all'){stats=aggregateAll(from,to);}
+  else{const d=aggregate(activeProd,from,to);stats={...d,parts:{[activeProd]:d},daily:d.daily};}
+  lastStats=stats;
+  renderKPI(stats);
+  renderPlanTable(stats);
+  renderLine(stats);
+  renderDonut(stats);
+  renderProdStats(stats);
+}
+
+// ═══════════════════ MANAGERS ═════════════════════════════════════
+function renderManagers(){
+  const{from,to}=activeMgrPeriod;
+  const mgrs=MANAGERS[activeMgrProd]||[];
+  const cfg=Object.values(PROD_CFG).find(c=>c.mgrKey===activeMgrProd)||{color:'#6366f1'};
+  document.getElementById('mgr-sub').textContent=`${activeMgrPeriod.label} · ${activeMgrProd}`;
+  const withDeals=mgrs.filter(m=>m.deals>0).sort((a,b)=>b.budget-a.budget);
+  const withoutDeals=mgrs.filter(m=>m.deals===0);
+  const maxB=Math.max(...withDeals.map(m=>m.budget),1);
+  const ranks=['🥇','🥈','🥉'];
+  let tbody='';
+  withDeals.forEach((m,i)=>{
+    tbody+=`<tr>
+      <td style="text-align:center;font-size:${i<3?'16':'13'}px">${i<3?ranks[i]:i+1}</td>
+      <td style="font-weight:600">${m.name}</td>
+      <td>${fmt(m.leads)}</td>
+      <td style="font-weight:700">${m.deals}</td>
+      <td style="color:${cfg.color};font-weight:700">${fmtM(m.budget)}</td>
+      <td class="${convCls(m.conv)}" style="font-weight:700">${m.conv}%</td>
+      <td style="font-weight:600">${fmt(m.avgCheck)} ₸</td>
+      <td><div class="mgr-bar-cell">
+        <div class="mb16"><div class="mb16-f" style="width:${Math.round(m.budget/maxB*100)}%;background:${cfg.color};height:100%;border-radius:2px"></div></div>
+        <span style="font-size:11px;color:var(--muted);min-width:28px">${Math.round(m.budget/maxB*100)}%</span>
+      </div></td>
+    </tr>`;
+  });
+  if(withoutDeals.length){
+    tbody+=`<tr><td colspan="8" style="text-align:center;color:var(--muted);font-size:11px;padding:10px;border-top:2px solid var(--line2);letter-spacing:1px">— Без сделок в периоде —</td></tr>`;
+    withoutDeals.forEach(m=>{tbody+=`<tr style="opacity:.4"><td style="text-align:center">—</td><td>${m.name}</td><td>${fmt(m.leads)}</td><td>0</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>`;});
+  }
+  document.getElementById('mgr-tbody').innerHTML=tbody;
+  const top8=withDeals.slice(0,8);
+  const names=top8.map(m=>m.name.replace(/^(Пин|пин)\s+\d+\s+/i,'').trim());
+  Object.values(mgrCharts).forEach(c=>c&&c.destroy());mgrCharts={};
+  const barOpts=(axis,cb)=>({responsive:true,indexAxis:axis,plugins:{legend:{display:false},tooltip:{callbacks:{label:cb}}},scales:{x:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10}}},y:{grid:{display:false},ticks:{color:'#1e2840',font:{family:FONT,size:11,weight:'500'}}}}});
+  mgrCharts.b=new Chart(document.getElementById('mgrBudget').getContext('2d'),{type:'bar',data:{labels:names,datasets:[{data:top8.map(m=>m.budget),backgroundColor:cfg.color+'cc',borderColor:cfg.color,borderWidth:1,borderRadius:6}]},options:{...barOpts('y',c=>' '+fmtM(c.raw)),scales:{x:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10},callback:v=>fmtK(v)}},y:{grid:{display:false},ticks:{color:'#1e2840',font:{family:FONT,size:11,weight:'500'}}}}}});
+  mgrCharts.c=new Chart(document.getElementById('mgrConv').getContext('2d'),{type:'bar',data:{labels:names,datasets:[{data:top8.map(m=>m.conv),backgroundColor:top8.map(m=>m.conv>=12?'#16a34acc':m.conv>=8?'#ca8a04cc':'#c0392bcc'),borderWidth:0,borderRadius:6}]},options:{...barOpts('y',c=>` ${c.raw}%`)}});
+  mgrCharts.k=new Chart(document.getElementById('mgrCheck').getContext('2d'),{type:'bar',data:{labels:names,datasets:[{data:top8.map(m=>m.avgCheck),backgroundColor:'#6366f1cc',borderColor:'#6366f1',borderWidth:1,borderRadius:6}]},options:{...barOpts('y',c=>' '+fmt(c.raw)+' ₸')}});
+}
+
+// ═══════════════════ AD SPEND ═════════════════════════════════════
+function renderAdSpend(){
+  const{from,to,label}=activeAdPeriod;
+  document.getElementById('ad-sub').textContent=label;
+  document.getElementById('ad-chart-lbl').textContent=`Динамика расходов — ${label}`;
+  const fromD=parseDate(from),toD=parseDate(to);
+  const prods=[
+    {k:'Коллаген',c:'#1a56db',sk:'col'},
+    {k:'Ummi',    c:'#0a7c5c',sk:'ummi'},
+    {k:'Кофе',    c:'#b45309',sk:'coffee'},
+  ];
+  const cards=prods.map(p=>{
+    const adData=AD_SPEND[p.k]||{};
+    const fact=Object.entries(adData).filter(([d])=>{try{const dd=parseDate(d);return dd>=fromD&&dd<=toD;}catch(e){return false;}}).reduce((a,[,v])=>a+v,0);
+    let sales=0;
+    Object.entries(RAW[p.k]||{}).forEach(([d,v])=>{try{const dd=parseDate(d);if(dd>=fromD&&dd<=toD)sales+=v[2];}catch(e){}});
+    const planM=Math.round(sales*0.15);
+    const days=getDatesInRange(from,to).length;
+    const planDay=Math.round(planM/days);
+    const factDay=days?Math.round(fact/days):0;
+    const remain=Math.max(0,planM-fact);
+    const pct=planM?Math.round(fact/planM*100):0;
+    const drr=sales?+(fact/sales*100).toFixed(1):0;
+    return`<div class="ad-card">
+      <div class="ad-head">
+        <div class="ad-head-title" style="color:${p.c}">${p.k}</div>
+        <div class="kc-badge ${drr<=15?'bg-g':drr<=25?'bg-y':'bg-r'}">ДРР ${drr}%</div>
+      </div>
+      <div class="ad-kv"><span class="ad-kl">План месячный (15%)</span><span class="ad-kv-val">${fmtM(planM)}</span></div>
+      <div class="ad-kv"><span class="ad-kl">Факт месячный</span><span class="ad-kv-val" style="color:${p.c}">${fmtM(fact)}</span></div>
+      <div class="ad-kv"><span class="ad-kl">План в день</span><span class="ad-kv-val">${fmt(planDay)} ₸</span></div>
+      <div class="ad-kv"><span class="ad-kl">Факт в день</span><span class="ad-kv-val">${fmt(factDay)} ₸</span></div>
+      <div class="ad-kv"><span class="ad-kl">Остаток до плана</span><span class="ad-kv-val ${remain>0?'txt-y':'txt-g'}">${remain>0?fmt(remain)+' ₸':'Выполнен ✓'}</span></div>
+      <div class="ad-prog">
+        <div class="ad-prog-meta"><span>Выполнение</span><span style="font-weight:700">${pct}%</span></div>
+        <div class="ad-prog-bar"><div class="ad-prog-fill" style="width:${Math.min(pct,100)}%;background:${p.c}"></div></div>
+      </div>
+      <div class="mini-chart"><div class="mini-label">По дням</div><canvas id="adMini_${p.k}" height="55"></canvas></div>
+    </div>`;
+  }).join('');
+  document.getElementById('ad-cards').innerHTML=cards;
+  Object.values(adCharts).forEach(c=>c&&c.destroy());adCharts={};
+  prods.forEach(p=>{
+    const adData=AD_SPEND[p.k]||{};
+    const dates=Object.keys(adData).filter(d=>{try{const dd=parseDate(d);return dd>=fromD&&dd<=toD;}catch(e){return false;}}).sort();
+    const vals=dates.map(d=>adData[d]||0);
+    const ctx=document.getElementById(`adMini_${p.k}`);if(!ctx)return;
+    adCharts[p.k]=new Chart(ctx.getContext('2d'),{type:'bar',data:{labels:dates.map(d=>d.slice(0,5)),datasets:[{data:vals,backgroundColor:p.c+'99',borderColor:p.c,borderWidth:1,borderRadius:3}]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmt(c.raw)+' ₸'}}},scales:{x:{display:false},y:{display:false}}}});
+  });
+  // Big chart
+  const allDates=[...new Set(Object.values(AD_SPEND).flatMap(d=>Object.keys(d)))].filter(d=>{try{const dd=parseDate(d);return dd>=fromD&&dd<=toD;}catch(e){return false;}}).sort();
+  const adCtx=document.getElementById('adChart');if(!adCtx)return;
+  if(adCharts._big)adCharts._big.destroy();
+  adCharts._big=new Chart(adCtx.getContext('2d'),{type:'line',data:{labels:allDates.map(d=>d.slice(0,5)),datasets:prods.map(p=>({label:p.k,data:allDates.map(d=>AD_SPEND[p.k]?.[d]||0),borderColor:p.c,backgroundColor:p.c+'15',borderWidth:2,fill:false,tension:.4,pointRadius:2.5}))},options:{responsive:true,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:TICK,font:{family:FONT,size:11},boxWidth:10}}},scales:{x:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10}}},y:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10},callback:v=>fmtK(v)+' ₸'}}}}});
+}
+
+// ═══════════════════ INIT ═════════════════════════════════════════
+// Show data source info
+(function(){
+  try {
+    const raw = sessionStorage.getItem('wg_data');
+    const badge = document.getElementById('data-badge');
+    if (raw && badge) {
+      const d = JSON.parse(raw);
+      if (d.updatedAt) {
+        const dt = new Date(d.updatedAt);
+        badge.textContent = 'Обновлено: ' + dt.toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+      }
+    } else if (badge) {
+      badge.textContent = 'Встроенные данные';
+    }
+  } catch(e) {}
+})();
+render();
+</script>
+</body>
+</html>
