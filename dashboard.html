@@ -288,7 +288,7 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
     <div id="data-badge" style="margin-top:8px;font-size:10px;color:rgba(255,255,255,.3);padding:0 10px"></div>
   </div>
   <div class="sb-date">
-    <strong id="sb-today">27 февраля 2026</strong>
+    <strong id="sb-today"></strong>
     UTC+5 · Пятница
   </div>
   <nav class="sb-nav">
@@ -304,7 +304,7 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
     </button>
   </nav>
   <div class="sb-progress">
-    <div class="sp-label">Февраль 2026</div>
+    <div class="sp-label" id="sb-month-label">—</div>
     <div class="sp-bar"><div class="sp-fill" id="sb-fill" style="width:96%"></div></div>
     <div class="sp-nums"><span>1 фев</span><strong id="sb-day">27 / 28</strong></div>
   </div>
@@ -325,11 +325,9 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
       <div class="pill-sep"></div>
       <span class="tb-label">Период:</span>
       <button class="pill" onclick="setPreset('today',this)">Сегодня</button>
+      <button class="pill" onclick="setPreset('yesterday',this)">Вчера</button>
       <button class="pill" onclick="setPreset('week',this)">7 дней</button>
-      <button class="pill active" onclick="setPreset('feb26',this)">Февраль 2026</button>
-      <button class="pill" onclick="setPreset('jan26',this)">Январь 2026</button>
-      <button class="pill" onclick="setPreset('dec25',this)">Декабрь 2025</button>
-      <button class="pill" onclick="setPreset('nov25',this)">Ноябрь 2025</button>
+      <div id="main-month-pills" style="display:contents"></div>
       <button class="pill" onclick="setPreset('custom',this)">📅 Диапазон</button>
       <div class="custom-wrap" id="custom-wrap">
         <input type="date" class="date-in" id="d-from" value="2026-02-01">
@@ -347,10 +345,9 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
       <div class="pill-sep"></div>
       <span class="tb-label">Период:</span>
       <button class="pill" onclick="setMgrPreset('today',this)">Сегодня</button>
+      <button class="pill" onclick="setMgrPreset('yesterday',this)">Вчера</button>
       <button class="pill" onclick="setMgrPreset('week',this)">7 дней</button>
-      <button class="pill active" onclick="setMgrPreset('feb26',this)">Февраль 2026</button>
-      <button class="pill" onclick="setMgrPreset('jan26',this)">Январь 2026</button>
-      <button class="pill" onclick="setMgrPreset('dec25',this)">Декабрь 2025</button>
+      <div id="mgr-month-pills" style="display:contents"></div>
       <button class="pill" onclick="setMgrPreset('mgr_custom',this)">📅 Диапазон</button>
       <div class="custom-wrap" id="mgr-custom-wrap">
         <input type="date" class="date-in" id="mgr-d-from" value="2026-02-01">
@@ -363,10 +360,9 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
     <div id="ad-filters" style="display:none;align-items:center;gap:6px;flex-wrap:wrap">
       <span class="tb-label">Период:</span>
       <button class="pill" onclick="setAdPreset('today',this)">Сегодня</button>
+      <button class="pill" onclick="setAdPreset('yesterday',this)">Вчера</button>
       <button class="pill" onclick="setAdPreset('week',this)">7 дней</button>
-      <button class="pill active" onclick="setAdPreset('feb26',this)">Февраль 2026</button>
-      <button class="pill" onclick="setAdPreset('jan26',this)">Январь 2026</button>
-      <button class="pill" onclick="setAdPreset('dec25',this)">Декабрь 2025</button>
+      <div id="ad-month-pills" style="display:contents"></div>
       <button class="pill" onclick="setAdPreset('ad_custom',this)">📅 Диапазон</button>
       <div class="custom-wrap" id="ad-custom-wrap">
         <input type="date" class="date-in" id="ad-d-from" value="2026-02-01">
@@ -477,21 +473,54 @@ const PROD_CFG = {
   ummi:   {name:'Ummi',     color:'#0a7c5c', rawKey:'Ummi',     mgrKey:'Ummi'},
   coffee: {name:'Кофе',     color:'#b45309', rawKey:'Кофе',     mgrKey:'Кофе'},
 };
-const PRESETS = {
-  today:  {from:'27.02.2026', to:'27.02.2026', label:'Сегодня, 27 февраля 2026'},
-  week:   {from:'21.02.2026', to:'27.02.2026', label:'7 дней'},
-  feb26:  {from:'01.02.2026', to:'28.02.2026', label:'Февраль 2026'},
-  jan26:  {from:'01.01.2026', to:'31.01.2026', label:'Январь 2026'},
-  dec25:  {from:'01.12.2025', to:'31.12.2025', label:'Декабрь 2025'},
-  nov25:  {from:'01.11.2025', to:'30.11.2025', label:'Ноябрь 2025'},
-  oct25:  {from:'01.10.2025', to:'31.10.2025', label:'Октябрь 2025'},
-};
+// ═══════════════════ DYNAMIC DATES ═══════════════════════════════
+const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const MONTH_NAMES_GEN = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+function _now() { return new Date(); }
+function _fmt(d) { return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`; }
+function _lastDay(y,m) { return new Date(y, m, 0).getDate(); }
+function _makeMonthPreset(y, m) {
+  const last = _lastDay(y, m);
+  const from = `01.${String(m).padStart(2,'0')}.${y}`;
+  const to   = `${String(last).padStart(2,'0')}.${String(m).padStart(2,'0')}.${y}`;
+  const label = `${MONTH_NAMES[m-1]} ${y}`;
+  const key   = `m_${y}_${m}`;
+  return { from, to, label, key };
+}
+function buildPresets() {
+  const now = _now();
+  const todayStr = _fmt(now);
+  const yest = new Date(now); yest.setDate(yest.getDate()-1);
+  const yesterdayStr = _fmt(yest);
+  const week7 = new Date(now); week7.setDate(week7.getDate()-6);
+  const week7Str = _fmt(week7);
+
+  const presets = {};
+  presets.today = { from: todayStr, to: todayStr, label: `Сегодня, ${now.getDate()} ${MONTH_NAMES_GEN[now.getMonth()]} ${now.getFullYear()}` };
+  presets.yesterday = { from: yesterdayStr, to: yesterdayStr, label: `Вчера, ${yest.getDate()} ${MONTH_NAMES_GEN[yest.getMonth()]}` };
+  presets.week = { from: week7Str, to: todayStr, label: '7 дней' };
+
+  // Last 4 months
+  let y = now.getFullYear(), m = now.getMonth() + 1;
+  for (let i = 0; i < 5; i++) {
+    const p = _makeMonthPreset(y, m);
+    presets[p.key] = p;
+    m--; if (m === 0) { m = 12; y--; }
+  }
+  return presets;
+}
+const PRESETS = buildPresets();
+
+// Current month key for default
+const _cm = _now(); 
+const _defaultKey = `m_${_cm.getFullYear()}_${_cm.getMonth()+1}`;
+const _defaultPreset = PRESETS[_defaultKey] || Object.values(PRESETS).find(p => p.key && p.key.startsWith('m_'));
 
 // ═══════════════════ STATE ════════════════════════════════════════
 let activeProd='all', activeMetric='budget', activeView='main';
-let activePeriod={...PRESETS.feb26, preset:'feb26'};
-let activeMgrProd='Коллаген', activeMgrPeriod={...PRESETS.feb26, preset:'feb26'};
-let activeAdPeriod={...PRESETS.feb26, preset:'feb26'};
+let activePeriod={..._defaultPreset, preset:_defaultKey};
+let activeMgrProd='Коллаген', activeMgrPeriod={..._defaultPreset, preset:_defaultKey};
+let activeAdPeriod={..._defaultPreset, preset:_defaultKey};
 let chartLine=null, chartDonut=null, mgrCharts={}, adCharts={};
 
 // ═══════════════════ UTILS ════════════════════════════════════════
@@ -881,6 +910,37 @@ function renderAdSpend(){
     }
   } catch(e) {}
 })();
+
+// ═══════════════════ INIT DYNAMIC UI ═════════════════════════════
+function initDynamicUI() {
+  const now = _now();
+  // Sidebar date
+  document.getElementById('sb-today').textContent =
+    `${now.getDate()} ${MONTH_NAMES_GEN[now.getMonth()]} ${now.getFullYear()}`;
+
+  // Sidebar month label + progress bar
+  document.getElementById('sb-month-label').textContent = `${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}`;
+  const totalDays = _lastDay(now.getFullYear(), now.getMonth()+1);
+  const pct = Math.round(now.getDate() / totalDays * 100);
+  document.getElementById('sb-fill').style.width = pct + '%';
+  document.getElementById('sb-day').textContent = `${now.getDate()} / ${totalDays}`;
+
+  // Build month pills dynamically for all 3 filter groups
+  const monthKeys = Object.keys(PRESETS).filter(k => k.startsWith('m_'));
+  [['main','setPreset'],['mgr','setMgrPreset'],['ad','setAdPreset']].forEach(([prefix, fn]) => {
+    const container = document.getElementById(`${prefix}-month-pills`);
+    if (!container) return;
+    monthKeys.forEach(key => {
+      const p = PRESETS[key];
+      const btn = document.createElement('button');
+      btn.className = 'pill' + (key === _defaultKey ? ' active' : '');
+      btn.textContent = p.label;
+      btn.onclick = function() { window[fn](key, this); };
+      container.appendChild(btn);
+    });
+  });
+}
+initDynamicUI();
 render();
 </script>
 </body>
