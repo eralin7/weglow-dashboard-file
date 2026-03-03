@@ -1448,7 +1448,17 @@ async function loadFromSupabase() {
       // Save to sessionStorage for next load (faster)
       sessionStorage.setItem('wg_data', JSON.stringify(d));
 
-      // Rebuild pills (clears duplicates, keeps current activePeriod)
+      // После загрузки из Supabase — переключаемся на последний месяц с данными
+      PRESETS = buildPresets();
+      const _freshKey = _lastMonthWithData() || _currentKey;
+      const _freshPreset = PRESETS[_freshKey];
+      if (_freshPreset) {
+        activePeriod    = { ..._freshPreset, preset: _freshKey };
+        activeMgrPeriod = { ..._freshPreset, preset: _freshKey };
+        activeAdPeriod  = { ..._freshPreset, preset: _freshKey };
+      }
+
+      // Rebuild pills с правильным активным периодом
       rebuildMonthPills();
 
       // Re-render with fresh data
