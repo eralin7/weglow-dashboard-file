@@ -801,46 +801,48 @@ function setMgrRop(rop, el){
 // ═══════════════════ RENDER KPI ═══════════════════════════════════
 function renderKPI(d){
   const isCur = d.isCurrentMonth;
-  const pctMonth = d.plan ? Math.round(d.monthBudget/d.plan*100) : 0;
+  // % по периоду для фильтров (сегодня/вчера/7 дней)
   const pctPeriod = d.plan ? Math.round(d.budget/d.plan*100) : 0;
+  // % накоплено за месяц — для текущего месяца
+  const pctMonth  = d.plan ? Math.round(d.monthBudget/d.plan*100) : 0;
+  // Показываем % по периоду всегда (меняется с фильтром), для текущего месяца доп. строка
+  const displayPct = pctPeriod;
+
   const drr = d.budget ? +(d.adTotal/d.budget*100).toFixed(1) : 0;
   const prodName = activeProd==='all' ? 'Все продукты' : PROD_CFG[activeProd].name;
   document.getElementById('main-title').textContent = 'Ключевые показатели';
   document.getElementById('main-sub').textContent = `${activePeriod.label} · ${prodName}`;
   const clr = activeProd==='all' ? '#6366f1' : PROD_CFG[activeProd].color;
 
-  // Выручка card: show period fact, but остаток from full month
-  const revSub = isCur && d.plan
-    ? d.remain===0 ? '✓ план выполнен' : `накоплено ${fmtM(d.monthBudget)} из ${fmtM(d.plan)}`
-    : `план ${fmtM(d.plan)}`;
-  const revS2 = isCur && d.plan && d.remain>0
-    ? `ост. ${fmtM(d.remain)} · нужно ${fmtM(d.perDay)}/день (${d.daysLeft} дн.)`
-    : null;
+  // Выручка: план сумма + нужно/день
+  const revSub = d.plan ? `план ${fmtM(d.plan)}` : '—';
+  const revS2  = isCur && d.plan && d.remain>0
+    ? `нужно ${fmtM(d.perDay)}/день`
+    : isCur && d.remain===0 ? '✓ выполнен' : null;
 
-  // Выполнение card
-  const execPct = isCur ? pctMonth : pctPeriod;
+  // Выполнение: % по периоду + накоплено за месяц
   const execSub = isCur && d.plan
-    ? d.remain===0 ? '✓ план выполнен' : `факт месяца: ${fmtM(d.monthBudget)}`
+    ? `месяц: ${pctMonth}% (${fmtM(d.monthBudget)})`
     : 'от плана';
   const execS2 = isCur && d.plan && d.remain>0
-    ? `ост. ${fmtM(d.remain)} · нужно ${fmtM(d.perDay)}/день`
+    ? `ост. ${fmtM(d.remain)} · ${fmtM(d.perDay)}/день`
     : null;
 
   const kpis=[
-    {l:'Выручка',     v:fmtM(d.budget), s:revSub, s2:revS2, s2c:'#6366f1',
-     badge:`${isCur?pctMonth:pctPeriod}%`, bc:pctBg(isCur?pctMonth:pctPeriod), c:clr},
-    {l:'Лиды',        v:fmt(d.leads),   s:'дата создания', c:'#6366f1'},
-    {l:'Сделки',      v:fmt(d.deals),   s:'дата заказа',   c:'#6366f1'},
-    {l:'Конверсия',   v:`${d.conv}%`,   s:'план 12%',
+    {l:'Выручка',      v:fmtM(d.budget),        s:revSub,  s2:revS2,  s2c:'#6366f1',
+     badge:`${displayPct}%`, bc:pctBg(displayPct), c:clr},
+    {l:'Лиды',         v:fmt(d.leads),           s:'дата создания', c:'#6366f1'},
+    {l:'Сделки',       v:fmt(d.deals),           s:'дата заказа',   c:'#6366f1'},
+    {l:'Конверсия',    v:`${d.conv}%`,           s:'план 12%',
      badge:d.conv>=12?'В норме':'Ниже плана', bc:d.conv>=12?'bg-g':'bg-r',
      c:d.conv>=12?'#16a34a':'#c0392b'},
-    {l:'Средний чек', v:`${fmt(d.avgCheck)} ₸`, s:'план 80 000 ₸',
+    {l:'Средний чек',  v:`${fmt(d.avgCheck)} ₸`, s:'план 80 000 ₸',
      badge:d.avgCheck>=80000?'В норме':'Ниже', bc:d.avgCheck>=80000?'bg-g':'bg-y',
      c:d.avgCheck>=80000?'#16a34a':'#ca8a04'},
-    {l:'Выполнение',  v:`${execPct}%`,  s:execSub, s2:execS2, s2c:d.remain===0?'#16a34a':'#ca8a04',
-     badge:execPct>=100?'Выполнен':execPct>=80?'Близко':'В процессе',
-     bc:pctBg(execPct), c:execPct>=100?'#16a34a':execPct>=80?'#ca8a04':'#c0392b'},
-    {l:'Расходы рекл.',v:fmtM(d.adTotal), s:`ДРР ${drr}%`,
+    {l:'Выполнение',   v:`${displayPct}%`,       s:execSub, s2:execS2, s2c:'#ca8a04',
+     badge:pctMonth>=100?'Выполнен':pctMonth>=80?'Близко':'В процессе',
+     bc:pctBg(pctMonth), c:displayPct>=100?'#16a34a':displayPct>=80?'#ca8a04':'#c0392b'},
+    {l:'Расходы рекл.',v:fmtM(d.adTotal),        s:`ДРР ${drr}%`,
      badge:`${drr}%`, bc:drr<=15?'bg-g':drr<=25?'bg-y':'bg-r',
      c:drr<=15?'#16a34a':drr<=25?'#ca8a04':'#c0392b'},
   ];
@@ -853,6 +855,7 @@ function renderKPI(d){
       ${k.badge?`<div class="kc-badge ${k.bc}">${k.badge}</div>`:''}
     </div>`).join('');
 }
+
 // ═══════════════════ RENDER PLAN TABLE ════════════════════════════
 function renderPlanTable(stats){
   const keys = activeProd==='all' ? ['col','ummi','coffee'] : [activeProd];
