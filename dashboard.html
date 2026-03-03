@@ -639,15 +639,32 @@ function aggregate(pk,from,to){
   }
   const fromD=parseDate(from);
   const mk=getMonthKey(fromD);
-  const mt=daysInMonth(fromD.getMonth()+1,fromD.getFullYear());
-  const full=dates.length>=mt-1;
-  const plan=full?getPlan(pk,mk):getPlan(pk,mk)*(dates.length/mt);
+  // Always use FULL monthly plan — never prorate
+  const plan=getPlan(pk,mk);
+
+  // Full month accumulated fact (for остаток/нужно-в-день regardless of period filter)
+  const now=new Date();
+  const curMK=`${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
+  let monthBudget=budget; // default: use period budget
+  let daysLeftMonth=1;
+  if(mk===curMK){
+    // Sum ALL days in current month from raw data
+    const allDates=getDatesInRange(`01.${curMK}`,`${String(now.getDate()).padStart(2,'0')}.${curMK}`);
+    monthBudget=allDates.reduce((s,d)=>s+((raw[d]&&raw[d][2])||0),0);
+    const totalDaysM=_lastDay(now.getFullYear(),now.getMonth()+1);
+    daysLeftMonth=Math.max(1, totalDaysM - now.getDate() + 1);
+  }
+  const remain=plan?Math.max(0,plan-monthBudget):0;
+  const perDay=daysLeftMonth>0?Math.round(remain/daysLeftMonth):0;
+
   // ad spend for period
   const adData=AD_SPEND[PROD_CFG[pk].rawKey]||{};
   const fD=parseDate(from),tD=parseDate(to);
   const adTotal=Object.entries(adData).filter(([d])=>{try{const dd=parseDate(d);return dd>=fD&&dd<=tD;}catch(e){return false;}}).reduce((a,[,v])=>a+v,0);
-  return{leads,deals,budget,daily:dl,plan:Math.round(plan),adTotal,
-    conv:leads?+(deals/leads*100).toFixed(1):0,avgCheck:deals?Math.round(budget/deals):0};
+  return{leads,deals,budget,daily:dl,plan:Math.round(plan),monthKey:mk,
+    monthBudget:Math.round(monthBudget),remain:Math.round(remain),perDay,daysLeft:daysLeftMonth,
+    isCurrentMonth:mk===curMK,
+    adTotal,conv:leads?+(deals/leads*100).toFixed(1):0,avgCheck:deals?Math.round(budget/deals):0};
 }
 function aggregateAll(from,to){
   const parts={};['col','ummi','coffee'].forEach(k=>{parts[k]=aggregate(k,from,to);});
@@ -657,11 +674,17 @@ function aggregateAll(from,to){
   const budget=Object.values(parts).reduce((a,p)=>a+p.budget,0);
   const plan=Object.values(parts).reduce((a,p)=>a+p.plan,0);
   const adTotal=Object.values(parts).reduce((a,p)=>a+p.adTotal,0);
+  const monthBudget=Object.values(parts).reduce((a,p)=>a+p.monthBudget,0);
+  const remain=Object.values(parts).reduce((a,p)=>a+p.remain,0);
+  const perDay=Object.values(parts).reduce((a,p)=>a+p.perDay,0);
+  const daysLeft=Object.values(parts)[0]?Object.values(parts)[0].daysLeft:1;
+  const isCurrentMonth=Object.values(parts)[0]?Object.values(parts)[0].isCurrentMonth:false;
   const dl={labels:dates.map(d=>d.slice(0,5)),
     leads:dates.map((_,i)=>Object.values(parts).reduce((a,p)=>a+p.daily.leads[i],0)),
     deals:dates.map((_,i)=>Object.values(parts).reduce((a,p)=>a+p.daily.deals[i],0)),
     budget:dates.map((_,i)=>Object.values(parts).reduce((a,p)=>a+p.daily.budget[i],0))};
   return{leads,deals,budget,plan,adTotal,daily:dl,parts,
+    monthBudget,remain,perDay,daysLeft,isCurrentMonth,
     conv:leads?+(deals/leads*100).toFixed(1):0,avgCheck:deals?Math.round(budget/deals):0};
 }
 
@@ -777,44 +800,49 @@ function setMgrRop(rop, el){
 
 // ═══════════════════ RENDER KPI ═══════════════════════════════════
 function renderKPI(d){
-  const pct=d.plan?Math.round(d.budget/d.plan*100):0;
-  const drr=d.budget?+(d.adTotal/d.budget*100).toFixed(1):0;
-  const prodName=activeProd==='all'?'Все продукты':PROD_CFG[activeProd].name;
-  document.getElementById('main-title').textContent='Ключевые показатели';
-  document.getElementById('main-sub').textContent=`${activePeriod.label} · ${prodName}`;
-  const clr=activeProd==='all'?'#6366f1':PROD_CFG[activeProd].color;
-  const now2 = new Date();
-  const curMM2 = String(now2.getMonth()+1).padStart(2,'0');
-  const curMonthKey2 = `${curMM2}.${now2.getFullYear()}`;
-  const isCurrentMonth2 = activePeriod.preset === `m_${curMonthKey2}`;
-  const totalDays2 = _lastDay(now2.getFullYear(), now2.getMonth()+1);
-  const daysLeft2 = Math.max(1, totalDays2 - now2.getDate() + 1);
-  const remain2 = d.plan ? Math.max(0, d.plan - d.budget) : 0;
-  const perDay2 = isCurrentMonth2 && remain2 > 0 ? Math.round(remain2 / daysLeft2) : 0;
-  const remainSub = isCurrentMonth2 && d.plan
-    ? remain2 === 0
-      ? '✓ план выполнен'
-      : `ост. ${fmtM(remain2)} · ${fmtM(perDay2)}/день`
+  const isCur = d.isCurrentMonth;
+  const pctMonth = d.plan ? Math.round(d.monthBudget/d.plan*100) : 0;
+  const pctPeriod = d.plan ? Math.round(d.budget/d.plan*100) : 0;
+  const drr = d.budget ? +(d.adTotal/d.budget*100).toFixed(1) : 0;
+  const prodName = activeProd==='all' ? 'Все продукты' : PROD_CFG[activeProd].name;
+  document.getElementById('main-title').textContent = 'Ключевые показатели';
+  document.getElementById('main-sub').textContent = `${activePeriod.label} · ${prodName}`;
+  const clr = activeProd==='all' ? '#6366f1' : PROD_CFG[activeProd].color;
+
+  // Выручка card: show period fact, but остаток from full month
+  const revSub = isCur && d.plan
+    ? d.remain===0 ? '✓ план выполнен' : `накоплено ${fmtM(d.monthBudget)} из ${fmtM(d.plan)}`
     : `план ${fmtM(d.plan)}`;
-  // Остаток и нужно/день для карточки Выполнение
-  const execSub = isCurrentMonth2 && d.plan
-    ? remain2===0 ? '✓ план выполнен' : `выполнено: ${fmtM(d.budget)}`
-    : 'от плана';
-  const execS2 = isCurrentMonth2 && d.plan && remain2>0
-    ? `ост. ${fmtM(remain2)} · нужно ${fmtM(perDay2)}/день`
+  const revS2 = isCur && d.plan && d.remain>0
+    ? `ост. ${fmtM(d.remain)} · нужно ${fmtM(d.perDay)}/день (${d.daysLeft} дн.)`
     : null;
-  const revS2 = isCurrentMonth2 && d.plan && remain2>0
-    ? `нужно ${fmtM(perDay2)}/день (${daysLeft2} дн.)`
+
+  // Выполнение card
+  const execPct = isCur ? pctMonth : pctPeriod;
+  const execSub = isCur && d.plan
+    ? d.remain===0 ? '✓ план выполнен' : `факт месяца: ${fmtM(d.monthBudget)}`
+    : 'от плана';
+  const execS2 = isCur && d.plan && d.remain>0
+    ? `ост. ${fmtM(d.remain)} · нужно ${fmtM(d.perDay)}/день`
     : null;
 
   const kpis=[
-    {l:'Выручка',     v:fmtM(d.budget),       s:remainSub,   s2:revS2,  s2c:'#6366f1', badge:`${pct}%`,  bc:pctBg(pct), c:clr},
-    {l:'Лиды',        v:fmt(d.leads),          s:'дата создания',                                          c:'#6366f1'},
-    {l:'Сделки',      v:fmt(d.deals),          s:'дата заказа',                                            c:'#6366f1'},
-    {l:'Конверсия',   v:`${d.conv}%`,          s:'план 12%',  badge:d.conv>=12?'В норме':'Ниже плана',    bc:d.conv>=12?'bg-g':'bg-r', c:d.conv>=12?'#16a34a':'#c0392b'},
-    {l:'Средний чек', v:`${fmt(d.avgCheck)} ₸`,s:'план 80 000 ₸', badge:d.avgCheck>=80000?'В норме':'Ниже', bc:d.avgCheck>=80000?'bg-g':'bg-y', c:d.avgCheck>=80000?'#16a34a':'#ca8a04'},
-    {l:'Выполнение',  v:`${pct}%`,             s:execSub,     s2:execS2, s2c:remain2===0?'#16a34a':'#ca8a04', badge:pct>=100?'Выполнен':pct>=80?'Близко':'В процессе', bc:pctBg(pct), c:pct>=100?'#16a34a':pct>=80?'#ca8a04':'#c0392b'},
-    {l:'Расходы рекл.',v:fmtM(d.adTotal),     s:`ДРР ${drr}%`, badge:`${drr}%`, bc:drr<=15?'bg-g':drr<=25?'bg-y':'bg-r', c:drr<=15?'#16a34a':drr<=25?'#ca8a04':'#c0392b'},
+    {l:'Выручка',     v:fmtM(d.budget), s:revSub, s2:revS2, s2c:'#6366f1',
+     badge:`${isCur?pctMonth:pctPeriod}%`, bc:pctBg(isCur?pctMonth:pctPeriod), c:clr},
+    {l:'Лиды',        v:fmt(d.leads),   s:'дата создания', c:'#6366f1'},
+    {l:'Сделки',      v:fmt(d.deals),   s:'дата заказа',   c:'#6366f1'},
+    {l:'Конверсия',   v:`${d.conv}%`,   s:'план 12%',
+     badge:d.conv>=12?'В норме':'Ниже плана', bc:d.conv>=12?'bg-g':'bg-r',
+     c:d.conv>=12?'#16a34a':'#c0392b'},
+    {l:'Средний чек', v:`${fmt(d.avgCheck)} ₸`, s:'план 80 000 ₸',
+     badge:d.avgCheck>=80000?'В норме':'Ниже', bc:d.avgCheck>=80000?'bg-g':'bg-y',
+     c:d.avgCheck>=80000?'#16a34a':'#ca8a04'},
+    {l:'Выполнение',  v:`${execPct}%`,  s:execSub, s2:execS2, s2c:d.remain===0?'#16a34a':'#ca8a04',
+     badge:execPct>=100?'Выполнен':execPct>=80?'Близко':'В процессе',
+     bc:pctBg(execPct), c:execPct>=100?'#16a34a':execPct>=80?'#ca8a04':'#c0392b'},
+    {l:'Расходы рекл.',v:fmtM(d.adTotal), s:`ДРР ${drr}%`,
+     badge:`${drr}%`, bc:drr<=15?'bg-g':drr<=25?'bg-y':'bg-r',
+     c:drr<=15?'#16a34a':drr<=25?'#ca8a04':'#c0392b'},
   ];
   document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`
     <div class="kpi-card" style="--kc:${k.c}">
@@ -825,43 +853,24 @@ function renderKPI(d){
       ${k.badge?`<div class="kc-badge ${k.bc}">${k.badge}</div>`:''}
     </div>`).join('');
 }
-
 // ═══════════════════ RENDER PLAN TABLE ════════════════════════════
 function renderPlanTable(stats){
-  const now = new Date();
-  const curMM = String(now.getMonth()+1).padStart(2,'0');
-  const curYY = now.getFullYear();
-  const curMonthKey = `${curMM}.${curYY}`;
-
-  // Check if active period is current month → show remain/day
-  const isCurrentMonth = activePeriod.preset === `m_${curMonthKey}`;
-  const totalDays = _lastDay(curYY, now.getMonth()+1);
-  const dayOfMonth = now.getDate();
-  const daysLeft = Math.max(1, totalDays - dayOfMonth + 1); // including today
-
-  function calcRemainDay(plan, budget){
-    if(!plan || !isCurrentMonth) return null;
-    const remain = Math.max(0, plan - budget);
-    const perDay = Math.round(remain / daysLeft);
-    return { remain, perDay, done: remain === 0 };
-  }
-
   const keys = activeProd==='all' ? ['col','ummi','coffee'] : [activeProd];
+
   let rows = keys.map(k=>{
     const d = stats.parts ? stats.parts[k] : stats;
     const cfg = PROD_CFG[k];
-    const pct = d.plan ? Math.round(d.budget/d.plan*100) : 0;
-    const lag = d.budget - d.plan;
-    const rd = calcRemainDay(d.plan, d.budget);
-    const remainCell = rd
-      ? rd.done
-        ? `<td style="color:#16a34a;font-weight:700">✓ Выполнен</td><td style="color:#16a34a;font-weight:600">—</td>`
-        : `<td style="color:#ca8a04;font-weight:700">${fmtM(rd.remain)}</td><td style="color:#6366f1;font-weight:700">${fmtM(rd.perDay)}</td>`
+    const pct = d.plan ? Math.round(d.monthBudget/d.plan*100) : 0;
+    const remainCell = d.isCurrentMonth && d.plan
+      ? d.remain===0
+        ? `<td style="color:#16a34a;font-weight:700">✓</td><td style="color:#16a34a">—</td>`
+        : `<td style="color:#ca8a04;font-weight:700">${fmtM(d.remain)}</td>
+           <td style="color:#6366f1;font-weight:700">${fmtM(d.perDay)}</td>`
       : `<td style="color:var(--muted)">—</td><td style="color:var(--muted)">—</td>`;
     return`<tr>
       <td><div class="prod-name"><div class="prod-dot" style="background:${cfg.color}"></div>${cfg.name}</div></td>
-      <td>${fmt(d.plan)}</td>
-      <td style="color:${cfg.color};font-weight:700">${fmt(d.budget)}</td>
+      <td>${fmtM(d.plan)}</td>
+      <td style="color:${cfg.color};font-weight:700">${fmtM(d.monthBudget)}</td>
       <td><div class="bar-wrap">
         <span class="${pct>=80?'txt-g':pct>=50?'txt-y':'txt-r'}" style="font-weight:700;font-size:13px;min-width:36px;text-align:right">${pct}%</span>
         <div class="bar-track"><div class="bar-fill" style="width:${Math.min(pct,100)}%;background:${cfg.color}"></div></div>
@@ -874,38 +883,37 @@ function renderPlanTable(stats){
 
   if(activeProd==='all'){
     const a = stats;
-    const pct = a.plan ? Math.round(a.budget/a.plan*100) : 0;
-    const lag = a.budget - a.plan;
-    const rd = calcRemainDay(a.plan, a.budget);
-    const remainCell = rd
-      ? rd.done
-        ? `<td style="color:#16a34a;font-weight:700"><strong>✓ Выполнен</strong></td><td style="color:#16a34a">—</td>`
-        : `<td style="color:#ca8a04;font-weight:700"><strong>${fmtM(rd.remain)}</strong></td><td style="color:#6366f1;font-weight:700"><strong>${fmtM(rd.perDay)}</strong></td>`
+    const pct = a.plan ? Math.round(a.monthBudget/a.plan*100) : 0;
+    const remainCell = a.isCurrentMonth && a.plan
+      ? a.remain===0
+        ? `<td style="color:#16a34a;font-weight:700"><strong>✓ Выполнен</strong></td><td>—</td>`
+        : `<td style="color:#ca8a04;font-weight:700"><strong>${fmtM(a.remain)}</strong></td>
+           <td style="color:#6366f1;font-weight:700"><strong>${fmtM(a.perDay)}</strong></td>`
       : `<td>—</td><td>—</td>`;
     rows += `<tr class="tr-sum">
       <td><div class="prod-name"><div class="prod-dot" style="background:#6366f1"></div><strong>ИТОГО</strong></div></td>
-      <td><strong>${fmt(a.plan)}</strong></td>
-      <td style="color:#6366f1;font-weight:700"><strong>${fmt(a.budget)}</strong></td>
-      <td><div class="bar-wrap"><span style="font-weight:700;font-size:13px;color:${pct>=80?'#16a34a':'#ca8a04'};min-width:36px;text-align:right">${pct}%</span><div class="bar-track"><div class="bar-fill" style="width:${Math.min(pct,100)}%;background:#6366f1"></div></div></div></td>
+      <td><strong>${fmtM(a.plan)}</strong></td>
+      <td style="color:#6366f1;font-weight:700"><strong>${fmtM(a.monthBudget)}</strong></td>
+      <td><div class="bar-wrap"><span style="font-weight:700;font-size:13px;color:${pct>=80?'#16a34a':'#ca8a04'};min-width:36px;text-align:right">${pct}%</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.min(pct,100)}%;background:#6366f1"></div></div></div></td>
       ${remainCell}
       <td><strong>${fmt(a.leads)}</strong></td><td><strong>${fmt(a.deals)}</strong></td>
       <td class="${convCls(a.conv)}" style="font-weight:700"><strong>${a.conv}%</strong></td>
     </tr>`;
   }
 
-  // Column headers — show остаток/нужно в день only for current month
-  const extraHeaders = isCurrentMonth
-    ? `<th style="color:#ca8a04">Остаток</th><th style="color:#6366f1">Нужно/день</th>`
-    : `<th style="color:var(--muted)">Остаток</th><th style="color:var(--muted)">Нужно/день</th>`;
-
+  const isCur = (stats.parts ? Object.values(stats.parts)[0] : stats).isCurrentMonth;
   document.getElementById('plan-table').innerHTML=`
     <table class="dt"><thead><tr>
-      <th>Продукт</th><th>План ₸</th><th>Факт ₸</th><th>Выполнение</th>
-      ${extraHeaders}
+      <th>Продукт</th>
+      <th>План мес. ₸</th>
+      <th>Факт мес. ₸</th>
+      <th>Выполнение</th>
+      <th style="color:${isCur?'#ca8a04':'var(--muted)'}">Остаток</th>
+      <th style="color:${isCur?'#6366f1':'var(--muted)'}">Нужно/день</th>
       <th>Лиды</th><th>Сделки</th><th>Конверсия</th>
     </tr></thead><tbody>${rows}</tbody></table>`;
 }
-
 // ═══════════════════ CHARTS ═══════════════════════════════════════
 let lastStats=null;
 const GRID='rgba(232,236,244,.9)', TICK='#8896ae', FONT="'DM Sans'";
