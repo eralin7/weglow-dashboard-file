@@ -1173,13 +1173,6 @@ function renderSidebarKPI(now, dayOfMonth, totalDays){
   ` : `<div class="sp-kpi-row"><span class="sp-kl" style="opacity:.5">План не задан</span></div>`;
 }
 
-function fmtK(n){
-  if(!n) return '0';
-  if(n >= 1e6) return (n/1e6).toFixed(1)+' М';
-  if(n >= 1e3) return Math.round(n/1e3)+'К';
-  return String(n);
-}
-
 // ═══════════════════ INIT ═════════════════════════════════════════
 // Show data source info
 (function(){
