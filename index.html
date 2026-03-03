@@ -341,6 +341,14 @@ function parseSales(rows, keyHint){
   if(mgrColIdx < 0) mgrColIdx = hi('менеджер');
   if(mgrColIdx < 0) mgrColIdx = 3; // fallback
 
+  // Stage column — filter deals by valid stages only
+  let stageColIdx = headers.findIndex(h=>h.toLowerCase().includes('этап сделки'));
+  if(stageColIdx < 0) stageColIdx = headers.findIndex(h=>h.toLowerCase().includes('этап'));
+  if(stageColIdx < 0) stageColIdx = 15;
+  const VALID_STAGES = new Set([
+    'ЗАКАЗ','ЗАКАЗ НА ПОДТВЕРЖДЕНИЕ','КУРЬЕРСКАЯ ДОСТАВКА','Успешно реализовано'
+  ]);
+
   const daily = {};
   const managers = {};
   let totalLeads=0, totalDeals=0, totalBudget=0;
@@ -367,8 +375,10 @@ function parseSales(rows, keyHint){
       }
     }
 
-    // Parse order date → deals + budget
-    const oDate = extractDate(orderRaw);
+    // Parse order date → deals + budget (only for valid stages)
+    const stageVal = (stageColIdx >= 0 && stageColIdx < row.length ? row[stageColIdx] : '').trim();
+    const validStage = VALID_STAGES.has(stageVal);
+    const oDate = validStage ? extractDate(orderRaw) : null;
     if(oDate){
       if(!daily[oDate]) daily[oDate]=[0,0,0];
       daily[oDate][1]++;
