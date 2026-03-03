@@ -99,6 +99,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 .month-sel{padding:9px 14px;border:1.5px solid var(--line);border-radius:9px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;background:var(--white);cursor:pointer;}
 .month-sel:focus{border-color:var(--acc);}
 
+/* DROPDOWN */
+.dd-item{padding:10px 14px;cursor:pointer;font-size:13px;font-weight:500;color:var(--ink);display:flex;align-items:center;gap:8px;transition:background .1s;}
+.dd-item:hover,.dd-item.highlighted{background:var(--acc-l);}
+.dd-item .dd-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.dd-item .dd-taken{font-size:11px;color:var(--muted);margin-left:auto;}
+.dd-empty{padding:12px 14px;color:var(--muted);font-size:13px;text-align:center;}
+
 /* TOAST */
 .toast{position:fixed;bottom:24px;right:24px;color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s;z-index:999;}
 .toast.show{transform:translateY(0);opacity:1;}
@@ -197,7 +204,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
         <div class="card-title">👥 Менеджеры в группе <span id="mgr-group-label" style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:8px;margin-left:4px"></span></div>
         <div class="mgr-list" id="mgr-list"></div>
         <div class="add-form">
-          <input class="add-inp" type="text" id="new-mgr-name" placeholder="Имя менеджера (напр. Пин 25 Ахмед)">
+          <div style="flex:1;position:relative;min-width:200px">
+            <input class="add-inp" type="text" id="new-mgr-name" placeholder="Поиск менеджера..." autocomplete="off"
+                   oninput="filterDropdown(this.value)" onfocus="showDropdown()" style="width:100%">
+            <div id="mgr-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1.5px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);z-index:50;max-height:240px;overflow-y:auto;margin-top:4px;"></div>
+          </div>
           <button class="add-btn" id="add-mgr-btn" onclick="addManager()">+ Добавить</button>
         </div>
       </div>
@@ -241,6 +252,8 @@ let ropColor = '#6366f1';
 let managers = [];       // list of manager names for this ROP
 let planData = {};       // { managerName: { 'MM.YYYY': plan } }
 let selectedPlanMonth = null;
+let allSiteMgrs = [];    // all managers from weglow_data (uploaded CSV)
+let allRopAssigned = {}; // { managerName: ropName } — already assigned to any group
 
 // ══════════════════════════════════════════════
 // PASSWORD FLOW
@@ -303,14 +316,39 @@ function setBadge(t,type){
 async function loadAll(){
   setBadge('Загрузка...','load');
   try {
-    // Load manager list for this ROP
+    // 1. Load all managers from weglow_data (uploaded from CSV)
+    let wgRows = await sbGet('weglow_data?id=eq.1&select=data');
+    allSiteMgrs = [];
+    if(wgRows && wgRows[0] && wgRows[0].data && wgRows[0].data.MANAGERS){
+      const MANAGERS = wgRows[0].data.MANAGERS;
+      // Collect unique manager names across all products (mainly Коллаген for ROP)
+      const nameSet = new Set();
+      for(const [prod, list] of Object.entries(MANAGERS)){
+        if(Array.isArray(list)) list.forEach(m=>{ if(m.name) nameSet.add(m.name); });
+      }
+      allSiteMgrs = [...nameSet].sort();
+    }
+
+    // 2. Load all assigned managers across ALL ROPs (for dedup display)
+    const allAssigned = await sbGet('weglow_rop_managers?select=rop,name');
+    allRopAssigned = {};
+    for(const r of allAssigned) allRopAssigned[r.name] = r.rop;
+
+    // 3. Load manager list for this ROP
     let rows = await sbGet(`weglow_rop_managers?rop=eq.${encodeURIComponent(currentRop)}&select=name&order=name`);
     if(rows.length){
       managers = rows.map(r=>r.name);
     } else {
       managers = [...(DEFAULT_GROUPS[currentRop]||[])];
+      // Auto-save defaults to Supabase
+      if(managers.length){
+        const bulk = managers.map(name=>({rop:currentRop,name}));
+        await sbUpsert('weglow_rop_managers', bulk).catch(()=>{});
+        for(const name of managers) allRopAssigned[name]=currentRop;
+      }
     }
-    // Load plans
+
+    // 4. Load plans
     const planRows = await sbGet(`weglow_mgr_plans?rop=eq.${encodeURIComponent(currentRop)}&select=manager,month,plan`);
     planData = {};
     for(const r of planRows){
@@ -322,8 +360,7 @@ async function loadAll(){
     renderMgrList();
     renderPlanTable();
   } catch(e){
-    setBadge('Ошибка','err');
-    // Use defaults on error
+    setBadge('Ошибка загрузки','err');
     managers = [...(DEFAULT_GROUPS[currentRop]||[])];
     buildMonthSelector();
     renderMgrList();
@@ -481,19 +518,81 @@ function renderMgrList(){
     </div>`).join('');
 }
 
+// ══════════════════════════════════════════════
+// DROPDOWN SEARCH
+// ══════════════════════════════════════════════
+function getAvailableMgrs(query=''){
+  // All site managers not yet in THIS group, sorted
+  return allSiteMgrs
+    .filter(name => !managers.includes(name))
+    .filter(name => !query || name.toLowerCase().includes(query.toLowerCase()))
+    .sort();
+}
+
+function showDropdown(){
+  renderDropdown(document.getElementById('new-mgr-name').value);
+  document.getElementById('mgr-dropdown').style.display='block';
+}
+
+function filterDropdown(q){
+  renderDropdown(q);
+  document.getElementById('mgr-dropdown').style.display='block';
+}
+
+function renderDropdown(q=''){
+  const dd = document.getElementById('mgr-dropdown');
+  const available = getAvailableMgrs(q);
+  if(!available.length){
+    dd.innerHTML = `<div class="dd-empty">${allSiteMgrs.length===0?'Сначала загрузите данные через index.html':'Все менеджеры уже добавлены'}</div>`;
+    return;
+  }
+  dd.innerHTML = available.map(name=>{
+    const takenBy = allRopAssigned[name];
+    const inOtherRop = takenBy && takenBy !== currentRop;
+    const ropColors={'РОП Айдана':'#1a56db','РОП Нурдаулет':'#0a7c5c','РОП Аслиддин':'#b45309'};
+    const dotColor = ropColors[takenBy]||'#d1d5db';
+    return `<div class="dd-item" onclick="selectMgr('${name.replace(/'/g,"\\'")}')">
+      <div class="dd-dot" style="background:${dotColor}"></div>
+      <span>${name}</span>
+      ${inOtherRop?`<span class="dd-taken">${takenBy}</span>`:''}
+    </div>`;
+  }).join('');
+}
+
+function selectMgr(name){
+  document.getElementById('new-mgr-name').value = name;
+  document.getElementById('mgr-dropdown').style.display='none';
+}
+
+// Close dropdown on outside click
+document.addEventListener('click', e=>{
+  const wrap = document.querySelector('.add-form');
+  if(wrap && !wrap.contains(e.target)){
+    document.getElementById('mgr-dropdown').style.display='none';
+  }
+});
+
+// ══════════════════════════════════════════════
+// ADD / REMOVE MANAGER
+// ══════════════════════════════════════════════
 async function addManager(){
   const inp = document.getElementById('new-mgr-name');
   const name = inp.value.trim();
-  if(!name){ toast('Введите имя менеджера','err'); return; }
-  if(managers.includes(name)){ toast('Менеджер уже в группе','err'); return; }
+  if(!name){ toast('Выберите менеджера из списка','err'); return; }
+  // Check it's a real manager from site data
+  if(allSiteMgrs.length && !allSiteMgrs.includes(name)){
+    toast('Менеджер не найден в данных сайта','err'); return;
+  }
+  if(managers.includes(name)){ toast('Уже в группе','err'); return; }
   try {
     await sbUpsert('weglow_rop_managers',{rop:currentRop,name});
     managers.push(name);
+    allRopAssigned[name] = currentRop;
     inp.value='';
+    document.getElementById('mgr-dropdown').style.display='none';
     renderMgrList();
     renderPlanTable();
     toast(`${name} добавлен в группу`,'ok');
-    // Update MGR_TO_ROP in dashboard data
     await syncRopGroupsToDashboard();
   } catch(e){ toast('Ошибка: '+e.message,'err'); }
 }
@@ -503,6 +602,7 @@ async function removeManager(name){
   try {
     await sbDelete('weglow_rop_managers',`?rop=eq.${encodeURIComponent(currentRop)}&name=eq.${encodeURIComponent(name)}`);
     managers = managers.filter(m=>m!==name);
+    delete allRopAssigned[name];
     renderMgrList();
     renderPlanTable();
     toast(`${name} удалён из группы`,'ok');
