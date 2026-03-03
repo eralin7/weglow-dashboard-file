@@ -801,12 +801,13 @@ function setMgrRop(rop, el){
 // ═══════════════════ RENDER KPI ═══════════════════════════════════
 function renderKPI(d){
   const isCur = d.isCurrentMonth;
-  // % по периоду для фильтров (сегодня/вчера/7 дней)
-  const pctPeriod = d.plan ? Math.round(d.budget/d.plan*100) : 0;
-  // % накоплено за месяц — для текущего месяца
-  const pctMonth  = d.plan ? Math.round(d.monthBudget/d.plan*100) : 0;
-  // Показываем % по периоду всегда (меняется с фильтром), для текущего месяца доп. строка
-  const displayPct = pctPeriod;
+
+  // % выполнения:
+  // — текущий месяц: накоплено за месяц / план
+  // — прошлые месяцы: факт за выбранный период / план
+  const pct = d.plan
+    ? (isCur ? Math.round(d.monthBudget/d.plan*100) : Math.round(d.budget/d.plan*100))
+    : 0;
 
   const drr = d.budget ? +(d.adTotal/d.budget*100).toFixed(1) : 0;
   const prodName = activeProd==='all' ? 'Все продукты' : PROD_CFG[activeProd].name;
@@ -814,23 +815,21 @@ function renderKPI(d){
   document.getElementById('main-sub').textContent = `${activePeriod.label} · ${prodName}`;
   const clr = activeProd==='all' ? '#6366f1' : PROD_CFG[activeProd].color;
 
-  // Выручка: план сумма + нужно/день
+  // Выручка sub: план сумма
   const revSub = d.plan ? `план ${fmtM(d.plan)}` : '—';
-  const revS2  = isCur && d.plan && d.remain>0
-    ? `нужно ${fmtM(d.perDay)}/день`
-    : isCur && d.remain===0 ? '✓ выполнен' : null;
+  // Выручка s2: нужно в день (только текущий месяц, если остаток есть)
+  const revS2 = isCur && d.plan && d.remain>0
+    ? `нужно ${fmtM(d.perDay)}/день · ост. ${d.daysLeft} дн.`
+    : (isCur && d.remain===0 ? '✓ план выполнен' : null);
 
-  // Выполнение: % по периоду + накоплено за месяц
+  // Выполнение sub: остаток суммой
   const execSub = isCur && d.plan
-    ? `месяц: ${pctMonth}% (${fmtM(d.monthBudget)})`
+    ? (d.remain===0 ? '✓ план выполнен' : `ост. ${fmtM(d.remain)}`)
     : 'от плана';
-  const execS2 = isCur && d.plan && d.remain>0
-    ? `ост. ${fmtM(d.remain)} · ${fmtM(d.perDay)}/день`
-    : null;
 
   const kpis=[
     {l:'Выручка',      v:fmtM(d.budget),        s:revSub,  s2:revS2,  s2c:'#6366f1',
-     badge:`${displayPct}%`, bc:pctBg(displayPct), c:clr},
+     badge:`${pct}%`, bc:pctBg(pct), c:clr},
     {l:'Лиды',         v:fmt(d.leads),           s:'дата создания', c:'#6366f1'},
     {l:'Сделки',       v:fmt(d.deals),           s:'дата заказа',   c:'#6366f1'},
     {l:'Конверсия',    v:`${d.conv}%`,           s:'план 12%',
@@ -839,9 +838,9 @@ function renderKPI(d){
     {l:'Средний чек',  v:`${fmt(d.avgCheck)} ₸`, s:'план 80 000 ₸',
      badge:d.avgCheck>=80000?'В норме':'Ниже', bc:d.avgCheck>=80000?'bg-g':'bg-y',
      c:d.avgCheck>=80000?'#16a34a':'#ca8a04'},
-    {l:'Выполнение',   v:`${displayPct}%`,       s:execSub, s2:execS2, s2c:'#ca8a04',
-     badge:pctMonth>=100?'Выполнен':pctMonth>=80?'Близко':'В процессе',
-     bc:pctBg(pctMonth), c:displayPct>=100?'#16a34a':displayPct>=80?'#ca8a04':'#c0392b'},
+    {l:'Выполнение',   v:`${pct}%`,              s:execSub,
+     badge:pct>=100?'Выполнен':pct>=80?'Близко':'В процессе',
+     bc:pctBg(pct), c:pct>=100?'#16a34a':pct>=80?'#ca8a04':'#c0392b'},
     {l:'Расходы рекл.',v:fmtM(d.adTotal),        s:`ДРР ${drr}%`,
      badge:`${drr}%`, bc:drr<=15?'bg-g':drr<=25?'bg-y':'bg-r',
      c:drr<=15?'#16a34a':drr<=25?'#ca8a04':'#c0392b'},
