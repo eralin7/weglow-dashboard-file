@@ -77,6 +77,42 @@ input[type=file]{display:none;}
 .step{text-align:center;}
 .step-num{width:28px;height:28px;border-radius:50%;background:var(--acc-l);color:var(--acc);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;}
 .step-text{font-size:12px;color:var(--slate);line-height:1.4;}
+
+@media (max-width: 768px) {
+  .logo { font-size: 26px; margin-top: 20px; }
+  .logo-sub { font-size: 11px; margin-bottom: 16px; }
+
+  .up-header h2 { font-size: 20px; }
+  .up-header { flex-direction: row; align-items: center; margin-bottom: 16px; }
+  .logout-btn { font-size: 12px; padding: 5px 12px; }
+
+  .file-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+  .file-card { padding: 16px 12px; }
+  .fc-icon { font-size: 28px; }
+  .fc-title { font-size: 14px; }
+  .fc-sub { font-size: 11px; }
+  .fc-status { font-size: 11px; }
+
+  .go-wrap { padding: 16px 0; }
+  .go-btn { width: 100% !important; font-size: 15px; padding: 14px; }
+
+  .instr { padding: 16px 12px; margin-top: 16px; }
+  .instr-title { font-size: 13px; }
+  .instr-steps { grid-template-columns: 1fr 1fr !important; gap: 8px; }
+  .step { padding: 10px; }
+  .step-text { font-size: 11px; }
+
+  .pw-card { padding: 24px 16px; margin: 16px; }
+  .pw-title { font-size: 18px; }
+}
+
+@media (max-width: 420px) {
+  .file-grid { grid-template-columns: 1fr !important; }
+  .instr-steps { grid-template-columns: 1fr !important; }
+}
 </style>
 </head>
 <body>
