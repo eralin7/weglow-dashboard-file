@@ -1437,6 +1437,7 @@ async function loadFromSupabase() {
       if (d.RAW)      RAW      = d.RAW;
       if (d.MANAGERS) { if(Object.keys(d.MANAGERS).length) MANAGERS = d.MANAGERS; }
       if (d.AD_SPEND && Object.keys(d.AD_SPEND).length) AD_SPEND = d.AD_SPEND;
+      // Note: empty AD_SPEND from index.html upload is intentional — ad.html manages it separately
       if (d.PLANS)    PLANS    = d.PLANS;
       // Update badge
       const badge = document.getElementById('data-badge');
