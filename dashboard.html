@@ -594,11 +594,11 @@ body, .apple-nav, .topbar, .kpi-card, .card, .ps-card, .ad-card, .dt td, .dt th 
               <button class="mt" onclick="setMetric('deals',this)">Сделки</button>
             </div>
           </div>
-          <div class="chart-body"><canvas id="lineChart" height="170"></canvas></div>
+          <div class="chart-body"><canvas id="lineChart" height="110"></canvas></div>
         </div>
         <div class="card">
           <div class="card-hdr"><span class="card-title">Структура выручки</span></div>
-          <div class="chart-body"><canvas id="donutChart" height="220"></canvas></div>
+          <div class="chart-body"><canvas id="donutChart" height="150"></canvas></div>
         </div>
       </div>
       <div class="sec-label mb20">Эффективность по продуктам</div>
@@ -623,9 +623,9 @@ body, .apple-nav, .topbar, .kpi-card, .card, .ps-card, .ad-card, .dt td, .dt th 
         </table>
       </div>
       <div class="mgr-charts-3">
-        <div class="card"><div class="card-hdr"><span class="card-title">Топ по выручке</span></div><div class="chart-body"><canvas id="mgrBudget" height="200"></canvas></div></div>
-        <div class="card"><div class="card-hdr"><span class="card-title">Конверсия %</span></div><div class="chart-body"><canvas id="mgrConv" height="200"></canvas></div></div>
-        <div class="card"><div class="card-hdr"><span class="card-title">Средний чек ₸</span></div><div class="chart-body"><canvas id="mgrCheck" height="200"></canvas></div></div>
+        <div class="card"><div class="card-hdr"><span class="card-title">Топ по выручке</span></div><div class="chart-body"><canvas id="mgrBudget" height="140"></canvas></div></div>
+        <div class="card"><div class="card-hdr"><span class="card-title">Конверсия %</span></div><div class="chart-body"><canvas id="mgrConv" height="140"></canvas></div></div>
+        <div class="card"><div class="card-hdr"><span class="card-title">Средний чек ₸</span></div><div class="chart-body"><canvas id="mgrCheck" height="140"></canvas></div></div>
       </div>
     </div>
 
@@ -663,10 +663,10 @@ const RAW_EMBEDDED = {"Коллаген":{"01.01.2026":[154,2,140000],"01.02.202
 let RAW = _loaded ? _loaded.RAW : RAW_EMBEDDED;
 
 const MANAGERS_STATIC = {"Коллаген":[{"name":"Пин 14 Шамид Халилли","leads":571,"deals":83,"budget":5702500,"conv":14.5,"avgCheck":68705},{"name":"пин 17 Таймир Туйгунов","leads":382,"deals":59,"budget":4965550,"conv":15.4,"avgCheck":84162},{"name":"пин 10 Айша","leads":378,"deals":51,"budget":4677800,"conv":13.5,"avgCheck":91722},{"name":"Пин 8 Асема","leads":335,"deals":56,"budget":4534975,"conv":16.7,"avgCheck":80982},{"name":"Пин 2 Санжар","leads":512,"deals":53,"budget":4082550,"conv":10.4,"avgCheck":77029},{"name":"пин 20 Жазира","leads":523,"deals":46,"budget":4051800,"conv":8.8,"avgCheck":88083},{"name":"пин 22 Асель","leads":453,"deals":35,"budget":3305850,"conv":7.7,"avgCheck":94453},{"name":"пин 16 Медина","leads":156,"deals":27,"budget":3006950,"conv":17.3,"avgCheck":111369},{"name":"Пин 6 Асем","leads":280,"deals":31,"budget":2746150,"conv":11.1,"avgCheck":88585},{"name":"Пин 4 Динара","leads":331,"deals":31,"budget":2618800,"conv":9.4,"avgCheck":84477},{"name":"пин 21 Жанар","leads":209,"deals":22,"budget":2218300,"conv":10.5,"avgCheck":100832},{"name":"Пин 34 Карина","leads":220,"deals":24,"budget":2076900,"conv":10.9,"avgCheck":86538},{"name":"Пин 7 Рахима","leads":157,"deals":18,"budget":1819500,"conv":11.5,"avgCheck":101083},{"name":"Пин 32 Айжан","leads":181,"deals":22,"budget":1532300,"conv":12.2,"avgCheck":69650},{"name":"Пин 1 Раушан","leads":334,"deals":26,"budget":1480775,"conv":7.8,"avgCheck":56953},{"name":"Пин 3 Ерсин","leads":156,"deals":16,"budget":1346850,"conv":10.3,"avgCheck":84178},{"name":"Пин 5 Тахир","leads":193,"deals":20,"budget":1257900,"conv":10.4,"avgCheck":62895},{"name":"пин 25 Ахмед","leads":98,"deals":14,"budget":1050000,"conv":14.3,"avgCheck":75000},{"name":"Пин 27 Эльнара","leads":114,"deals":8,"budget":662400,"conv":7.0,"avgCheck":82800},{"name":"Пин 36 Жан","leads":84,"deals":3,"budget":589925,"conv":3.6,"avgCheck":196642},{"name":"пин 23 Темирлан","leads":88,"deals":6,"budget":563000,"conv":6.8,"avgCheck":93833},{"name":"Пин 31 Ернур","leads":121,"deals":7,"budget":439700,"conv":5.8,"avgCheck":62814},{"name":"Пин 30 Диас","leads":12,"deals":4,"budget":274375,"conv":33.3,"avgCheck":68594},{"name":"пин 24 Кенес","leads":18,"deals":2,"budget":151725,"conv":11.1,"avgCheck":75862},{"name":"Пин 37 Аида","leads":42,"deals":3,"budget":150500,"conv":7.1,"avgCheck":50167},{"name":"РОП Айдана","leads":290,"deals":0,"budget":0,"conv":0,"avgCheck":0},{"name":"РОП Аслиддин","leads":40,"deals":0,"budget":0,"conv":0,"avgCheck":0}],"Ummi":[{"name":"Кирилл Рыжаков","leads":268,"deals":26,"budget":2506251,"conv":9.7,"avgCheck":96394},{"name":"Меруерт Мун","leads":246,"deals":23,"budget":1957300,"conv":9.3,"avgCheck":85100},{"name":"kids09@weglow.com Дания","leads":161,"deals":14,"budget":1644100,"conv":8.7,"avgCheck":117436},{"name":"Баглан Ертай","leads":366,"deals":11,"budget":1609500,"conv":3.0,"avgCheck":146318},{"name":"Курбанов Бакдаулет","leads":429,"deals":10,"budget":925250,"conv":2.3,"avgCheck":92525},{"name":"Аметжанова Алина","leads":157,"deals":7,"budget":629000,"conv":4.5,"avgCheck":89857},{"name":"Нурбол Абаков","leads":211,"deals":2,"budget":555000,"conv":0.9,"avgCheck":277500},{"name":"Ералин Джаримбетов","leads":49,"deals":2,"budget":427350,"conv":4.1,"avgCheck":213675},{"name":"Алиса Яковлева","leads":147,"deals":0,"budget":0,"conv":0,"avgCheck":0},{"name":"Расиль","leads":56,"deals":0,"budget":0,"conv":0,"avgCheck":0}],"Кофе":[{"name":"пин 1 Аскат","leads":451,"deals":24,"budget":1500350,"conv":5.3,"avgCheck":62515},{"name":"пин 2 Александр","leads":380,"deals":19,"budget":1379270,"conv":5.0,"avgCheck":72593},{"name":"пин 5 Ұлықбек","leads":282,"deals":19,"budget":1325300,"conv":6.7,"avgCheck":69753},{"name":"пин 6 Абдулазиз","leads":197,"deals":11,"budget":1100120,"conv":5.6,"avgCheck":100011},{"name":"пин 3 Абдурауф","leads":336,"deals":16,"budget":1087200,"conv":4.8,"avgCheck":67950},{"name":"пин 7 Роман","leads":194,"deals":11,"budget":969550,"conv":5.7,"avgCheck":88141},{"name":"Пин 8 Расул","leads":91,"deals":1,"budget":140000,"conv":1.1,"avgCheck":140000},{"name":"пин 4 Назира","leads":101,"deals":3,"budget":127400,"conv":3.0,"avgCheck":42467}]};
-let MANAGERS = _loaded ? _loaded.MANAGERS : MANAGERS_STATIC;
+let MANAGERS = (_loaded && _loaded.MANAGERS && Object.keys(_loaded.MANAGERS).length) ? _loaded.MANAGERS : MANAGERS_STATIC;
 
 const AD_SPEND_STATIC = {"Коллаген":{"01.02.2026":318000,"02.02.2026":327010,"03.02.2026":296270,"04.02.2026":172640,"05.02.2026":190840,"06.02.2026":267280,"07.02.2026":309920,"08.02.2026":267280,"09.02.2026":45240,"10.02.2026":353600,"11.02.2026":442000,"12.02.2026":624000,"13.02.2026":660920,"14.02.2026":589160,"15.02.2026":440440,"16.02.2026":534560,"17.02.2026":310960,"18.02.2026":424320,"19.02.2026":323440,"20.02.2026":327600,"21.02.2026":278200,"22.02.2026":278200,"23.02.2026":313560,"24.02.2026":364000,"25.02.2026":264160,"26.02.2026":229320},"Ummi":{"01.02.2026":163240,"02.02.2026":158470,"03.02.2026":124550,"04.02.2026":122720,"05.02.2026":157840,"06.02.2026":112320,"07.02.2026":130520,"08.02.2026":132080,"09.02.2026":46800,"10.02.2026":162760,"11.02.2026":166920,"12.02.2026":175240,"13.02.2026":305760,"14.02.2026":326040,"15.02.2026":251160,"16.02.2026":162760,"17.02.2026":120120,"18.02.2026":144040,"19.02.2026":121680,"20.02.2026":119600,"21.02.2026":109720,"22.02.2026":114920,"23.02.2026":145600,"24.02.2026":82160,"25.02.2026":100880,"26.02.2026":124800},"Кофе":{"01.02.2026":93280,"02.02.2026":96460,"03.02.2026":74200,"04.02.2026":62960,"05.02.2026":47230,"06.02.2026":47840,"07.02.2026":50960,"08.02.2026":61360,"09.02.2026":9360,"10.02.2026":52000,"11.02.2026":67600,"12.02.2026":197600,"13.02.2026":174200,"14.02.2026":187200,"15.02.2026":204360,"16.02.2026":88920,"17.02.2026":71240,"18.02.2026":91520,"19.02.2026":63920,"20.02.2026":106600,"21.02.2026":66560,"22.02.2026":92560,"23.02.2026":121160,"24.02.2026":130000,"25.02.2026":94640,"26.02.2026":107640}};
-let AD_SPEND = _loaded ? _loaded.AD_SPEND : AD_SPEND_STATIC;
+let AD_SPEND = (_loaded && _loaded.AD_SPEND && Object.keys(_loaded.AD_SPEND).length) ? _loaded.AD_SPEND : AD_SPEND_STATIC;
 
 let PLANS = _loaded && _loaded.PLANS ? _loaded.PLANS : {'col':{'03.2026':86000000,'02.2026':60000000,'01.2026':60000000,'12.2025':60000000,'11.2025':60000000,'10.2025':60000000},'ummi':{'03.2026':25000000,'02.2026':30000000,'01.2026':30000000,'12.2025':30000000,'11.2025':30000000},'coffee':{'03.2026':30000000,'02.2026':15000000,'01.2026':15000000,'12.2025':15000000}};
 
@@ -772,8 +772,9 @@ function _lastMonthWithData() {
   }
   return monthKeys[0];
 }
-const _defaultKey = _lastMonthWithData() || _currentKey;
-const _defaultPreset = PRESETS[_defaultKey] || {from:'01.02.2026',to:'28.02.2026',label:'Февраль 2026'};
+const _defaultKey = 'today'; // always start with today
+const _todayPreset = PRESETS['today'] || (() => { const t=_fmt(_now()); return {from:t,to:t,label:'Сегодня'}; })();
+const _defaultPreset = _todayPreset;
 
 // ═══════════════════ STATE ════════════════════════════════════════
 let activeProd='all', activeMetric='budget', activeView='main';
@@ -1258,7 +1259,7 @@ function aggregateManagersByPeriod(prodKey, from, to) {
 
   // Since we store MANAGERS as full all-time aggregates, we compute period managers
   // from the _loaded payload which has per-manager data indexed by product
-  const allMgrs = (MANAGERS[prodKey] || []);
+  const allMgrs = (MANAGERS[prodKey] || MANAGERS_STATIC[prodKey] || []);
   
   // If period is "all time" equivalent (we can't filter managers by date from aggregated data)
   // We compute from RAW daily data the total for this period, 
@@ -1434,8 +1435,8 @@ async function loadFromSupabase() {
       const d = rows[0].data;
       // Reassign mutable globals
       if (d.RAW)      RAW      = d.RAW;
-      if (d.MANAGERS) MANAGERS = d.MANAGERS;
-      if (d.AD_SPEND) AD_SPEND = d.AD_SPEND;
+      if (d.MANAGERS && Object.keys(d.MANAGERS).length) MANAGERS = d.MANAGERS;
+      if (d.AD_SPEND && Object.keys(d.AD_SPEND).length) AD_SPEND = d.AD_SPEND;
       if (d.PLANS)    PLANS    = d.PLANS;
       // Update badge
       const badge = document.getElementById('data-badge');
@@ -1446,15 +1447,7 @@ async function loadFromSupabase() {
       // Save to sessionStorage for next load (faster)
       sessionStorage.setItem('wg_data', JSON.stringify(d));
 
-      // After fresh data — switch to latest month that has data
-      if(!_userChangedPeriod){
-        const _newKey = _lastMonthWithData() || _currentKey;
-        const _newPreset = PRESETS[_newKey] || activePeriod;
-        activePeriod    = {..._newPreset, preset:_newKey};
-        activeMgrPeriod = {..._newPreset, preset:_newKey};
-        activeAdPeriod  = {..._newPreset, preset:_newKey};
-      }
-      // Rebuild pills with correct active state (clears duplicates)
+      // Rebuild pills (clears duplicates, keeps current activePeriod)
       rebuildMonthPills();
 
       // Re-render with fresh data
@@ -1558,11 +1551,19 @@ function initDynamicUI() {
 
   // Build month pills
   rebuildMonthPills();
+  // Mark 'Сегодня' as active by default
+  setTimeout(()=>{
+    document.querySelectorAll('.period-pill').forEach(b=>{
+      const isToday = b.onclick?.toString().includes("'today'") || b.textContent.trim()==='Сегодня';
+      if(isToday) b.classList.add('active');
+      else b.classList.remove('active');
+    });
+  }, 0);
 }
 
 function rebuildMonthPills() {
   PRESETS = buildPresets();
-  const activeKey = activePeriod.preset || _lastMonthWithData() || _currentKey;
+  const activeKey = activePeriod.preset || 'today';
   const monthKeys = Object.keys(PRESETS).filter(k => k.startsWith('m_'));
   [['main','setPreset'],['mgr','setMgrPreset'],['ad','setAdPreset']].forEach(([prefix, fn]) => {
     const container = document.getElementById(`${prefix}-month-pills`);
