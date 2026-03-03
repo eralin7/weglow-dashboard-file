@@ -1423,7 +1423,7 @@ function renderAdSpend(){
 // ═══════════════════ LOAD FROM SUPABASE ══════════════════════════
 async function loadFromSupabase() {
   const badge = document.getElementById('data-badge');
-  if (badge) badge.textContent = '⟳ Загрузка из облака...';
+  if (badge) badge.textContent = '⟳ Загрузка...';
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data,updated_at`, {
       headers: {
@@ -1433,12 +1433,12 @@ async function loadFromSupabase() {
     });
     if (!res.ok) {
       if (badge) badge.textContent = '⚠ Ошибка Supabase: ' + res.status;
-      return;
+      render(); return;
     }
     const rows = await res.json();
     if (!rows || !rows[0] || !rows[0].data) {
       if (badge) badge.textContent = '⚠ Нет данных в Supabase — загрузите файлы';
-      return;
+      render(); return;
     }
     const d = rows[0].data;
 
@@ -1478,8 +1478,10 @@ async function loadFromSupabase() {
 
   } catch(e) {
     const badge = document.getElementById('data-badge');
-    if (badge) badge.textContent = '⚠ ' + e.message;
+    if (badge) badge.textContent = '⚠ Ошибка загрузки — показаны локальные данные';
     console.warn('Supabase load error:', e);
+    // Рендерим с встроенными данными как fallback
+    render();
   }
 }
 
@@ -1600,8 +1602,8 @@ function rebuildMonthPills() {
   });
 }
 initDynamicUI();
-render();
-// Load fresh data from Supabase (will re-render when loaded)
+// Сначала загружаем из Supabase, потом рендерим
+// render() вызывается внутри loadFromSupabase() после получения данных
 loadFromSupabase();
 
 // ── THEME TOGGLE ─────────────────────────────────────────────────
