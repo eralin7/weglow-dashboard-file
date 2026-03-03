@@ -777,6 +777,7 @@ const _defaultPreset = PRESETS[_defaultKey] || {from:'01.02.2026',to:'28.02.2026
 
 // ═══════════════════ STATE ════════════════════════════════════════
 let activeProd='all', activeMetric='budget', activeView='main';
+let _userChangedPeriod = false; // tracks if user manually selected period
 let activePeriod={..._defaultPreset, preset:_defaultKey};
 let activeMgrProd='Коллаген', activeMgrPeriod={..._defaultPreset, preset:_defaultKey};
 let activeAdPeriod={..._defaultPreset, preset:_defaultKey};
@@ -897,7 +898,7 @@ function switchView(v,el){
 }
 
 // ═══════════════════ PERIOD PRESETS ═══════════════════════════════
-function setPreset(p,el){
+function setPreset(p,el){ _userChangedPeriod=true;
   document.getElementById('custom-wrap').style.display='none';
   if(p==='custom'){document.getElementById('custom-wrap').style.display='flex';markActivePeriod(el);return;}
   activePeriod={...PRESETS[p],preset:p};
@@ -1444,6 +1445,18 @@ async function loadFromSupabase() {
       }
       // Save to sessionStorage for next load (faster)
       sessionStorage.setItem('wg_data', JSON.stringify(d));
+
+      // After fresh data — switch to latest month that has data
+      if(!_userChangedPeriod){
+        const _newKey = _lastMonthWithData() || _currentKey;
+        const _newPreset = PRESETS[_newKey] || activePeriod;
+        activePeriod    = {..._newPreset, preset:_newKey};
+        activeMgrPeriod = {..._newPreset, preset:_newKey};
+        activeAdPeriod  = {..._newPreset, preset:_newKey};
+      }
+      // Rebuild pills with correct active state (clears duplicates)
+      rebuildMonthPills();
+
       // Re-render with fresh data
       render();
       if(activeView==='managers') renderManagers();
@@ -1543,15 +1556,22 @@ function initDynamicUI() {
   // Render plan/fact/remain KPI block
   renderSidebarKPI(now, dayOfMonth, totalDays);
 
-  // Build month pills dynamically for all 3 filter groups
+  // Build month pills
+  rebuildMonthPills();
+}
+
+function rebuildMonthPills() {
+  PRESETS = buildPresets();
+  const activeKey = activePeriod.preset || _lastMonthWithData() || _currentKey;
   const monthKeys = Object.keys(PRESETS).filter(k => k.startsWith('m_'));
   [['main','setPreset'],['mgr','setMgrPreset'],['ad','setAdPreset']].forEach(([prefix, fn]) => {
     const container = document.getElementById(`${prefix}-month-pills`);
     if (!container) return;
+    container.innerHTML = ''; // clear to avoid duplicates
     monthKeys.forEach(key => {
       const p = PRESETS[key];
       const btn = document.createElement('button');
-      btn.className = 'pill period-pill' + (key === _defaultKey ? ' active' : '');
+      btn.className = 'pill period-pill' + (key === activeKey ? ' active' : '');
       btn.textContent = p.label;
       btn.onclick = function() { window[fn](key, this); };
       container.appendChild(btn);
