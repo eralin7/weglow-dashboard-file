@@ -94,6 +94,13 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
 .sp-fill { height:100%; border-radius:3px; background:linear-gradient(90deg,#6366f1,#818cf8); transition:width .5s; }
 .sp-nums { display:flex; justify-content:space-between; font-size:10px; color:rgba(255,255,255,.4); }
 .sp-nums strong { color:rgba(255,255,255,.7); }
+.sp-kpi { margin-top:10px; border-top:1px solid rgba(255,255,255,.07); padding-top:10px; display:flex; flex-direction:column; gap:5px; }
+.sp-kpi-row { display:flex; justify-content:space-between; font-size:10px; }
+.sp-kpi-row .sp-kl { color:rgba(255,255,255,.35); }
+.sp-kpi-row .sp-kv { color:rgba(255,255,255,.7); font-weight:600; }
+.sp-kpi-row .sp-kv.green { color:#4ade80; }
+.sp-kpi-row .sp-kv.red { color:#f87171; }
+.sp-kpi-row .sp-kv.yellow { color:#fbbf24; }
 
 /* ─── MAIN ───────────────────────────────────────────── */
 .main { margin-left:220px; flex:1; display:flex; flex-direction:column; min-height:100vh; }
@@ -314,8 +321,12 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
   </nav>
   <div class="sb-progress">
     <div class="sp-label" id="sb-month-label">—</div>
-    <div class="sp-bar"><div class="sp-fill" id="sb-fill" style="width:96%"></div></div>
-    <div class="sp-nums"><span>1 фев</span><strong id="sb-day">27 / 28</strong></div>
+    <div class="sp-bar"><div class="sp-fill" id="sb-fill" style="width:0%"></div></div>
+    <div class="sp-nums">
+      <span id="sb-day-start">1</span>
+      <strong id="sb-day"></strong>
+    </div>
+    <div class="sp-kpi" id="sb-kpi"></div>
   </div>
 </aside>
 
@@ -1108,10 +1119,65 @@ async function loadFromSupabase() {
       render();
       if(activeView==='managers') renderManagers();
       if(activeView==='adspend') renderAdSpend();
+      // Update sidebar KPI with fresh data
+      const _now=new Date(); const _td=_lastDay(_now.getFullYear(),_now.getMonth()+1);
+      renderSidebarKPI(_now, _now.getDate(), _td);
     }
   } catch(e) {
     console.warn('Supabase load error:', e);
   }
+}
+
+// ═══════════════════ SIDEBAR KPI ═════════════════════════════════
+function renderSidebarKPI(now, dayOfMonth, totalDays){
+  const kpiEl = document.getElementById('sb-kpi');
+  if(!kpiEl) return;
+
+  const mm = String(now.getMonth()+1).padStart(2,'0');
+  const yyyy = now.getFullYear();
+  const monthKey = `${mm}.${yyyy}`;
+
+  // Sum plan across all products for this month
+  let totalPlan = 0;
+  const planProducts = {col:'Коллаген', ummi:'Ummi', coffee:'Кофе'};
+  for(const [pk] of Object.entries(planProducts)){
+    totalPlan += (PLANS[pk] && PLANS[pk][monthKey]) ? PLANS[pk][monthKey] : 0;
+  }
+
+  // Sum fact (budget) for current month across all products
+  const monthPrefix = `${mm}.${yyyy}`;
+  let totalFact = 0;
+  for(const prodKey of Object.keys(RAW)){
+    const days = RAW[prodKey]||{};
+    for(const [date, vals] of Object.entries(days)){
+      // date format DD.MM.YYYY — check month+year match
+      if(date.slice(3) === monthPrefix) totalFact += (vals[2]||0);
+    }
+  }
+
+  const remain = Math.max(0, totalPlan - totalFact);
+  const daysLeft = totalDays - dayOfMonth + 1; // including today
+  const planPerDayLeft = daysLeft > 0 ? Math.round(remain / daysLeft) : 0;
+  const factPerDay = dayOfMonth > 0 ? Math.round(totalFact / dayOfMonth) : 0;
+  const pctDone = totalPlan ? Math.round(totalFact / totalPlan * 100) : 0;
+
+  const cls = pctDone >= 100 ? 'green' : pctDone >= 70 ? 'yellow' : 'red';
+  const remainCls = remain === 0 ? 'green' : daysLeft <= 5 ? 'red' : 'yellow';
+
+  kpiEl.innerHTML = totalPlan ? `
+    <div class="sp-kpi-row"><span class="sp-kl">План месяц</span><span class="sp-kv">${fmtK(totalPlan)}</span></div>
+    <div class="sp-kpi-row"><span class="sp-kl">Факт</span><span class="sp-kv ${cls}">${fmtK(totalFact)} · ${pctDone}%</span></div>
+    <div class="sp-kpi-row"><span class="sp-kl">Остаток</span><span class="sp-kv ${remainCls}">${fmtK(remain)}</span></div>
+    <div class="sp-kpi-row"><span class="sp-kl">Нужно/день</span><span class="sp-kv">${fmtK(planPerDayLeft)}</span></div>
+    <div class="sp-kpi-row"><span class="sp-kl">Факт/день</span><span class="sp-kv">${fmtK(factPerDay)}</span></div>
+  ` : `<div class="sp-kpi-row"><span class="sp-kl" style="opacity:.5">План не задан</span></div>`;
+}
+
+function fmtK(n){
+  if(!n) return '0';
+  if(n >= 1e6) return (n/1e6).toFixed(1)+' М';
+  if(n >= 1e3) return Math.round(n/1e3)+'К';
+  return String(n);
 }
 
 // ═══════════════════ INIT ═════════════════════════════════════════
@@ -1145,9 +1211,15 @@ function initDynamicUI() {
   // Sidebar month label + progress bar
   document.getElementById('sb-month-label').textContent = `${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}`;
   const totalDays = _lastDay(now.getFullYear(), now.getMonth()+1);
-  const pct = Math.round(now.getDate() / totalDays * 100);
+  const dayOfMonth = now.getDate();
+  const pct = Math.round(dayOfMonth / totalDays * 100);
   document.getElementById('sb-fill').style.width = pct + '%';
-  document.getElementById('sb-day').textContent = `${now.getDate()} / ${totalDays}`;
+  document.getElementById('sb-day').textContent = `${dayOfMonth} / ${totalDays}`;
+  // Dynamic start of month label
+  const startEl = document.getElementById('sb-day-start');
+  if(startEl) startEl.textContent = `1 ${MONTH_NAMES[now.getMonth()].slice(0,3).toLowerCase()}`;
+  // Render plan/fact/remain KPI block
+  renderSidebarKPI(now, dayOfMonth, totalDays);
 
   // Build month pills dynamically for all 3 filter groups
   const monthKeys = Object.keys(PRESETS).filter(k => k.startsWith('m_'));
