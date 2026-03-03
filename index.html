@@ -294,40 +294,65 @@ function parseSales(rows, keyHint){
   const headers = rows[0];
   const ncols = headers.length;
 
-  // Determine product by column count
-  let product, orderColIdx;
-  if(ncols >= 77 && ncols <= 81){ product='Коллаген'; orderColIdx=42; }
-  else if(ncols >= 69 && ncols <= 73){ product='Ummi'; orderColIdx=43; }
-  else if(ncols >= 63 && ncols <= 67){ product='Кофе'; orderColIdx=36; }
+  // Determine product by column count OR keyHint
+  let product;
+  if(ncols >= 77 && ncols <= 83)       product='Коллаген';
+  else if(ncols >= 67 && ncols <= 75)  product='Ummi';
+  else if(ncols >= 61 && ncols <= 69)  product='Кофе';
   else {
-    // Try to detect by header content
     const hStr = headers.join('|').toLowerCase();
-    if(hStr.includes('коллаген')||keyHint==='col'){ product='Коллаген'; orderColIdx=42; }
-    else if(hStr.includes('ummi')||keyHint==='ummi'){ product='Ummi'; orderColIdx=43; }
-    else if(hStr.includes('кофе')||keyHint==='coffee'){ product='Кофе'; orderColIdx=36; }
+    if(hStr.includes('коллаген')||keyHint==='col')        product='Коллаген';
+    else if(hStr.includes('ummi')||keyHint==='ummi')       product='Ummi';
+    else if(hStr.includes('кофе')||keyHint==='coffee')     product='Кофе';
+    else if(keyHint==='col')   product='Коллаген';
+    else if(keyHint==='ummi')  product='Ummi';
+    else if(keyHint==='coffee')product='Кофе';
     else return {error:`Неизвестный формат (${ncols} колонок)`};
   }
 
-  // Verify order date column header
-  const orderHeader = (headers[orderColIdx]||'').toLowerCase();
-  if(!orderHeader.includes('дата') && !orderHeader.includes('заказ')){
-    // Try to find order date column dynamically
-    const altIdx = headers.findIndex(h=>h.toLowerCase().includes('заказ'));
-    if(altIdx>=0) orderColIdx = altIdx;
+  // ── Find columns BY HEADER NAME (robust, works across any export version) ──
+  const hi = h => headers.findIndex(x => x.toLowerCase().includes(h.toLowerCase()));
+
+  // Order date column — try multiple keywords
+  let orderColIdx = hi('дата заказа');
+  if(orderColIdx < 0) orderColIdx = hi('заказ');
+  if(orderColIdx < 0) orderColIdx = hi('дата покупки');
+  if(orderColIdx < 0) orderColIdx = hi('дата оплаты');
+  // Fallback to hardcoded if still not found
+  if(orderColIdx < 0){
+    if(product==='Коллаген') orderColIdx=42;
+    else if(product==='Ummi') orderColIdx=43;
+    else orderColIdx=36;
   }
 
-  const daily = {}; // date -> [leads, deals, budget]
-  const managers = {}; // name -> {leads, deals, budget}
+  // Budget column
+  let budgetColIdx = hi('бюджет');
+  if(budgetColIdx < 0) budgetColIdx = hi('сумма сделки');
+  if(budgetColIdx < 0) budgetColIdx = hi('выручка');
+  if(budgetColIdx < 0) budgetColIdx = 2; // fallback
+
+  // Created date column
+  let createdColIdx = hi('дата создания');
+  if(createdColIdx < 0) createdColIdx = hi('создан');
+  if(createdColIdx < 0) createdColIdx = 4; // fallback
+
+  // Manager column
+  let mgrColIdx = hi('ответственный');
+  if(mgrColIdx < 0) mgrColIdx = hi('менеджер');
+  if(mgrColIdx < 0) mgrColIdx = 3; // fallback
+
+  const daily = {};
+  const managers = {};
   let totalLeads=0, totalDeals=0, totalBudget=0;
 
   for(let i=1;i<rows.length;i++){
     const row = rows[i];
     if(!row[0]) continue;
 
-    const manager = (row[3]||'').trim();
-    const createdRaw = (row[4]||'').trim();
+    const manager = (row[mgrColIdx]||'').trim();
+    const createdRaw = (row[createdColIdx]||'').trim();
     const orderRaw = (orderColIdx < row.length ? row[orderColIdx]||'' : '').trim();
-    const budgetRaw = (row[2]||'0').replace(/[\s\xa0₸,]/g,'');
+    const budgetRaw = (row[budgetColIdx]||'0').replace(/[\s\xa0₸,]/g,'');
     const budget = parseFloat(budgetRaw)||0;
 
     // Parse created date → leads
@@ -358,7 +383,6 @@ function parseSales(rows, keyHint){
     }
   }
 
-  // Build manager list
   const mgrList = Object.entries(managers)
     .map(([name,v])=>({
       name, leads:v.leads, deals:v.deals, budget:Math.round(v.budget),
@@ -370,7 +394,8 @@ function parseSales(rows, keyHint){
   return {
     product, daily, managers: mgrList,
     totalLeads, totalDeals, totalBudget: Math.round(totalBudget),
-    summary: `${totalLeads.toLocaleString('ru')} лидов, ${totalDeals} сделок, ${(totalBudget/1e6).toFixed(2)} М ₸`
+    summary: `${totalLeads.toLocaleString('ru')} лидов, ${totalDeals} сделок, ${(totalBudget/1e6).toFixed(2)} М ₸`,
+    debug: `${ncols} колонок | order:${orderColIdx} budget:${budgetColIdx} created:${createdColIdx} mgr:${mgrColIdx}`
   };
 }
 
