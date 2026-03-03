@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>WeGlow — Кабинет РОП</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0f1623;--ink2:#1e2840;--slate:#4a5568;--muted:#8896ae;
+  --line:#e8ecf4;--bg:#f7f8fc;--white:#fff;
+  --acc:#6366f1;--acc-l:#eef2ff;
+  --col:#1a56db;--col-l:#eff6ff;
+  --ummi:#0a7c5c;--ummi-l:#ecfdf5;
+  --cof:#b45309;--cof-l:#fffbeb;
+  --green:#16a34a;--green-l:#dcfce7;
+  --red:#dc2626;--red-l:#fde8e8;
+  --rop-a:#1a56db;--rop-n:#0a7c5c;--rop-s:#b45309;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{font-size:15px;-webkit-font-smoothing:antialiased;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
+
+/* PASSWORD */
+#pw-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
+.pw-box{background:var(--white);border:1px solid var(--line);border-radius:20px;padding:44px 48px;max-width:420px;width:100%;box-shadow:0 4px 24px rgba(15,22,35,.08);}
+.logo{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--ink);}
+.logo-sub{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;margin-top:2px;}
+.rop-select-wrap{display:flex;flex-direction:column;gap:10px;margin-bottom:20px;}
+.rop-btn{padding:14px 20px;border:2px solid var(--line);border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;background:var(--white);color:var(--ink);transition:all .2s;text-align:left;display:flex;align-items:center;gap:12px;}
+.rop-btn:hover{border-color:currentColor;background:var(--bg);}
+.rop-btn.rop-a{color:var(--rop-a);}
+.rop-btn.rop-n{color:var(--rop-n);}
+.rop-btn.rop-s{color:var(--rop-s);}
+.rop-btn .dot{width:10px;height:10px;border-radius:50%;background:currentColor;flex-shrink:0;}
+.pw-title{font-size:17px;font-weight:700;color:var(--ink);margin-bottom:4px;}
+.pw-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
+.pw-inp{width:100%;padding:12px 16px;border:1.5px solid var(--line);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:15px;outline:none;transition:border-color .15s;background:var(--bg);}
+.pw-inp:focus{border-color:var(--acc);}
+.pw-login-btn{width:100%;padding:13px;color:#fff;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;margin-top:12px;transition:opacity .15s;}
+.pw-login-btn:hover{opacity:.88;}
+.pw-back{background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;margin-top:12px;font-family:'DM Sans',sans-serif;width:100%;}
+.pw-err{color:var(--red);font-size:13px;margin-top:8px;display:none;}
+
+/* TOPBAR */
+#app{display:none;}
+.topbar{color:#fff;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;}
+.top-brand .top-logo{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;}
+.top-brand .top-sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:.6;}
+.top-links{display:flex;gap:16px;align-items:center;}
+.top-link{font-size:13px;color:rgba(255,255,255,.6);text-decoration:none;transition:color .15s;}
+.top-link:hover{color:#fff;}
+.badge{font-size:12px;padding:4px 12px;border-radius:20px;background:rgba(255,255,255,.1);}
+
+/* CONTENT */
+.content{max-width:1000px;margin:0 auto;padding:32px 24px;}
+.page-title{font-size:26px;font-weight:700;margin-bottom:4px;}
+.page-sub{font-size:13px;color:var(--muted);margin-bottom:28px;}
+
+/* TABS */
+.tabs{display:flex;gap:2px;background:var(--line);border-radius:12px;padding:3px;margin-bottom:28px;width:fit-content;}
+.tab{padding:9px 20px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--slate);transition:all .15s;font-family:'DM Sans',sans-serif;}
+.tab.active{background:var(--white);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.1);}
+
+/* CARDS */
+.card{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:24px 28px;box-shadow:0 1px 6px rgba(15,22,35,.04);margin-bottom:20px;}
+.card-title{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+
+/* MANAGER LIST */
+.mgr-list{display:flex;flex-direction:column;gap:8px;}
+.mgr-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);transition:border-color .15s;}
+.mgr-item:hover{border-color:var(--acc);}
+.mgr-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.mgr-name{flex:1;font-size:13px;font-weight:600;}
+.mgr-rop-tag{font-size:11px;font-weight:600;padding:3px 10px;border-radius:8px;}
+.mgr-remove{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;transition:color .15s;padding:2px 6px;}
+.mgr-remove:hover{color:var(--red);}
+
+/* ADD MANAGER FORM */
+.add-form{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px;}
+.add-inp{flex:1;min-width:200px;padding:10px 14px;border:1.5px solid var(--line);border-radius:9px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;background:var(--bg);}
+.add-inp:focus{border-color:var(--acc);background:var(--white);}
+.add-btn{padding:10px 20px;border:none;border-radius:9px;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:opacity .15s;}
+.add-btn:hover{opacity:.88;}
+
+/* PLAN TABLE */
+.plan-table-wrap{overflow-x:auto;}
+.dt{width:100%;border-collapse:collapse;font-size:13px;}
+.dt th{text-align:left;padding:10px 14px;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;border-bottom:2px solid var(--line);white-space:nowrap;}
+.dt td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:middle;}
+.dt tr:last-child td{border-bottom:none;}
+.dt tr:hover td{background:var(--bg);}
+.plan-inp{width:130px;padding:7px 10px;border:1.5px solid var(--line);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;outline:none;text-align:right;transition:border-color .15s;}
+.plan-inp:focus{border-color:var(--acc);background:var(--white);}
+.save-row-btn{padding:6px 14px;border:none;border-radius:7px;color:#fff;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;}
+
+/* MONTH PICKER */
+.month-row{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+.month-sel{padding:9px 14px;border:1.5px solid var(--line);border-radius:9px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;background:var(--white);cursor:pointer;}
+.month-sel:focus{border-color:var(--acc);}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s;z-index:999;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.ok{background:#16a34a;}
+.toast.err{background:var(--red);}
+
+/* Empty */
+.empty{text-align:center;padding:32px;color:var(--muted);font-size:13px;}
+
+@media(max-width:600px){
+  .content{padding:16px;}
+  .card{padding:16px;}
+  .pw-box{padding:28px 20px;}
+  .tabs{width:100%;}
+  .tab{flex:1;text-align:center;}
+}
+</style>
+</head>
+<body>
+
+<!-- PASSWORD SCREEN -->
+<div id="pw-screen">
+  <div class="pw-box">
+    <div class="logo">WeGlow</div>
+    <div class="logo-sub">ROP Cabinet</div>
+    <div id="step-select">
+      <div class="pw-title">Выберите группу</div>
+      <div class="pw-sub">Войдите в свой кабинет РОП</div>
+      <div class="rop-select-wrap">
+        <button class="rop-btn rop-a" onclick="selectRop('РОП Айдана')">
+          <div class="dot"></div> РОП Айдана
+        </button>
+        <button class="rop-btn rop-n" onclick="selectRop('РОП Нурдаулет')">
+          <div class="dot"></div> РОП Нурдаулет
+        </button>
+        <button class="rop-btn rop-s" onclick="selectRop('РОП Аслиддин')">
+          <div class="dot"></div> РОП Аслиддин
+        </button>
+      </div>
+    </div>
+    <div id="step-pw" style="display:none">
+      <div class="pw-title" id="pw-step-title">Пароль</div>
+      <div class="pw-sub" id="pw-step-sub">Введите пароль для доступа</div>
+      <input class="pw-inp" type="password" id="pw-input" placeholder="Пароль"
+             onkeydown="if(event.key==='Enter')checkPw()">
+      <button class="pw-login-btn" id="pw-login-btn" onclick="checkPw()">Войти</button>
+      <div class="pw-err" id="pw-err">Неверный пароль</div>
+      <button class="pw-back" onclick="backToSelect()">← Назад</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar" id="topbar">
+    <div class="top-brand">
+      <div class="top-logo">WeGlow</div>
+      <div class="top-sub" id="top-rop-label">РОП Кабинет</div>
+    </div>
+    <div class="top-links">
+      <span class="badge" id="sync-badge">Загрузка...</span>
+      <a href="dashboard.html" class="top-link">← Дашборд</a>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="page-title" id="app-title">Кабинет РОП</div>
+    <div class="page-sub">Управление менеджерами и планами продаж</div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('plans',this)">📊 Планы менеджеров</button>
+      <button class="tab" onclick="switchTab('managers',this)">👥 Менеджеры группы</button>
+    </div>
+
+    <!-- PLANS TAB -->
+    <div id="tab-plans">
+      <div class="month-row">
+        <span style="font-size:13px;font-weight:600;color:var(--muted)">Месяц:</span>
+        <select class="month-sel" id="plan-month-sel" onchange="renderPlanTable()"></select>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 Индивидуальные планы</div>
+        <div class="plan-table-wrap" id="plan-table-wrap">
+          <div class="empty">Загрузка...</div>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <button onclick="saveAllPlans()" style="padding:11px 28px;background:var(--ink2);color:#fff;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;">Сохранить все планы</button>
+          <span id="plan-save-status" style="font-size:13px;color:var(--muted)"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MANAGERS TAB -->
+    <div id="tab-managers" style="display:none">
+      <div class="card">
+        <div class="card-title">👥 Менеджеры в группе <span id="mgr-group-label" style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:8px;margin-left:4px"></span></div>
+        <div class="mgr-list" id="mgr-list"></div>
+        <div class="add-form">
+          <input class="add-inp" type="text" id="new-mgr-name" placeholder="Имя менеджера (напр. Пин 25 Ахмед)">
+          <button class="add-btn" id="add-mgr-btn" onclick="addManager()">+ Добавить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════
+const SUPABASE_URL = 'https://bdyakgmeibpdkisbiykt.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkeWFrZ21laWJwZGtpc2JpeWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTQzOTMsImV4cCI6MjA4Nzc5MDM5M30.nA187grJR6XFQRmTP6WOM-6-1dZK1EzYNNP2JH9aAMg';
+
+const ROP_PASSWORDS = {
+  'РОП Айдана':    'aydan2026',
+  'РОП Нурдаулет': 'nurdaulet2026',
+  'РОП Аслиддин':  'aslid2026',
+};
+const ROP_COLORS = {
+  'РОП Айдана':    '#1a56db',
+  'РОП Нурдаулет': '#0a7c5c',
+  'РОП Аслиддин':  '#b45309',
+};
+const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+
+// Default manager assignments (can be overridden from Supabase)
+const DEFAULT_GROUPS = {
+  'РОП Айдана':    ['Пин 7 Рахима','Пин 3 Ерсин','РОП Айдана'],
+  'РОП Нурдаулет': ['Пин 14 Шамид Халилли','пин 17 Таймир Туйгунов','пин 10 Айша','Пин 8 Асема','Пин 1 Раушан','Пин 6 Асем','Пин 5 Тахир','пин 16 Медина','пин 18 Наиль','РОП Нурдаулет'],
+  'РОП Аслиддин':  ['Пин 2 Санжар','Пин 4 Динара','пин 20 Жазира','пин 21 Жанар','пин 22 Асель','пин 23 Темирлан','пин 19 Сая','Пин 34 Карина','Пин 32 Айжан','РОП Аслиддин'],
+};
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let currentRop = null;
+let ropColor = '#6366f1';
+let managers = [];       // list of manager names for this ROP
+let planData = {};       // { managerName: { 'MM.YYYY': plan } }
+let selectedPlanMonth = null;
+
+// ══════════════════════════════════════════════
+// PASSWORD FLOW
+// ══════════════════════════════════════════════
+function selectRop(rop){
+  currentRop = rop;
+  ropColor = ROP_COLORS[rop];
+  document.getElementById('step-select').style.display='none';
+  document.getElementById('step-pw').style.display='block';
+  document.getElementById('pw-step-title').textContent = rop;
+  document.getElementById('pw-step-sub').innerHTML = `<span style="color:${ropColor};font-weight:600">${rop}</span> — введите пароль`;
+  document.getElementById('pw-login-btn').style.background = ropColor;
+  setTimeout(()=>document.getElementById('pw-input').focus(),100);
+}
+function backToSelect(){
+  document.getElementById('step-select').style.display='block';
+  document.getElementById('step-pw').style.display='none';
+  document.getElementById('pw-input').value='';
+  document.getElementById('pw-err').style.display='none';
+  currentRop=null;
+}
+function checkPw(){
+  if(document.getElementById('pw-input').value === ROP_PASSWORDS[currentRop]){
+    document.getElementById('pw-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+    sessionStorage.setItem('rop_auth', currentRop);
+    startApp();
+  } else {
+    document.getElementById('pw-err').style.display='block';
+    document.getElementById('pw-input').value='';
+  }
+}
+
+// Auto-login
+const _savedRop = sessionStorage.getItem('rop_auth');
+if(_savedRop && ROP_PASSWORDS[_savedRop]){
+  currentRop = _savedRop;
+  ropColor = ROP_COLORS[_savedRop];
+  document.getElementById('pw-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+}
+
+// ══════════════════════════════════════════════
+// SUPABASE
+// ══════════════════════════════════════════════
+const SB_H = {'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Content-Type':'application/json'};
+async function sbGet(path){ const r=await fetch(`${SUPABASE_URL}/rest/v1/${path}`,{headers:SB_H}); if(!r.ok)throw new Error(r.status); return r.json(); }
+async function sbUpsert(table,data){ const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}`,{method:'POST',headers:{...SB_H,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(data)}); if(!r.ok){const t=await r.text();throw new Error(t);} }
+async function sbDelete(table,filter){ const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}${filter}`,{method:'DELETE',headers:SB_H}); if(!r.ok)throw new Error(r.status); }
+
+function setBadge(t,type){
+  const b=document.getElementById('sync-badge');
+  b.textContent=t;
+  b.style.color=type==='ok'?'#4ade80':type==='err'?'#f87171':'#a5b4fc';
+}
+
+// ══════════════════════════════════════════════
+// LOAD DATA
+// ══════════════════════════════════════════════
+async function loadAll(){
+  setBadge('Загрузка...','load');
+  try {
+    // Load manager list for this ROP
+    let rows = await sbGet(`weglow_rop_managers?rop=eq.${encodeURIComponent(currentRop)}&select=name&order=name`);
+    if(rows.length){
+      managers = rows.map(r=>r.name);
+    } else {
+      managers = [...(DEFAULT_GROUPS[currentRop]||[])];
+    }
+    // Load plans
+    const planRows = await sbGet(`weglow_mgr_plans?rop=eq.${encodeURIComponent(currentRop)}&select=manager,month,plan`);
+    planData = {};
+    for(const r of planRows){
+      if(!planData[r.manager]) planData[r.manager]={};
+      planData[r.manager][r.month] = r.plan||0;
+    }
+    setBadge('Синхронизировано ✓','ok');
+    buildMonthSelector();
+    renderMgrList();
+    renderPlanTable();
+  } catch(e){
+    setBadge('Ошибка','err');
+    // Use defaults on error
+    managers = [...(DEFAULT_GROUPS[currentRop]||[])];
+    buildMonthSelector();
+    renderMgrList();
+    renderPlanTable();
+    console.error(e);
+  }
+}
+
+// ══════════════════════════════════════════════
+// APP INIT
+// ══════════════════════════════════════════════
+function startApp(){
+  // Topbar color
+  document.getElementById('topbar').style.background = ropColor;
+  document.getElementById('top-rop-label').textContent = currentRop;
+  document.getElementById('app-title').textContent = `Кабинет ${currentRop}`;
+  document.getElementById('mgr-group-label').textContent = currentRop;
+  document.getElementById('mgr-group-label').style.background = ropColor+'22';
+  document.getElementById('mgr-group-label').style.color = ropColor;
+  document.getElementById('add-mgr-btn').style.background = ropColor;
+  loadAll();
+}
+if(_savedRop && ROP_PASSWORDS[_savedRop]) startApp();
+
+// ══════════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════════
+function switchTab(tab, el){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-plans').style.display = tab==='plans'?'block':'none';
+  document.getElementById('tab-managers').style.display = tab==='managers'?'block':'none';
+}
+
+// ══════════════════════════════════════════════
+// MONTH SELECTOR
+// ══════════════════════════════════════════════
+function buildMonthSelector(){
+  const now = new Date();
+  const months = [];
+  for(let i=-2; i<=3; i++){
+    const d = new Date(now.getFullYear(), now.getMonth()+i, 1);
+    months.push(`${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`);
+  }
+  const curMK = `${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
+  const sel = document.getElementById('plan-month-sel');
+  sel.innerHTML = months.map(m=>{
+    const [mm,yy]=m.split('.');
+    return `<option value="${m}" ${m===curMK?'selected':''}>${MONTH_NAMES[+mm-1]} ${yy}${m===curMK?' (текущий)':''}</option>`;
+  }).join('');
+  selectedPlanMonth = curMK;
+}
+
+// ══════════════════════════════════════════════
+// PLAN TABLE
+// ══════════════════════════════════════════════
+function renderPlanTable(){
+  selectedPlanMonth = document.getElementById('plan-month-sel').value;
+  const mgrList = managers.filter(m=>!m.startsWith('РОП'));
+  if(!mgrList.length){
+    document.getElementById('plan-table-wrap').innerHTML='<div class="empty">Нет менеджеров в группе</div>';
+    return;
+  }
+  const rows = mgrList.map(name=>{
+    const plan = (planData[name]&&planData[name][selectedPlanMonth])||0;
+    const shortName = name.replace(/^(Пин|пин)\s+\d+\s*/i,'');
+    return `<tr>
+      <td style="font-weight:600">${name}</td>
+      <td style="color:var(--muted);font-size:12px">${shortName}</td>
+      <td>
+        <input class="plan-inp" type="number" id="plan-inp-${encodeURIComponent(name)}"
+               value="${plan||''}" placeholder="0" min="0" step="100000"
+               style="border-color:${ropColor}40">
+      </td>
+      <td style="color:var(--muted);font-size:12px">${plan?fmtM(plan):'—'}</td>
+    </tr>`;
+  }).join('');
+
+  const totalPlan = mgrList.reduce((s,n)=>s+((planData[n]&&planData[n][selectedPlanMonth])||0),0);
+
+  document.getElementById('plan-table-wrap').innerHTML = `
+    <table class="dt">
+      <thead><tr>
+        <th>Менеджер</th><th>Имя</th>
+        <th>План ₸ на ${getMonthLabel(selectedPlanMonth)}</th>
+        <th>Текущий план</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr style="background:var(--bg)">
+        <td colspan="2" style="font-weight:700;padding:10px 14px">Итого по группе</td>
+        <td colspan="2" style="font-weight:700;color:${ropColor};padding:10px 14px">${totalPlan?fmtM(totalPlan):'—'}</td>
+      </tr></tfoot>
+    </table>`;
+}
+
+async function saveAllPlans(){
+  const mgrList = managers.filter(m=>!m.startsWith('РОП'));
+  const status = document.getElementById('plan-save-status');
+  status.textContent = 'Сохранение...';
+  status.style.color = 'var(--acc)';
+  try {
+    const upserts = [];
+    for(const name of mgrList){
+      const key = encodeURIComponent(name);
+      const el = document.getElementById(`plan-inp-${key}`);
+      if(!el) continue;
+      const plan = parseInt(el.value)||0;
+      if(!planData[name]) planData[name]={};
+      planData[name][selectedPlanMonth] = plan;
+      upserts.push({rop:currentRop, manager:name, month:selectedPlanMonth, plan});
+    }
+    await sbUpsert('weglow_mgr_plans', upserts);
+    // Sync to weglow_data
+    await syncMgrPlansToDashboard();
+    status.textContent = '✓ Сохранено';
+    status.style.color = 'var(--green)';
+    renderPlanTable();
+    toast('Планы сохранены ✓','ok');
+    setTimeout(()=>status.textContent='',3000);
+  } catch(e){
+    status.textContent = 'Ошибка: '+e.message;
+    status.style.color = 'var(--red)';
+  }
+}
+
+async function syncMgrPlansToDashboard(){
+  // Build MGR_PLANS: { managerName: { 'MM.YYYY': plan } }
+  try {
+    const allRows = await sbGet('weglow_mgr_plans?select=manager,month,plan');
+    const MGR_PLANS = {};
+    for(const r of allRows){
+      if(!MGR_PLANS[r.manager]) MGR_PLANS[r.manager]={};
+      MGR_PLANS[r.manager][r.month] = r.plan||0;
+    }
+    let rows = await sbGet('weglow_data?id=eq.1&select=data');
+    let payload = rows&&rows[0]?rows[0].data:{};
+    payload.MGR_PLANS = MGR_PLANS;
+    payload.updatedAt = new Date().toISOString();
+    await sbUpsert('weglow_data',{id:1,data:payload,updated_at:new Date().toISOString()});
+  } catch(e){ console.error('Sync mgr plans error:',e); }
+}
+
+// ══════════════════════════════════════════════
+// MANAGER LIST
+// ══════════════════════════════════════════════
+function renderMgrList(){
+  const list = document.getElementById('mgr-list');
+  if(!managers.length){ list.innerHTML='<div class="empty">Нет менеджеров</div>'; return; }
+  list.innerHTML = managers.map(name=>`
+    <div class="mgr-item">
+      <div class="mgr-dot" style="background:${ropColor}"></div>
+      <div class="mgr-name">${name}</div>
+      <span class="mgr-rop-tag" style="background:${ropColor}18;color:${ropColor}">${currentRop}</span>
+      <button class="mgr-remove" onclick="removeManager('${name.replace(/'/g,"\\'")}')">×</button>
+    </div>`).join('');
+}
+
+async function addManager(){
+  const inp = document.getElementById('new-mgr-name');
+  const name = inp.value.trim();
+  if(!name){ toast('Введите имя менеджера','err'); return; }
+  if(managers.includes(name)){ toast('Менеджер уже в группе','err'); return; }
+  try {
+    await sbUpsert('weglow_rop_managers',{rop:currentRop,name});
+    managers.push(name);
+    inp.value='';
+    renderMgrList();
+    renderPlanTable();
+    toast(`${name} добавлен в группу`,'ok');
+    // Update MGR_TO_ROP in dashboard data
+    await syncRopGroupsToDashboard();
+  } catch(e){ toast('Ошибка: '+e.message,'err'); }
+}
+
+async function removeManager(name){
+  if(!confirm(`Удалить ${name} из группы?`)) return;
+  try {
+    await sbDelete('weglow_rop_managers',`?rop=eq.${encodeURIComponent(currentRop)}&name=eq.${encodeURIComponent(name)}`);
+    managers = managers.filter(m=>m!==name);
+    renderMgrList();
+    renderPlanTable();
+    toast(`${name} удалён из группы`,'ok');
+    await syncRopGroupsToDashboard();
+  } catch(e){ toast('Ошибка','err'); }
+}
+
+async function syncRopGroupsToDashboard(){
+  try {
+    // Rebuild full MGR_TO_ROP from all rop managers
+    const allMgrs = await sbGet('weglow_rop_managers?select=rop,name');
+    const MGR_TO_ROP = {};
+    for(const r of allMgrs) MGR_TO_ROP[r.name]=r.rop;
+    let rows = await sbGet('weglow_data?id=eq.1&select=data');
+    let payload = rows&&rows[0]?rows[0].data:{};
+    payload.MGR_TO_ROP = MGR_TO_ROP;
+    payload.updatedAt = new Date().toISOString();
+    await sbUpsert('weglow_data',{id:1,data:payload,updated_at:new Date().toISOString()});
+  } catch(e){ console.error(e); }
+}
+
+// ══════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════
+function getMonthLabel(mk){
+  if(!mk) return '';
+  const [mm,yy]=mk.split('.');
+  return `${MONTH_NAMES[+mm-1]} ${yy}`;
+}
+function fmtM(n){ if(!n)return '0 ₸'; return n>=1e6?(n/1e6).toFixed(n%1e6===0?0:1)+' М ₸':Math.round(n/1e3)+'К ₸'; }
+
+let _toastTimer;
+function toast(text,type='ok'){
+  const el=document.getElementById('toast');
+  el.textContent=text;
+  el.className=`toast ${type} show`;
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>el.classList.remove('show'),3000);
+}
+</script>
+</body>
+</html>
