@@ -495,6 +495,17 @@ async function openDashboard(){
   try {
     pf.style.width = '85%';
     pl.textContent = 'Сохранение в облако...';
+    // Load existing AD_SPEND from Supabase so we don't overwrite it
+    let _existingAdSpend = {};
+    try {
+      const _existing = await fetch(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data`, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      });
+      if (_existing.ok) {
+        const _rows = await _existing.json();
+        if (_rows[0]?.data?.AD_SPEND) _existingAdSpend = _rows[0].data.AD_SPEND;
+      }
+    } catch(e) { console.warn('Could not load existing AD_SPEND', e); }
     const payload = buildPayload();
     await saveToSupabase(payload);
     // Also save to sessionStorage for immediate local use
@@ -526,8 +537,9 @@ function buildPayload(){
     RAW[nameMap[key]] = data.daily;
   }
 
-  // Ad spend comes from the separate ad cabinet (ad.html), not uploaded here
-  const AD_SPEND = {};
+  // Ad spend comes from ad.html cabinet — fetch existing from Supabase to preserve it
+  // (will be merged server-side; we pass empty so dashboard uses AD_SPEND_STATIC as fallback)
+  const AD_SPEND = _existingAdSpend || {};
 
   // Managers
   const MANAGERS = {};
