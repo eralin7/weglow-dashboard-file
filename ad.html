@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>WeGlow — Рекламный кабинет</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0f1623;--ink2:#1e2840;--slate:#4a5568;--muted:#8896ae;
+  --line:#e8ecf4;--bg:#f7f8fc;--white:#fff;
+  --acc:#6366f1;--acc-l:#eef2ff;
+  --col:#1a56db;--ummi:#0a7c5c;--cof:#b45309;
+  --green:#16a34a;--green-l:#dcfce7;
+  --red:#dc2626;--red-l:#fde8e8;
+  --yellow:#ca8a04;--yellow-l:#fef9c3;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{font-size:15px;-webkit-font-smoothing:antialiased;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
+
+/* ── PASSWORD SCREEN ── */
+#pw-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
+.pw-box{background:var(--white);border:1px solid var(--line);border-radius:20px;padding:44px 48px;max-width:400px;width:100%;box-shadow:0 4px 24px rgba(15,22,35,.08);}
+.logo{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--ink);margin-bottom:4px;}
+.logo-sub{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:32px;}
+.pw-title{font-size:17px;font-weight:600;color:var(--ink);margin-bottom:6px;}
+.pw-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
+.pw-inp{width:100%;padding:12px 16px;border:1.5px solid var(--line);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:15px;color:var(--ink);outline:none;transition:border-color .15s;background:var(--bg);}
+.pw-inp:focus{border-color:var(--acc);}
+.pw-btn{width:100%;padding:13px;background:var(--acc);color:#fff;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;margin-top:12px;transition:opacity .15s;}
+.pw-btn:hover{opacity:.9;}
+.pw-err{color:var(--red);font-size:13px;margin-top:8px;display:none;}
+
+/* ── MAIN APP ── */
+#app{display:none;min-height:100vh;}
+
+/* Topbar */
+.topbar{background:var(--ink2);color:#fff;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;}
+.top-logo{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;}
+.top-sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#8896ae;margin-top:1px;}
+.top-right{display:flex;align-items:center;gap:16px;}
+.top-badge{font-size:12px;color:#8896ae;background:rgba(255,255,255,.07);padding:4px 12px;border-radius:20px;}
+.top-link{font-size:13px;color:#8896ae;text-decoration:none;transition:color .15s;}
+.top-link:hover{color:#fff;}
+
+/* Content */
+.content{max-width:1100px;margin:0 auto;padding:32px 24px;}
+.page-title{font-size:26px;font-weight:700;color:var(--ink);margin-bottom:4px;}
+.page-sub{font-size:13px;color:var(--muted);margin-bottom:32px;}
+
+/* Entry card */
+.entry-card{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:28px 32px;margin-bottom:24px;box-shadow:0 1px 6px rgba(15,22,35,.05);}
+.card-title{font-size:15px;font-weight:700;color:var(--ink);margin-bottom:20px;display:flex;align-items:center;gap:8px;}
+.card-title span{font-size:18px;}
+
+/* Form grid */
+.form-grid{display:grid;grid-template-columns:160px 1fr 1fr 1fr auto;gap:12px;align-items:end;}
+.field{display:flex;flex-direction:column;gap:6px;}
+.field label{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;}
+.field input{padding:10px 14px;border:1.5px solid var(--line);border-radius:9px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;transition:border-color .15s;background:var(--bg);}
+.field input:focus{border-color:var(--acc);background:var(--white);}
+.save-btn{padding:10px 24px;background:var(--acc);color:#fff;border:none;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;transition:opacity .15s;height:42px;}
+.save-btn:hover{opacity:.88;}
+.save-btn:disabled{opacity:.5;cursor:default;}
+
+/* Status */
+.status-bar{padding:10px 16px;border-radius:8px;font-size:13px;font-weight:500;margin-top:12px;display:none;}
+.status-ok{background:var(--green-l);color:var(--green);display:block;}
+.status-err{background:var(--red-l);color:var(--red);display:block;}
+.status-loading{background:var(--acc-l);color:var(--acc);display:block;}
+
+/* Table */
+.table-card{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:28px 32px;box-shadow:0 1px 6px rgba(15,22,35,.05);}
+.table-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
+.month-tabs{display:flex;gap:6px;flex-wrap:wrap;}
+.tab{padding:6px 14px;border:1.5px solid var(--line);border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;background:var(--white);color:var(--slate);transition:all .15s;}
+.tab.active{background:var(--ink2);color:#fff;border-color:var(--ink2);}
+.tab:hover:not(.active){border-color:var(--acc);color:var(--acc);}
+.totals-row{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:20px;}
+.tot{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 18px;}
+.tot-lbl{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;}
+.tot-val{font-size:18px;font-weight:700;}
+.tot-col{color:var(--col);}
+.tot-ummi{color:var(--ummi);}
+.tot-cof{color:var(--cof);}
+.tot-all{color:var(--acc);}
+
+/* Data table */
+.dt{width:100%;border-collapse:collapse;font-size:13px;}
+.dt th{text-align:left;padding:9px 12px;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;border-bottom:2px solid var(--line);white-space:nowrap;}
+.dt td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:middle;}
+.dt tr:last-child td{border-bottom:none;}
+.dt tr:hover td{background:var(--bg);}
+.dt .tr-today td{background:#eef2ff;}
+.edit-inp{width:100%;padding:5px 9px;border:1.5px solid var(--acc);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px;text-align:right;outline:none;background:var(--white);}
+.del-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:4px;transition:color .15s;}
+.del-btn:hover{color:var(--red);}
+.save-row-btn{background:var(--acc);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;}
+
+/* Empty state */
+.empty{text-align:center;padding:48px;color:var(--muted);}
+.empty-icon{font-size:40px;margin-bottom:12px;}
+
+@media(max-width:700px){
+  .form-grid{grid-template-columns:1fr 1fr;gap:10px;}
+  .form-grid .save-btn{grid-column:1/-1;}
+  .content{padding:20px 16px;}
+  .entry-card,.table-card{padding:20px 16px;}
+}
+</style>
+</head>
+<body>
+
+<!-- PASSWORD SCREEN -->
+<div id="pw-screen">
+  <div class="pw-box">
+    <div class="logo">WeGlow</div>
+    <div class="logo-sub">Advertising Cabinet</div>
+    <div class="pw-title">Рекламный кабинет</div>
+    <div class="pw-sub">Введите пароль для доступа</div>
+    <input class="pw-inp" type="password" id="pw-input" placeholder="Пароль"
+           onkeydown="if(event.key==='Enter')checkPw()">
+    <button class="pw-btn" onclick="checkPw()">Войти</button>
+    <div class="pw-err" id="pw-err">Неверный пароль</div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <div class="topbar">
+    <div>
+      <div class="top-logo">WeGlow</div>
+      <div class="top-sub">Рекламный кабинет</div>
+    </div>
+    <div class="top-right">
+      <span class="top-badge" id="sync-badge">Синхронизация...</span>
+      <a href="dashboard.html" class="top-link">← Дашборд</a>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="page-title">Расходы на рекламу</div>
+    <div class="page-sub">Вводите расходы вручную каждый день. Данные автоматически появятся в дашборде.</div>
+
+    <!-- ENTRY FORM -->
+    <div class="entry-card">
+      <div class="card-title"><span>➕</span> Добавить расходы</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Дата</label>
+          <input type="date" id="f-date">
+        </div>
+        <div class="field">
+          <label>Коллаген ₸</label>
+          <input type="number" id="f-col" placeholder="0" min="0">
+        </div>
+        <div class="field">
+          <label>Ummi ₸</label>
+          <input type="number" id="f-ummi" placeholder="0" min="0">
+        </div>
+        <div class="field">
+          <label>Кофе ₸</label>
+          <input type="number" id="f-coffee" placeholder="0" min="0">
+        </div>
+        <button class="save-btn" onclick="addEntry()">Сохранить</button>
+      </div>
+      <div class="status-bar" id="form-status"></div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-card">
+      <div class="table-hdr">
+        <div class="card-title" style="margin-bottom:0"><span>📊</span> История расходов</div>
+        <div class="month-tabs" id="month-tabs"></div>
+      </div>
+      <div class="totals-row" id="totals-row"></div>
+      <div id="table-wrap">
+        <div class="empty"><div class="empty-icon">📭</div><div>Нет данных за этот период</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════
+const AD_PASSWORD = 'reklama2026';
+const SUPABASE_URL = 'https://bdyakgmeibpdkisbiykt.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkeWFrZ21laWJwZGtpc2JpeWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTQzOTMsImV4cCI6MjA4Nzc5MDM5M30.nA187grJR6XFQRmTP6WOM-6-1dZK1EzYNNP2JH9aAMg';
+
+// ══════════════════════════════════════════════
+// PASSWORD
+// ══════════════════════════════════════════════
+function checkPw(){
+  const v = document.getElementById('pw-input').value;
+  if(v === AD_PASSWORD){
+    document.getElementById('pw-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    sessionStorage.setItem('ad_auth','1');
+    init();
+  } else {
+    document.getElementById('pw-err').style.display = 'block';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+}
+// Auto-login if already authed
+if(sessionStorage.getItem('ad_auth')==='1'){
+  document.getElementById('pw-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+}
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let adData = {}; // {date: {col, ummi, coffee}} format: DD.MM.YYYY
+let activeMonth = null; // "MM.YYYY"
+
+// ══════════════════════════════════════════════
+// SUPABASE HELPERS
+// ══════════════════════════════════════════════
+const SB_HEADERS = {
+  'apikey': SUPABASE_KEY,
+  'Authorization': `Bearer ${SUPABASE_KEY}`,
+  'Content-Type': 'application/json'
+};
+
+async function sbGet(table, filter=''){
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}${filter}`, {headers: SB_HEADERS});
+  if(!r.ok) throw new Error(r.status);
+  return r.json();
+}
+async function sbUpsert(table, data){
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+    method:'POST',
+    headers:{...SB_HEADERS, 'Prefer':'resolution=merge-duplicates'},
+    body: JSON.stringify(data)
+  });
+  if(!r.ok){ const t=await r.text(); throw new Error(t); }
+}
+async function sbDelete(table, filter){
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}${filter}`, {
+    method:'DELETE', headers: SB_HEADERS
+  });
+  if(!r.ok) throw new Error(r.status);
+}
+
+// ══════════════════════════════════════════════
+// LOAD / SAVE AD DATA
+// ══════════════════════════════════════════════
+async function loadAdData(){
+  setBadge('Загрузка...', 'load');
+  try {
+    const rows = await sbGet('weglow_ad_spend', '?select=date,col,ummi,coffee&order=date.desc');
+    adData = {};
+    for(const r of rows){
+      adData[r.date] = {col: r.col||0, ummi: r.ummi||0, coffee: r.coffee||0};
+    }
+    setBadge('Синхронизировано ✓', 'ok');
+    renderMonthTabs();
+    renderTable();
+  } catch(e){
+    setBadge('Ошибка загрузки', 'err');
+    console.error(e);
+  }
+}
+
+async function saveAdEntry(date, col, ummi, coffee){
+  await sbUpsert('weglow_ad_spend', {date, col, ummi, coffee});
+  // Also update weglow_data AD_SPEND field
+  await syncToDashboard();
+}
+
+async function deleteAdEntry(date){
+  await sbDelete('weglow_ad_spend', `?date=eq.${encodeURIComponent(date)}`);
+  delete adData[date];
+  await syncToDashboard();
+}
+
+// Sync adData → weglow_data table so dashboard sees it
+async function syncToDashboard(){
+  try {
+    // Build AD_SPEND in format {product: {DD.MM.YYYY: amount}}
+    const AD_SPEND = {'Коллаген':{}, 'Ummi':{}, 'Кофе':{}};
+    for(const [date, v] of Object.entries(adData)){
+      if(v.col)    AD_SPEND['Коллаген'][date] = v.col;
+      if(v.ummi)   AD_SPEND['Ummi'][date]     = v.ummi;
+      if(v.coffee) AD_SPEND['Кофе'][date]     = v.coffee;
+    }
+    // Get existing weglow_data and update just AD_SPEND
+    const rows = await sbGet('weglow_data', '?id=eq.1&select=data');
+    let payload = rows && rows[0] ? rows[0].data : {};
+    payload.AD_SPEND = AD_SPEND;
+    payload.updatedAt = new Date().toISOString();
+    await sbUpsert('weglow_data', {id:1, data:payload, updated_at:new Date().toISOString()});
+    setBadge('Синхронизировано ✓', 'ok');
+  } catch(e){
+    console.error('Sync error:', e);
+    setBadge('Ошибка синхронизации', 'err');
+  }
+}
+
+function setBadge(text, type){
+  const b = document.getElementById('sync-badge');
+  b.textContent = text;
+  b.style.color = type==='ok'?'#4ade80':type==='err'?'#f87171':'#a5b4fc';
+}
+
+// ══════════════════════════════════════════════
+// ADD ENTRY
+// ══════════════════════════════════════════════
+async function addEntry(){
+  const dateIso = document.getElementById('f-date').value;
+  if(!dateIso){ showStatus('Укажите дату', 'err'); return; }
+  const [y,m,d] = dateIso.split('-');
+  const date = `${d}.${m}.${y}`;
+  const col    = parseInt(document.getElementById('f-col').value)||0;
+  const ummi   = parseInt(document.getElementById('f-ummi').value)||0;
+  const coffee = parseInt(document.getElementById('f-coffee').value)||0;
+  if(!col && !ummi && !coffee){ showStatus('Введите хотя бы одно значение', 'err'); return; }
+
+  showStatus('Сохранение...', 'load');
+  document.querySelector('.save-btn').disabled = true;
+  try {
+    adData[date] = {col, ummi, coffee};
+    await saveAdEntry(date, col, ummi, coffee);
+    showStatus(`✓ Сохранено: ${date} — Кол: ${fmt(col)} / Ummi: ${fmt(ummi)} / Кофе: ${fmt(coffee)} ₸`, 'ok');
+    // Switch to the month of saved entry
+    activeMonth = `${m}.${y}`;
+    renderMonthTabs();
+    renderTable();
+    // Clear inputs
+    document.getElementById('f-col').value='';
+    document.getElementById('f-ummi').value='';
+    document.getElementById('f-coffee').value='';
+  } catch(e){
+    showStatus('Ошибка сохранения: ' + e.message, 'err');
+  } finally {
+    document.querySelector('.save-btn').disabled = false;
+  }
+}
+
+function showStatus(text, type){
+  const el = document.getElementById('form-status');
+  el.textContent = text;
+  el.className = 'status-bar status-' + (type==='ok'?'ok':type==='err'?'err':'loading');
+}
+
+// ══════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════
+const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+function fmt(n){ return (n||0).toLocaleString('ru-RU'); }
+function fmtM(n){ return n>=1e6?(n/1e6).toFixed(2)+' М':n>=1e3?(n/1e3).toFixed(0)+'К':fmt(n); }
+
+function getMonths(){
+  const months = new Set();
+  for(const date of Object.keys(adData)){
+    const parts = date.split('.');
+    if(parts.length===3) months.add(`${parts[1]}.${parts[2]}`);
+  }
+  // Always add current month
+  const now = new Date();
+  const cm = `${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
+  months.add(cm);
+  return [...months].sort((a,b)=>{
+    const [am,ay]=a.split('.'); const [bm,by]=b.split('.');
+    return (+by*12+ +bm)-(+ay*12+ +am);
+  });
+}
+
+function renderMonthTabs(){
+  const months = getMonths();
+  if(!activeMonth || !months.includes(activeMonth)) activeMonth = months[0];
+  const container = document.getElementById('month-tabs');
+  container.innerHTML = months.map(m=>{
+    const [mm,yy] = m.split('.');
+    const label = MONTH_NAMES[+mm-1]+' '+yy;
+    return `<button class="tab ${m===activeMonth?'active':''}" onclick="setMonth('${m}')">${label}</button>`;
+  }).join('');
+}
+
+function setMonth(m){
+  activeMonth = m;
+  renderMonthTabs();
+  renderTable();
+}
+
+function renderTable(){
+  if(!activeMonth){ document.getElementById('table-wrap').innerHTML='<div class="empty"><div class="empty-icon">📭</div><div>Нет данных</div></div>'; return; }
+  const [mm,yy] = activeMonth.split('.');
+  const now = new Date();
+  const todayStr = `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
+
+  // Get all dates in this month
+  const daysInMonth = new Date(+yy,+mm,0).getDate();
+  const rows = [];
+  for(let d=1; d<=daysInMonth; d++){
+    const date = `${String(d).padStart(2,'0')}.${mm}.${yy}`;
+    const v = adData[date] || null;
+    if(v || date <= todayStr) rows.push({date, v});
+  }
+  rows.reverse(); // newest first
+
+  // Totals
+  let totCol=0,totUmmi=0,totCoffee=0;
+  for(const {v} of rows) if(v){ totCol+=v.col||0; totUmmi+=v.ummi||0; totCoffee+=v.coffee||0; }
+  const totAll = totCol+totUmmi+totCoffee;
+
+  document.getElementById('totals-row').innerHTML = `
+    <div class="tot"><div class="tot-lbl">Коллаген</div><div class="tot-val tot-col">${fmtM(totCol)} ₸</div></div>
+    <div class="tot"><div class="tot-lbl">Ummi</div><div class="tot-val tot-ummi">${fmtM(totUmmi)} ₸</div></div>
+    <div class="tot"><div class="tot-lbl">Кофе</div><div class="tot-val tot-cof">${fmtM(totCoffee)} ₸</div></div>
+    <div class="tot"><div class="tot-lbl">Итого</div><div class="tot-val tot-all">${fmtM(totAll)} ₸</div></div>
+  `;
+
+  if(!rows.length){
+    document.getElementById('table-wrap').innerHTML='<div class="empty"><div class="empty-icon">📭</div><div>Нет данных за этот период</div></div>';
+    return;
+  }
+
+  const tbody = rows.map(({date, v})=>{
+    const isToday = date===todayStr;
+    const hasData = !!v;
+    const col    = v?v.col:0;
+    const ummi   = v?v.ummi:0;
+    const coffee = v?v.coffee:0;
+    const total  = col+ummi+coffee;
+    const [dd,mm2,yy2] = date.split('.');
+    const dayOfWeek = ['вс','пн','вт','ср','чт','пт','сб'][new Date(+yy2,+mm2-1,+dd).getDay()];
+    return `<tr class="${isToday?'tr-today':''}" id="row-${date}">
+      <td style="color:var(--muted);font-size:12px;white-space:nowrap">${dd}.${mm2} <span style="color:var(--acc)">${dayOfWeek}</span>${isToday?' <span style="background:#6366f1;color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px">сегодня</span>':''}</td>
+      <td><input class="edit-inp" type="number" id="inp-col-${date}" value="${col||''}" placeholder="0" style="border-color:var(--col)30;" onfocus="this.style.borderColor='var(--col)'" onblur="this.style.borderColor='var(--col)30'"></td>
+      <td><input class="edit-inp" type="number" id="inp-ummi-${date}" value="${ummi||''}" placeholder="0" style="border-color:var(--ummi)30;" onfocus="this.style.borderColor='var(--ummi)'" onblur="this.style.borderColor='var(--ummi)30'"></td>
+      <td><input class="edit-inp" type="number" id="inp-coffee-${date}" value="${coffee||''}" placeholder="0" style="border-color:var(--cof)30;" onfocus="this.style.borderColor='var(--cof)'" onblur="this.style.borderColor='var(--cof)30'"></td>
+      <td style="color:var(--acc);font-weight:700;white-space:nowrap">${total?fmt(total)+' ₸':'—'}</td>
+      <td><button class="save-row-btn" onclick="saveRow('${date}')">Сохр.</button></td>
+      <td>${hasData?`<button class="del-btn" onclick="deleteRow('${date}')" title="Удалить">✕</button>`:''}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('table-wrap').innerHTML = `
+    <table class="dt">
+      <thead><tr>
+        <th>Дата</th>
+        <th style="color:var(--col)">Коллаген ₸</th>
+        <th style="color:var(--ummi)">Ummi ₸</th>
+        <th style="color:var(--cof)">Кофе ₸</th>
+        <th>Итого</th>
+        <th></th><th></th>
+      </tr></thead>
+      <tbody>${tbody}</tbody>
+    </table>`;
+}
+
+async function saveRow(date){
+  const col    = parseInt(document.getElementById(`inp-col-${date}`).value)||0;
+  const ummi   = parseInt(document.getElementById(`inp-ummi-${date}`).value)||0;
+  const coffee = parseInt(document.getElementById(`inp-coffee-${date}`).value)||0;
+  setBadge('Сохранение...','load');
+  try {
+    adData[date] = {col, ummi, coffee};
+    await saveAdEntry(date, col, ummi, coffee);
+    renderTable();
+    setBadge('Сохранено ✓','ok');
+  } catch(e){
+    setBadge('Ошибка','err');
+  }
+}
+
+async function deleteRow(date){
+  if(!confirm(`Удалить расходы за ${date}?`)) return;
+  setBadge('Удаление...','load');
+  try {
+    await deleteAdEntry(date);
+    renderTable();
+  } catch(e){ setBadge('Ошибка','err'); }
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+function init(){
+  // Set today's date in form
+  const now = new Date();
+  document.getElementById('f-date').value = now.toISOString().split('T')[0];
+  loadAdData();
+}
+
+// Auto-init if already authenticated
+if(sessionStorage.getItem('ad_auth')==='1') init();
+</script>
+</body>
+</html>
