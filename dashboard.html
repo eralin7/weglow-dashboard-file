@@ -1422,6 +1422,8 @@ function renderAdSpend(){
 
 // ═══════════════════ LOAD FROM SUPABASE ══════════════════════════
 async function loadFromSupabase() {
+  const badge = document.getElementById('data-badge');
+  if (badge) badge.textContent = '⟳ Загрузка из облака...';
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data,updated_at`, {
       headers: {
@@ -1429,47 +1431,54 @@ async function loadFromSupabase() {
         'Authorization': `Bearer ${SUPABASE_KEY}`,
       }
     });
-    if (!res.ok) throw new Error(res.status);
-    const rows = await res.json();
-    if (rows && rows[0] && rows[0].data) {
-      const d = rows[0].data;
-      // Reassign mutable globals
-      if (d.RAW)      RAW      = d.RAW;
-      if (d.MANAGERS) { if(Object.keys(d.MANAGERS).length) MANAGERS = d.MANAGERS; }
-      if (d.AD_SPEND && Object.keys(d.AD_SPEND).length) AD_SPEND = d.AD_SPEND;
-      // Note: empty AD_SPEND from index.html upload is intentional — ad.html manages it separately
-      if (d.PLANS)    PLANS    = d.PLANS;
-      // Update badge
-      const badge = document.getElementById('data-badge');
-      if (badge && rows[0].updated_at) {
-        const dt = new Date(rows[0].updated_at);
-        badge.textContent = 'Обновлено: ' + dt.toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
-      }
-      // Save to sessionStorage for next load (faster)
-      sessionStorage.setItem('wg_data', JSON.stringify(d));
-
-      // После загрузки из Supabase — переключаемся на последний месяц с данными
-      PRESETS = buildPresets();
-      const _freshKey = _lastMonthWithData() || _currentKey;
-      const _freshPreset = PRESETS[_freshKey];
-      if (_freshPreset) {
-        activePeriod    = { ..._freshPreset, preset: _freshKey };
-        activeMgrPeriod = { ..._freshPreset, preset: _freshKey };
-        activeAdPeriod  = { ..._freshPreset, preset: _freshKey };
-      }
-
-      // Rebuild pills с правильным активным периодом
-      rebuildMonthPills();
-
-      // Re-render with fresh data
-      render();
-      if(activeView==='managers') renderManagers();
-      if(activeView==='adspend') renderAdSpend();
-      // Update sidebar KPI with fresh data
-      const _now=new Date(); const _td=_lastDay(_now.getFullYear(),_now.getMonth()+1);
-      renderSidebarKPI(_now, _now.getDate(), _td);
+    if (!res.ok) {
+      if (badge) badge.textContent = '⚠ Ошибка Supabase: ' + res.status;
+      return;
     }
+    const rows = await res.json();
+    if (!rows || !rows[0] || !rows[0].data) {
+      if (badge) badge.textContent = '⚠ Нет данных в Supabase — загрузите файлы';
+      return;
+    }
+    const d = rows[0].data;
+
+    // Обновляем глобальные данные
+    if (d.RAW)                                              RAW      = d.RAW;
+    if (d.MANAGERS && Object.keys(d.MANAGERS).length)      MANAGERS = d.MANAGERS;
+    if (d.AD_SPEND && Object.keys(d.AD_SPEND).length)      AD_SPEND = d.AD_SPEND;
+    if (d.PLANS)                                            PLANS    = d.PLANS;
+
+    // Показываем время обновления и кол-во дней данных
+    const colDates = d.RAW ? Object.keys(d.RAW['Коллаген']||{}).length : 0;
+    const updTime = rows[0].updated_at
+      ? new Date(rows[0].updated_at).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
+      : '';
+    if (badge) badge.textContent = updTime ? `Обновлено: ${updTime} · ${colDates} дн.` : '';
+
+    // Сохраняем в sessionStorage для быстрой загрузки в этом браузере
+    sessionStorage.setItem('wg_data', JSON.stringify(d));
+
+    // Пересчитываем PRESETS с новыми данными и переключаемся на актуальный период
+    PRESETS = buildPresets();
+    const _freshKey = _lastMonthWithData() || _currentKey;
+    const _freshPreset = PRESETS[_freshKey];
+    if (_freshPreset) {
+      activePeriod    = { ..._freshPreset, preset: _freshKey };
+      activeMgrPeriod = { ..._freshPreset, preset: _freshKey };
+      activeAdPeriod  = { ..._freshPreset, preset: _freshKey };
+    }
+
+    // Перестраиваем пилюли и рендерим
+    rebuildMonthPills();
+    render();
+    if (activeView === 'managers') renderManagers();
+    if (activeView === 'adspend')  renderAdSpend();
+    const _n = new Date();
+    renderSidebarKPI(_n, _n.getDate(), _lastDay(_n.getFullYear(), _n.getMonth()+1));
+
   } catch(e) {
+    const badge = document.getElementById('data-badge');
+    if (badge) badge.textContent = '⚠ ' + e.message;
     console.warn('Supabase load error:', e);
   }
 }
