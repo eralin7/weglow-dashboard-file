@@ -1458,14 +1458,35 @@ async function loadFromSupabase() {
     // Сохраняем в sessionStorage для быстрой загрузки в этом браузере
     sessionStorage.setItem('wg_data', JSON.stringify(d));
 
-    // Пересчитываем PRESETS с новыми данными и переключаемся на актуальный период
+    // Пересчитываем PRESETS и переключаемся на актуальный период
     PRESETS = buildPresets();
-    const _freshKey = _lastMonthWithData() || _currentKey;
-    const _freshPreset = PRESETS[_freshKey];
-    if (_freshPreset) {
-      activePeriod    = { ..._freshPreset, preset: _freshKey };
-      activeMgrPeriod = { ..._freshPreset, preset: _freshKey };
-      activeAdPeriod  = { ..._freshPreset, preset: _freshKey };
+
+    // Находим самую позднюю дату в RAW чтобы определить нужный месяц
+    let _latestDate = null;
+    for (const prod of ['Коллаген','Ummi','Кофе']) {
+      const dates = Object.keys(RAW[prod]||{});
+      for (const dt of dates) {
+        const [dd,mm,yy] = dt.split('.').map(Number);
+        const d = new Date(yy, mm-1, dd);
+        if (!_latestDate || d > _latestDate) _latestDate = d;
+      }
+    }
+
+    if (_latestDate) {
+      const _fy = _latestDate.getFullYear();
+      const _fm = _latestDate.getMonth()+1;
+      const _freshKey = `m_${_fy}_${_fm}`;
+      // Rebuild PRESETS to include this month if needed
+      if (!PRESETS[_freshKey]) {
+        const p = _makeMonthPreset(_fy, _fm);
+        PRESETS[p.key] = p;
+      }
+      const _freshPreset = PRESETS[_freshKey];
+      if (_freshPreset) {
+        activePeriod    = { ..._freshPreset, preset: _freshKey };
+        activeMgrPeriod = { ..._freshPreset, preset: _freshKey };
+        activeAdPeriod  = { ..._freshPreset, preset: _freshKey };
+      }
     }
 
     // Перестраиваем пилюли и рендерим
