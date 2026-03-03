@@ -7,502 +7,308 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-
-/* ── DARK (default) ─────────────────── */
 :root {
-  --ink:     #f5f5f7;
-  --ink2:    #a1a1a6;
-  --slate:   #6e6e73;
-  --muted:   #515154;
-  --line:    rgba(255,255,255,.1);
-  --line2:   rgba(255,255,255,.06);
-  --bg:      #000000;
-  --bg2:     #161617;
-  --bg3:     #1d1d1f;
+  --ink:     #0f1623;
+  --ink2:    #1e2840;
+  --slate:   #4a5568;
+  --muted:   #8896ae;
+  --line:    #e8ecf4;
+  --line2:   #f0f3fa;
+  --bg:      #f7f8fc;
   --white:   #ffffff;
-  --col:     #2997ff;
-  --col-l:   rgba(41,151,255,.15);
-  --ummi:    #30d158;
-  --ummi-l:  rgba(48,209,88,.15);
-  --cof:     #ff9f0a;
-  --cof-l:   rgba(255,159,10,.15);
-  --acc:     #2997ff;
-  --acc-l:   rgba(41,151,255,.15);
-  --red:     #ff453a;
-  --red-l:   rgba(255,69,58,.15);
-  --green:   #30d158;
-  --green-l: rgba(48,209,88,.15);
-  --gold:    #ff9f0a;
-  --gold-l:  rgba(255,159,10,.15);
-  --r: 18px;
-  --grad-blue: linear-gradient(135deg, #2997ff 0%, #5e5ce6 100%);
-  --grad-green: linear-gradient(135deg, #30d158 0%, #2997ff 100%);
-  --nav-bg:  rgba(0,0,0,.72);
-  --bar-bg:  rgba(0,0,0,.6);
-  --card-border: rgba(255,255,255,.08);
-  --card-hover-border: rgba(255,255,255,.16);
-  --scrollbar: rgba(255,255,255,.15);
-  --grid:    rgba(255,255,255,.06);
-  --tick:    #515154;
-}
-
-/* ── LIGHT ──────────────────────────── */
-.light {
-  --ink:     #1d1d1f;
-  --ink2:    #3a3a3c;
-  --slate:   #6e6e73;
-  --muted:   #86868b;
-  --line:    rgba(0,0,0,.1);
-  --line2:   rgba(0,0,0,.06);
-  --bg:      #f5f5f7;
-  --bg2:     #ffffff;
-  --bg3:     #f0f0f2;
-  --white:   #ffffff;
-  --col:     #0066cc;
-  --col-l:   rgba(0,102,204,.12);
-  --ummi:    #1a7f4f;
-  --ummi-l:  rgba(26,127,79,.12);
-  --cof:     #c0392b;
-  --cof-l:   rgba(192,57,43,.12);
-  --acc:     #0066cc;
-  --acc-l:   rgba(0,102,204,.12);
-  --red:     #ff3b30;
-  --red-l:   rgba(255,59,48,.12);
-  --green:   #28a745;
-  --green-l: rgba(40,167,69,.12);
-  --gold:    #e07b00;
-  --gold-l:  rgba(224,123,0,.12);
-  --nav-bg:  rgba(245,245,247,.82);
-  --bar-bg:  rgba(255,255,255,.82);
-  --card-border: rgba(0,0,0,.07);
-  --card-hover-border: rgba(0,0,0,.14);
-  --scrollbar: rgba(0,0,0,.15);
-  --grid:    rgba(0,0,0,.06);
-  --tick:    #86868b;
+  --col:     #1a56db;
+  --col-l:   #e8f0fe;
+  --ummi:    #0a7c5c;
+  --ummi-l:  #d1fae5;
+  --cof:     #b45309;
+  --cof-l:   #fef3c7;
+  --acc:     #6366f1;
+  --acc-l:   #eef2ff;
+  --red:     #c0392b;
+  --red-l:   #fde8e8;
+  --green:   #16a34a;
+  --green-l: #dcfce7;
+  --gold:    #ca8a04;
+  --gold-l:  #fefce8;
+  --shadow:  0 1px 3px rgba(15,22,35,.06), 0 4px 16px rgba(15,22,35,.08);
+  --shadow2: 0 2px 8px rgba(15,22,35,.08), 0 8px 32px rgba(15,22,35,.10);
+  --r: 14px;
 }
 
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-html { font-size:15px; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', 'Helvetica Neue', sans-serif;
-  background: var(--bg);
-  color: var(--ink);
-  min-height: 100vh;
-}
+html { font-size:15px; -webkit-font-smoothing:antialiased; }
+body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; }
 
-/* ── HIDE OLD SIDEBAR ── */
-.sidebar { display: none !important; }
-.shell { display: flex; flex-direction: column; min-height: 100vh; }
-.main  { flex: 1; display: flex; flex-direction: column; }
+/* ─── LAYOUT ─────────────────────────────────────────── */
+.shell { display:flex; min-height:100vh; }
 
-/* ══ NAV ════════════════════════════════════════════════════════════ */
-.apple-nav {
-  position: sticky; top: 0; z-index: 300;
-  height: 52px;
-  background: var(--nav-bg);
-  backdrop-filter: saturate(180%) blur(24px);
-  -webkit-backdrop-filter: saturate(180%) blur(24px);
-  border-bottom: 1px solid rgba(255,255,255,.08);
-  display: flex; align-items: center;
-  padding: 0 24px; gap: 0;
+/* ─── SIDEBAR ────────────────────────────────────────── */
+.sidebar {
+  width: 220px; flex-shrink:0;
+  background: var(--ink);
+  display:flex; flex-direction:column;
+  padding: 0 0 24px;
+  position:fixed; top:0; left:0; bottom:0;
+  z-index:100;
 }
-.apple-nav .an-brand {
-  font-size: 19px; font-weight: 700; letter-spacing: -0.5px;
-  color: #fff; text-decoration: none; flex-shrink: 0; margin-right: 6px;
-  background: var(--grad-blue);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
-  transition: opacity .2s;
+.sb-logo {
+  padding: 28px 24px 24px;
+  border-bottom:1px solid rgba(255,255,255,.07);
 }
-.apple-nav .an-links { display: flex; align-items: center; gap: 0; flex: 1; }
-.apple-nav .an-link {
-  padding: 6px 12px; border-radius: 8px;
-  color: var(--ink2); font-size: 13px; font-weight: 400;
-  cursor: pointer; transition: all .15s;
-  border: none; background: none; font-family: inherit;
-  display: flex; align-items: center; gap: 5px; white-space: nowrap;
-  text-decoration: none;
+.sb-logo h1 {
+  font-family:'Playfair Display',serif;
+  font-size:22px; font-weight:700;
+  letter-spacing:.5px;
+  color:#fff;
+  line-height:1;
 }
-.apple-nav .an-link:hover { color: #fff; background: rgba(255,255,255,.08); }
-.apple-nav .an-link.active { color: #fff; font-weight: 600; }
-.apple-nav .an-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
-.apple-nav .an-time { font-size: 12px; color: var(--slate); }
-.apple-nav .an-update {
-  height: 30px; padding: 0 14px; border-radius: 20px;
-  background: var(--acc); color: #fff; border: none;
-  font-size: 12px; font-weight: 500; cursor: pointer;
-  font-family: inherit; transition: opacity .15s;
+.sb-logo .tagline { font-size:10px; color:rgba(255,255,255,.35); letter-spacing:2px; text-transform:uppercase; margin-top:5px; }
+.sb-date {
+  padding: 16px 24px;
+  border-bottom:1px solid rgba(255,255,255,.07);
+  font-size:11px; color:rgba(255,255,255,.4);
+  letter-spacing:.5px;
 }
-.apple-nav .an-update:hover { opacity: .82; }
-.an-divider { width: 1px; height: 14px; background: rgba(255,255,255,.12); margin: 0 4px; }
+.sb-date strong { display:block; font-size:13px; color:rgba(255,255,255,.7); font-weight:500; margin-bottom:2px; }
+.sb-nav { padding:16px 12px; flex:1; }
+.sb-section { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,.25); padding:0 12px 8px; }
+.nav-item {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px; border-radius:9px;
+  color:rgba(255,255,255,.5); font-size:13px; font-weight:500;
+  cursor:pointer; transition:all .18s; margin-bottom:2px;
+  border:none; background:none; width:100%; text-align:left;
+}
+.nav-item:hover { background:rgba(255,255,255,.06); color:rgba(255,255,255,.8); }
+.nav-item.active { background:rgba(255,255,255,.1); color:#fff; }
+.nav-item .icon { font-size:16px; width:20px; text-align:center; }
+.sb-progress {
+  margin:0 12px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:10px;
+  padding:14px;
+}
+.sb-progress .sp-label { font-size:10px; color:rgba(255,255,255,.35); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; }
+.sp-bar { height:5px; background:rgba(255,255,255,.1); border-radius:3px; overflow:hidden; margin-bottom:6px; }
+.sp-fill { height:100%; border-radius:3px; background:linear-gradient(90deg,#6366f1,#818cf8); transition:width .5s; }
+.sp-nums { display:flex; justify-content:space-between; font-size:10px; color:rgba(255,255,255,.4); }
+.sp-nums strong { color:rgba(255,255,255,.7); }
 
-/* ══ FILTER BAR ══════════════════════════════════════════════════════ */
+/* ─── MAIN ───────────────────────────────────────────── */
+.main { margin-left:220px; flex:1; display:flex; flex-direction:column; min-height:100vh; }
+
+/* ─── TOPBAR ─────────────────────────────────────────── */
 .topbar {
-  background: var(--bar-bg);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 1px solid rgba(255,255,255,.07);
-  padding: 0 28px;
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 8px; height: 50px;
-  position: sticky; top: 52px; z-index: 200;
+  background:var(--white); border-bottom:1px solid var(--line);
+  padding:0 32px;
+  display:flex; align-items:center; justify-content:space-between;
+  height:60px; position:sticky; top:0; z-index:50;
+  box-shadow:0 1px 0 var(--line);
 }
-.topbar-title { font-size: 13px; font-weight: 600; color: #fff; flex-shrink: 0; }
-.topbar-filters { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; overflow-x: auto; }
-.tb-label {
-  font-size: 11px; font-weight: 500; color: var(--slate);
-  letter-spacing: .3px; white-space: nowrap; flex-shrink: 0; margin: 0 2px;
-}
+.topbar-title { font-size:15px; font-weight:600; color:var(--ink); }
+.topbar-filters { display:flex; align-items:center; gap:6px; }
+.tb-label { font-size:11px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-right:4px; }
 .pill {
-  padding: 4px 13px; border-radius: 20px;
-  border: 1px solid rgba(255,255,255,.15); background: transparent;
-  color: var(--ink2); font-family: inherit; font-size: 12px; font-weight: 400;
-  cursor: pointer; transition: all .15s; white-space: nowrap; flex-shrink: 0;
+  padding:5px 14px; border-radius:20px;
+  border:1.5px solid var(--line); background:transparent;
+  color:var(--slate); font-family:'DM Sans',sans-serif; font-size:12px; font-weight:500;
+  cursor:pointer; transition:all .15s; white-space:nowrap;
 }
-.pill:hover { border-color: rgba(255,255,255,.4); color: #fff; }
-.pill.active {
-  background: rgba(255,255,255,.1); color: #fff;
-  border-color: rgba(255,255,255,.3); font-weight: 500;
-}
-.pill-sep { width: 1px; height: 16px; background: rgba(255,255,255,.1); margin: 0 4px; flex-shrink: 0; }
-.prod-pill { display: flex; align-items: center; gap: 5px; }
-.prod-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.custom-wrap { display: none; align-items: center; gap: 6px; }
+.pill:hover { border-color:var(--acc); color:var(--acc); }
+.pill.active { border-color:var(--acc); background:var(--acc-l); color:var(--acc); font-weight:600; }
+.pill-sep { width:1px; height:18px; background:var(--line); margin:0 4px; }
+.prod-pill { display:flex; align-items:center; gap:6px; }
+.prod-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.custom-wrap { display:none; align-items:center; gap:6px; }
 .date-in {
-  background: var(--bg3); border: 1px solid rgba(255,255,255,.15); border-radius: 8px;
-  color: #fff; font-family: inherit; font-size: 12px;
-  padding: 4px 10px; outline: none; width: 118px; transition: .15s;
+  background:var(--bg); border:1.5px solid var(--line); border-radius:8px;
+  color:var(--ink); font-family:'DM Sans',sans-serif; font-size:12px;
+  padding:5px 10px; outline:none; width:120px;
 }
-.date-in:focus { border-color: var(--acc); box-shadow: 0 0 0 3px rgba(41,151,255,.25); }
+.date-in:focus { border-color:var(--acc); }
 .apply-btn {
-  padding: 5px 12px; border-radius: 20px; border: none;
-  background: var(--acc); color: #fff; font-family: inherit;
-  font-size: 12px; font-weight: 500; cursor: pointer; transition: opacity .15s;
+  padding:5px 12px; border-radius:8px; border:none;
+  background:var(--acc); color:#fff; font-family:'DM Sans',sans-serif;
+  font-size:12px; font-weight:600; cursor:pointer; transition:opacity .15s;
 }
-.apply-btn:hover { opacity: .82; }
+.apply-btn:hover { opacity:.85; }
 
-/* ══ PAGE ════════════════════════════════════════════════════════════ */
-.page { padding: 48px 28px 96px; }
+/* ─── PAGE BODY ──────────────────────────────────────── */
+.page { padding:28px 32px; }
 
-/* ══ VIEW HEADER ═════════════════════════════════════════════════════ */
-.view-hdr { margin-bottom: 40px; }
-.view-hdr h2 {
-  font-size: 48px; font-weight: 800;
-  letter-spacing: -2.5px; line-height: 1;
-  background: linear-gradient(135deg, #fff 0%, #a1a1a6 100%);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-.view-hdr p { font-size: 14px; color: var(--slate); margin-top: 10px; }
+/* ─── VIEW HEADERS ───────────────────────────────────── */
+.view-hdr { margin-bottom:24px; }
+.view-hdr h2 { font-family:'Playfair Display',serif; font-size:28px; font-weight:600; color:var(--ink); letter-spacing:-.3px; }
+.view-hdr p { font-size:13px; color:var(--muted); margin-top:4px; }
 
-/* ══ KPI CARDS ════════════════════════════════════════════════════════ */
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
-  gap: 14px;
-  margin-bottom: 36px;
-}
+/* ─── KPI GRID ───────────────────────────────────────── */
+.kpi-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:12px; margin-bottom:24px; }
 .kpi-card {
-  background: var(--bg2);
-  border-radius: var(--r);
-  padding: 22px 22px 18px;
-  border: 1px solid var(--card-border);
-  position: relative; overflow: hidden;
-  transition: transform .25s ease, box-shadow .25s ease, border-color .25s;
-  cursor: default;
+  background:var(--white); border-radius:var(--r);
+  box-shadow:var(--shadow); padding:18px 20px;
+  position:relative; overflow:hidden; transition:box-shadow .2s;
+  border:1px solid var(--line);
 }
-.kpi-card:hover {
-  transform: translateY(-3px);
-  border-color: var(--card-hover-border);
-  box-shadow: 0 20px 60px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.06);
-}
-.kpi-card::before {
-  content: '';
-  position: absolute; inset: 0;
-  background: radial-gradient(circle at 80% 20%, rgba(var(--kc-rgb,41,151,255),.08) 0%, transparent 60%);
-  pointer-events: none;
-}
+.kpi-card:hover { box-shadow:var(--shadow2); }
 .kpi-card::after {
-  content: '';
-  position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
-  background: var(--kc, var(--acc));
-  opacity: .9;
+  content:''; position:absolute; bottom:0; left:0; right:0; height:3px;
+  background:var(--kc, var(--acc));
 }
-.kc-lbl {
-  font-size: 10px; font-weight: 600; letter-spacing: 1px;
-  text-transform: uppercase; color: var(--slate); margin-bottom: 12px;
-}
-.kc-val {
-  font-size: 26px; font-weight: 700; line-height: 1;
-  letter-spacing: -1px; color: var(--kc, #fff);
-  margin-bottom: 7px;
-}
-.kc-sub { font-size: 11px; color: var(--slate); line-height: 1.45; }
+.kc-lbl { font-size:10px; font-weight:600; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
+.kc-val { font-family:'Playfair Display',serif; font-size:24px; font-weight:700; color:var(--ink); line-height:1; margin-bottom:6px; letter-spacing:-.3px; }
+.kc-sub { font-size:11px; color:var(--muted); }
 .kc-badge {
-  display: inline-block; font-size: 11px; font-weight: 600;
-  padding: 3px 10px; border-radius: 20px; margin-top: 8px;
+  display:inline-flex; align-items:center; gap:4px;
+  padding:3px 9px; border-radius:20px; font-size:10px; font-weight:700;
+  margin-top:8px;
 }
-.bg-g { background: var(--green-l); color: var(--green); }
-.bg-y { background: var(--gold-l);  color: var(--gold); }
-.bg-r { background: var(--red-l);   color: var(--red); }
+.bg-g { background:var(--green-l); color:var(--green); }
+.bg-r { background:var(--red-l);   color:var(--red);   }
+.bg-y { background:var(--gold-l);  color:var(--gold);  }
 
-/* ══ SECTION LABELS ═══════════════════════════════════════════════════ */
+/* ─── SECTION LABEL ──────────────────────────────────── */
 .sec-label {
-  font-size: 11px; font-weight: 600; letter-spacing: 1px;
-  text-transform: uppercase; color: var(--slate); margin-bottom: 14px;
+  font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+  color:var(--muted); margin-bottom:12px;
+  display:flex; align-items:center; gap:10px;
 }
-.mb20 { margin-bottom: 20px; }
-.mb24 { margin-bottom: 24px; }
+.sec-label::after { content:''; flex:1; height:1px; background:var(--line); }
 
-/* ══ CARDS ════════════════════════════════════════════════════════════ */
+/* ─── PLAN TABLE ─────────────────────────────────────── */
 .card {
-  background: var(--bg2);
-  border-radius: var(--r); padding: 24px;
-  border: 1px solid var(--card-border);
+  background:var(--white); border-radius:var(--r);
+  border:1px solid var(--line); box-shadow:var(--shadow);
+  overflow:hidden;
 }
-.card-hdr {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 20px;
+.card-pad { padding:20px 24px; }
+table.dt { width:100%; border-collapse:collapse; }
+table.dt thead tr { border-bottom:2px solid var(--line); }
+table.dt th {
+  font-size:10px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase;
+  color:var(--muted); padding:12px 16px; text-align:right; white-space:nowrap;
 }
-.card-title { font-size: 15px; font-weight: 600; color: #fff; letter-spacing: -.3px; }
+table.dt th:first-child { text-align:left; }
+table.dt td { padding:13px 16px; font-size:13px; text-align:right; border-bottom:1px solid var(--line2); }
+table.dt tr:last-child td { border-bottom:none; }
+table.dt td:first-child { text-align:left; font-weight:600; }
+table.dt tr.tr-sum { background:linear-gradient(90deg,rgba(99,102,241,.03),transparent); }
+table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
+.prod-name { display:flex; align-items:center; gap:9px; }
+.bar-wrap { display:flex; align-items:center; gap:8px; justify-content:flex-end; }
+.bar-track { width:64px; height:4px; background:var(--line); border-radius:2px; overflow:hidden; }
+.bar-fill { height:100%; border-radius:2px; transition:width .4s; }
 
-/* ══ PLAN TABLE ════════════════════════════════════════════════════════ */
-.dt { width: 100%; border-collapse: collapse; font-size: 13px; }
-.dt th {
-  text-align: left; padding: 8px 14px;
-  font-size: 10px; font-weight: 600; color: var(--slate);
-  letter-spacing: .8px; text-transform: uppercase;
-  border-bottom: 1px solid rgba(255,255,255,.07);
-}
-.dt td { padding: 13px 14px; border-bottom: 1px solid rgba(255,255,255,.05); vertical-align: middle; color: var(--ink); }
-.dt tbody tr:last-child td { border-bottom: none; }
-.dt tbody tr:hover td { background: rgba(255,255,255,.03); transition: background .12s; }
-.tr-sum td { background: rgba(255,255,255,.04); font-weight: 600; }
+/* ─── CHARTS ROW ─────────────────────────────────────── */
+.charts-row { display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-bottom:24px; }
+.card-hdr { padding:18px 24px 0; display:flex; align-items:center; justify-content:space-between; }
+.card-title { font-size:13px; font-weight:700; color:var(--ink); letter-spacing:-.1px; }
+.metric-tabs { display:flex; gap:4px; }
+.mt { padding:4px 12px; border-radius:6px; border:1px solid var(--line); background:none; color:var(--muted); font-family:'DM Sans',sans-serif; font-size:11px; font-weight:600; cursor:pointer; transition:all .15s; }
+.mt.active { background:var(--ink); color:#fff; border-color:var(--ink); }
+.chart-body { padding:16px 20px 18px; }
 
-/* ══ PROGRESS BAR ══════════════════════════════════════════════════════ */
-.prod-name { display: flex; align-items: center; gap: 8px; font-weight: 500; color: #fff; }
-.bar-wrap { display: flex; align-items: center; gap: 8px; }
-.bar-track { flex: 1; height: 3px; background: var(--line2); border-radius: 2px; overflow: hidden; min-width: 50px; }
-.bar-fill { height: 100%; border-radius: 2px; transition: width .6s ease; }
+/* ─── PRODUCT STATS ──────────────────────────────────── */
+.prod-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:24px; }
+.ps-card { background:var(--white); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow); overflow:hidden; }
+.ps-head { padding:14px 20px; display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--line2); }
+.ps-head .dot16 { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.ps-head-title { font-size:13px; font-weight:700; color:var(--ink); }
+.ps-body { padding:0 4px; }
+.ps-row { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; border-bottom:1px solid var(--line2); }
+.ps-row:last-child { border-bottom:none; }
+.ps-l { font-size:12px; color:var(--slate); }
+.ps-r { font-size:13px; font-weight:700; color:var(--ink); }
 
-/* ══ CHARTS ROW ════════════════════════════════════════════════════════ */
-.charts-row { display: grid; grid-template-columns: 1fr 300px; gap: 16px; margin-bottom: 28px; }
-.chart-body { position: relative; }
-.metric-tabs {
-  display: flex; gap: 2px;
-  background: rgba(255,255,255,.07); border-radius: 22px; padding: 3px;
-}
-.mt {
-  padding: 5px 14px; border-radius: 19px; font-size: 12px; font-weight: 500;
-  border: none; background: transparent; color: var(--slate); cursor: pointer;
-  font-family: inherit; transition: all .18s;
-}
-.mt.active {
-  background: rgba(255,255,255,.12); color: #fff; font-weight: 600;
-  box-shadow: 0 1px 6px rgba(0,0,0,.4);
-}
+/* ─── MANAGERS ───────────────────────────────────────── */
+.mgr-subfilters { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:20px; }
+.mgr-view { display:none; }
+.rank-icon { font-size:15px; }
+.mgr-bar-cell { display:flex; align-items:center; gap:8px; justify-content:flex-end; }
+.mb16 { height:4px; width:60px; background:var(--line); border-radius:2px; overflow:hidden; }
+.mb16-f { height:100%; border-radius:2px; }
+.mgr-charts-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:20px; }
+.tag { display:inline-block; padding:2px 9px; border-radius:12px; font-size:10px; font-weight:700; }
 
-/* ══ PRODUCT STATS ═════════════════════════════════════════════════════ */
-.prod-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+/* ─── AD SPEND ───────────────────────────────────────── */
+.ad-view { display:none; }
+.ad-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:24px; }
+.ad-card { background:var(--white); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow); padding:20px 22px; }
+.ad-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--line2); }
+.ad-head-title { font-size:13px; font-weight:700; }
+.ad-kv { display:flex; justify-content:space-between; align-items:baseline; padding:8px 0; border-bottom:1px solid var(--line2); }
+.ad-kv:last-of-type { border-bottom:none; }
+.ad-kl { font-size:12px; color:var(--slate); }
+.ad-kv-val { font-size:13px; font-weight:700; }
+.ad-prog { margin:14px 0; }
+.ad-prog-bar { height:6px; background:var(--line); border-radius:3px; overflow:hidden; margin:6px 0; }
+.ad-prog-fill { height:100%; border-radius:3px; transition:width .5s; }
+.ad-prog-meta { display:flex; justify-content:space-between; font-size:10px; color:var(--muted); }
+.mini-chart { margin-top:14px; border-top:1px solid var(--line2); padding-top:12px; }
+.mini-label { font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
 
-.ps-card {
-  background: var(--bg2);
-  border-radius: var(--r);
-  border: 1px solid var(--card-border);
-  overflow: hidden;
-  transition: transform .25s ease, box-shadow .25s ease, border-color .25s;
-  position: relative;
-}
-.ps-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--card-hover-border);
-  box-shadow: 0 24px 60px rgba(0,0,0,.45);
-}
+/* ─── PERIOD TAG ─────────────────────────────────────── */
+.period-badge { display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:20px; background:var(--acc-l); color:var(--acc); font-size:11px; font-weight:700; margin-bottom:20px; }
 
-/* Coloured top stripe */
-.ps-stripe {
-  height: 4px;
-  width: 100%;
-  opacity: .9;
-}
+/* ─── ANIMATIONS ─────────────────────────────────────── */
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+.kpi-card { animation:fadeIn .35s ease both; }
+.kpi-card:nth-child(1){animation-delay:.03s}.kpi-card:nth-child(2){animation-delay:.06s}
+.kpi-card:nth-child(3){animation-delay:.09s}.kpi-card:nth-child(4){animation-delay:.12s}
+.kpi-card:nth-child(5){animation-delay:.15s}.kpi-card:nth-child(6){animation-delay:.18s}
+.kpi-card:nth-child(7){animation-delay:.21s}
 
-.ps-inner { padding: 22px 22px 20px; }
-
-/* Header */
-.ps-head {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 20px;
-}
-.ps-head-left { display: flex; align-items: center; gap: 10px; }
-.ps-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.ps-name { font-size: 17px; font-weight: 700; color: var(--ink); letter-spacing: -.4px; }
-.ps-pct-badge {
-  font-size: 12px; font-weight: 700;
-  padding: 4px 10px; border-radius: 20px;
-}
-
-/* Big revenue number */
-.ps-revenue {
-  margin-bottom: 6px;
-}
-.ps-rev-val {
-  font-size: 34px; font-weight: 800;
-  letter-spacing: -1.5px; line-height: 1;
-}
-.ps-rev-sub {
-  font-size: 12px; color: var(--slate); margin-top: 4px;
-}
-
-/* Progress bar */
-.ps-progress { margin: 16px 0; }
-.ps-prog-track {
-  height: 5px; background: var(--line2);
-  border-radius: 3px; overflow: hidden;
-}
-.ps-prog-fill {
-  height: 100%; border-radius: 3px;
-  transition: width .7s cubic-bezier(.4,0,.2,1);
-}
-.ps-prog-labels {
-  display: flex; justify-content: space-between;
-  font-size: 11px; color: var(--slate); margin-top: 6px;
-}
-
-/* Stats grid */
-.ps-stats {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 0;
-  border-top: 1px solid var(--line2);
-  margin-top: 4px;
-}
-.ps-stat {
-  padding: 12px 0;
-  border-bottom: 1px solid var(--line2);
-}
-.ps-stat:nth-child(odd) { padding-right: 16px; border-right: 1px solid var(--line2); }
-.ps-stat:nth-child(even) { padding-left: 16px; }
-.ps-stat:nth-last-child(-n+2) { border-bottom: none; }
-.ps-stat-label { font-size: 10px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase; color: var(--slate); margin-bottom: 4px; }
-.ps-stat-val { font-size: 18px; font-weight: 700; letter-spacing: -.5px; color: var(--ink); }
-.ps-stat-val.small { font-size: 14px; letter-spacing: -.3px; }
-
-/* Light mode tweaks */
-.light .ps-card:hover { box-shadow: 0 20px 50px rgba(0,0,0,.12); }
-
-/* ══ MANAGERS ══════════════════════════════════════════════════════════ */
-.mgr-charts-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-top: 14px; }
-.mgr-bar-cell { display: flex; align-items: center; gap: 6px; }
-.mb16 { flex: 1; height: 3px; background: var(--line2); border-radius: 2px; overflow: hidden; }
-.mb16-f { border-radius: 2px; }
-
-/* ══ AD VIEW ═══════════════════════════════════════════════════════════ */
-.ad-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 24px; }
-.ad-card { background: var(--bg2); border-radius: var(--r); padding: 22px; border: 1px solid var(--card-border); }
-.ad-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-.ad-head-title { font-size: 15px; font-weight: 700; letter-spacing: -.3px; color: #fff; }
-.ad-kv { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
-.ad-kv:last-child { border-bottom: none; }
-.ad-kl { font-size: 12px; color: var(--slate); }
-.ad-kv-val { font-size: 13px; font-weight: 600; color: #fff; }
-.ad-prog { margin-top: 14px; }
-.ad-prog-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--slate); margin-bottom: 6px; }
-.ad-prog-bar { height: 3px; background: var(--line2); border-radius: 2px; overflow: hidden; }
-.ad-prog-fill { height: 100%; border-radius: 2px; }
-.mini-chart { margin-top: 14px; }
-.mini-label { font-size: 10px; color: var(--slate); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .5px; }
-.ad-chart-row { display: grid; grid-template-columns: 1fr 300px; gap: 14px; margin-bottom: 24px; }
-
-/* ══ TEXT COLOURS ══════════════════════════════════════════════════════ */
-.txt-g { color: var(--green) !important; }
-.txt-y { color: var(--gold) !important; }
-.txt-r { color: var(--red) !important; }
-.txt-m { color: var(--slate); }
-
-/* ══ MISC ══════════════════════════════════════════════════════════════ */
-.rop-pill { transition: all .15s; }
-#sb-month-label, #sb-fill, #sb-day, #sb-day-start, #sb-kpi { display: none; }
-.icon { font-size: 14px; }
-
-/* ══ SCROLLBAR ══════════════════════════════════════════════════════════ */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--scrollbar); }
-
-/* ══ CHART.JS OVERRIDE FOR DARK ════════════════════════════════════════ */
-canvas { border-radius: 8px; }
-
-/* ══ THEME TOGGLE ══════════════════════════════════════════════════════ */
-.theme-toggle {
-  width: 34px; height: 34px; border-radius: 50%;
-  border: 1px solid var(--card-border);
-  background: var(--bg2);
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: all .2s;
-  font-size: 15px; line-height: 1;
-  flex-shrink: 0;
-}
-.theme-toggle:hover {
-  background: var(--bg3);
-  border-color: var(--card-hover-border);
-  transform: scale(1.08);
-}
-
-/* Light mode overrides for view header gradient */
-.light .view-hdr h2 {
-  background: linear-gradient(135deg, #1d1d1f 0%, #6e6e73 100%);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-/* Light mode: metric tabs */
-.light .mt.active { background: var(--bg2); color: var(--ink); box-shadow: 0 1px 6px rgba(0,0,0,.12); }
-.light .metric-tabs { background: rgba(0,0,0,.06); }
-/* Light mode: kpi card glow off */
-.light .kpi-card::before { display: none; }
-/* Light mode pill active */
-.light .pill.active { background: var(--ink); color: #fff; border-color: var(--ink); }
-/* Light mode prod-name */
-.light .prod-name { color: var(--ink); }
-/* Light mode card titles */
-.light .card-title, .light .ad-head-title, .light .ps-name, .light .ps-kval, .light .ad-kv-val, .light .dt td { color: var(--ink); }
-/* Light mode an-brand */
-.light .an-brand {
-  background: var(--acc);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-/* Transition everything smoothly */
-body, .apple-nav, .topbar, .kpi-card, .card, .ps-card, .ad-card, .dt td, .dt th {
-  transition: background .3s ease, border-color .3s ease, color .3s ease;
-}
+/* ─── UTILITIES ──────────────────────────────────────── */
+.txt-col  { color:var(--col)  !important; }
+.txt-ummi { color:var(--ummi) !important; }
+.txt-cof  { color:var(--cof)  !important; }
+.txt-acc  { color:var(--acc)  !important; }
+.txt-g    { color:var(--green)!important; }
+.txt-r    { color:var(--red)  !important; }
+.txt-y    { color:var(--gold) !important; }
+.fw7      { font-weight:700; }
+.mb16     { margin-bottom:16px; }
+.mb20     { margin-bottom:20px; }
+.mb24     { margin-bottom:24px; }
 </style>
 </head>
 <body>
 <div class="shell">
 
 <!-- ═══ SIDEBAR ═══════════════════════════════════════════════ -->
-<nav class="apple-nav">
-  <span class="an-brand">WeGlow</span>
-  <div class="an-links">
-    <button class="an-link active" onclick="switchView('main',this)" id="nav-main">Дашборд</button>
-    <button class="an-link" onclick="switchView('managers',this)" id="nav-managers">Менеджеры</button>
-    <button class="an-link" onclick="switchView('adspend',this)" id="nav-adspend">Реклама</button>
-    <div class="an-divider"></div>
-    <a class="an-link" href="ad.html">Кабинет рекламы</a>
-    <a class="an-link" href="rop.html">Кабинет РОП</a>
-    <a class="an-link" href="director.html">Кабинет директора</a>
-    <div class="an-divider"></div>
-    <a class="an-link" href="index.html" style="color:var(--acc);font-weight:500">↑ Обновить данные</a>
+<aside class="sidebar">
+  <div class="sb-logo">
+    <h1>WeGlow</h1>
+    <div class="tagline">Sales Intelligence</div>
   </div>
-  <div class="an-right">
-    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Тема">
-      <span id="theme-icon">☀️</span>
+  <div style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.07)">
+    <a href="index.html" style="display:flex;align-items:center;gap:7px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);font-size:12px;font-weight:600;text-decoration:none;transition:all .15s" onmouseover="this.style.color='rgba(255,255,255,.85)'" onmouseout="this.style.color='rgba(255,255,255,.5)'">
+      <span style="font-size:14px">↑</span> Обновить данные
+    </a>
+    <div id="data-badge" style="margin-top:8px;font-size:10px;color:rgba(255,255,255,.3);padding:0 10px"></div>
+  </div>
+  <div class="sb-date">
+    <strong id="sb-today"></strong>
+    UTC+5 · Пятница
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-section">Навигация</div>
+    <button class="nav-item active" onclick="switchView('main',this)">
+      <span class="icon">◈</span> Дашборд
     </button>
-    <span class="an-time" id="sb-today"></span>
-    <div id="data-badge" style="font-size:11px;color:var(--muted)"></div>
+    <button class="nav-item" onclick="switchView('managers',this)">
+      <span class="icon">◎</span> Менеджеры
+    </button>
+    <button class="nav-item" onclick="switchView('adspend',this)">
+      <span class="icon">◇</span> Реклама
+    </button>
+  </nav>
+  <div class="sb-progress">
+    <div class="sp-label" id="sb-month-label">—</div>
+    <div class="sp-bar"><div class="sp-fill" id="sb-fill" style="width:96%"></div></div>
+    <div class="sp-nums"><span>1 фев</span><strong id="sb-day">27 / 28</strong></div>
   </div>
-</nav>
+</aside>
 
 <!-- ═══ MAIN ═══════════════════════════════════════════════════ -->
 <div class="main">
@@ -537,9 +343,6 @@ body, .apple-nav, .topbar, .kpi-card, .card, .ps-card, .ad-card, .dt td, .dt th 
       <button class="pill" onclick="setMgrProd('Ummi',this)">Ummi</button>
       <button class="pill" onclick="setMgrProd('Кофе',this)">Кофе</button>
       <div class="pill-sep"></div>
-      <span class="tb-label" id="rop-filter-label" style="display:none">Группа:</span>
-      <div id="rop-group-pills" style="display:contents"></div>
-      <div class="pill-sep" id="rop-sep" style="display:none"></div>
       <span class="tb-label">Период:</span>
       <button class="pill period-pill" onclick="setMgrPreset('today',this)">Сегодня</button>
       <button class="pill period-pill" onclick="setMgrPreset('yesterday',this)">Вчера</button>
@@ -594,11 +397,11 @@ body, .apple-nav, .topbar, .kpi-card, .card, .ps-card, .ad-card, .dt td, .dt th 
               <button class="mt" onclick="setMetric('deals',this)">Сделки</button>
             </div>
           </div>
-          <div class="chart-body"><canvas id="lineChart" height="110"></canvas></div>
+          <div class="chart-body"><canvas id="lineChart" height="170"></canvas></div>
         </div>
         <div class="card">
           <div class="card-hdr"><span class="card-title">Структура выручки</span></div>
-          <div class="chart-body"><canvas id="donutChart" height="150"></canvas></div>
+          <div class="chart-body"><canvas id="donutChart" height="220"></canvas></div>
         </div>
       </div>
       <div class="sec-label mb20">Эффективность по продуктам</div>
@@ -623,9 +426,9 @@ body, .apple-nav, .topbar, .kpi-card, .card, .ps-card, .ad-card, .dt td, .dt th 
         </table>
       </div>
       <div class="mgr-charts-3">
-        <div class="card"><div class="card-hdr"><span class="card-title">Топ по выручке</span></div><div class="chart-body"><canvas id="mgrBudget" height="140"></canvas></div></div>
-        <div class="card"><div class="card-hdr"><span class="card-title">Конверсия %</span></div><div class="chart-body"><canvas id="mgrConv" height="140"></canvas></div></div>
-        <div class="card"><div class="card-hdr"><span class="card-title">Средний чек ₸</span></div><div class="chart-body"><canvas id="mgrCheck" height="140"></canvas></div></div>
+        <div class="card"><div class="card-hdr"><span class="card-title">Топ по выручке</span></div><div class="chart-body"><canvas id="mgrBudget" height="200"></canvas></div></div>
+        <div class="card"><div class="card-hdr"><span class="card-title">Конверсия %</span></div><div class="chart-body"><canvas id="mgrConv" height="200"></canvas></div></div>
+        <div class="card"><div class="card-hdr"><span class="card-title">Средний чек ₸</span></div><div class="chart-body"><canvas id="mgrCheck" height="200"></canvas></div></div>
       </div>
     </div>
 
@@ -663,55 +466,18 @@ const RAW_EMBEDDED = {"Коллаген":{"01.01.2026":[154,2,140000],"01.02.202
 let RAW = _loaded ? _loaded.RAW : RAW_EMBEDDED;
 
 const MANAGERS_STATIC = {"Коллаген":[{"name":"Пин 14 Шамид Халилли","leads":571,"deals":83,"budget":5702500,"conv":14.5,"avgCheck":68705},{"name":"пин 17 Таймир Туйгунов","leads":382,"deals":59,"budget":4965550,"conv":15.4,"avgCheck":84162},{"name":"пин 10 Айша","leads":378,"deals":51,"budget":4677800,"conv":13.5,"avgCheck":91722},{"name":"Пин 8 Асема","leads":335,"deals":56,"budget":4534975,"conv":16.7,"avgCheck":80982},{"name":"Пин 2 Санжар","leads":512,"deals":53,"budget":4082550,"conv":10.4,"avgCheck":77029},{"name":"пин 20 Жазира","leads":523,"deals":46,"budget":4051800,"conv":8.8,"avgCheck":88083},{"name":"пин 22 Асель","leads":453,"deals":35,"budget":3305850,"conv":7.7,"avgCheck":94453},{"name":"пин 16 Медина","leads":156,"deals":27,"budget":3006950,"conv":17.3,"avgCheck":111369},{"name":"Пин 6 Асем","leads":280,"deals":31,"budget":2746150,"conv":11.1,"avgCheck":88585},{"name":"Пин 4 Динара","leads":331,"deals":31,"budget":2618800,"conv":9.4,"avgCheck":84477},{"name":"пин 21 Жанар","leads":209,"deals":22,"budget":2218300,"conv":10.5,"avgCheck":100832},{"name":"Пин 34 Карина","leads":220,"deals":24,"budget":2076900,"conv":10.9,"avgCheck":86538},{"name":"Пин 7 Рахима","leads":157,"deals":18,"budget":1819500,"conv":11.5,"avgCheck":101083},{"name":"Пин 32 Айжан","leads":181,"deals":22,"budget":1532300,"conv":12.2,"avgCheck":69650},{"name":"Пин 1 Раушан","leads":334,"deals":26,"budget":1480775,"conv":7.8,"avgCheck":56953},{"name":"Пин 3 Ерсин","leads":156,"deals":16,"budget":1346850,"conv":10.3,"avgCheck":84178},{"name":"Пин 5 Тахир","leads":193,"deals":20,"budget":1257900,"conv":10.4,"avgCheck":62895},{"name":"пин 25 Ахмед","leads":98,"deals":14,"budget":1050000,"conv":14.3,"avgCheck":75000},{"name":"Пин 27 Эльнара","leads":114,"deals":8,"budget":662400,"conv":7.0,"avgCheck":82800},{"name":"Пин 36 Жан","leads":84,"deals":3,"budget":589925,"conv":3.6,"avgCheck":196642},{"name":"пин 23 Темирлан","leads":88,"deals":6,"budget":563000,"conv":6.8,"avgCheck":93833},{"name":"Пин 31 Ернур","leads":121,"deals":7,"budget":439700,"conv":5.8,"avgCheck":62814},{"name":"Пин 30 Диас","leads":12,"deals":4,"budget":274375,"conv":33.3,"avgCheck":68594},{"name":"пин 24 Кенес","leads":18,"deals":2,"budget":151725,"conv":11.1,"avgCheck":75862},{"name":"Пин 37 Аида","leads":42,"deals":3,"budget":150500,"conv":7.1,"avgCheck":50167},{"name":"РОП Айдана","leads":290,"deals":0,"budget":0,"conv":0,"avgCheck":0},{"name":"РОП Аслиддин","leads":40,"deals":0,"budget":0,"conv":0,"avgCheck":0}],"Ummi":[{"name":"Кирилл Рыжаков","leads":268,"deals":26,"budget":2506251,"conv":9.7,"avgCheck":96394},{"name":"Меруерт Мун","leads":246,"deals":23,"budget":1957300,"conv":9.3,"avgCheck":85100},{"name":"kids09@weglow.com Дания","leads":161,"deals":14,"budget":1644100,"conv":8.7,"avgCheck":117436},{"name":"Баглан Ертай","leads":366,"deals":11,"budget":1609500,"conv":3.0,"avgCheck":146318},{"name":"Курбанов Бакдаулет","leads":429,"deals":10,"budget":925250,"conv":2.3,"avgCheck":92525},{"name":"Аметжанова Алина","leads":157,"deals":7,"budget":629000,"conv":4.5,"avgCheck":89857},{"name":"Нурбол Абаков","leads":211,"deals":2,"budget":555000,"conv":0.9,"avgCheck":277500},{"name":"Ералин Джаримбетов","leads":49,"deals":2,"budget":427350,"conv":4.1,"avgCheck":213675},{"name":"Алиса Яковлева","leads":147,"deals":0,"budget":0,"conv":0,"avgCheck":0},{"name":"Расиль","leads":56,"deals":0,"budget":0,"conv":0,"avgCheck":0}],"Кофе":[{"name":"пин 1 Аскат","leads":451,"deals":24,"budget":1500350,"conv":5.3,"avgCheck":62515},{"name":"пин 2 Александр","leads":380,"deals":19,"budget":1379270,"conv":5.0,"avgCheck":72593},{"name":"пин 5 Ұлықбек","leads":282,"deals":19,"budget":1325300,"conv":6.7,"avgCheck":69753},{"name":"пин 6 Абдулазиз","leads":197,"deals":11,"budget":1100120,"conv":5.6,"avgCheck":100011},{"name":"пин 3 Абдурауф","leads":336,"deals":16,"budget":1087200,"conv":4.8,"avgCheck":67950},{"name":"пин 7 Роман","leads":194,"deals":11,"budget":969550,"conv":5.7,"avgCheck":88141},{"name":"Пин 8 Расул","leads":91,"deals":1,"budget":140000,"conv":1.1,"avgCheck":140000},{"name":"пин 4 Назира","leads":101,"deals":3,"budget":127400,"conv":3.0,"avgCheck":42467}]};
-let MANAGERS = (_loaded?.MANAGERS && Object.keys(_loaded.MANAGERS).length) ? _loaded.MANAGERS : MANAGERS_STATIC;
+let MANAGERS = _loaded ? _loaded.MANAGERS : MANAGERS_STATIC;
 
 const AD_SPEND_STATIC = {"Коллаген":{"01.02.2026":318000,"02.02.2026":327010,"03.02.2026":296270,"04.02.2026":172640,"05.02.2026":190840,"06.02.2026":267280,"07.02.2026":309920,"08.02.2026":267280,"09.02.2026":45240,"10.02.2026":353600,"11.02.2026":442000,"12.02.2026":624000,"13.02.2026":660920,"14.02.2026":589160,"15.02.2026":440440,"16.02.2026":534560,"17.02.2026":310960,"18.02.2026":424320,"19.02.2026":323440,"20.02.2026":327600,"21.02.2026":278200,"22.02.2026":278200,"23.02.2026":313560,"24.02.2026":364000,"25.02.2026":264160,"26.02.2026":229320},"Ummi":{"01.02.2026":163240,"02.02.2026":158470,"03.02.2026":124550,"04.02.2026":122720,"05.02.2026":157840,"06.02.2026":112320,"07.02.2026":130520,"08.02.2026":132080,"09.02.2026":46800,"10.02.2026":162760,"11.02.2026":166920,"12.02.2026":175240,"13.02.2026":305760,"14.02.2026":326040,"15.02.2026":251160,"16.02.2026":162760,"17.02.2026":120120,"18.02.2026":144040,"19.02.2026":121680,"20.02.2026":119600,"21.02.2026":109720,"22.02.2026":114920,"23.02.2026":145600,"24.02.2026":82160,"25.02.2026":100880,"26.02.2026":124800},"Кофе":{"01.02.2026":93280,"02.02.2026":96460,"03.02.2026":74200,"04.02.2026":62960,"05.02.2026":47230,"06.02.2026":47840,"07.02.2026":50960,"08.02.2026":61360,"09.02.2026":9360,"10.02.2026":52000,"11.02.2026":67600,"12.02.2026":197600,"13.02.2026":174200,"14.02.2026":187200,"15.02.2026":204360,"16.02.2026":88920,"17.02.2026":71240,"18.02.2026":91520,"19.02.2026":63920,"20.02.2026":106600,"21.02.2026":66560,"22.02.2026":92560,"23.02.2026":121160,"24.02.2026":130000,"25.02.2026":94640,"26.02.2026":107640}};
-let AD_SPEND = (_loaded && _loaded.AD_SPEND && Object.keys(_loaded.AD_SPEND).length) ? _loaded.AD_SPEND : AD_SPEND_STATIC;
+let AD_SPEND = _loaded ? _loaded.AD_SPEND : AD_SPEND_STATIC;
 
-let PLANS = _loaded && _loaded.PLANS ? _loaded.PLANS : {'col':{'03.2026':86000000,'02.2026':60000000,'01.2026':60000000,'12.2025':60000000,'11.2025':60000000,'10.2025':60000000},'ummi':{'03.2026':25000000,'02.2026':30000000,'01.2026':30000000,'12.2025':30000000,'11.2025':30000000},'coffee':{'03.2026':30000000,'02.2026':15000000,'01.2026':15000000,'12.2025':15000000}};
+const PLANS = {'col':{'02.2026':60000000,'01.2026':60000000,'12.2025':60000000,'11.2025':60000000,'10.2025':60000000},'ummi':{'02.2026':30000000,'01.2026':30000000,'12.2025':30000000,'11.2025':30000000},'coffee':{'02.2026':15000000,'01.2026':15000000,'12.2025':15000000}};
 
 const PROD_CFG = {
   col:    {name:'Коллаген', color:'#1a56db', rawKey:'Коллаген', mgrKey:'Коллаген'},
   ummi:   {name:'Ummi',     color:'#0a7c5c', rawKey:'Ummi',     mgrKey:'Ummi'},
   coffee: {name:'Кофе',     color:'#b45309', rawKey:'Кофе',     mgrKey:'Кофе'},
 };
-
-// ═══ ROP GROUPS (Коллаген only) ═══════════════════════════════════
-const ROP_GROUPS = {
-  'all':          { label: 'Все группы',    color: '#6366f1' },
-  'РОП Айдана':   { label: 'РОП Айдана',   color: '#1a56db' },
-  'РОП Нурдаулет':{ label: 'РОП Нурдаулет',color: '#0a7c5c' },
-  'РОП Аслиддин': { label: 'РОП Аслиддин', color: '#b45309' },
-};
-// Manager → ROP group mapping (from CRM data)
-const MGR_TO_ROP = {
-  'Пин 7 Рахима':        'РОП Айдана',
-  'Пин 3 Ерсин':         'РОП Айдана',
-  'РОП Айдана':          'РОП Айдана',
-  'Пин 14 Шамид Халилли':'РОП Нурдаулет',
-  'пин 17 Таймир Туйгунов':'РОП Нурдаулет',
-  'пин 10 Айша':         'РОП Нурдаулет',
-  'Пин 8 Асема':         'РОП Нурдаулет',
-  'Пин 1 Раушан':        'РОП Нурдаулет',
-  'Пин 6 Асем':          'РОП Нурдаулет',
-  'Пин 5 Тахир':         'РОП Нурдаулет',
-  'пин 16 Медина':       'РОП Нурдаулет',
-  'пин 9 Аружан':        'РОП Нурдаулет',
-  'пин 13 Диас':         'РОП Нурдаулет',
-  'Пин 18 Наиль':        'РОП Нурдаулет',
-  'РОП Нурдаулет':       'РОП Нурдаулет',
-  'Пин 2 Санжар':        'РОП Аслиддин',
-  'Пин 4 Динара':        'РОП Аслиддин',
-  'пин 20 Жазира':       'РОП Аслиддин',
-  'пин 21 Жанар':        'РОП Аслиддин',
-  'пин 22 Асель':        'РОП Аслиддин',
-  'пин 23 Темирлан':     'РОП Аслиддин',
-  'пин 19 Сая':          'РОП Аслиддин',
-  'РОП Аслиддин':        'РОП Аслиддин',
-  'Пин 34 Карина':       'РОП Аслиддин',
-  'Пин 32 Айжан':        'РОП Аслиддин',
-};
-let activeMgrRop = 'all';
 // ═══════════════════ DYNAMIC DATES ═══════════════════════════════
 const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 const MONTH_NAMES_GEN = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
@@ -772,13 +538,11 @@ function _lastMonthWithData() {
   }
   return monthKeys[0];
 }
-const _defaultKey = 'today'; // always start with today
-const _todayPreset = PRESETS['today'] || (() => { const t=_fmt(_now()); return {from:t,to:t,label:'Сегодня'}; })();
-const _defaultPreset = _todayPreset;
+const _defaultKey = _lastMonthWithData() || _currentKey;
+const _defaultPreset = PRESETS[_defaultKey] || {from:'01.02.2026',to:'28.02.2026',label:'Февраль 2026'};
 
 // ═══════════════════ STATE ════════════════════════════════════════
 let activeProd='all', activeMetric='budget', activeView='main';
-let _userChangedPeriod = false; // tracks if user manually selected period
 let activePeriod={..._defaultPreset, preset:_defaultKey};
 let activeMgrProd='Коллаген', activeMgrPeriod={..._defaultPreset, preset:_defaultKey};
 let activeAdPeriod={..._defaultPreset, preset:_defaultKey};
@@ -815,44 +579,14 @@ function aggregate(pk,from,to){
   }
   const fromD=parseDate(from);
   const mk=getMonthKey(fromD);
-  // Always use FULL monthly plan — never prorate
-  const plan=getPlan(pk,mk);
-
-  // Full month accumulated fact (for остаток/нужно-в-день regardless of period filter)
-  const now=new Date();
-  const curMK=`${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
-  let monthBudget=budget; // default: use period budget
-  let daysLeftMonth=1;
-  if(mk===curMK){
-    // Sum ALL days in current month from raw data
-    const allDates=getDatesInRange(`01.${curMK}`,`${String(now.getDate()).padStart(2,'0')}.${curMK}`);
-    monthBudget=allDates.reduce((s,d)=>s+((raw[d]&&raw[d][2])||0),0);
-    const totalDaysM=_lastDay(now.getFullYear(),now.getMonth()+1);
-    daysLeftMonth=Math.max(1, totalDaysM - now.getDate() + 1);
-  }
-  const remain=plan?Math.max(0,plan-monthBudget):0;
-  const perDay=daysLeftMonth>0?Math.round(remain/daysLeftMonth):0;
-
+  const mt=daysInMonth(fromD.getMonth()+1,fromD.getFullYear());
+  const full=dates.length>=mt-1;
+  const plan=full?getPlan(pk,mk):getPlan(pk,mk)*(dates.length/mt);
   // ad spend for period
   const adData=AD_SPEND[PROD_CFG[pk].rawKey]||{};
   const fD=parseDate(from),tD=parseDate(to);
   const adTotal=Object.entries(adData).filter(([d])=>{try{const dd=parseDate(d);return dd>=fD&&dd<=tD;}catch(e){return false;}}).reduce((a,[,v])=>a+v,0);
-
-  // ad spend + leads for full current month (for CPL)
-  let monthAdTotal=adTotal, monthLeads=leads;
-  if(mk===curMK){
-    const allDatesM=getDatesInRange(`01.${curMK}`,`${String(now.getDate()).padStart(2,'0')}.${curMK}`);
-    monthLeads=allDatesM.reduce((s,d)=>s+((raw[d]&&raw[d][0])||0),0);
-    const mfD=parseDate(`01.${curMK}`), mtD=parseDate(`${String(now.getDate()).padStart(2,'0')}.${curMK}`);
-    monthAdTotal=Object.entries(adData).filter(([d])=>{try{const dd=parseDate(d);return dd>=mfD&&dd<=mtD;}catch(e){return false;}}).reduce((a,[,v])=>a+v,0);
-  }
-  const cplMonth = monthLeads ? Math.round(monthAdTotal/monthLeads) : 0;
-  const rpl = monthLeads ? Math.round(monthBudget/monthLeads) : 0; // выручка/лид
-
-  return{leads,deals,budget,daily:dl,plan:Math.round(plan),monthKey:mk,
-    monthBudget:Math.round(monthBudget),remain:Math.round(remain),perDay,daysLeft:daysLeftMonth,
-    isCurrentMonth:mk===curMK,
-    adTotal,monthAdTotal,monthLeads,cplMonth,rpl,
+  return{leads,deals,budget,daily:dl,plan:Math.round(plan),adTotal,
     conv:leads?+(deals/leads*100).toFixed(1):0,avgCheck:deals?Math.round(budget/deals):0};
 }
 function aggregateAll(from,to){
@@ -863,28 +597,18 @@ function aggregateAll(from,to){
   const budget=Object.values(parts).reduce((a,p)=>a+p.budget,0);
   const plan=Object.values(parts).reduce((a,p)=>a+p.plan,0);
   const adTotal=Object.values(parts).reduce((a,p)=>a+p.adTotal,0);
-  const monthBudget=Object.values(parts).reduce((a,p)=>a+p.monthBudget,0);
-  const remain=Object.values(parts).reduce((a,p)=>a+p.remain,0);
-  const perDay=Object.values(parts).reduce((a,p)=>a+p.perDay,0);
-  const daysLeft=Object.values(parts)[0]?Object.values(parts)[0].daysLeft:1;
-  const isCurrentMonth=Object.values(parts)[0]?Object.values(parts)[0].isCurrentMonth:false;
-  const monthAdTotal=Object.values(parts).reduce((a,p)=>a+p.monthAdTotal,0);
-  const monthLeads=Object.values(parts).reduce((a,p)=>a+p.monthLeads,0);
-  const cplMonth=monthLeads?Math.round(monthAdTotal/monthLeads):0;
-  const rpl=monthLeads?Math.round(Object.values(parts).reduce((a,p)=>a+p.monthBudget,0)/monthLeads):0;
   const dl={labels:dates.map(d=>d.slice(0,5)),
     leads:dates.map((_,i)=>Object.values(parts).reduce((a,p)=>a+p.daily.leads[i],0)),
     deals:dates.map((_,i)=>Object.values(parts).reduce((a,p)=>a+p.daily.deals[i],0)),
     budget:dates.map((_,i)=>Object.values(parts).reduce((a,p)=>a+p.daily.budget[i],0))};
   return{leads,deals,budget,plan,adTotal,daily:dl,parts,
-    monthBudget,remain,perDay,daysLeft,isCurrentMonth,monthAdTotal,monthLeads,cplMonth,rpl,
     conv:leads?+(deals/leads*100).toFixed(1):0,avgCheck:deals?Math.round(budget/deals):0};
 }
 
 // ═══════════════════ VIEW SWITCH ══════════════════════════════════
 function switchView(v,el){
   activeView=v;
-  document.querySelectorAll('.an-link').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('view-main').style.display=v==='main'?'block':'none';
   document.getElementById('view-managers').style.display=v==='managers'?'block':'none';
@@ -899,7 +623,7 @@ function switchView(v,el){
 }
 
 // ═══════════════════ PERIOD PRESETS ═══════════════════════════════
-function setPreset(p,el){ _userChangedPeriod=true;
+function setPreset(p,el){
   document.getElementById('custom-wrap').style.display='none';
   if(p==='custom'){document.getElementById('custom-wrap').style.display='flex';markActivePeriod(el);return;}
   activePeriod={...PRESETS[p],preset:p};
@@ -967,163 +691,79 @@ function setMetric(m,el){
 }
 function setMgrProd(p,el){
   activeMgrProd=p;
-  activeMgrRop='all';
   markActive('[onclick^="setMgrProd"]',el);
-  // Show/hide ROP group filter only for Коллаген
-  const isCol = p==='Коллаген';
-  document.getElementById('rop-filter-label').style.display = isCol?'':'none';
-  document.getElementById('rop-sep').style.display = isCol?'':'none';
-  if(isCol) renderRopPills();
-  else document.getElementById('rop-group-pills').innerHTML='';
-  renderManagers();
-}
-function renderRopPills(){
-  const container = document.getElementById('rop-group-pills');
-  container.innerHTML = Object.entries(ROP_GROUPS).map(([key,cfg])=>
-    `<button class="pill rop-pill ${key===activeMgrRop?'active':''}"
-      style="${key===activeMgrRop?`background:${cfg.color};border-color:${cfg.color};color:#fff`:''}"
-      onclick="setMgrRop('${key}',this)">${cfg.label}</button>`
-  ).join('');
-}
-function setMgrRop(rop, el){
-  activeMgrRop = rop;
-  renderRopPills();
   renderManagers();
 }
 
 // ═══════════════════ RENDER KPI ═══════════════════════════════════
 function renderKPI(d){
-  const isCur = d.isCurrentMonth;
-
-  // % выполнения:
-  // — текущий месяц: накоплено за месяц / план
-  // — прошлые месяцы: факт за выбранный период / план
-  const pct = d.plan
-    ? (isCur ? Math.round(d.monthBudget/d.plan*100) : Math.round(d.budget/d.plan*100))
-    : 0;
-
-  const drr = d.budget ? +(d.adTotal/d.budget*100).toFixed(1) : 0;
-  const prodName = activeProd==='all' ? 'Все продукты' : PROD_CFG[activeProd].name;
-  document.getElementById('main-title').textContent = 'Ключевые показатели';
-  document.getElementById('main-sub').textContent = `${activePeriod.label} · ${prodName}`;
-  const clr = activeProd==='all' ? '#6366f1' : PROD_CFG[activeProd].color;
-
-  // Выручка sub: план сумма
-  const revSub = d.plan ? `план ${fmtM(d.plan)}` : '—';
-  // Выручка s2: нужно в день (только текущий месяц, если остаток есть)
-  const revS2 = isCur && d.plan && d.remain>0
-    ? `нужно ${fmtM(d.perDay)}/день · ост. ${d.daysLeft} дн.`
-    : (isCur && d.remain===0 ? '✓ план выполнен' : null);
-
-  // Выполнение sub: остаток суммой
-  const execSub = isCur && d.plan
-    ? (d.remain===0 ? '✓ план выполнен' : `ост. ${fmtM(d.remain)}`)
-    : 'от плана';
-
-  const cpl = d.cplMonth || 0;  // расходы рекл. за месяц / лиды за месяц
-
+  const pct=d.plan?Math.round(d.budget/d.plan*100):0;
+  const drr=d.budget?+(d.adTotal/d.budget*100).toFixed(1):0;
+  const prodName=activeProd==='all'?'Все продукты':PROD_CFG[activeProd].name;
+  document.getElementById('main-title').textContent='Ключевые показатели';
+  document.getElementById('main-sub').textContent=`${activePeriod.label} · ${prodName}`;
+  const clr=activeProd==='all'?'#6366f1':PROD_CFG[activeProd].color;
   const kpis=[
-    {l:'Выручка',      v:fmtM(d.budget),        s:revSub,  s2:revS2,  s2c:'#6366f1',
-     badge:`${pct}%`, bc:pctBg(pct), c:clr},
-    {l:'Лиды',         v:fmt(d.leads),           s:'дата создания', c:'#6366f1'},
-    {l:'Сделки',       v:fmt(d.deals),           s:'дата заказа',   c:'#6366f1'},
-    {l:'Конверсия',    v:`${d.conv}%`,           s:'план 12%',
-     badge:d.conv>=12?'В норме':'Ниже плана', bc:d.conv>=12?'bg-g':'bg-r',
-     c:d.conv>=12?'#16a34a':'#c0392b'},
-    {l:'Средний чек',  v:`${fmt(d.avgCheck)} ₸`, s:'план 80 000 ₸',
-     badge:d.avgCheck>=80000?'В норме':'Ниже', bc:d.avgCheck>=80000?'bg-g':'bg-y',
-     c:d.avgCheck>=80000?'#16a34a':'#ca8a04'},
-    {l:'Ст. лида (реклама)',v:cpl?`${fmt(cpl)} ₸`:'—', s:'расх. рекл. / лиды',
-     badge:cpl?`${fmt(cpl)} ₸`:'нет данных', bc:cpl<=3000?'bg-g':cpl<=6000?'bg-y':'bg-r',
-     c:cpl<=3000?'#16a34a':cpl<=6000?'#ca8a04':'#c0392b'},
-    {l:'Ст. лида (продажи)',v:d.rpl?`${fmt(d.rpl)} ₸`:'—', s:'выручка / лиды',
-     badge:d.rpl?`${fmt(d.rpl)} ₸`:'—', bc:'bg-g',
-     c:'#6366f1'},
-    {l:'Выполнение',   v:`${pct}%`,              s:execSub,
-     badge:pct>=100?'Выполнен':pct>=80?'Близко':'В процессе',
-     bc:pctBg(pct), c:pct>=100?'#16a34a':pct>=80?'#ca8a04':'#c0392b'},
-    {l:'Расходы рекл.',v:fmtM(d.adTotal),        s:`ДРР ${drr}%`,
-     badge:`${drr}%`, bc:drr<=15?'bg-g':drr<=25?'bg-y':'bg-r',
-     c:drr<=15?'#16a34a':drr<=25?'#ca8a04':'#c0392b'},
+    {l:'Выручка',v:fmtM(d.budget),s:`план ${fmtM(d.plan)}`,badge:`${pct}%`,bc:pctBg(pct),c:clr},
+    {l:'Лиды',v:fmt(d.leads),s:'дата создания',c:'#6366f1'},
+    {l:'Сделки',v:fmt(d.deals),s:'дата заказа',c:'#6366f1'},
+    {l:'Конверсия',v:`${d.conv}%`,s:'план 12%',badge:d.conv>=12?'В норме':'Ниже плана',bc:d.conv>=12?'bg-g':'bg-r',c:d.conv>=12?'#16a34a':'#c0392b'},
+    {l:'Средний чек',v:`${fmt(d.avgCheck)} ₸`,s:'план 80 000 ₸',badge:d.avgCheck>=80000?'В норме':'Ниже',bc:d.avgCheck>=80000?'bg-g':'bg-y',c:d.avgCheck>=80000?'#16a34a':'#ca8a04'},
+    {l:'Выполнение',v:`${pct}%`,s:'от плана',badge:pct>=100?'Выполнен':pct>=80?'Близко':'В процессе',bc:pctBg(pct),c:pct>=80?'#16a34a':'#ca8a04'},
+    {l:'Расходы рекл.',v:fmtM(d.adTotal),s:`ДРР ${drr}%`,badge:`${drr}%`,bc:drr<=15?'bg-g':drr<=25?'bg-y':'bg-r',c:drr<=15?'#16a34a':drr<=25?'#ca8a04':'#c0392b'},
   ];
   document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`
     <div class="kpi-card" style="--kc:${k.c}">
       <div class="kc-lbl">${k.l}</div>
       <div class="kc-val" style="color:${k.c}">${k.v}</div>
       <div class="kc-sub">${k.s||''}</div>
-      ${k.s2?`<div class="kc-sub" style="color:${k.s2c||'#6366f1'};font-weight:700;margin-top:2px;font-size:11px">${k.s2}</div>`:''}
       ${k.badge?`<div class="kc-badge ${k.bc}">${k.badge}</div>`:''}
     </div>`).join('');
 }
 
 // ═══════════════════ RENDER PLAN TABLE ════════════════════════════
 function renderPlanTable(stats){
-  const keys = activeProd==='all' ? ['col','ummi','coffee'] : [activeProd];
-
-  let rows = keys.map(k=>{
-    const d = stats.parts ? stats.parts[k] : stats;
-    const cfg = PROD_CFG[k];
-    const pct = d.plan ? Math.round(d.monthBudget/d.plan*100) : 0;
-    const remainCell = d.isCurrentMonth && d.plan
-      ? d.remain===0
-        ? `<td style="color:#16a34a;font-weight:700">✓</td><td style="color:#16a34a">—</td>`
-        : `<td style="color:#ca8a04;font-weight:700">${fmt(d.remain)}</td>
-           <td style="color:#6366f1;font-weight:700">${fmt(d.perDay)}</td>`
-      : `<td style="color:var(--muted)">—</td><td style="color:var(--muted)">—</td>`;
+  const keys=activeProd==='all'?['col','ummi','coffee']:[activeProd];
+  let rows=keys.map(k=>{
+    const d=stats.parts?stats.parts[k]:stats;
+    const cfg=PROD_CFG[k];
+    const pct=d.plan?Math.round(d.budget/d.plan*100):0;
+    const lag=d.budget-d.plan;
     return`<tr>
       <td><div class="prod-name"><div class="prod-dot" style="background:${cfg.color}"></div>${cfg.name}</div></td>
       <td>${fmt(d.plan)}</td>
-      <td style="color:${cfg.color};font-weight:700">${fmt(d.monthBudget)}</td>
+      <td style="color:${cfg.color};font-weight:700">${fmt(d.budget)}</td>
       <td><div class="bar-wrap">
         <span class="${pct>=80?'txt-g':pct>=50?'txt-y':'txt-r'}" style="font-weight:700;font-size:13px;min-width:36px;text-align:right">${pct}%</span>
         <div class="bar-track"><div class="bar-fill" style="width:${Math.min(pct,100)}%;background:${cfg.color}"></div></div>
       </div></td>
-      ${remainCell}
+      <td style="color:${lag>=0?'#16a34a':'#c0392b'};font-weight:700">${lag>=0?'+':''}${fmt(lag)}</td>
       <td>${fmt(d.leads)}</td><td>${fmt(d.deals)}</td>
       <td class="${convCls(d.conv)}" style="font-weight:700">${d.conv}%</td>
-      <td style="color:${d.cplMonth?d.cplMonth<=3000?'#16a34a':d.cplMonth<=6000?'#ca8a04':'#c0392b':'var(--muted)'};font-weight:700">${d.cplMonth?fmt(d.cplMonth)+' ₸':'—'}</td>
-      <td style="color:#6366f1;font-weight:700">${d.rpl?fmt(d.rpl)+' ₸':'—'}</td>
     </tr>`;
   }).join('');
-
   if(activeProd==='all'){
-    const a = stats;
-    const pct = a.plan ? Math.round(a.monthBudget/a.plan*100) : 0;
-    const remainCell = a.isCurrentMonth && a.plan
-      ? a.remain===0
-        ? `<td style="color:#16a34a;font-weight:700"><strong>✓ Выполнен</strong></td><td>—</td>`
-        : `<td style="color:#ca8a04;font-weight:700"><strong>${fmt(a.remain)}</strong></td>
-           <td style="color:#6366f1;font-weight:700"><strong>${fmt(a.perDay)}</strong></td>`
-      : `<td>—</td><td>—</td>`;
-    rows += `<tr class="tr-sum">
+    const a=stats;const pct=a.plan?Math.round(a.budget/a.plan*100):0;const lag=a.budget-a.plan;
+    rows+=`<tr class="tr-sum">
       <td><div class="prod-name"><div class="prod-dot" style="background:#6366f1"></div><strong>ИТОГО</strong></div></td>
       <td><strong>${fmt(a.plan)}</strong></td>
-      <td style="color:#6366f1;font-weight:700"><strong>${fmt(a.monthBudget)}</strong></td>
-      <td><div class="bar-wrap"><span style="font-weight:700;font-size:13px;color:${pct>=80?'#16a34a':'#ca8a04'};min-width:36px;text-align:right">${pct}%</span>
-        <div class="bar-track"><div class="bar-fill" style="width:${Math.min(pct,100)}%;background:#6366f1"></div></div></div></td>
-      ${remainCell}
+      <td style="color:#6366f1;font-weight:700"><strong>${fmt(a.budget)}</strong></td>
+      <td><div class="bar-wrap"><span style="font-weight:700;font-size:13px;color:${pct>=80?'#16a34a':'#ca8a04'};min-width:36px;text-align:right">${pct}%</span><div class="bar-track"><div class="bar-fill" style="width:${Math.min(pct,100)}%;background:#6366f1"></div></div></div></td>
+      <td style="color:${lag>=0?'#16a34a':'#c0392b'};font-weight:700"><strong>${lag>=0?'+':''}${fmt(lag)}</strong></td>
       <td><strong>${fmt(a.leads)}</strong></td><td><strong>${fmt(a.deals)}</strong></td>
       <td class="${convCls(a.conv)}" style="font-weight:700"><strong>${a.conv}%</strong></td>
-      <td style="color:${a.cplMonth?a.cplMonth<=3000?'#16a34a':a.cplMonth<=6000?'#ca8a04':'#c0392b':'var(--muted)'};font-weight:700"><strong>${a.cplMonth?fmt(a.cplMonth)+' ₸':'—'}</strong></td>
-      <td style="color:#6366f1;font-weight:700"><strong>${a.rpl?fmt(a.rpl)+' ₸':'—'}</strong></td>
     </tr>`;
   }
-
-  const isCur = (stats.parts ? Object.values(stats.parts)[0] : stats).isCurrentMonth;
   document.getElementById('plan-table').innerHTML=`
     <table class="dt"><thead><tr>
-      <th>Продукт</th>
-      <th>План мес. ₸</th>
-      <th>Факт мес. ₸</th>
-      <th>Выполнение</th>
-      <th style="color:${isCur?'#ca8a04':'var(--muted)'}">Остаток</th>
-      <th style="color:${isCur?'#6366f1':'var(--muted)'}">Нужно/день</th>
-      <th>Лиды</th><th>Сделки</th><th>Конверсия</th><th style="color:#6366f1">Ст.лида рекл.</th><th style="color:#6366f1">Ст.лида прод.</th>
+      <th>Продукт</th><th>План ₸</th><th>Факт ₸</th><th>Выполнение</th>
+      <th>Отклонение</th><th>Лиды</th><th>Сделки</th><th>Конверсия</th>
     </tr></thead><tbody>${rows}</tbody></table>`;
 }
+
 // ═══════════════════ CHARTS ═══════════════════════════════════════
 let lastStats=null;
-const GRID=getComputedStyle(document.documentElement).getPropertyValue('--grid').trim()||'rgba(255,255,255,.06)', TICK=getComputedStyle(document.documentElement).getPropertyValue('--tick').trim()||'#515154', FONT="'DM Sans'";
+const GRID='rgba(232,236,244,.9)', TICK='#8896ae', FONT="'DM Sans'";
 
 function renderLine(stats){
   if(!stats)return;
@@ -1164,71 +804,20 @@ function renderProdStats(stats){
   document.getElementById('prod-stats').innerHTML=keys.map(k=>{
     const d=stats.parts?stats.parts[k]:stats;
     const cfg=PROD_CFG[k];
-    const pct = d.plan ? Math.round(d.monthBudget/d.plan*100) : 0;
-    const drr = d.budget ? +(d.adTotal/d.budget*100).toFixed(1) : 0;
-    const cpl = d.monthLeads ? Math.round(d.monthAdTotal/d.monthLeads) : 0;
-    const pctColor = pct>=80?'var(--green)':pct>=50?'var(--gold)':'var(--red)';
-    const pctBg    = pct>=80?'var(--green-l)':pct>=50?'var(--gold-l)':'var(--red-l)';
-    const drrColor = drr<=15?'var(--green)':drr<=25?'var(--gold)':'var(--red)';
-    const convColor= d.conv>=12?'var(--green)':d.conv>=8?'var(--gold)':'var(--red)';
-    const remain = d.plan ? Math.max(0, d.plan - d.monthBudget) : 0;
+    const pct=d.plan?Math.round(d.budget/d.plan*100):0;
+    const drr=d.budget?+(d.adTotal/d.budget*100).toFixed(1):0;
     return`<div class="ps-card">
-      <div class="ps-stripe" style="background:${cfg.color}"></div>
-      <div class="ps-inner">
-
-        <div class="ps-head">
-          <div class="ps-head-left">
-            <div class="ps-dot" style="background:${cfg.color}"></div>
-            <span class="ps-name">${cfg.name}</span>
-          </div>
-          <span class="ps-pct-badge" style="background:${pctBg};color:${pctColor}">${pct}%</span>
-        </div>
-
-        <div class="ps-revenue">
-          <div class="ps-rev-val" style="color:${cfg.color}">${fmt(d.monthBudget)} ₸</div>
-          <div class="ps-rev-sub">из ${fmt(d.plan)} ₸ плана · ост. ${fmt(remain)} ₸</div>
-        </div>
-
-        <div class="ps-progress">
-          <div class="ps-prog-track">
-            <div class="ps-prog-fill" style="width:${Math.min(pct,100)}%;background:${cfg.color}"></div>
-          </div>
-          <div class="ps-prog-labels">
-            <span>0</span>
-            <span style="color:${pctColor};font-weight:600">${pct}% выполнено</span>
-            <span>100%</span>
-          </div>
-        </div>
-
-        <div class="ps-stats">
-          <div class="ps-stat">
-            <div class="ps-stat-label">Лиды</div>
-            <div class="ps-stat-val">${fmt(d.leads)}</div>
-          </div>
-          <div class="ps-stat">
-            <div class="ps-stat-label">Сделки</div>
-            <div class="ps-stat-val">${fmt(d.deals)}</div>
-          </div>
-          <div class="ps-stat">
-            <div class="ps-stat-label">Конверсия</div>
-            <div class="ps-stat-val" style="color:${convColor}">${d.conv}%</div>
-          </div>
-          <div class="ps-stat">
-            <div class="ps-stat-label">Средний чек</div>
-            <div class="ps-stat-val small">${fmt(d.avgCheck)} ₸</div>
-          </div>
-          <div class="ps-stat">
-            <div class="ps-stat-label">ДРР</div>
-            <div class="ps-stat-val" style="color:${drrColor}">${drr}%</div>
-          </div>
-          <div class="ps-stat">
-            <div class="ps-stat-label">Ст. лида</div>
-            <div class="ps-stat-val small">${cpl?fmt(cpl)+' ₸':'—'}</div>
-          </div>
-        </div>
-
-      </div>
-    </div>`;
+      <div class="ps-head"><div class="dot16" style="background:${cfg.color}"></div><span class="ps-head-title">${cfg.name}</span></div>
+      <div class="ps-body">
+        <div class="ps-row"><span class="ps-l">Лиды</span><span class="ps-r">${fmt(d.leads)}</span></div>
+        <div class="ps-row"><span class="ps-l">Сделки</span><span class="ps-r">${fmt(d.deals)}</span></div>
+        <div class="ps-row"><span class="ps-l">Конверсия</span><span class="ps-r ${convCls(d.conv)}">${d.conv}%</span></div>
+        <div class="ps-row"><span class="ps-l">Ср. чек</span><span class="ps-r ${d.avgCheck>=80000?'txt-g':'txt-y'}">${fmt(d.avgCheck)} ₸</span></div>
+        <div class="ps-row"><span class="ps-l">Выручка</span><span class="ps-r" style="color:${cfg.color}">${fmtM(d.budget)}</span></div>
+        <div class="ps-row"><span class="ps-l">% плана</span><span class="ps-r ${pct>=80?'txt-g':pct>=50?'txt-y':'txt-r'}">${pct}%</span></div>
+        <div class="ps-row"><span class="ps-l">Реклама</span><span class="ps-r">${fmtM(d.adTotal)}</span></div>
+        <div class="ps-row"><span class="ps-l">ДРР</span><span class="ps-r ${drr<=15?'txt-g':drr<=25?'txt-y':'txt-r'}">${drr}%</span></div>
+      </div></div>`;
   }).join('');
 }
 
@@ -1259,7 +848,7 @@ function aggregateManagersByPeriod(prodKey, from, to) {
 
   // Since we store MANAGERS as full all-time aggregates, we compute period managers
   // from the _loaded payload which has per-manager data indexed by product
-  const allMgrs = (MANAGERS[prodKey] || MANAGERS_STATIC[prodKey] || []);
+  const allMgrs = (MANAGERS[prodKey] || []);
   
   // If period is "all time" equivalent (we can't filter managers by date from aggregated data)
   // We compute from RAW daily data the total for this period, 
@@ -1296,44 +885,18 @@ function aggregateManagersByPeriod(prodKey, from, to) {
 
 function renderManagers(){
   const{from,to}=activeMgrPeriod;
-  let mgrs = aggregateManagersByPeriod(activeMgrProd, from, to);
+  const mgrs = aggregateManagersByPeriod(activeMgrProd, from, to);
   const cfg=Object.values(PROD_CFG).find(c=>c.mgrKey===activeMgrProd)||{color:'#6366f1'};
-  const isCol = activeMgrProd==='Коллаген';
-
-  // Filter by ROP group
-  if(isCol && activeMgrRop!=='all'){
-    mgrs = mgrs.filter(m=>(MGR_TO_ROP[m.name]||'') === activeMgrRop);
-  }
-
-  // Group label in subtitle
-  const ropLabel = isCol && activeMgrRop!=='all' ? ` · ${activeMgrRop}` : '';
-  document.getElementById('mgr-sub').textContent=`${activeMgrPeriod.label} · ${activeMgrProd}${ropLabel}`;
-
+  document.getElementById('mgr-sub').textContent=`${activeMgrPeriod.label} · ${activeMgrProd}`;
   const withDeals=mgrs.filter(m=>m.deals>0).sort((a,b)=>b.budget-a.budget);
   const withoutDeals=mgrs.filter(m=>m.deals===0);
   const maxB=Math.max(...withDeals.map(m=>m.budget),1);
   const ranks=['🥇','🥈','🥉'];
-
-  // Show ROP group column only for Коллаген
-  const ropCol = isCol
-    ? `<th style="color:var(--muted);font-size:11px">Группа</th>` : '';
-  document.querySelector('#view-managers .dt thead tr').innerHTML =
-    `<th style="width:40px;text-align:center">#</th>
-     <th style="text-align:left">Менеджер</th>
-     ${ropCol}
-     <th>Лиды</th><th>Сделки</th><th>Выручка</th>
-     <th>Конверсия</th><th>Ср. чек</th><th>Доля</th>`;
-
   let tbody='';
   withDeals.forEach((m,i)=>{
-    const ropGroup = isCol ? (MGR_TO_ROP[m.name]||'—') : '';
-    const ropColors={'РОП Айдана':'#1a56db','РОП Нурдаулет':'#0a7c5c','РОП Аслиддин':'#b45309'};
-    const ropCellColor = ropColors[ropGroup]||'var(--muted)';
-    const ropCell = isCol ? `<td style="font-size:11px;font-weight:600;color:${ropCellColor};white-space:nowrap">${ropGroup}</td>` : '';
     tbody+=`<tr>
       <td style="text-align:center;font-size:${i<3?'16':'13'}px">${i<3?ranks[i]:i+1}</td>
       <td style="font-weight:600">${m.name}</td>
-      ${ropCell}
       <td>${fmt(m.leads)}</td>
       <td style="font-weight:700">${m.deals}</td>
       <td style="color:${cfg.color};font-weight:700">${fmtM(m.budget)}</td>
@@ -1346,13 +909,8 @@ function renderManagers(){
     </tr>`;
   });
   if(withoutDeals.length){
-    const colspan = isCol ? 9 : 8;
-    tbody+=`<tr><td colspan="${colspan}" style="text-align:center;color:var(--muted);font-size:11px;padding:10px;border-top:2px solid var(--line2);letter-spacing:1px">— Без сделок в периоде —</td></tr>`;
-    withoutDeals.forEach(m=>{
-      const ropGroup = isCol ? (MGR_TO_ROP[m.name]||'—') : '';
-      const ropCell = isCol ? `<td style="font-size:11px">${ropGroup}</td>` : '';
-      tbody+=`<tr style="opacity:.4"><td style="text-align:center">—</td><td>${m.name}</td>${ropCell}<td>${fmt(m.leads)}</td><td>0</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>`;
-    });
+    tbody+=`<tr><td colspan="8" style="text-align:center;color:var(--muted);font-size:11px;padding:10px;border-top:2px solid var(--line2);letter-spacing:1px">— Без сделок в периоде —</td></tr>`;
+    withoutDeals.forEach(m=>{tbody+=`<tr style="opacity:.4"><td style="text-align:center">—</td><td>${m.name}</td><td>${fmt(m.leads)}</td><td>0</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>`;});
   }
   document.getElementById('mgr-tbody').innerHTML=tbody;
   const top8=withDeals.slice(0,8);
@@ -1435,9 +993,8 @@ async function loadFromSupabase() {
       const d = rows[0].data;
       // Reassign mutable globals
       if (d.RAW)      RAW      = d.RAW;
-      if (d.MANAGERS) { if(Object.keys(d.MANAGERS).length) MANAGERS = d.MANAGERS; }
-      if (d.AD_SPEND && Object.keys(d.AD_SPEND).length) AD_SPEND = d.AD_SPEND;
-      if (d.PLANS)    PLANS    = d.PLANS;
+      if (d.MANAGERS) MANAGERS = d.MANAGERS;
+      if (d.AD_SPEND) AD_SPEND = d.AD_SPEND;
       // Update badge
       const badge = document.getElementById('data-badge');
       if (badge && rows[0].updated_at) {
@@ -1446,66 +1003,14 @@ async function loadFromSupabase() {
       }
       // Save to sessionStorage for next load (faster)
       sessionStorage.setItem('wg_data', JSON.stringify(d));
-
-      // Rebuild pills (clears duplicates, keeps current activePeriod)
-      rebuildMonthPills();
-
       // Re-render with fresh data
       render();
       if(activeView==='managers') renderManagers();
       if(activeView==='adspend') renderAdSpend();
-      // Update sidebar KPI with fresh data
-      const _now=new Date(); const _td=_lastDay(_now.getFullYear(),_now.getMonth()+1);
-      renderSidebarKPI(_now, _now.getDate(), _td);
     }
   } catch(e) {
     console.warn('Supabase load error:', e);
   }
-}
-
-// ═══════════════════ SIDEBAR KPI ═════════════════════════════════
-function renderSidebarKPI(now, dayOfMonth, totalDays){
-  const kpiEl = document.getElementById('sb-kpi');
-  if(!kpiEl) return;
-
-  const mm = String(now.getMonth()+1).padStart(2,'0');
-  const yyyy = now.getFullYear();
-  const monthKey = `${mm}.${yyyy}`;
-
-  // Sum plan across all products for this month
-  let totalPlan = 0;
-  const planProducts = {col:'Коллаген', ummi:'Ummi', coffee:'Кофе'};
-  for(const [pk] of Object.entries(planProducts)){
-    totalPlan += (PLANS[pk] && PLANS[pk][monthKey]) ? PLANS[pk][monthKey] : 0;
-  }
-
-  // Sum fact (budget) for current month across all products
-  const monthPrefix = `${mm}.${yyyy}`;
-  let totalFact = 0;
-  for(const prodKey of Object.keys(RAW)){
-    const days = RAW[prodKey]||{};
-    for(const [date, vals] of Object.entries(days)){
-      // date format DD.MM.YYYY — check month+year match
-      if(date.slice(3) === monthPrefix) totalFact += (vals[2]||0);
-    }
-  }
-
-  const remain = Math.max(0, totalPlan - totalFact);
-  const daysLeft = totalDays - dayOfMonth + 1; // including today
-  const planPerDayLeft = daysLeft > 0 ? Math.round(remain / daysLeft) : 0;
-  const factPerDay = dayOfMonth > 0 ? Math.round(totalFact / dayOfMonth) : 0;
-  const pctDone = totalPlan ? Math.round(totalFact / totalPlan * 100) : 0;
-
-  const cls = pctDone >= 100 ? 'green' : pctDone >= 70 ? 'yellow' : 'red';
-  const remainCls = remain === 0 ? 'green' : daysLeft <= 5 ? 'red' : 'yellow';
-
-  kpiEl.innerHTML = totalPlan ? `
-    <div class="sp-kpi-row"><span class="sp-kl">План месяц</span><span class="sp-kv">${fmtK(totalPlan)}</span></div>
-    <div class="sp-kpi-row"><span class="sp-kl">Факт</span><span class="sp-kv ${cls}">${fmtK(totalFact)} · ${pctDone}%</span></div>
-    <div class="sp-kpi-row"><span class="sp-kl">Остаток</span><span class="sp-kv ${remainCls}">${fmtK(remain)}</span></div>
-    <div class="sp-kpi-row"><span class="sp-kl">Нужно/день</span><span class="sp-kv">${fmtK(planPerDayLeft)}</span></div>
-    <div class="sp-kpi-row"><span class="sp-kl">Факт/день</span><span class="sp-kv">${fmtK(factPerDay)}</span></div>
-  ` : `<div class="sp-kpi-row"><span class="sp-kl" style="opacity:.5">План не задан</span></div>`;
 }
 
 // ═══════════════════ INIT ═════════════════════════════════════════
@@ -1532,47 +1037,23 @@ function initDynamicUI() {
   // Sidebar date
   document.getElementById('sb-today').textContent =
     `${now.getDate()} ${MONTH_NAMES_GEN[now.getMonth()]} ${now.getFullYear()}`;
-  const DAYS = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
-  const wdEl = document.getElementById('sb-weekday');
-  if(wdEl) wdEl.textContent = `UTC+5 · ${DAYS[now.getDay()]}`;
 
   // Sidebar month label + progress bar
   document.getElementById('sb-month-label').textContent = `${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}`;
   const totalDays = _lastDay(now.getFullYear(), now.getMonth()+1);
-  const dayOfMonth = now.getDate();
-  const pct = Math.round(dayOfMonth / totalDays * 100);
+  const pct = Math.round(now.getDate() / totalDays * 100);
   document.getElementById('sb-fill').style.width = pct + '%';
-  document.getElementById('sb-day').textContent = `${dayOfMonth} / ${totalDays}`;
-  // Dynamic start of month label
-  const startEl = document.getElementById('sb-day-start');
-  if(startEl) startEl.textContent = `1 ${MONTH_NAMES[now.getMonth()].slice(0,3).toLowerCase()}`;
-  // Render plan/fact/remain KPI block
-  renderSidebarKPI(now, dayOfMonth, totalDays);
+  document.getElementById('sb-day').textContent = `${now.getDate()} / ${totalDays}`;
 
-  // Build month pills
-  rebuildMonthPills();
-  // Mark 'Сегодня' as active by default
-  setTimeout(()=>{
-    document.querySelectorAll('.period-pill').forEach(b=>{
-      const isToday = b.onclick?.toString().includes("'today'") || b.textContent.trim()==='Сегодня';
-      if(isToday) b.classList.add('active');
-      else b.classList.remove('active');
-    });
-  }, 0);
-}
-
-function rebuildMonthPills() {
-  PRESETS = buildPresets();
-  const activeKey = activePeriod.preset || 'today';
+  // Build month pills dynamically for all 3 filter groups
   const monthKeys = Object.keys(PRESETS).filter(k => k.startsWith('m_'));
   [['main','setPreset'],['mgr','setMgrPreset'],['ad','setAdPreset']].forEach(([prefix, fn]) => {
     const container = document.getElementById(`${prefix}-month-pills`);
     if (!container) return;
-    container.innerHTML = ''; // clear to avoid duplicates
     monthKeys.forEach(key => {
       const p = PRESETS[key];
       const btn = document.createElement('button');
-      btn.className = 'pill period-pill' + (key === activeKey ? ' active' : '');
+      btn.className = 'pill period-pill' + (key === _defaultKey ? ' active' : '');
       btn.textContent = p.label;
       btn.onclick = function() { window[fn](key, this); };
       container.appendChild(btn);
@@ -1583,28 +1064,6 @@ initDynamicUI();
 render();
 // Load fresh data from Supabase (will re-render when loaded)
 loadFromSupabase();
-
-// ── THEME TOGGLE ─────────────────────────────────────────────────
-function toggleTheme(){
-  const isLight = document.body.classList.toggle('light');
-  document.getElementById('theme-icon').textContent = isLight ? '🌙' : '☀️';
-  localStorage.setItem('wg-theme', isLight ? 'light' : 'dark');
-  // Re-render charts with new colors
-  if(lastStats) renderLine(lastStats);
-  renderDonut && renderDonut(lastStats);
-}
-
-// Restore saved theme
-(function(){
-  const saved = localStorage.getItem('wg-theme');
-  if(saved === 'light'){
-    document.body.classList.add('light');
-    document.addEventListener('DOMContentLoaded', ()=>{
-      const icon = document.getElementById('theme-icon');
-      if(icon) icon.textContent = '🌙';
-    });
-  }
-})();
 </script>
 </body>
 </html>
