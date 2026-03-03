@@ -866,13 +866,13 @@ function renderPlanTable(stats){
     const remainCell = d.isCurrentMonth && d.plan
       ? d.remain===0
         ? `<td style="color:#16a34a;font-weight:700">✓</td><td style="color:#16a34a">—</td>`
-        : `<td style="color:#ca8a04;font-weight:700">${fmtM(d.remain)}</td>
-           <td style="color:#6366f1;font-weight:700">${fmtM(d.perDay)}</td>`
+        : `<td style="color:#ca8a04;font-weight:700">${fmt(d.remain)}</td>
+           <td style="color:#6366f1;font-weight:700">${fmt(d.perDay)}</td>`
       : `<td style="color:var(--muted)">—</td><td style="color:var(--muted)">—</td>`;
     return`<tr>
       <td><div class="prod-name"><div class="prod-dot" style="background:${cfg.color}"></div>${cfg.name}</div></td>
-      <td>${fmtM(d.plan)}</td>
-      <td style="color:${cfg.color};font-weight:700">${fmtM(d.monthBudget)}</td>
+      <td>${fmt(d.plan)}</td>
+      <td style="color:${cfg.color};font-weight:700">${fmt(d.monthBudget)}</td>
       <td><div class="bar-wrap">
         <span class="${pct>=80?'txt-g':pct>=50?'txt-y':'txt-r'}" style="font-weight:700;font-size:13px;min-width:36px;text-align:right">${pct}%</span>
         <div class="bar-track"><div class="bar-fill" style="width:${Math.min(pct,100)}%;background:${cfg.color}"></div></div>
@@ -889,13 +889,13 @@ function renderPlanTable(stats){
     const remainCell = a.isCurrentMonth && a.plan
       ? a.remain===0
         ? `<td style="color:#16a34a;font-weight:700"><strong>✓ Выполнен</strong></td><td>—</td>`
-        : `<td style="color:#ca8a04;font-weight:700"><strong>${fmtM(a.remain)}</strong></td>
-           <td style="color:#6366f1;font-weight:700"><strong>${fmtM(a.perDay)}</strong></td>`
+        : `<td style="color:#ca8a04;font-weight:700"><strong>${fmt(a.remain)}</strong></td>
+           <td style="color:#6366f1;font-weight:700"><strong>${fmt(a.perDay)}</strong></td>`
       : `<td>—</td><td>—</td>`;
     rows += `<tr class="tr-sum">
       <td><div class="prod-name"><div class="prod-dot" style="background:#6366f1"></div><strong>ИТОГО</strong></div></td>
-      <td><strong>${fmtM(a.plan)}</strong></td>
-      <td style="color:#6366f1;font-weight:700"><strong>${fmtM(a.monthBudget)}</strong></td>
+      <td><strong>${fmt(a.plan)}</strong></td>
+      <td style="color:#6366f1;font-weight:700"><strong>${fmt(a.monthBudget)}</strong></td>
       <td><div class="bar-wrap"><span style="font-weight:700;font-size:13px;color:${pct>=80?'#16a34a':'#ca8a04'};min-width:36px;text-align:right">${pct}%</span>
         <div class="bar-track"><div class="bar-fill" style="width:${Math.min(pct,100)}%;background:#6366f1"></div></div></div></td>
       ${remainCell}
