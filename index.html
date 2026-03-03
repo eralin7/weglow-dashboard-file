@@ -506,7 +506,7 @@ async function openDashboard(){
         if (_rows[0]?.data?.AD_SPEND) _existingAdSpend = _rows[0].data.AD_SPEND;
       }
     } catch(e) { console.warn('Could not load existing AD_SPEND', e); }
-    const payload = buildPayload();
+    const payload = buildPayload(_existingAdSpend);
     await saveToSupabase(payload);
     // Also save to sessionStorage for immediate local use
     sessionStorage.setItem('wg_data', JSON.stringify(payload));
@@ -522,7 +522,7 @@ async function openDashboard(){
   }
 }
 
-function buildPayload(){
+function buildPayload(_existingAdSpend){
   // Combine sales data into RAW format {product: {date: [leads,deals,budget]}}
   const RAW = {};
   const productMap = {
