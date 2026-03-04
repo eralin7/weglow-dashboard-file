@@ -501,7 +501,7 @@ function buildPayload(){
     MANAGERS[nameMap[key]] = data.managers;
   }
 
-  return { RAW, AD_SPEND, MANAGERS, updatedAt: new Date().toISOString() };
+  return { RAW, AD_SPEND: {}, MANAGERS, updatedAt: new Date().toISOString() };
 }
 </script>
 </body>
