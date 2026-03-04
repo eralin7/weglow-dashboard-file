@@ -94,6 +94,13 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
 .sp-fill { height:100%; border-radius:3px; background:linear-gradient(90deg,#6366f1,#818cf8); transition:width .5s; }
 .sp-nums { display:flex; justify-content:space-between; font-size:10px; color:rgba(255,255,255,.4); }
 .sp-nums strong { color:rgba(255,255,255,.7); }
+.sp-kpi { margin-top:10px; border-top:1px solid rgba(255,255,255,.07); padding-top:10px; display:flex; flex-direction:column; gap:5px; }
+.sp-kpi-row { display:flex; justify-content:space-between; font-size:10px; }
+.sp-kpi-row .sp-kl { color:rgba(255,255,255,.35); }
+.sp-kpi-row .sp-kv { color:rgba(255,255,255,.7); font-weight:600; }
+.sp-kpi-row .sp-kv.green { color:#4ade80; }
+.sp-kpi-row .sp-kv.red { color:#f87171; }
+.sp-kpi-row .sp-kv.yellow { color:#fbbf24; }
 
 /* ─── MAIN ───────────────────────────────────────────── */
 .main { margin-left:220px; flex:1; display:flex; flex-direction:column; min-height:100vh; }
@@ -270,147 +277,9 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
 .mb16     { margin-bottom:16px; }
 .mb20     { margin-bottom:20px; }
 .mb24     { margin-bottom:24px; }
-
-/* ═══════════════════════════════════════════════════════
-   MOBILE RESPONSIVE  (≤768px)
-═══════════════════════════════════════════════════════ */
-
-/* ── Burger button ── */
-.burger {
-  display: none;
-  flex-direction: column; justify-content: center; align-items: center;
-  gap: 5px; width: 36px; height: 36px;
-  background: none; border: none; cursor: pointer;
-  position: fixed; top: 12px; left: 12px; z-index: 200;
-  padding: 4px;
-}
-.burger span {
-  display: block; width: 22px; height: 2px;
-  background: #fff; border-radius: 2px;
-  transition: all .25s ease;
-}
-.burger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-.burger.open span:nth-child(2) { opacity: 0; }
-.burger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
-
-/* Overlay for sidebar */
-.sidebar-overlay {
-  display: none;
-  position: fixed; inset: 0; background: rgba(0,0,0,.5);
-  z-index: 98; backdrop-filter: blur(2px);
-}
-.sidebar-overlay.show { display: block; }
-
-@media (max-width: 768px) {
-
-  /* ── Burger visible ── */
-  .burger { display: flex; }
-
-  /* ── Sidebar becomes slide-in drawer ── */
-  .sidebar {
-    transform: translateX(-100%);
-    transition: transform .3s ease;
-    z-index: 99;
-    width: 260px !important;
-  }
-  .sidebar.open { transform: translateX(0); }
-
-  /* ── Main fills full width ── */
-  .main { margin-left: 0 !important; }
-
-  /* ── Topbar ── */
-  .topbar {
-    padding: 0 12px 0 52px;
-    height: auto; min-height: 50px;
-    flex-wrap: wrap; gap: 6px;
-    padding-top: 8px; padding-bottom: 8px;
-  }
-  .topbar-title { font-size: 13px; }
-  .topbar-filters {
-    flex-wrap: wrap; gap: 4px;
-    width: 100%; overflow-x: auto;
-    padding-bottom: 2px;
-  }
-  .tb-label { font-size: 10px; }
-  .pill { font-size: 11px; padding: 4px 10px; }
-  .date-in { width: 100px; font-size: 11px; }
-
-  /* ── Page padding ── */
-  .page { padding: 16px 12px 60px; }
-
-  /* ── View header ── */
-  .view-hdr h2 { font-size: 22px; letter-spacing: -.3px; }
-  .view-hdr p  { font-size: 12px; }
-
-  /* ── KPI grid: 2 columns ── */
-  .kpi-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 8px;
-    margin-bottom: 16px;
-  }
-  .kpi-card { padding: 14px 14px 12px; }
-  .kc-lbl  { font-size: 9px; margin-bottom: 6px; }
-  .kc-val  { font-size: 20px; }
-  .kc-sub  { font-size: 10px; }
-  .kc-badge { font-size: 10px; padding: 2px 8px; }
-
-  /* ── Plan table: scroll horizontally ── */
-  .card { padding: 14px 12px; overflow-x: auto; }
-  .card-title { font-size: 13px; }
-  .dt { min-width: 600px; font-size: 11px; }
-  .dt th { padding: 6px 10px; font-size: 9px; }
-  .dt td { padding: 9px 10px; }
-
-  /* ── Charts row: stack vertically ── */
-  .charts-row {
-    grid-template-columns: 1fr !important;
-    gap: 10px;
-  }
-
-  /* ── Product stats: 1 column ── */
-  .prod-stats {
-    grid-template-columns: 1fr !important;
-    gap: 10px;
-  }
-  .ps-card { padding: 16px; }
-  .ps-name { font-size: 15px; }
-  .ps-kval { font-size: 13px; }
-
-  /* ── Manager charts: stack ── */
-  .mgr-charts-3 {
-    grid-template-columns: 1fr !important;
-    gap: 10px;
-  }
-
-  /* ── Ad grid: 1 column ── */
-  .ad-grid {
-    grid-template-columns: 1fr !important;
-    gap: 10px;
-  }
-  .ad-chart-row {
-    grid-template-columns: 1fr !important;
-    gap: 10px;
-  }
-
-  /* ── Section label ── */
-  .sec-label { font-size: 9px; }
-
-  /* ── Sidebar progress widget ── */
-  .sb-progress { margin: 0 8px; }
-}
-
-@media (max-width: 400px) {
-  .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
-  .kc-val { font-size: 18px; }
-  .view-hdr h2 { font-size: 20px; }
-}
 </style>
 </head>
 <body>
-<button class="burger" id="burger" onclick="toggleSidebar()" aria-label="Меню">
-  <span></span><span></span><span></span>
-</button>
-<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
 <div class="shell">
 
 <!-- ═══ SIDEBAR ═══════════════════════════════════════════════ -->
@@ -427,7 +296,7 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
   </div>
   <div class="sb-date">
     <strong id="sb-today"></strong>
-    UTC+5 · Пятница
+    <span id="sb-weekday"></span>
   </div>
   <nav class="sb-nav">
     <div class="sb-section">Навигация</div>
@@ -440,21 +309,24 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
     <button class="nav-item" onclick="switchView('adspend',this)">
       <span class="icon">◇</span> Реклама
     </button>
-    <div class="sb-section" style="margin-top:12px">Кабинеты</div>
-    <a class="nav-item" href="ad.html" style="text-decoration:none">
-      <span class="icon">✏️</span> Кабинет рекламы
+    <a href="ad.html" class="nav-item" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:rgba(255,255,255,.55);margin-top:4px;border-top:1px solid rgba(255,255,255,.07);padding-top:8px;">
+      <span class="icon">✏️</span> <span style="font-size:13px;">Кабинет рекламы</span>
     </a>
-    <a class="nav-item" href="rop.html" style="text-decoration:none">
-      <span class="icon">👥</span> Кабинет РОП
+    <a href="rop.html" class="nav-item" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:rgba(255,255,255,.55);">
+      <span class="icon">👥</span> <span style="font-size:13px;">Кабинет РОП</span>
     </a>
-    <a class="nav-item" href="director.html" style="text-decoration:none">
-      <span class="icon">👔</span> Кабинет директора
+    <a href="director.html" class="nav-item" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:rgba(255,255,255,.55);">
+      <span class="icon">👔</span> <span style="font-size:13px;">Кабинет директора</span>
     </a>
   </nav>
   <div class="sb-progress">
     <div class="sp-label" id="sb-month-label">—</div>
-    <div class="sp-bar"><div class="sp-fill" id="sb-fill" style="width:96%"></div></div>
-    <div class="sp-nums"><span>1 фев</span><strong id="sb-day">27 / 28</strong></div>
+    <div class="sp-bar"><div class="sp-fill" id="sb-fill" style="width:0%"></div></div>
+    <div class="sp-nums">
+      <span id="sb-day-start">1</span>
+      <strong id="sb-day"></strong>
+    </div>
+    <div class="sp-kpi" id="sb-kpi"></div>
   </div>
 </aside>
 
@@ -491,6 +363,9 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
       <button class="pill" onclick="setMgrProd('Ummi',this)">Ummi</button>
       <button class="pill" onclick="setMgrProd('Кофе',this)">Кофе</button>
       <div class="pill-sep"></div>
+      <span class="tb-label" id="rop-filter-label" style="display:none">Группа:</span>
+      <div id="rop-group-pills" style="display:contents"></div>
+      <div class="pill-sep" id="rop-sep" style="display:none"></div>
       <span class="tb-label">Период:</span>
       <button class="pill period-pill" onclick="setMgrPreset('today',this)">Сегодня</button>
       <button class="pill period-pill" onclick="setMgrPreset('yesterday',this)">Вчера</button>
@@ -619,13 +494,50 @@ let MANAGERS = _loaded ? _loaded.MANAGERS : MANAGERS_STATIC;
 const AD_SPEND_STATIC = {"Коллаген":{"01.02.2026":318000,"02.02.2026":327010,"03.02.2026":296270,"04.02.2026":172640,"05.02.2026":190840,"06.02.2026":267280,"07.02.2026":309920,"08.02.2026":267280,"09.02.2026":45240,"10.02.2026":353600,"11.02.2026":442000,"12.02.2026":624000,"13.02.2026":660920,"14.02.2026":589160,"15.02.2026":440440,"16.02.2026":534560,"17.02.2026":310960,"18.02.2026":424320,"19.02.2026":323440,"20.02.2026":327600,"21.02.2026":278200,"22.02.2026":278200,"23.02.2026":313560,"24.02.2026":364000,"25.02.2026":264160,"26.02.2026":229320},"Ummi":{"01.02.2026":163240,"02.02.2026":158470,"03.02.2026":124550,"04.02.2026":122720,"05.02.2026":157840,"06.02.2026":112320,"07.02.2026":130520,"08.02.2026":132080,"09.02.2026":46800,"10.02.2026":162760,"11.02.2026":166920,"12.02.2026":175240,"13.02.2026":305760,"14.02.2026":326040,"15.02.2026":251160,"16.02.2026":162760,"17.02.2026":120120,"18.02.2026":144040,"19.02.2026":121680,"20.02.2026":119600,"21.02.2026":109720,"22.02.2026":114920,"23.02.2026":145600,"24.02.2026":82160,"25.02.2026":100880,"26.02.2026":124800},"Кофе":{"01.02.2026":93280,"02.02.2026":96460,"03.02.2026":74200,"04.02.2026":62960,"05.02.2026":47230,"06.02.2026":47840,"07.02.2026":50960,"08.02.2026":61360,"09.02.2026":9360,"10.02.2026":52000,"11.02.2026":67600,"12.02.2026":197600,"13.02.2026":174200,"14.02.2026":187200,"15.02.2026":204360,"16.02.2026":88920,"17.02.2026":71240,"18.02.2026":91520,"19.02.2026":63920,"20.02.2026":106600,"21.02.2026":66560,"22.02.2026":92560,"23.02.2026":121160,"24.02.2026":130000,"25.02.2026":94640,"26.02.2026":107640}};
 let AD_SPEND = _loaded ? _loaded.AD_SPEND : AD_SPEND_STATIC;
 
-const PLANS = {'col':{'02.2026':60000000,'01.2026':60000000,'12.2025':60000000,'11.2025':60000000,'10.2025':60000000},'ummi':{'02.2026':30000000,'01.2026':30000000,'12.2025':30000000,'11.2025':30000000},'coffee':{'02.2026':15000000,'01.2026':15000000,'12.2025':15000000}};
+let PLANS = _loaded && _loaded.PLANS ? _loaded.PLANS : {'col':{'03.2026':86000000,'02.2026':60000000,'01.2026':60000000,'12.2025':60000000,'11.2025':60000000,'10.2025':60000000},'ummi':{'03.2026':25000000,'02.2026':30000000,'01.2026':30000000,'12.2025':30000000,'11.2025':30000000},'coffee':{'03.2026':30000000,'02.2026':15000000,'01.2026':15000000,'12.2025':15000000}};
 
 const PROD_CFG = {
   col:    {name:'Коллаген', color:'#1a56db', rawKey:'Коллаген', mgrKey:'Коллаген'},
   ummi:   {name:'Ummi',     color:'#0a7c5c', rawKey:'Ummi',     mgrKey:'Ummi'},
   coffee: {name:'Кофе',     color:'#b45309', rawKey:'Кофе',     mgrKey:'Кофе'},
 };
+
+// ═══ ROP GROUPS (Коллаген only) ═══════════════════════════════════
+const ROP_GROUPS = {
+  'all':          { label: 'Все группы',    color: '#6366f1' },
+  'РОП Айдана':   { label: 'РОП Айдана',   color: '#1a56db' },
+  'РОП Нурдаулет':{ label: 'РОП Нурдаулет',color: '#0a7c5c' },
+  'РОП Аслиддин': { label: 'РОП Аслиддин', color: '#b45309' },
+};
+// Manager → ROP group mapping (from CRM data)
+const MGR_TO_ROP = {
+  'Пин 7 Рахима':        'РОП Айдана',
+  'Пин 3 Ерсин':         'РОП Айдана',
+  'РОП Айдана':          'РОП Айдана',
+  'Пин 14 Шамид Халилли':'РОП Нурдаулет',
+  'пин 17 Таймир Туйгунов':'РОП Нурдаулет',
+  'пин 10 Айша':         'РОП Нурдаулет',
+  'Пин 8 Асема':         'РОП Нурдаулет',
+  'Пин 1 Раушан':        'РОП Нурдаулет',
+  'Пин 6 Асем':          'РОП Нурдаулет',
+  'Пин 5 Тахир':         'РОП Нурдаулет',
+  'пин 16 Медина':       'РОП Нурдаулет',
+  'пин 9 Аружан':        'РОП Нурдаулет',
+  'пин 13 Диас':         'РОП Нурдаулет',
+  'Пин 18 Наиль':        'РОП Нурдаулет',
+  'РОП Нурдаулет':       'РОП Нурдаулет',
+  'Пин 2 Санжар':        'РОП Аслиддин',
+  'Пин 4 Динара':        'РОП Аслиддин',
+  'пин 20 Жазира':       'РОП Аслиддин',
+  'пин 21 Жанар':        'РОП Аслиддин',
+  'пин 22 Асель':        'РОП Аслиддин',
+  'пин 23 Темирлан':     'РОП Аслиддин',
+  'пин 19 Сая':          'РОП Аслиддин',
+  'РОП Аслиддин':        'РОП Аслиддин',
+  'Пин 34 Карина':       'РОП Аслиддин',
+  'Пин 32 Айжан':        'РОП Аслиддин',
+};
+let activeMgrRop = 'all';
 // ═══════════════════ DYNAMIC DATES ═══════════════════════════════
 const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 const MONTH_NAMES_GEN = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
@@ -727,14 +639,44 @@ function aggregate(pk,from,to){
   }
   const fromD=parseDate(from);
   const mk=getMonthKey(fromD);
-  const mt=daysInMonth(fromD.getMonth()+1,fromD.getFullYear());
-  const full=dates.length>=mt-1;
-  const plan=full?getPlan(pk,mk):getPlan(pk,mk)*(dates.length/mt);
+  // Always use FULL monthly plan — never prorate
+  const plan=getPlan(pk,mk);
+
+  // Full month accumulated fact (for остаток/нужно-в-день regardless of period filter)
+  const now=new Date();
+  const curMK=`${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
+  let monthBudget=budget; // default: use period budget
+  let daysLeftMonth=1;
+  if(mk===curMK){
+    // Sum ALL days in current month from raw data
+    const allDates=getDatesInRange(`01.${curMK}`,`${String(now.getDate()).padStart(2,'0')}.${curMK}`);
+    monthBudget=allDates.reduce((s,d)=>s+((raw[d]&&raw[d][2])||0),0);
+    const totalDaysM=_lastDay(now.getFullYear(),now.getMonth()+1);
+    daysLeftMonth=Math.max(1, totalDaysM - now.getDate() + 1);
+  }
+  const remain=plan?Math.max(0,plan-monthBudget):0;
+  const perDay=daysLeftMonth>0?Math.round(remain/daysLeftMonth):0;
+
   // ad spend for period
   const adData=AD_SPEND[PROD_CFG[pk].rawKey]||{};
   const fD=parseDate(from),tD=parseDate(to);
   const adTotal=Object.entries(adData).filter(([d])=>{try{const dd=parseDate(d);return dd>=fD&&dd<=tD;}catch(e){return false;}}).reduce((a,[,v])=>a+v,0);
-  return{leads,deals,budget,daily:dl,plan:Math.round(plan),adTotal,
+
+  // ad spend + leads for full current month (for CPL)
+  let monthAdTotal=adTotal, monthLeads=leads;
+  if(mk===curMK){
+    const allDatesM=getDatesInRange(`01.${curMK}`,`${String(now.getDate()).padStart(2,'0')}.${curMK}`);
+    monthLeads=allDatesM.reduce((s,d)=>s+((raw[d]&&raw[d][0])||0),0);
+    const mfD=parseDate(`01.${curMK}`), mtD=parseDate(`${String(now.getDate()).padStart(2,'0')}.${curMK}`);
+    monthAdTotal=Object.entries(adData).filter(([d])=>{try{const dd=parseDate(d);return dd>=mfD&&dd<=mtD;}catch(e){return false;}}).reduce((a,[,v])=>a+v,0);
+  }
+  const cplMonth = monthLeads ? Math.round(monthAdTotal/monthLeads) : 0;
+  const rpl = monthLeads ? Math.round(monthBudget/monthLeads) : 0; // выручка/лид
+
+  return{leads,deals,budget,daily:dl,plan:Math.round(plan),monthKey:mk,
+    monthBudget:Math.round(monthBudget),remain:Math.round(remain),perDay,daysLeft:daysLeftMonth,
+    isCurrentMonth:mk===curMK,
+    adTotal,monthAdTotal,monthLeads,cplMonth,rpl,
     conv:leads?+(deals/leads*100).toFixed(1):0,avgCheck:deals?Math.round(budget/deals):0};
 }
 function aggregateAll(from,to){
@@ -745,11 +687,21 @@ function aggregateAll(from,to){
   const budget=Object.values(parts).reduce((a,p)=>a+p.budget,0);
   const plan=Object.values(parts).reduce((a,p)=>a+p.plan,0);
   const adTotal=Object.values(parts).reduce((a,p)=>a+p.adTotal,0);
+  const monthBudget=Object.values(parts).reduce((a,p)=>a+p.monthBudget,0);
+  const remain=Object.values(parts).reduce((a,p)=>a+p.remain,0);
+  const perDay=Object.values(parts).reduce((a,p)=>a+p.perDay,0);
+  const daysLeft=Object.values(parts)[0]?Object.values(parts)[0].daysLeft:1;
+  const isCurrentMonth=Object.values(parts)[0]?Object.values(parts)[0].isCurrentMonth:false;
+  const monthAdTotal=Object.values(parts).reduce((a,p)=>a+p.monthAdTotal,0);
+  const monthLeads=Object.values(parts).reduce((a,p)=>a+p.monthLeads,0);
+  const cplMonth=monthLeads?Math.round(monthAdTotal/monthLeads):0;
+  const rpl=monthLeads?Math.round(Object.values(parts).reduce((a,p)=>a+p.monthBudget,0)/monthLeads):0;
   const dl={labels:dates.map(d=>d.slice(0,5)),
     leads:dates.map((_,i)=>Object.values(parts).reduce((a,p)=>a+p.daily.leads[i],0)),
     deals:dates.map((_,i)=>Object.values(parts).reduce((a,p)=>a+p.daily.deals[i],0)),
     budget:dates.map((_,i)=>Object.values(parts).reduce((a,p)=>a+p.daily.budget[i],0))};
   return{leads,deals,budget,plan,adTotal,daily:dl,parts,
+    monthBudget,remain,perDay,daysLeft,isCurrentMonth,monthAdTotal,monthLeads,cplMonth,rpl,
     conv:leads?+(deals/leads*100).toFixed(1):0,avgCheck:deals?Math.round(budget/deals):0};
 }
 
@@ -839,76 +791,160 @@ function setMetric(m,el){
 }
 function setMgrProd(p,el){
   activeMgrProd=p;
+  activeMgrRop='all';
   markActive('[onclick^="setMgrProd"]',el);
+  // Show/hide ROP group filter only for Коллаген
+  const isCol = p==='Коллаген';
+  document.getElementById('rop-filter-label').style.display = isCol?'':'none';
+  document.getElementById('rop-sep').style.display = isCol?'':'none';
+  if(isCol) renderRopPills();
+  else document.getElementById('rop-group-pills').innerHTML='';
+  renderManagers();
+}
+function renderRopPills(){
+  const container = document.getElementById('rop-group-pills');
+  container.innerHTML = Object.entries(ROP_GROUPS).map(([key,cfg])=>
+    `<button class="pill rop-pill ${key===activeMgrRop?'active':''}"
+      style="${key===activeMgrRop?`background:${cfg.color};border-color:${cfg.color};color:#fff`:''}"
+      onclick="setMgrRop('${key}',this)">${cfg.label}</button>`
+  ).join('');
+}
+function setMgrRop(rop, el){
+  activeMgrRop = rop;
+  renderRopPills();
   renderManagers();
 }
 
 // ═══════════════════ RENDER KPI ═══════════════════════════════════
 function renderKPI(d){
-  const pct=d.plan?Math.round(d.budget/d.plan*100):0;
-  const drr=d.budget?+(d.adTotal/d.budget*100).toFixed(1):0;
-  const prodName=activeProd==='all'?'Все продукты':PROD_CFG[activeProd].name;
-  document.getElementById('main-title').textContent='Ключевые показатели';
-  document.getElementById('main-sub').textContent=`${activePeriod.label} · ${prodName}`;
-  const clr=activeProd==='all'?'#6366f1':PROD_CFG[activeProd].color;
+  const isCur = d.isCurrentMonth;
+
+  // % выполнения:
+  // — текущий месяц: накоплено за месяц / план
+  // — прошлые месяцы: факт за выбранный период / план
+  const pct = d.plan
+    ? (isCur ? Math.round(d.monthBudget/d.plan*100) : Math.round(d.budget/d.plan*100))
+    : 0;
+
+  const drr = d.budget ? +(d.adTotal/d.budget*100).toFixed(1) : 0;
+  const prodName = activeProd==='all' ? 'Все продукты' : PROD_CFG[activeProd].name;
+  document.getElementById('main-title').textContent = 'Ключевые показатели';
+  document.getElementById('main-sub').textContent = `${activePeriod.label} · ${prodName}`;
+  const clr = activeProd==='all' ? '#6366f1' : PROD_CFG[activeProd].color;
+
+  // Выручка sub: план сумма
+  const revSub = d.plan ? `план ${fmtM(d.plan)}` : '—';
+  // Выручка s2: нужно в день (только текущий месяц, если остаток есть)
+  const revS2 = isCur && d.plan && d.remain>0
+    ? `нужно ${fmtM(d.perDay)}/день · ост. ${d.daysLeft} дн.`
+    : (isCur && d.remain===0 ? '✓ план выполнен' : null);
+
+  // Выполнение sub: остаток суммой
+  const execSub = isCur && d.plan
+    ? (d.remain===0 ? '✓ план выполнен' : `ост. ${fmtM(d.remain)}`)
+    : 'от плана';
+
+  const cpl = d.cplMonth || 0;  // расходы рекл. за месяц / лиды за месяц
+
   const kpis=[
-    {l:'Выручка',v:fmtM(d.budget),s:`план ${fmtM(d.plan)}`,badge:`${pct}%`,bc:pctBg(pct),c:clr},
-    {l:'Лиды',v:fmt(d.leads),s:'дата создания',c:'#6366f1'},
-    {l:'Сделки',v:fmt(d.deals),s:'дата заказа',c:'#6366f1'},
-    {l:'Конверсия',v:`${d.conv}%`,s:'план 12%',badge:d.conv>=12?'В норме':'Ниже плана',bc:d.conv>=12?'bg-g':'bg-r',c:d.conv>=12?'#16a34a':'#c0392b'},
-    {l:'Средний чек',v:`${fmt(d.avgCheck)} ₸`,s:'план 80 000 ₸',badge:d.avgCheck>=80000?'В норме':'Ниже',bc:d.avgCheck>=80000?'bg-g':'bg-y',c:d.avgCheck>=80000?'#16a34a':'#ca8a04'},
-    {l:'Выполнение',v:`${pct}%`,s:'от плана',badge:pct>=100?'Выполнен':pct>=80?'Близко':'В процессе',bc:pctBg(pct),c:pct>=80?'#16a34a':'#ca8a04'},
-    {l:'Расходы рекл.',v:fmtM(d.adTotal),s:`ДРР ${drr}%`,badge:`${drr}%`,bc:drr<=15?'bg-g':drr<=25?'bg-y':'bg-r',c:drr<=15?'#16a34a':drr<=25?'#ca8a04':'#c0392b'},
+    {l:'Выручка',      v:fmtM(d.budget),        s:revSub,  s2:revS2,  s2c:'#6366f1',
+     badge:`${pct}%`, bc:pctBg(pct), c:clr},
+    {l:'Лиды',         v:fmt(d.leads),           s:'дата создания', c:'#6366f1'},
+    {l:'Сделки',       v:fmt(d.deals),           s:'дата заказа',   c:'#6366f1'},
+    {l:'Конверсия',    v:`${d.conv}%`,           s:'план 12%',
+     badge:d.conv>=12?'В норме':'Ниже плана', bc:d.conv>=12?'bg-g':'bg-r',
+     c:d.conv>=12?'#16a34a':'#c0392b'},
+    {l:'Средний чек',  v:`${fmt(d.avgCheck)} ₸`, s:'план 80 000 ₸',
+     badge:d.avgCheck>=80000?'В норме':'Ниже', bc:d.avgCheck>=80000?'bg-g':'bg-y',
+     c:d.avgCheck>=80000?'#16a34a':'#ca8a04'},
+    {l:'Ст. лида (реклама)',v:cpl?`${fmt(cpl)} ₸`:'—', s:'расх. рекл. / лиды',
+     badge:cpl?`${fmt(cpl)} ₸`:'нет данных', bc:cpl<=3000?'bg-g':cpl<=6000?'bg-y':'bg-r',
+     c:cpl<=3000?'#16a34a':cpl<=6000?'#ca8a04':'#c0392b'},
+    {l:'Ст. лида (продажи)',v:d.rpl?`${fmt(d.rpl)} ₸`:'—', s:'выручка / лиды',
+     badge:d.rpl?`${fmt(d.rpl)} ₸`:'—', bc:'bg-g',
+     c:'#6366f1'},
+    {l:'Выполнение',   v:`${pct}%`,              s:execSub,
+     badge:pct>=100?'Выполнен':pct>=80?'Близко':'В процессе',
+     bc:pctBg(pct), c:pct>=100?'#16a34a':pct>=80?'#ca8a04':'#c0392b'},
+    {l:'Расходы рекл.',v:fmtM(d.adTotal),        s:`ДРР ${drr}%`,
+     badge:`${drr}%`, bc:drr<=15?'bg-g':drr<=25?'bg-y':'bg-r',
+     c:drr<=15?'#16a34a':drr<=25?'#ca8a04':'#c0392b'},
   ];
   document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`
     <div class="kpi-card" style="--kc:${k.c}">
       <div class="kc-lbl">${k.l}</div>
       <div class="kc-val" style="color:${k.c}">${k.v}</div>
       <div class="kc-sub">${k.s||''}</div>
+      ${k.s2?`<div class="kc-sub" style="color:${k.s2c||'#6366f1'};font-weight:700;margin-top:2px;font-size:11px">${k.s2}</div>`:''}
       ${k.badge?`<div class="kc-badge ${k.bc}">${k.badge}</div>`:''}
     </div>`).join('');
 }
 
 // ═══════════════════ RENDER PLAN TABLE ════════════════════════════
 function renderPlanTable(stats){
-  const keys=activeProd==='all'?['col','ummi','coffee']:[activeProd];
-  let rows=keys.map(k=>{
-    const d=stats.parts?stats.parts[k]:stats;
-    const cfg=PROD_CFG[k];
-    const pct=d.plan?Math.round(d.budget/d.plan*100):0;
-    const lag=d.budget-d.plan;
+  const keys = activeProd==='all' ? ['col','ummi','coffee'] : [activeProd];
+
+  let rows = keys.map(k=>{
+    const d = stats.parts ? stats.parts[k] : stats;
+    const cfg = PROD_CFG[k];
+    const pct = d.plan ? Math.round(d.monthBudget/d.plan*100) : 0;
+    const remainCell = d.isCurrentMonth && d.plan
+      ? d.remain===0
+        ? `<td style="color:#16a34a;font-weight:700">✓</td><td style="color:#16a34a">—</td>`
+        : `<td style="color:#ca8a04;font-weight:700">${fmt(d.remain)}</td>
+           <td style="color:#6366f1;font-weight:700">${fmt(d.perDay)}</td>`
+      : `<td style="color:var(--muted)">—</td><td style="color:var(--muted)">—</td>`;
     return`<tr>
       <td><div class="prod-name"><div class="prod-dot" style="background:${cfg.color}"></div>${cfg.name}</div></td>
       <td>${fmt(d.plan)}</td>
-      <td style="color:${cfg.color};font-weight:700">${fmt(d.budget)}</td>
+      <td style="color:${cfg.color};font-weight:700">${fmt(d.monthBudget)}</td>
       <td><div class="bar-wrap">
         <span class="${pct>=80?'txt-g':pct>=50?'txt-y':'txt-r'}" style="font-weight:700;font-size:13px;min-width:36px;text-align:right">${pct}%</span>
         <div class="bar-track"><div class="bar-fill" style="width:${Math.min(pct,100)}%;background:${cfg.color}"></div></div>
       </div></td>
-      <td style="color:${lag>=0?'#16a34a':'#c0392b'};font-weight:700">${lag>=0?'+':''}${fmt(lag)}</td>
+      ${remainCell}
       <td>${fmt(d.leads)}</td><td>${fmt(d.deals)}</td>
       <td class="${convCls(d.conv)}" style="font-weight:700">${d.conv}%</td>
+      <td style="color:${d.cplMonth?d.cplMonth<=3000?'#16a34a':d.cplMonth<=6000?'#ca8a04':'#c0392b':'var(--muted)'};font-weight:700">${d.cplMonth?fmt(d.cplMonth)+' ₸':'—'}</td>
+      <td style="color:#6366f1;font-weight:700">${d.rpl?fmt(d.rpl)+' ₸':'—'}</td>
     </tr>`;
   }).join('');
+
   if(activeProd==='all'){
-    const a=stats;const pct=a.plan?Math.round(a.budget/a.plan*100):0;const lag=a.budget-a.plan;
-    rows+=`<tr class="tr-sum">
+    const a = stats;
+    const pct = a.plan ? Math.round(a.monthBudget/a.plan*100) : 0;
+    const remainCell = a.isCurrentMonth && a.plan
+      ? a.remain===0
+        ? `<td style="color:#16a34a;font-weight:700"><strong>✓ Выполнен</strong></td><td>—</td>`
+        : `<td style="color:#ca8a04;font-weight:700"><strong>${fmt(a.remain)}</strong></td>
+           <td style="color:#6366f1;font-weight:700"><strong>${fmt(a.perDay)}</strong></td>`
+      : `<td>—</td><td>—</td>`;
+    rows += `<tr class="tr-sum">
       <td><div class="prod-name"><div class="prod-dot" style="background:#6366f1"></div><strong>ИТОГО</strong></div></td>
       <td><strong>${fmt(a.plan)}</strong></td>
-      <td style="color:#6366f1;font-weight:700"><strong>${fmt(a.budget)}</strong></td>
-      <td><div class="bar-wrap"><span style="font-weight:700;font-size:13px;color:${pct>=80?'#16a34a':'#ca8a04'};min-width:36px;text-align:right">${pct}%</span><div class="bar-track"><div class="bar-fill" style="width:${Math.min(pct,100)}%;background:#6366f1"></div></div></div></td>
-      <td style="color:${lag>=0?'#16a34a':'#c0392b'};font-weight:700"><strong>${lag>=0?'+':''}${fmt(lag)}</strong></td>
+      <td style="color:#6366f1;font-weight:700"><strong>${fmt(a.monthBudget)}</strong></td>
+      <td><div class="bar-wrap"><span style="font-weight:700;font-size:13px;color:${pct>=80?'#16a34a':'#ca8a04'};min-width:36px;text-align:right">${pct}%</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.min(pct,100)}%;background:#6366f1"></div></div></div></td>
+      ${remainCell}
       <td><strong>${fmt(a.leads)}</strong></td><td><strong>${fmt(a.deals)}</strong></td>
       <td class="${convCls(a.conv)}" style="font-weight:700"><strong>${a.conv}%</strong></td>
+      <td style="color:${a.cplMonth?a.cplMonth<=3000?'#16a34a':a.cplMonth<=6000?'#ca8a04':'#c0392b':'var(--muted)'};font-weight:700"><strong>${a.cplMonth?fmt(a.cplMonth)+' ₸':'—'}</strong></td>
+      <td style="color:#6366f1;font-weight:700"><strong>${a.rpl?fmt(a.rpl)+' ₸':'—'}</strong></td>
     </tr>`;
   }
+
+  const isCur = (stats.parts ? Object.values(stats.parts)[0] : stats).isCurrentMonth;
   document.getElementById('plan-table').innerHTML=`
     <table class="dt"><thead><tr>
-      <th>Продукт</th><th>План ₸</th><th>Факт ₸</th><th>Выполнение</th>
-      <th>Отклонение</th><th>Лиды</th><th>Сделки</th><th>Конверсия</th>
+      <th>Продукт</th>
+      <th>План мес. ₸</th>
+      <th>Факт мес. ₸</th>
+      <th>Выполнение</th>
+      <th style="color:${isCur?'#ca8a04':'var(--muted)'}">Остаток</th>
+      <th style="color:${isCur?'#6366f1':'var(--muted)'}">Нужно/день</th>
+      <th>Лиды</th><th>Сделки</th><th>Конверсия</th><th style="color:#6366f1">Ст.лида рекл.</th><th style="color:#6366f1">Ст.лида прод.</th>
     </tr></thead><tbody>${rows}</tbody></table>`;
 }
-
 // ═══════════════════ CHARTS ═══════════════════════════════════════
 let lastStats=null;
 const GRID='rgba(232,236,244,.9)', TICK='#8896ae', FONT="'DM Sans'";
@@ -1033,18 +1069,44 @@ function aggregateManagersByPeriod(prodKey, from, to) {
 
 function renderManagers(){
   const{from,to}=activeMgrPeriod;
-  const mgrs = aggregateManagersByPeriod(activeMgrProd, from, to);
+  let mgrs = aggregateManagersByPeriod(activeMgrProd, from, to);
   const cfg=Object.values(PROD_CFG).find(c=>c.mgrKey===activeMgrProd)||{color:'#6366f1'};
-  document.getElementById('mgr-sub').textContent=`${activeMgrPeriod.label} · ${activeMgrProd}`;
+  const isCol = activeMgrProd==='Коллаген';
+
+  // Filter by ROP group
+  if(isCol && activeMgrRop!=='all'){
+    mgrs = mgrs.filter(m=>(MGR_TO_ROP[m.name]||'') === activeMgrRop);
+  }
+
+  // Group label in subtitle
+  const ropLabel = isCol && activeMgrRop!=='all' ? ` · ${activeMgrRop}` : '';
+  document.getElementById('mgr-sub').textContent=`${activeMgrPeriod.label} · ${activeMgrProd}${ropLabel}`;
+
   const withDeals=mgrs.filter(m=>m.deals>0).sort((a,b)=>b.budget-a.budget);
   const withoutDeals=mgrs.filter(m=>m.deals===0);
   const maxB=Math.max(...withDeals.map(m=>m.budget),1);
   const ranks=['🥇','🥈','🥉'];
+
+  // Show ROP group column only for Коллаген
+  const ropCol = isCol
+    ? `<th style="color:var(--muted);font-size:11px">Группа</th>` : '';
+  document.querySelector('#view-managers .dt thead tr').innerHTML =
+    `<th style="width:40px;text-align:center">#</th>
+     <th style="text-align:left">Менеджер</th>
+     ${ropCol}
+     <th>Лиды</th><th>Сделки</th><th>Выручка</th>
+     <th>Конверсия</th><th>Ср. чек</th><th>Доля</th>`;
+
   let tbody='';
   withDeals.forEach((m,i)=>{
+    const ropGroup = isCol ? (MGR_TO_ROP[m.name]||'—') : '';
+    const ropColors={'РОП Айдана':'#1a56db','РОП Нурдаулет':'#0a7c5c','РОП Аслиддин':'#b45309'};
+    const ropCellColor = ropColors[ropGroup]||'var(--muted)';
+    const ropCell = isCol ? `<td style="font-size:11px;font-weight:600;color:${ropCellColor};white-space:nowrap">${ropGroup}</td>` : '';
     tbody+=`<tr>
       <td style="text-align:center;font-size:${i<3?'16':'13'}px">${i<3?ranks[i]:i+1}</td>
       <td style="font-weight:600">${m.name}</td>
+      ${ropCell}
       <td>${fmt(m.leads)}</td>
       <td style="font-weight:700">${m.deals}</td>
       <td style="color:${cfg.color};font-weight:700">${fmtM(m.budget)}</td>
@@ -1057,8 +1119,13 @@ function renderManagers(){
     </tr>`;
   });
   if(withoutDeals.length){
-    tbody+=`<tr><td colspan="8" style="text-align:center;color:var(--muted);font-size:11px;padding:10px;border-top:2px solid var(--line2);letter-spacing:1px">— Без сделок в периоде —</td></tr>`;
-    withoutDeals.forEach(m=>{tbody+=`<tr style="opacity:.4"><td style="text-align:center">—</td><td>${m.name}</td><td>${fmt(m.leads)}</td><td>0</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>`;});
+    const colspan = isCol ? 9 : 8;
+    tbody+=`<tr><td colspan="${colspan}" style="text-align:center;color:var(--muted);font-size:11px;padding:10px;border-top:2px solid var(--line2);letter-spacing:1px">— Без сделок в периоде —</td></tr>`;
+    withoutDeals.forEach(m=>{
+      const ropGroup = isCol ? (MGR_TO_ROP[m.name]||'—') : '';
+      const ropCell = isCol ? `<td style="font-size:11px">${ropGroup}</td>` : '';
+      tbody+=`<tr style="opacity:.4"><td style="text-align:center">—</td><td>${m.name}</td>${ropCell}<td>${fmt(m.leads)}</td><td>0</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>`;
+    });
   }
   document.getElementById('mgr-tbody').innerHTML=tbody;
   const top8=withDeals.slice(0,8);
@@ -1143,6 +1210,7 @@ async function loadFromSupabase() {
       if (d.RAW)      RAW      = d.RAW;
       if (d.MANAGERS) MANAGERS = d.MANAGERS;
       if (d.AD_SPEND) AD_SPEND = d.AD_SPEND;
+      if (d.PLANS)    PLANS    = d.PLANS;
       // Update badge
       const badge = document.getElementById('data-badge');
       if (badge && rows[0].updated_at) {
@@ -1155,10 +1223,58 @@ async function loadFromSupabase() {
       render();
       if(activeView==='managers') renderManagers();
       if(activeView==='adspend') renderAdSpend();
+      // Update sidebar KPI with fresh data
+      const _now=new Date(); const _td=_lastDay(_now.getFullYear(),_now.getMonth()+1);
+      renderSidebarKPI(_now, _now.getDate(), _td);
     }
   } catch(e) {
     console.warn('Supabase load error:', e);
   }
+}
+
+// ═══════════════════ SIDEBAR KPI ═════════════════════════════════
+function renderSidebarKPI(now, dayOfMonth, totalDays){
+  const kpiEl = document.getElementById('sb-kpi');
+  if(!kpiEl) return;
+
+  const mm = String(now.getMonth()+1).padStart(2,'0');
+  const yyyy = now.getFullYear();
+  const monthKey = `${mm}.${yyyy}`;
+
+  // Sum plan across all products for this month
+  let totalPlan = 0;
+  const planProducts = {col:'Коллаген', ummi:'Ummi', coffee:'Кофе'};
+  for(const [pk] of Object.entries(planProducts)){
+    totalPlan += (PLANS[pk] && PLANS[pk][monthKey]) ? PLANS[pk][monthKey] : 0;
+  }
+
+  // Sum fact (budget) for current month across all products
+  const monthPrefix = `${mm}.${yyyy}`;
+  let totalFact = 0;
+  for(const prodKey of Object.keys(RAW)){
+    const days = RAW[prodKey]||{};
+    for(const [date, vals] of Object.entries(days)){
+      // date format DD.MM.YYYY — check month+year match
+      if(date.slice(3) === monthPrefix) totalFact += (vals[2]||0);
+    }
+  }
+
+  const remain = Math.max(0, totalPlan - totalFact);
+  const daysLeft = totalDays - dayOfMonth + 1; // including today
+  const planPerDayLeft = daysLeft > 0 ? Math.round(remain / daysLeft) : 0;
+  const factPerDay = dayOfMonth > 0 ? Math.round(totalFact / dayOfMonth) : 0;
+  const pctDone = totalPlan ? Math.round(totalFact / totalPlan * 100) : 0;
+
+  const cls = pctDone >= 100 ? 'green' : pctDone >= 70 ? 'yellow' : 'red';
+  const remainCls = remain === 0 ? 'green' : daysLeft <= 5 ? 'red' : 'yellow';
+
+  kpiEl.innerHTML = totalPlan ? `
+    <div class="sp-kpi-row"><span class="sp-kl">План месяц</span><span class="sp-kv">${fmtK(totalPlan)}</span></div>
+    <div class="sp-kpi-row"><span class="sp-kl">Факт</span><span class="sp-kv ${cls}">${fmtK(totalFact)} · ${pctDone}%</span></div>
+    <div class="sp-kpi-row"><span class="sp-kl">Остаток</span><span class="sp-kv ${remainCls}">${fmtK(remain)}</span></div>
+    <div class="sp-kpi-row"><span class="sp-kl">Нужно/день</span><span class="sp-kv">${fmtK(planPerDayLeft)}</span></div>
+    <div class="sp-kpi-row"><span class="sp-kl">Факт/день</span><span class="sp-kv">${fmtK(factPerDay)}</span></div>
+  ` : `<div class="sp-kpi-row"><span class="sp-kl" style="opacity:.5">План не задан</span></div>`;
 }
 
 // ═══════════════════ INIT ═════════════════════════════════════════
@@ -1185,13 +1301,22 @@ function initDynamicUI() {
   // Sidebar date
   document.getElementById('sb-today').textContent =
     `${now.getDate()} ${MONTH_NAMES_GEN[now.getMonth()]} ${now.getFullYear()}`;
+  const DAYS = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+  const wdEl = document.getElementById('sb-weekday');
+  if(wdEl) wdEl.textContent = `UTC+5 · ${DAYS[now.getDay()]}`;
 
   // Sidebar month label + progress bar
   document.getElementById('sb-month-label').textContent = `${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}`;
   const totalDays = _lastDay(now.getFullYear(), now.getMonth()+1);
-  const pct = Math.round(now.getDate() / totalDays * 100);
+  const dayOfMonth = now.getDate();
+  const pct = Math.round(dayOfMonth / totalDays * 100);
   document.getElementById('sb-fill').style.width = pct + '%';
-  document.getElementById('sb-day').textContent = `${now.getDate()} / ${totalDays}`;
+  document.getElementById('sb-day').textContent = `${dayOfMonth} / ${totalDays}`;
+  // Dynamic start of month label
+  const startEl = document.getElementById('sb-day-start');
+  if(startEl) startEl.textContent = `1 ${MONTH_NAMES[now.getMonth()].slice(0,3).toLowerCase()}`;
+  // Render plan/fact/remain KPI block
+  renderSidebarKPI(now, dayOfMonth, totalDays);
 
   // Build month pills dynamically for all 3 filter groups
   const monthKeys = Object.keys(PRESETS).filter(k => k.startsWith('m_'));
@@ -1212,34 +1337,6 @@ initDynamicUI();
 render();
 // Load fresh data from Supabase (will re-render when loaded)
 loadFromSupabase();
-
-// ── MOBILE SIDEBAR ───────────────────────────────────────────────
-function toggleSidebar() {
-  const sb = document.querySelector('.sidebar');
-  const burger = document.getElementById('burger');
-  const overlay = document.getElementById('sidebar-overlay');
-  const isOpen = sb.classList.toggle('open');
-  burger.classList.toggle('open', isOpen);
-  overlay.classList.toggle('show', isOpen);
-  document.body.style.overflow = isOpen ? 'hidden' : '';
-}
-function closeSidebar() {
-  const sb = document.querySelector('.sidebar');
-  const burger = document.getElementById('burger');
-  const overlay = document.getElementById('sidebar-overlay');
-  sb.classList.remove('open');
-  burger.classList.remove('open');
-  overlay.classList.remove('show');
-  document.body.style.overflow = '';
-}
-// Close sidebar when nav item clicked on mobile
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.nav-item').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (window.innerWidth <= 768) closeSidebar();
-    });
-  });
-});
 </script>
 </body>
 </html>

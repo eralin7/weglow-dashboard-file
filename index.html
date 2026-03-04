@@ -139,7 +139,18 @@ input[type=file]{display:none;}
       <div class="fc-filename" id="fname-coffee"></div>
     </div>
 
+    <!-- Реклама -->
+    <div class="file-card" id="card-ad" style="--c:#6366f1"
+         onclick="document.getElementById('input-ad').click()"
+         ondragover="handleDrag(event,'ad')" ondragleave="handleDragLeave('ad')" ondrop="handleDrop(event,'ad')">
+      <input type="file" id="input-ad" accept=".csv" onchange="handleFile(this,'ad')">
+      <span class="fc-icon">📊</span>
+      <div class="fc-title">Расходы на рекламу</div>
+      <div class="fc-sub">Коллаген + Ummi + Кофе</div>
+      <div class="fc-status fc-wait" id="status-ad">⟳ Ожидание файла</div>
+      <div class="fc-filename" id="fname-ad"></div>
     </div>
+  </div>
 
   <div class="progress-wrap" id="progress-wrap">
     <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
@@ -150,14 +161,14 @@ input[type=file]{display:none;}
     <button class="go-btn" id="go-btn" onclick="openDashboard()" disabled>
       <span>Открыть дашборд</span><span class="arrow">→</span>
     </button>
-    <div class="files-count" id="files-count">Загружено: 0 / 3 файлов</div>
+    <div class="files-count" id="files-count">Загружено: 0 / 4 файлов</div>
   </div>
 
   <div class="instr">
     <div class="instr-title">Как обновить данные</div>
     <div class="instr-steps">
       <div class="step"><div class="step-num">1</div><div class="step-text">Экспортируйте сделки из AmoCRM в формате CSV</div></div>
-      <div class="step"><div class="step-num">2</div><div class="step-text">Загрузите 3 файла в соответствующие поля выше</div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-text">Загрузите 4 файла в соответствующие поля выше</div></div>
       <div class="step"><div class="step-num">3</div><div class="step-text">Дождитесь успешной обработки всех файлов</div></div>
       <div class="step"><div class="step-num">4</div><div class="step-text">Нажмите «Открыть дашборд» — данные обновятся</div></div>
     </div>
@@ -252,9 +263,9 @@ function setStatus(key, type, text){
 }
 
 function updateGoBtn(){
-  const count = ['col','ummi','coffee'].filter(k=>parsedData[k]!==null).length;
-  document.getElementById('files-count').textContent = `Загружено: ${count} / 3 файлов`;
-  document.getElementById('go-btn').disabled = count < 3;
+  const count = Object.values(parsedData).filter(v=>v!==null).length;
+  document.getElementById('files-count').textContent = `Загружено: ${count} / 4 файлов`;
+  document.getElementById('go-btn').disabled = count < 4;
 }
 
 // ════════════════════════════════════════════════════════
@@ -294,73 +305,40 @@ function parseSales(rows, keyHint){
   const headers = rows[0];
   const ncols = headers.length;
 
-  // Determine product by column count OR keyHint
-  let product;
-  if(ncols >= 77 && ncols <= 83)       product='Коллаген';
-  else if(ncols >= 67 && ncols <= 75)  product='Ummi';
-  else if(ncols >= 61 && ncols <= 69)  product='Кофе';
+  // Determine product by column count
+  let product, orderColIdx;
+  if(ncols >= 77 && ncols <= 81){ product='Коллаген'; orderColIdx=42; }
+  else if(ncols >= 69 && ncols <= 73){ product='Ummi'; orderColIdx=43; }
+  else if(ncols >= 63 && ncols <= 67){ product='Кофе'; orderColIdx=36; }
   else {
+    // Try to detect by header content
     const hStr = headers.join('|').toLowerCase();
-    if(hStr.includes('коллаген')||keyHint==='col')        product='Коллаген';
-    else if(hStr.includes('ummi')||keyHint==='ummi')       product='Ummi';
-    else if(hStr.includes('кофе')||keyHint==='coffee')     product='Кофе';
-    else if(keyHint==='col')   product='Коллаген';
-    else if(keyHint==='ummi')  product='Ummi';
-    else if(keyHint==='coffee')product='Кофе';
+    if(hStr.includes('коллаген')||keyHint==='col'){ product='Коллаген'; orderColIdx=42; }
+    else if(hStr.includes('ummi')||keyHint==='ummi'){ product='Ummi'; orderColIdx=43; }
+    else if(hStr.includes('кофе')||keyHint==='coffee'){ product='Кофе'; orderColIdx=36; }
     else return {error:`Неизвестный формат (${ncols} колонок)`};
   }
 
-  // ── Find columns BY HEADER NAME (robust, works across any export version) ──
-  const hi = h => headers.findIndex(x => x.toLowerCase().includes(h.toLowerCase()));
-
-  // Order date column — try multiple keywords
-  let orderColIdx = hi('дата заказа');
-  if(orderColIdx < 0) orderColIdx = hi('заказ');
-  if(orderColIdx < 0) orderColIdx = hi('дата покупки');
-  if(orderColIdx < 0) orderColIdx = hi('дата оплаты');
-  // Fallback to hardcoded if still not found
-  if(orderColIdx < 0){
-    if(product==='Коллаген') orderColIdx=42;
-    else if(product==='Ummi') orderColIdx=43;
-    else orderColIdx=36;
+  // Verify order date column header
+  const orderHeader = (headers[orderColIdx]||'').toLowerCase();
+  if(!orderHeader.includes('дата') && !orderHeader.includes('заказ')){
+    // Try to find order date column dynamically
+    const altIdx = headers.findIndex(h=>h.toLowerCase().includes('заказ'));
+    if(altIdx>=0) orderColIdx = altIdx;
   }
 
-  // Budget column
-  let budgetColIdx = hi('бюджет');
-  if(budgetColIdx < 0) budgetColIdx = hi('сумма сделки');
-  if(budgetColIdx < 0) budgetColIdx = hi('выручка');
-  if(budgetColIdx < 0) budgetColIdx = 2; // fallback
-
-  // Created date column
-  let createdColIdx = hi('дата создания');
-  if(createdColIdx < 0) createdColIdx = hi('создан');
-  if(createdColIdx < 0) createdColIdx = 4; // fallback
-
-  // Manager column
-  let mgrColIdx = hi('ответственный');
-  if(mgrColIdx < 0) mgrColIdx = hi('менеджер');
-  if(mgrColIdx < 0) mgrColIdx = 3; // fallback
-
-  // Stage column — filter deals by valid stages only
-  let stageColIdx = headers.findIndex(h=>h.toLowerCase().includes('этап сделки'));
-  if(stageColIdx < 0) stageColIdx = headers.findIndex(h=>h.toLowerCase().includes('этап'));
-  if(stageColIdx < 0) stageColIdx = 15;
-  const VALID_STAGES = new Set([
-    'ЗАКАЗ','ЗАКАЗ НА ПОДТВЕРЖДЕНИЕ','КУРЬЕРСКАЯ ДОСТАВКА','Успешно реализовано'
-  ]);
-
-  const daily = {};
-  const managers = {};
+  const daily = {}; // date -> [leads, deals, budget]
+  const managers = {}; // name -> {leads, deals, budget}
   let totalLeads=0, totalDeals=0, totalBudget=0;
 
   for(let i=1;i<rows.length;i++){
     const row = rows[i];
     if(!row[0]) continue;
 
-    const manager = (row[mgrColIdx]||'').trim();
-    const createdRaw = (row[createdColIdx]||'').trim();
+    const manager = (row[3]||'').trim();
+    const createdRaw = (row[4]||'').trim();
     const orderRaw = (orderColIdx < row.length ? row[orderColIdx]||'' : '').trim();
-    const budgetRaw = (row[budgetColIdx]||'0').replace(/[\s\xa0₸,]/g,'');
+    const budgetRaw = (row[2]||'0').replace(/[\s\xa0₸,]/g,'');
     const budget = parseFloat(budgetRaw)||0;
 
     // Parse created date → leads
@@ -375,10 +353,8 @@ function parseSales(rows, keyHint){
       }
     }
 
-    // Parse order date → deals + budget (only for valid stages)
-    const stageVal = (stageColIdx >= 0 && stageColIdx < row.length ? row[stageColIdx] : '').trim();
-    const validStage = VALID_STAGES.has(stageVal);
-    const oDate = validStage ? extractDate(orderRaw) : null;
+    // Parse order date → deals + budget
+    const oDate = extractDate(orderRaw);
     if(oDate){
       if(!daily[oDate]) daily[oDate]=[0,0,0];
       daily[oDate][1]++;
@@ -393,6 +369,7 @@ function parseSales(rows, keyHint){
     }
   }
 
+  // Build manager list
   const mgrList = Object.entries(managers)
     .map(([name,v])=>({
       name, leads:v.leads, deals:v.deals, budget:Math.round(v.budget),
@@ -404,8 +381,7 @@ function parseSales(rows, keyHint){
   return {
     product, daily, managers: mgrList,
     totalLeads, totalDeals, totalBudget: Math.round(totalBudget),
-    summary: `${totalLeads.toLocaleString('ru')} лидов, ${totalDeals} сделок, ${(totalBudget/1e6).toFixed(2)} М ₸`,
-    debug: `${ncols} колонок | order:${orderColIdx} budget:${budgetColIdx} created:${createdColIdx} mgr:${mgrColIdx}`
+    summary: `${totalLeads.toLocaleString('ru')} лидов, ${totalDeals} сделок, ${(totalBudget/1e6).toFixed(2)} М ₸`
   };
 }
 
@@ -445,8 +421,8 @@ const SUPABASE_URL = 'https://bdyakgmeibpdkisbiykt.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkeWFrZ21laWJwZGtpc2JpeWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTQzOTMsImV4cCI6MjA4Nzc5MDM5M30.nA187grJR6XFQRmTP6WOM-6-1dZK1EzYNNP2JH9aAMg';
 
 async function saveToSupabase(payload) {
-  // DELETE existing row then INSERT fresh (simple and reliable)
-  await fetch(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1`, {
+  // Upsert into weglow_data table with id=1 (single row)
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1`, {
     method: 'DELETE',
     headers: {
       'apikey': SUPABASE_KEY,
@@ -463,10 +439,7 @@ async function saveToSupabase(payload) {
     },
     body: JSON.stringify({ id: 1, data: payload, updated_at: new Date().toISOString() })
   });
-  if(!ins.ok) {
-    const txt = await ins.text().catch(()=>'');
-    throw new Error(`Supabase ${ins.status}: ${txt.slice(0,120)}`);
-  }
+  if(!ins.ok) throw new Error(`Supabase error: ${ins.status}`);
 }
 
 // ════════════════════════════════════════════════════════
@@ -500,6 +473,7 @@ async function openDashboard(){
     pl.textContent = 'Сохранение в облако...';
     const payload = buildPayload();
     await saveToSupabase(payload);
+    // Also save to sessionStorage for immediate local use
     sessionStorage.setItem('wg_data', JSON.stringify(payload));
     pf.style.width = '100%';
     pl.textContent = 'Готово! Данные обновлены для всех ✓';
@@ -509,11 +483,12 @@ async function openDashboard(){
     pl.textContent = '⚠ Ошибка сохранения: ' + e.message;
     pl.style.color = '#c0392b';
     btn.disabled = false;
-    console.error('Supabase error:', e);
+    console.error(e);
   }
 }
 
 function buildPayload(){
+  // Combine sales data into RAW format {product: {date: [leads,deals,budget]}}
   const RAW = {};
   const productMap = {
     col: parsedData.col,
@@ -527,14 +502,17 @@ function buildPayload(){
     RAW[nameMap[key]] = data.daily;
   }
 
+  // Ad spend
+  const AD_SPEND = parsedData.ad ? parsedData.ad.ad : {};
+
+  // Managers
   const MANAGERS = {};
   for(const [key, data] of Object.entries(productMap)){
     if(!data) continue;
     MANAGERS[nameMap[key]] = data.managers;
   }
 
-  // AD_SPEND managed separately via ad.html
-  return { RAW, MANAGERS, AD_SPEND: {}, updatedAt: new Date().toISOString() };
+  return { RAW, AD_SPEND, MANAGERS, updatedAt: new Date().toISOString() };
 }
 </script>
 </body>
