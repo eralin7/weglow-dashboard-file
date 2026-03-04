@@ -1348,10 +1348,8 @@ function initDynamicUI() {
   });
 }
 initDynamicUI();
-// Show loading state while Supabase loads
-const _badge = document.getElementById('data-badge');
-if (_badge) _badge.textContent = '⟳ Загрузка данных...';
-// Load from Supabase FIRST, then render
+render(); // render immediately with embedded data so page is not blank
+// Then load fresh data from Supabase (will re-render with live data)
 loadFromSupabase();
 
 // ── Keep Render alive + auto-refresh data every 60s ──────────
