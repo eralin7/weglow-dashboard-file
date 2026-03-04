@@ -353,7 +353,7 @@ function showStatus(text, type){
 // ══════════════════════════════════════════════
 const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 function fmt(n){ return (n||0).toLocaleString('ru-RU'); }
-function fmtM(n){ return n>=1e6?(n/1e6).toFixed(2)+' М':n>=1e3?(n/1e3).toFixed(0)+'К':fmt(n); }
+function fmtM(n){ return Math.round(n).toLocaleString('ru-RU'); }
 
 function getMonths(){
   const months = new Set();

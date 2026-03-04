@@ -615,8 +615,8 @@ const isoToDisp = s => { const [y,m,d]=s.split('-'); return `${d}.${m}.${y}`; };
 const daysInMonth=(m,y)=>new Date(y,m,0).getDate();
 const getMonthKey=d=>`${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
 const fmt=n=>Math.round(n).toLocaleString('ru-RU');
-const fmtM=n=>n>=1e6?(n/1e6).toFixed(2)+' М ₸':fmt(n)+' ₸';
-const fmtK=n=>n>=1e6?(n/1e6).toFixed(1)+'М':n>=1e3?(n/1e3).toFixed(0)+'К':String(n);
+const fmtM=n=>fmt(Math.round(n))+' ₸';
+const fmtK=n=>fmt(Math.round(n));
 function getDatesInRange(from,to){
   const res=[]; let cur=parseDate(from); const end=parseDate(to);
   while(cur<=end){res.push(fmtDate(cur));cur=new Date(cur.getTime()+86400000);}
