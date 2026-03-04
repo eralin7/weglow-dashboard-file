@@ -309,36 +309,49 @@ function parseSales(rows, keyHint){
   }
 
   // ── Detect columns by header name ──────────────────────────────
-  const hi = h => headers.findIndex(x => x.toLowerCase().includes(h.toLowerCase()));
+  // Exact match first, then partial
+  const hiExact = h => headers.findIndex(x => x.toLowerCase() === h.toLowerCase());
+  const hi      = h => headers.findIndex(x => x.toLowerCase().includes(h.toLowerCase()));
 
-  // Order date — find by header
-  let altOrderIdx = hi('дата заказа');
-  if(altOrderIdx < 0) altOrderIdx = hi('заказ');
+  // Order date — exact 'дата заказа' first, avoid 'дата первого заказа'
+  let altOrderIdx = hiExact('дата заказа');
+  if(altOrderIdx < 0) altOrderIdx = hiExact('дата заказа ');
+  if(altOrderIdx < 0) {
+    // Find col whose header is exactly or closely "дата заказа" (not "первого")
+    altOrderIdx = headers.findIndex(x => {
+      const l = x.toLowerCase();
+      return l.includes('дата заказа') && !l.includes('первого');
+    });
+  }
+  if(altOrderIdx < 0) altOrderIdx = hiExact('date заказа');
   if(altOrderIdx >= 0) orderColIdx = altOrderIdx;
 
   // Manager column
-  let mgrColIdx = hi('ответственный');
+  let mgrColIdx = hiExact('ответственный');
+  if(mgrColIdx < 0) mgrColIdx = hi('ответственный');
   if(mgrColIdx < 0) mgrColIdx = hi('менеджер');
-  if(mgrColIdx < 0) mgrColIdx = 3; // fallback
+  if(mgrColIdx < 0) mgrColIdx = 3;
 
   // Created date column
   let createdColIdx = hi('дата создания');
   if(createdColIdx < 0) createdColIdx = hi('создан');
-  if(createdColIdx < 0) createdColIdx = 4; // fallback
+  if(createdColIdx < 0) createdColIdx = 4;
 
   // Budget column
-  let budgetColIdx = hi('бюджет');
+  let budgetColIdx = hiExact('бюджет ₸');
+  if(budgetColIdx < 0) budgetColIdx = hi('бюджет');
   if(budgetColIdx < 0) budgetColIdx = hi('сумма сделки');
   if(budgetColIdx < 0) budgetColIdx = hi('выручка');
-  if(budgetColIdx < 0) budgetColIdx = 2; // fallback
+  if(budgetColIdx < 0) budgetColIdx = 2;
 
   // Stage column
-  let stageColIdx = hi('этап сделки');
+  let stageColIdx = hiExact('этап сделки');
+  if(stageColIdx < 0) stageColIdx = hi('этап сделки');
   if(stageColIdx < 0) stageColIdx = hi('этап');
 
-  // Valid stages for deals/budget count
-  const VALID_STAGES = new Set([
-    'ЗАКАЗ','ЗАКАЗ НА ПОДТВЕРЖДЕНИЕ','КУРЬЕРСКАЯ ДОСТАВКА','Успешно реализовано'
+  // Valid stages for deals/budget count (case-insensitive)
+  const VALID_STAGES_LOWER = new Set([
+    'заказ','заказ на подтверждение','курьерская доставка','успешно реализовано'
   ]);
 
   const daily = {}; // date -> [leads, deals, budget]
@@ -355,7 +368,7 @@ function parseSales(rows, keyHint){
     const budgetRaw  = (row[budgetColIdx] ||'0').replace(/[\s\xa0₸,]/g,'');
     const budget     = parseFloat(budgetRaw)||0;
     const stage      = stageColIdx >= 0 ? (row[stageColIdx]||'').trim() : '';
-    const validStage = stageColIdx < 0 || VALID_STAGES.has(stage);
+    const validStage = stageColIdx < 0 || VALID_STAGES_LOWER.has(stage.toLowerCase());
 
     // ── Leads: by created date (all rows) ──────────────────────
     const cDate = extractDate(createdRaw);
