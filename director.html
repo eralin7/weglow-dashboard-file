@@ -109,6 +109,20 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
   .content{padding:20px 16px;}
   .history-card{padding:20px 16px;}
 }
+
+/* ── ROP STATS ── */
+.rop-table { width:100%; border-collapse:collapse; font-size:13px; }
+.rop-table th { padding:9px 14px; text-align:left; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); border-bottom:2px solid var(--line); font-weight:600; }
+.rop-table td { padding:11px 14px; border-bottom:1px solid var(--line); }
+.rop-table tr:last-child td { border-bottom:none; }
+.rop-table tr:hover td { background:var(--bg); }
+.rop-name { font-weight:700; color:var(--ink); }
+.rop-mgr  { font-size:11px; color:var(--muted); margin-top:2px; }
+.rop-bar  { height:6px; background:var(--line); border-radius:3px; overflow:hidden; margin-top:5px; }
+.rop-fill { height:100%; border-radius:3px; transition:width .5s; }
+.pct-g { color:#16a34a; font-weight:700; }
+.pct-y { color:#ca8a04; font-weight:700; }
+.pct-r { color:#dc2626; font-weight:700; }
 </style>
 </head>
 <body>
@@ -205,6 +219,20 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
         <div style="color:var(--muted);padding:24px;text-align:center;">Загрузка...</div>
       </div>
     </div>
+
+    <!-- ROP PLAN/FACT -->
+    <div class="history-card" style="margin-top:24px">
+      <div class="history-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span>👥 РОП — план / факт</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <select class="month-sel" id="rop-month-sel" onchange="loadRopStats()" style="font-size:12px;padding:5px 10px"></select>
+          <button onclick="loadRopStats()" style="padding:5px 14px;border-radius:7px;background:var(--acc-l);color:var(--acc);border:1px solid var(--acc-l);font-weight:600;cursor:pointer;font-size:12px">↺ Обновить</button>
+        </div>
+      </div>
+      <div id="rop-stats-wrap" style="margin-top:16px">
+        <div style="color:var(--muted);padding:24px;text-align:center;">Загрузка...</div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -274,6 +302,16 @@ async function loadPlans(){
     buildMonthSelector();
     renderHistory();
     fillForm();
+    // Populate ROP month selector with same months
+    const ropSel = document.getElementById('rop-month-sel');
+    if(ropSel){
+      ropSel.innerHTML = '';
+      const monthOpts = document.getElementById('month-sel').options;
+      for(const opt of monthOpts){
+        ropSel.appendChild(opt.cloneNode(true));
+      }
+      if(ropSel.options.length) { ropSel.value = ropSel.options[0].value; loadRopStats(); }
+    }
   } catch(e){
     setBadge('Ошибка','err');
     console.error(e);
@@ -512,6 +550,126 @@ function toast(text, type='ok'){
 // ══════════════════════════════════════════════
 function init(){ loadPlans(); }
 if(sessionStorage.getItem('dir_auth')==='1') init();
+
+
+// ═══════════════════ ROP PLAN / FACT ═══════════════════════════
+async function loadRopStats() {
+  const wrap = document.getElementById('rop-stats-wrap');
+  const sel  = document.getElementById('rop-month-sel');
+  wrap.innerHTML = '<div style="color:var(--muted);padding:24px;text-align:center;">⟳ Загрузка...</div>';
+
+  try {
+    const month = sel.value;
+    if (!month) { wrap.innerHTML = '<div style="color:var(--muted);padding:16px">Выберите месяц</div>'; return; }
+
+    // 1. Load all ROP managers assignments
+    const allMgrs = await sbGet(`${SUPABASE_URL}/rest/v1/weglow_rop_managers?select=rop,name`);
+    const ropGroups = {};
+    for (const r of allMgrs) {
+      if (!ropGroups[r.rop]) ropGroups[r.rop] = [];
+      ropGroups[r.rop].push(r.name);
+    }
+
+    // 2. Load plans for this ROP month
+    const planRows = await sbGet(`${SUPABASE_URL}/rest/v1/weglow_mgr_plans?month=eq.${month}&select=manager,plan,rop`);
+    const mgrPlans = {};
+    for (const r of planRows) mgrPlans[r.manager] = { plan: r.plan || 0, rop: r.rop };
+
+    // 3. Load actual sales from weglow_data
+    const dataRows = await sbGet(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data`);
+    const rawData = dataRows[0]?.data?.RAW || {};
+
+    // Compute fact per manager for this month
+    const [my, mm] = month.split('-').map(Number);
+    const mgrFact = {};
+    for (const [prod, dates] of Object.entries(rawData)) {
+      for (const [dateStr, vals] of Object.entries(dates)) {
+        const [dd, dmo, dy] = dateStr.split('.').map(Number);
+        if (dy === my && dmo === mm) {
+          // vals = [leads, deals, budget] — budget is revenue
+          // We can't split by manager from RAW (only totals per day)
+          // So we'll use mgr_plans fact from weglow_mgr_plans if available
+        }
+      }
+    }
+
+    // 4. Load actual per-manager fact from MANAGERS in weglow_data
+    const managers = dataRows[0]?.data?.MANAGERS || {};
+    // MANAGERS has all-time data; we scale by month ratio
+    const rawByProd = {};
+    for (const [prod, dates] of Object.entries(rawData)) {
+      let monthTotal = 0, allTotal = 0;
+      for (const [dateStr, vals] of Object.entries(dates)) {
+        const [dd, dmo, dy] = dateStr.split('.').map(Number);
+        allTotal += vals[2] || 0;
+        if (dy === my && dmo === mm) monthTotal += vals[2] || 0;
+      }
+      rawByProd[prod] = { monthTotal, allTotal, ratio: allTotal > 0 ? monthTotal / allTotal : 0 };
+    }
+
+    // Build ROP summary
+    const ropNames = Object.keys(ropGroups).sort();
+    if (!ropNames.length) {
+      wrap.innerHTML = '<div style="color:var(--muted);padding:16px;text-align:center">Нет данных о группах РОП.<br>Настройте в кабинете РОП.</div>';
+      return;
+    }
+
+    let html = `<table class="rop-table">
+      <thead><tr>
+        <th>РОП / Менеджер</th>
+        <th>Менеджеров</th>
+        <th>План ₸</th>
+        <th>Факт ₸ (оценка)</th>
+        <th>%</th>
+      </tr></thead><tbody>`;
+
+    const fmtM = v => v >= 1000000 ? (v/1000000).toFixed(1)+'M' : v >= 1000 ? (v/1000).toFixed(0)+'K' : v.toString();
+
+    for (const rop of ropNames) {
+      const mgrs = ropGroups[rop] || [];
+      let ropPlan = 0, ropFact = 0;
+
+      for (const mgr of mgrs) {
+        const mp = mgrPlans[mgr];
+        if (mp) ropPlan += mp.plan || 0;
+
+        // Estimate fact: proportional from MANAGERS all-time data
+        for (const [prod, mgrList] of Object.entries(managers)) {
+          const found = (mgrList || []).find(m => m.name === mgr);
+          if (found && rawByProd[prod]) {
+            ropFact += Math.round((found.budget || 0) * rawByProd[prod].ratio);
+          }
+        }
+      }
+
+      const pct = ropPlan > 0 ? Math.round(ropFact / ropPlan * 100) : 0;
+      const pctCls = pct >= 80 ? 'pct-g' : pct >= 50 ? 'pct-y' : 'pct-r';
+      const barColor = pct >= 80 ? '#16a34a' : pct >= 50 ? '#ca8a04' : '#dc2626';
+      const barW = Math.min(100, pct);
+
+      html += `<tr>
+        <td>
+          <div class="rop-name">${rop}</div>
+          <div class="rop-mgr">${mgrs.join(', ') || '—'}</div>
+        </td>
+        <td>${mgrs.length}</td>
+        <td>${fmtM(ropPlan)} ₸</td>
+        <td>${fmtM(ropFact)} ₸</td>
+        <td>
+          <span class="${pctCls}">${pct}%</span>
+          <div class="rop-bar"><div class="rop-fill" style="width:${barW}%;background:${barColor}"></div></div>
+        </td>
+      </tr>`;
+    }
+
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+
+  } catch(e) {
+    wrap.innerHTML = `<div style="color:#dc2626;padding:16px">⚠ Ошибка: ${e.message}</div>`;
+    console.error(e);
+  }
+}
 </script>
 </body>
 </html>

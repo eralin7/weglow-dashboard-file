@@ -139,17 +139,6 @@ input[type=file]{display:none;}
       <div class="fc-filename" id="fname-coffee"></div>
     </div>
 
-    <!-- Реклама -->
-    <div class="file-card" id="card-ad" style="--c:#6366f1"
-         onclick="document.getElementById('input-ad').click()"
-         ondragover="handleDrag(event,'ad')" ondragleave="handleDragLeave('ad')" ondrop="handleDrop(event,'ad')">
-      <input type="file" id="input-ad" accept=".csv" onchange="handleFile(this,'ad')">
-      <span class="fc-icon">📊</span>
-      <div class="fc-title">Расходы на рекламу</div>
-      <div class="fc-sub">Коллаген + Ummi + Кофе</div>
-      <div class="fc-status fc-wait" id="status-ad">⟳ Ожидание файла</div>
-      <div class="fc-filename" id="fname-ad"></div>
-    </div>
   </div>
 
   <div class="progress-wrap" id="progress-wrap">
@@ -161,7 +150,7 @@ input[type=file]{display:none;}
     <button class="go-btn" id="go-btn" onclick="openDashboard()" disabled>
       <span>Открыть дашборд</span><span class="arrow">→</span>
     </button>
-    <div class="files-count" id="files-count">Загружено: 0 / 4 файлов</div>
+    <div class="files-count" id="files-count">Загружено: 0 / 3 файлов</div>
   </div>
 
   <div class="instr">
@@ -222,7 +211,7 @@ if(sessionStorage.getItem('wg_auth')==='1'){
 // ════════════════════════════════════════════════════════
 // FILE HANDLING
 // ════════════════════════════════════════════════════════
-const parsedData = {col:null, ummi:null, coffee:null, ad:null};
+const parsedData = {col:null, ummi:null, coffee:null};
 
 function handleDrag(e,key){e.preventDefault();document.getElementById('card-'+key).classList.add('drag-over');}
 function handleDragLeave(key){document.getElementById('card-'+key).classList.remove('drag-over');}
@@ -264,8 +253,8 @@ function setStatus(key, type, text){
 
 function updateGoBtn(){
   const count = Object.values(parsedData).filter(v=>v!==null).length;
-  document.getElementById('files-count').textContent = `Загружено: ${count} / 4 файлов`;
-  document.getElementById('go-btn').disabled = count < 4;
+  document.getElementById('files-count').textContent = `Загружено: ${count} / 3 файлов`;
+  document.getElementById('go-btn').disabled = count < 3;
 }
 
 // ════════════════════════════════════════════════════════
@@ -503,7 +492,7 @@ function buildPayload(){
   }
 
   // Ad spend
-  const AD_SPEND = parsedData.ad ? parsedData.ad.ad : {};
+  // AD_SPEND managed via ad.html cabinet
 
   // Managers
   const MANAGERS = {};
