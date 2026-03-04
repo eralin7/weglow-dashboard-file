@@ -308,29 +308,56 @@ function parseSales(rows, keyHint){
     else return {error:`Неизвестный формат (${ncols} колонок)`};
   }
 
-  // Verify order date column header
-  const orderHeader = (headers[orderColIdx]||'').toLowerCase();
-  if(!orderHeader.includes('дата') && !orderHeader.includes('заказ')){
-    // Try to find order date column dynamically
-    const altIdx = headers.findIndex(h=>h.toLowerCase().includes('заказ'));
-    if(altIdx>=0) orderColIdx = altIdx;
-  }
+  // ── Detect columns by header name ──────────────────────────────
+  const hi = h => headers.findIndex(x => x.toLowerCase().includes(h.toLowerCase()));
+
+  // Order date — find by header
+  let altOrderIdx = hi('дата заказа');
+  if(altOrderIdx < 0) altOrderIdx = hi('заказ');
+  if(altOrderIdx >= 0) orderColIdx = altOrderIdx;
+
+  // Manager column
+  let mgrColIdx = hi('ответственный');
+  if(mgrColIdx < 0) mgrColIdx = hi('менеджер');
+  if(mgrColIdx < 0) mgrColIdx = 3; // fallback
+
+  // Created date column
+  let createdColIdx = hi('дата создания');
+  if(createdColIdx < 0) createdColIdx = hi('создан');
+  if(createdColIdx < 0) createdColIdx = 4; // fallback
+
+  // Budget column
+  let budgetColIdx = hi('бюджет');
+  if(budgetColIdx < 0) budgetColIdx = hi('сумма сделки');
+  if(budgetColIdx < 0) budgetColIdx = hi('выручка');
+  if(budgetColIdx < 0) budgetColIdx = 2; // fallback
+
+  // Stage column
+  let stageColIdx = hi('этап сделки');
+  if(stageColIdx < 0) stageColIdx = hi('этап');
+
+  // Valid stages for deals/budget count
+  const VALID_STAGES = new Set([
+    'ЗАКАЗ','ЗАКАЗ НА ПОДТВЕРЖДЕНИЕ','КУРЬЕРСКАЯ ДОСТАВКА','Успешно реализовано'
+  ]);
 
   const daily = {}; // date -> [leads, deals, budget]
-  const managers = {}; // name -> {leads, deals, budget}
+  const managers = {}; // name -> {leads, deals, budget, daily}
   let totalLeads=0, totalDeals=0, totalBudget=0;
 
   for(let i=1;i<rows.length;i++){
     const row = rows[i];
     if(!row[0]) continue;
 
-    const manager = (row[3]||'').trim();
-    const createdRaw = (row[4]||'').trim();
-    const orderRaw = (orderColIdx < row.length ? row[orderColIdx]||'' : '').trim();
-    const budgetRaw = (row[2]||'0').replace(/[\s\xa0₸,]/g,'');
-    const budget = parseFloat(budgetRaw)||0;
+    const manager    = (row[mgrColIdx]   ||'').trim();
+    const createdRaw = (row[createdColIdx]||'').trim();
+    const orderRaw   = (orderColIdx < row.length ? row[orderColIdx]||'' : '').trim();
+    const budgetRaw  = (row[budgetColIdx] ||'0').replace(/[\s\xa0₸,]/g,'');
+    const budget     = parseFloat(budgetRaw)||0;
+    const stage      = stageColIdx >= 0 ? (row[stageColIdx]||'').trim() : '';
+    const validStage = stageColIdx < 0 || VALID_STAGES.has(stage);
 
-    // Parse created date → leads
+    // ── Leads: by created date (all rows) ──────────────────────
     const cDate = extractDate(createdRaw);
     if(cDate){
       if(!daily[cDate]) daily[cDate]=[0,0,0];
@@ -339,15 +366,13 @@ function parseSales(rows, keyHint){
       if(manager){
         if(!managers[manager]) managers[manager]={leads:0,deals:0,budget:0,daily:{}};
         managers[manager].leads++;
-        if(cDate){
-          if(!managers[manager].daily[cDate]) managers[manager].daily[cDate]=[0,0,0];
-          managers[manager].daily[cDate][0]++;
-        }
+        if(!managers[manager].daily[cDate]) managers[manager].daily[cDate]=[0,0,0];
+        managers[manager].daily[cDate][0]++;
       }
     }
 
-    // Parse order date → deals + budget
-    const oDate = extractDate(orderRaw);
+    // ── Deals + budget: by order date, only valid stages ───────
+    const oDate = validStage ? extractDate(orderRaw) : null;
     if(oDate){
       if(!daily[oDate]) daily[oDate]=[0,0,0];
       daily[oDate][1]++;
@@ -358,11 +383,9 @@ function parseSales(rows, keyHint){
         if(!managers[manager]) managers[manager]={leads:0,deals:0,budget:0,daily:{}};
         managers[manager].deals++;
         managers[manager].budget+=budget;
-        if(oDate){
-          if(!managers[manager].daily[oDate]) managers[manager].daily[oDate]=[0,0,0];
-          managers[manager].daily[oDate][1]++;
-          managers[manager].daily[oDate][2]+=budget;
-        }
+        if(!managers[manager].daily[oDate]) managers[manager].daily[oDate]=[0,0,0];
+        managers[manager].daily[oDate][1]++;
+        managers[manager].daily[oDate][2]+=budget;
       }
     }
   }
