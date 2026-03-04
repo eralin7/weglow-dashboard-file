@@ -543,7 +543,7 @@ function renderDropdown(q=''){
   const dd = document.getElementById('mgr-dropdown');
   const available = getAvailableMgrs(q);
   if(!available.length){
-    dd.innerHTML = `<div class="dd-empty">${allSiteMgrs.length===0?'Сначала загрузите данные через index.html':'Все менеджеры уже добавлены'}</div>`;
+    dd.innerHTML = `<div class="dd-empty">${allSiteMgrs.length===0?'Нет данных':'Все менеджеры уже добавлены'}</div>`;
     return;
   }
   dd.innerHTML = available.map(name=>{
