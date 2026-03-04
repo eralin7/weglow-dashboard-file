@@ -1333,6 +1333,40 @@ initDynamicUI();
 render();
 // Load fresh data from Supabase (will re-render when loaded)
 loadFromSupabase();
+
+// ── Keep Render alive + auto-refresh data every 60s ──────────
+const RENDER_URL = 'https://weglow-autosync.onrender.com';
+
+async function pingRender() {
+  try {
+    const res = await fetch(RENDER_URL);
+    const data = await res.json();
+    // Update badge with sync status from server
+    const badge = document.getElementById('data-badge');
+    if (badge && data.lastSync) {
+      const dt = new Date(data.lastSync);
+      const timeStr = dt.toLocaleString('ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
+      const hasErrors = data.syncErrors && data.syncErrors.length > 0;
+      badge.textContent = hasErrors
+        ? '⚠ Ошибки синка: ' + data.syncErrors[0]
+        : '✓ Синк: ' + timeStr;
+      badge.style.color = hasErrors ? '#f87171' : 'rgba(255,255,255,.4)';
+    }
+  } catch(e) {
+    console.warn('Render ping failed:', e.message);
+  }
+}
+
+// Ping Render every 10 min to prevent sleep
+setInterval(pingRender, 10 * 60 * 1000);
+
+// Reload data from Supabase every 60s (matches server sync interval)
+setInterval(() => {
+  loadFromSupabase();
+}, 60 * 1000);
+
+// First ping immediately
+pingRender();
 </script>
 </body>
 </html>

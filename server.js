@@ -1,312 +1,244 @@
-require('dotenv').config();
-const express = require('express');
-const cron    = require('node-cron');
-const axios   = require('axios');
-const { createClient } = require('@supabase/supabase-js');
+const https = require('https');
+const http  = require('http');
 
-const app = express();
-app.use(express.json());
-
-// ════════════════════════════════════════════════════════════════
-// КОНФИГУРАЦИЯ
-// ════════════════════════════════════════════════════════════════
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_KEY;
+const SUPABASE_URL = 'https://bdyakgmeibpdkisbiykt.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkeWFrZ21laWJwZGtpc2JpeWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTQzOTMsImV4cCI6MjA4Nzc5MDM5M30.nA187grJR6XFQRmTP6WOM-6-1dZK1EzYNNP2JH9aAMg';
 
 const ACCOUNTS = [
-  {
-    name:   'Коллаген',
-    domain: 'weglow.amocrm.ru',
-    token:  'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6ImRjNjU5MGI2MmExNjJjMjBiMjY0Mzk2ZjY2NTRjMWQyYWQzNjY4Yzc3MjdmOTQ2YTcwZDAyN2I0MjkyYWQ3Yzk0ZjAwNGEzMzQyZmJjNmM5In0.eyJhdWQiOiI4NWRhNjc3ZC0xOGUyLTQ5ZjktYjQ1NC1jYTNhMmVhZTlmMWIiLCJqdGkiOiJkYzY1OTBiNjJhMTYyYzIwYjI2NDM5NmY2NjU0YzFkMmFkMzY2OGM3NzI3Zjk0NmE3MGQwMjdiNDI5MmFkN2M5NGYwMDRhMzM0MmZiYzZjOSIsImlhdCI6MTc3MjQwMzA5OCwibmJmIjoxNzcyNDAzMDk4LCJleHAiOjE4ODM4NjU2MDAsInN1YiI6IjExNTQ2MzQ2IiwiZ3JhbnRfdHlwZSI6IiIsImFjY291bnRfaWQiOjMxOTYyMzI2LCJiYXNlX2RvbWFpbiI6ImFtb2NybS5ydSIsInZlcnNpb24iOjIsInNjb3BlcyI6WyJwdXNoX25vdGlmaWNhdGlvbnMiLCJmaWxlcyIsImNybSIsIm5vdGlmaWNhdGlvbnMiXSwiaGFzaF91dWlkIjoiNDI5ZTFjZTgtMDdlZC00MjkyLWIwZTYtZGUzYTE3ZDJlMDlhIiwiYXBpX2RvbWFpbiI6ImFwaS1iLmFtb2NybS5ydSJ9.Kc8HmfCitHEXupyER6UgPlmm1tj47fd1eUBUIkRy9irdKrBhXnLkD7qCgKVipG-QG5Uv4213zu-8s5qYzjoRtNRt8LSmnvx_jLm3igTo2iXRdnPDVlc488oiH8EVKlwuZmpE85eg2t-oJKLm9OuLiVS67SfTedXQLJpDGiUHS1WopOZFIEec9pT173UL4IEAeDz5kZXAxAbz2i0DxQ2m4pESkk3oO_b22YsMrxXRf40b34oPnRaJsM9xcLZ_xxfbnZkNE36j4chGNTkyi0nAwwnnFsuZyAU0JJTev4Byb88q20ellOadvXO-MZEhSfe7SS7sUbSVSjvABoAvTEMrEA',
-  },
-  {
-    name:   'Ummi',
-    domain: 'erbbolx.amocrm.ru',
-    token:  'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6ImM5NDFiOTIxMzQ0MmM2NThiYWNhZjg0MjBmNjZmYmE3MmRmYWNjNGQ0YTRjODZlOWUzOGM0NWRkNGUwMTQ1ZGQ1NjFiNTQ4N2UyNzkzNDhlIn0.eyJhdWQiOiI5OGI5MDQ1OC1jMThiLTRjYTItYWRmMS1mNzFhMDc0ZGZiYzMiLCJqdGkiOiJjOTQxYjkyMTM0NDJjNjU4YmFjYWY4NDIwZjY2ZmJhNzJkZmFjYzRkNGE0Yzg2ZTllMzhjNDVkZDRlMDE0NWRkNTYxYjU0ODdlMjc5MzQ4ZSIsImlhdCI6MTc3MjQwMzE4MiwibmJmIjoxNzcyNDAzMTgyLCJleHAiOjE4ODEzNjAwMDAsInN1YiI6IjEzMjU1OTE0IiwiZ3JhbnRfdHlwZSI6IiIsImFjY291bnRfaWQiOjMyNzgzNjE0LCJiYXNlX2RvbWFpbiI6ImFtb2NybS5ydSIsInZlcnNpb24iOjIsInNjb3BlcyI6WyJwdXNoX25vdGlmaWNhdGlvbnMiLCJmaWxlcyIsImNybSIsIm5vdGlmaWNhdGlvbnMiXSwiaGFzaF91dWlkIjoiNDNiZGQyNTktMTBmZS00MDI5LTlkZTMtNGRlYzM0ZmUxYjM3IiwiYXBpX2RvbWFpbiI6ImFwaS1iLmFtb2NybS5ydSJ9.ZvZObqcilIqFbQZdujidfvDqs-AnEQ9i29SrZBRF2lZ2Dz_Em3RGeM4iwMVXkZl0m2O0JSKoJaUtFK1PGC8ArFBZPbpNz0PPcMILZ_xQiKj5eUnuQAyO-09RSupxvQ9k3pbfl1VFC2edZsr0M918B5S4aDLCUUB6zFvZ3C_n9JRzy85D93b_9gWTuEgSOtXezdyvOmEOK9Qwdczwnjyy94cA6k6aEAKZpJK6HJSGvBn5Eyfo9zt4oFIbJK2GTC9ckUx2eaOgQVgqav-0mw3j3XEv0W3A2WZs-e4hg0SjdA6mEhKUjsxjzEwb-ljuOz7r2qFlD8HO5FtAF2HPKKiTRg',
-  },
-  {
-    name:   'Кофе',
-    domain: 'mushrooms.amocrm.ru',
-    token:  'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6Ijg5OGJjZTBmNTU2NjY2NWY2N2E2MzI4ZWM2OTE3ZjMzOWM5Zjk3YTEzZDdlMDJhMmZiOTFjZjBlNzU4NTdkZmM4YWJiODc2YmIxN2EwMTZhIn0.eyJhdWQiOiJmNDliNzY0ZC1iM2EwLTQzZjQtODczYi0yYzk2ZGEwYmEyNmMiLCJqdGkiOiI4OThiY2UwZjU1NjY2NjVmNjdhNjMyOGVjNjkxN2YzMzljOWY5N2ExM2Q3ZTAyYTJmYjkxY2YwZTc1ODU3ZGZjOGFiYjg3NmJiMTdhMDE2YSIsImlhdCI6MTc3MjQwMzI3NiwibmJmIjoxNzcyNDAzMjc2LCJleHAiOjE4NzU4MzA0MDAsInN1YiI6IjIzOTc4NjUiLCJncmFudF90eXBlIjoiIiwiYWNjb3VudF9pZCI6MzI4ODY4NzAsImJhc2VfZG9tYWluIjoiYW1vY3JtLnJ1IiwidmVyc2lvbiI6Miwic2NvcGVzIjpbInB1c2hfbm90aWZpY2F0aW9ucyIsImZpbGVzIiwiY3JtIiwibm90aWZpY2F0aW9ucyJdLCJoYXNoX3V1aWQiOiJiYTViNzEwMi0yNjdmLTQ0ZDQtODFkZi05OTRkZGUzYzM3MDUiLCJhcGlfZG9tYWluIjoiYXBpLWIuYW1vY3JtLnJ1In0.CaKuHGL2AumUUfY4bN5_OLJ2TivVQmPMapSkRAa5ltcfAGACt443RWFTvl64uSFG57CBnpy5Zu3tsHaatJIA2_0lXKLao2svbsL9a99QbUTiTN34FPgiQLuzXc19UTmnP7FE73ULlZ4CfTvAZ1dVGL5VlytmsEwtgDobK0vzhBIWSvcVd5VPRP5EkxMFZT8qH3vevJjhEsCKFvoomXLDn7zWSBmN8Lw7TnRUZ9N8bYMrUeehjPVu5zsEJsT4HfQQKdnEqB5LXk8WngTLbrv9rl3NKGeQBKlNYfre_b0O2iEZ2PNf8d0Q8MBOhNlIrUSPJeASk9shTABo8709VJ3ezg',
-  },
+  { name:'Коллаген', domain:'weglow.amocrm.ru',    token:'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6IjIyODdkZTdmMzY4OWEzYTE0Y2Q2MmUxZDI4ZTRjZDkyOWEwMjYyNWJhNmJmZWYwYWQzOTRmZjhkY2M3MzFmNTM2ZDQ5YzdkZGQ5YmU2NDZkIn0.eyJhdWQiOiI4NWRhNjc3ZC0xOGUyLTQ5ZjktYjQ1NC1jYTNhMmVhZTlmMWIiLCJqdGkiOiIyMjg3ZGU3ZjM2ODlhM2ExNGNkNjJlMWQyOGU0Y2Q5MjlhMDI2MjViYTZiZmVmMGFkMzk0ZmY4ZGNjNzMxZjUzNmQ0OWM3ZGRkOWJlNjQ2ZCIsImlhdCI6MTc3MjY1NzYyNCwibmJmIjoxNzcyNjU3NjI0LCJleHAiOjE4OTg5ODU2MDAsInN1YiI6IjExNTQ2MzQ2IiwiZ3JhbnRfdHlwZSI6IiIsImFjY291bnRfaWQiOjMxOTYyMzI2LCJiYXNlX2RvbWFpbiI6ImFtb2NybS5ydSIsInZlcnNpb24iOjIsInNjb3BlcyI6WyJwdXNoX25vdGlmaWNhdGlvbnMiLCJmaWxlcyIsImNybSIsIm5vdGlmaWNhdGlvbnMiXSwiaGFzaF91dWlkIjoiZjZmNDFlM2EtZGE4Yy00YWE3LWFhMGEtZTEyN2IzODE2NzVjIiwiYXBpX2RvbWFpbiI6ImFwaS1iLmFtb2NybS5ydSJ9.IAfT5CDTKXg_UTQKcVFfrS-ZlF3ZSq7a3Mdf--jy8Z2C1YvprTwcQg2SH2b2FsEVAKDqrSgx8Lc-YblLqv4c--vLzgB5lsr-xafuI9af6QWmrsdk_NXypl7CWhv4N84StT_14icwn_AK2k9xknvagNucqrIssW57ua9tmgddFP3x71mCbia8sFmUdTNW8wB2HJNU7jo6drEmo6VxWSGUxzohV3ux3D4ZjhGsDvEngGfLI4AHrbPsf2WmWFn9mATN0kd4b742Bu1iOELKDnZeu45a63p7AQBd2XUIwxfHCbwmTOMMB-Ea-7HkmDBv-buThHWU-Vcj0krLxx3U0NFuwA' },
+  { name:'Ummi',     domain:'erbbolx.amocrm.ru',   token:'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6ImFjZjgwYjY5MzFhMTNmNzRkOGE3ZTdlZWVhODQ2MjU2ZDQzM2Q3N2QxZmUxZTRjYjMxM2FhYTMxMmRhY2NjNDM1YzE3NTdkMjI1NTM1ZjM4In0.eyJhdWQiOiI5OGI5MDQ1OC1jMThiLTRjYTItYWRmMS1mNzFhMDc0ZGZiYzMiLCJqdGkiOiJhY2Y4MGI2OTMxYTEzZjc0ZDhhN2U3ZWVlYTg0NjI1NmQ0MzNkNzdkMWZlMWU0Y2IzMTNhYWEzMTJkYWNjYzQzNWMxNzU3ZDIyNTUzNWYzOCIsImlhdCI6MTc3MjY1NzY4OSwibmJmIjoxNzcyNjU3Njg5LCJleHAiOjE4OTkwNzIwMDAsInN1YiI6IjEzMjU1OTE0IiwiZ3JhbnRfdHlwZSI6IiIsImFjY291bnRfaWQiOjMyNzgzNjE0LCJiYXNlX2RvbWFpbiI6ImFtb2NybS5ydSIsInZlcnNpb24iOjIsInNjb3BlcyI6WyJwdXNoX25vdGlmaWNhdGlvbnMiLCJmaWxlcyIsImNybSIsIm5vdGlmaWNhdGlvbnMiXSwiaGFzaF91dWlkIjoiMWFhNzhkNzEtYTIxMC00ODVhLWI1NmUtY2JiMDYyNjA3YjJmIiwiYXBpX2RvbWFpbiI6ImFwaS1iLmFtb2NybS5ydSJ9.kBk7CpSC3CsMsD-xfDsP-4cDiTNqG9FnbVisIMgsK9pvEfwf-QKuimb2JAOEhsrJXjO-iswi8dTZJL6uee0PHhpjZMRj03-ieO190VpzR1nbCjUffjhC6TNVvHmSsfJNs8wQKu-3TVXldnNT1sQyejCPHDdvLom4GXFePTNsClOt_Q3jZadxvcAKTt4VOjgKm2WTLfZWt3afjsj1GHPBW0KncvLpZvbXWcrfyaH2GusEuGP5hFfU4CXN5kUo03CQmc8TH1LkIaL8uHNIzbhJBZdg4sc4jDmLDjRw6vV-1J8Cas9TvYgEkJ7Rle4PSOLhce-Cnywch_a-bd7DbRKkPg' },
+  { name:'Кофе',     domain:'mushrooms.amocrm.ru',  token:'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6ImJlZmVhMzE1OGNiMjc4ZjgxYmIwYTllZDcyNDRkMDFjNDdkMDJiMWY1Zjk3NzcyOGJlZGNjY2Q5ODBhMGU4YmRiYzVkNGNlNzYzOTcwZjRjIn0.eyJhdWQiOiJmNDliNzY0ZC1iM2EwLTQzZjQtODczYi0yYzk2ZGEwYmEyNmMiLCJqdGkiOiJiZWZlYTMxNThjYjI3OGY4MWJiMGE5ZWQ3MjQ0ZDAxYzQ3ZDAyYjFmNWY5Nzc3MjhiZWRjY2NkOTgwYTBlOGJkYmM1ZDRjZTc2Mzk3MGY0YyIsImlhdCI6MTc3MjY1Nzc0MSwibmJmIjoxNzcyNjU3NzQxLCJleHAiOjE4OTkwNzIwMDAsInN1YiI6IjIzOTc4NjUiLCJncmFudF90eXBlIjoiIiwiYWNjb3VudF9pZCI6MzI4ODY4NzAsImJhc2VfZG9tYWluIjoiYW1vY3JtLnJ1IiwidmVyc2lvbiI6Miwic2NvcGVzIjpbInB1c2hfbm90aWZpY2F0aW9ucyIsImZpbGVzIiwiY3JtIiwibm90aWZpY2F0aW9ucyJdLCJoYXNoX3V1aWQiOiIwMTI3ODQ4NS00NjQ2LTRkMGEtOTQ4Ni1kZDZiNmJmM2M1YTYiLCJhcGlfZG9tYWluIjoiYXBpLWIuYW1vY3JtLnJ1In0.hHlVdsC4TpTfqdeefNyn4OFXdRMwzEuq7c3QPgrK86gHom2aypje6tx4WLbbwZJ8Jm5aEqctQH9zZF4CliB9oB9bghAn66ElAHSmmhfnxIsrfXWecPErPN9WiD6edBlpyPHaoP6JjhBKmJ2mkBWaeV0U52L50aoglTy5nPRbdKa3kXBFAqZQo3L8_sN5jhvbBwsieAr6F_CAfjYJani_qEAQ9egSeoE8xJBv5S1ll6U28F2NPeRqMYqjPUAAKNtje2eTuRWXk5IsP4OsGaLi4AKctRBvanMvfUmQu-5GJ6XwdOaSuShWw36ryVVijrIQ4mdmbRnZLsZT7Th53ipiYg' },
 ];
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const VALID_STAGES = new Set(['заказ','заказ на подтверждение','курьерская доставка','успешно реализовано']);
+const SYNC_INTERVAL_MS = 60 * 1000;
 
-// ════════════════════════════════════════════════════════════════
-// HELPERS
-// ════════════════════════════════════════════════════════════════
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+// ── HTTP helper ──────────────────────────────────────────────────
+function fetchJSON(url, opts = {}) {
+  return new Promise((resolve, reject) => {
+    const p = new URL(url);
+    const req = https.request({
+      hostname: p.hostname,
+      path:     p.pathname + p.search,
+      method:   opts.method || 'GET',
+      headers:  opts.headers || {},
+    }, res => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => {
+        if (res.statusCode === 204) { resolve({}); return; }
+        if (res.statusCode >= 400) { reject(new Error(`HTTP ${res.statusCode}: ${data.slice(0,200)}`)); return; }
+        try { resolve(JSON.parse(data)); } catch(e) { resolve({}); }
+      });
+    });
+    req.on('error', reject);
+    if (opts.body) req.write(opts.body);
+    req.end();
+  });
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-function tsToDate(ts) {
-  if (!ts) return null;
-  const d = new Date(ts * 1000);
-  const dd = String(d.getDate()).padStart(2,'0');
-  const mm = String(d.getMonth()+1).padStart(2,'0');
-  const yy = d.getFullYear();
-  return `${dd}.${mm}.${yy}`;
+// ── AmoCRM helpers ───────────────────────────────────────────────
+const amoGet = (domain, token, path) =>
+  fetchJSON(`https://${domain}${path}`, { headers: { Authorization: `Bearer ${token}` } });
+
+async function loadPipelines(acc) {
+  const map = {};
+  try {
+    const d = await amoGet(acc.domain, acc.token, '/api/v4/leads/pipelines?limit=250');
+    for (const p of (d?._embedded?.pipelines || []))
+      for (const s of (p._embedded?.statuses || []))
+        map[s.id] = s.name;
+    console.log(`[${acc.name}] ${Object.keys(map).length} statuses loaded`);
+  } catch(e) { console.error(`[${acc.name}] pipelines:`, e.message); }
+  return map;
 }
 
-// ════════════════════════════════════════════════════════════════
-// FETCH ALL LEADS
-// ════════════════════════════════════════════════════════════════
-async function fetchAllLeads(account) {
-  const { domain, token, name } = account;
-  const headers = { 'Authorization': `Bearer ${token}` };
-  let allLeads = [], page = 1;
+async function findOrderField(acc) {
+  try {
+    const d = await amoGet(acc.domain, acc.token, '/api/v4/leads/custom_fields?limit=250');
+    const fields = d?._embedded?.custom_fields || [];
+    console.log(`[${acc.name}] Custom fields:`);
+    fields.forEach(f => console.log(`  ${f.id}: "${f.name}" (${f.type})`));
+    const f = fields.find(f => f.name.toLowerCase().includes('дата заказа') && !f.name.toLowerCase().includes('первого'))
+           || fields.find(f => f.name.toLowerCase().includes('заказа') && f.type === 'date');
+    if (f) { console.log(`[${acc.name}] ✅ orderField: ${f.id} "${f.name}"`); return f.id; }
+    console.log(`[${acc.name}] ⚠ No order date field found`);
+    return null;
+  } catch(e) { console.error(`[${acc.name}] findOrderField:`, e.message); return null; }
+}
 
-  console.log(`[${name}] Начинаем загрузку сделок...`);
+async function loadUsers(acc) {
+  const map = {};
+  try {
+    const d = await amoGet(acc.domain, acc.token, '/api/v4/users?limit=250');
+    for (const u of (d?._embedded?.users || [])) map[u.id] = u.name;
+    console.log(`[${acc.name}] ${Object.keys(map).length} users loaded`);
+  } catch(e) { console.error(`[${acc.name}] users:`, e.message); }
+  return map;
+}
 
+async function fetchAllLeads(acc) {
+  const leads = []; let page = 1;
   while (true) {
     try {
-      const res = await axios.get(`https://${domain}/api/v4/leads`, {
-        headers,
-        params: { page, limit: 250, with: 'contacts', order: 'created_at' },
-        timeout: 30000,
-      });
-      const leads = res.data?._embedded?.leads || [];
-      if (!leads.length) break;
-      allLeads = allLeads.concat(leads);
-      console.log(`[${name}] Страница ${page}: ${leads.length} сделок (всего: ${allLeads.length})`);
-      if (leads.length < 250) break;
+      const d = await amoGet(acc.domain, acc.token, `/api/v4/leads?limit=250&page=${page}`);
+      const items = d?._embedded?.leads || [];
+      if (!items.length) break;
+      leads.push(...items);
+      if (items.length < 250) break;
       page++;
-      await sleep(300);
-    } catch (err) {
-      if (err.response?.status === 204 || err.response?.status === 404) break;
-      if (err.response?.status === 429) { await sleep(5000); continue; }
-      console.error(`[${name}] Ошибка загрузки стр.${page}:`, err.message);
-      break;
-    }
+      await sleep(150);
+    } catch(e) { console.error(`[${acc.name}] page ${page}:`, e.message); break; }
   }
-  return allLeads;
+  console.log(`[${acc.name}] ${leads.length} leads fetched`);
+  return leads;
 }
 
-// ════════════════════════════════════════════════════════════════
-// FETCH USERS
-// ════════════════════════════════════════════════════════════════
-async function fetchUsers(account) {
-  try {
-    const res = await axios.get(`https://${account.domain}/api/v4/users`, {
-      headers: { 'Authorization': `Bearer ${account.token}` },
-      timeout: 15000,
-    });
-    const map = {};
-    (res.data?._embedded?.users || []).forEach(u => { map[u.id] = u.name; });
-    return map;
-  } catch (e) {
-    console.warn('fetchUsers error:', e.message);
-    return {};
-  }
-}
+// ── Parse leads ──────────────────────────────────────────────────
+const fmtDate = ts => {
+  const d = new Date(Number(ts) * 1000);
+  return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+};
 
-// ════════════════════════════════════════════════════════════════
-// FIND ORDER DATE FIELD
-// ════════════════════════════════════════════════════════════════
-async function findOrderDateFieldId(account) {
-  try {
-    const res = await axios.get(`https://${account.domain}/api/v4/leads/custom_fields`, {
-      headers: { 'Authorization': `Bearer ${account.token}` },
-      timeout: 15000,
-    });
-    const fields = res.data?._embedded?.custom_fields || [];
-    const field = fields.find(f =>
-      f.name?.toLowerCase().includes('заказ') ||
-      f.name?.toLowerCase().includes('order date') ||
-      f.name?.toLowerCase().includes('дата заказа')
-    );
-    if (field) {
-      console.log(`[${account.name}] Поле "Дата заказа": ID=${field.id}, name="${field.name}"`);
-      return field.id;
-    }
-    const dateFields = fields.filter(f => f.field_type === 'date' || f.field_type === 'date_time');
-    console.log(`[${account.name}] Дата-поля: ${dateFields.map(f => `${f.id}:"${f.name}"`).join(', ')}`);
-    return null;
-  } catch (e) {
-    console.warn(`[${account.name}] fetchCustomFields error:`, e.message);
-    return null;
-  }
-}
+const getField = (lead, id) => id
+  ? (lead.custom_fields_values || []).find(x => x.field_id === id)?.values?.[0]?.value ?? null
+  : null;
 
-// ════════════════════════════════════════════════════════════════
-// PROCESS LEADS
-// ════════════════════════════════════════════════════════════════
-function processLeads(leads, userMap, orderDateFieldId) {
-  const daily    = {};
-  const managers = {};
-
+function parseLeads(leads, acc, statusMap, userMap) {
+  const daily = {}, mgrs = {};
   for (const lead of leads) {
-    const mgr    = userMap[lead.responsible_user_id] || 'Неизвестно';
-    const budget = lead.price || 0;
+    const stage      = (statusMap[lead.status_id] || '').toLowerCase();
+    const validStage = VALID_STAGES.has(stage);
+    const mgrName    = userMap[lead.responsible_user_id] || '';
+    const budget     = lead.price || 0;
+    const cDate      = lead.created_at ? fmtDate(lead.created_at) : null;
+    const orderVal   = getField(lead, acc.orderDateFieldId);
+    const oDate      = (orderVal && validStage) ? fmtDate(orderVal) : null;
 
-    const cDate = tsToDate(lead.created_at);
     if (cDate) {
-      if (!daily[cDate]) daily[cDate] = [0, 0, 0];
+      if (!daily[cDate]) daily[cDate] = [0,0,0];
       daily[cDate][0]++;
-      if (!managers[mgr]) managers[mgr] = { leads:0, deals:0, budget:0 };
-      managers[mgr].leads++;
-    }
-
-    let oDate = null;
-    if (orderDateFieldId && lead.custom_fields_values) {
-      const field = lead.custom_fields_values.find(f => f.field_id === orderDateFieldId);
-      if (field?.values?.[0]?.value) {
-        const raw = field.values[0].value;
-        if (typeof raw === 'number') oDate = tsToDate(raw);
-        else if (typeof raw === 'string' && raw.match(/^\d{2}\.\d{2}\.\d{4}/)) oDate = raw.slice(0,10);
-        else if (typeof raw === 'string' && raw.match(/^\d{4}-\d{2}-\d{2}/)) {
-          const [y,m,d] = raw.split('-');
-          oDate = `${d}.${m}.${y}`;
-        }
+      if (mgrName) {
+        if (!mgrs[mgrName]) mgrs[mgrName] = {leads:0,deals:0,budget:0,daily:{}};
+        mgrs[mgrName].leads++;
+        if (!mgrs[mgrName].daily[cDate]) mgrs[mgrName].daily[cDate] = [0,0,0];
+        mgrs[mgrName].daily[cDate][0]++;
       }
     }
-
-    if (!oDate && lead.closed_at && budget > 0) {
-      oDate = tsToDate(lead.closed_at);
-    }
-
-    if (oDate && budget > 0) {
-      if (!daily[oDate]) daily[oDate] = [0, 0, 0];
-      daily[oDate][1]++;
-      daily[oDate][2] += budget;
-      if (!managers[mgr]) managers[mgr] = { leads:0, deals:0, budget:0 };
-      managers[mgr].deals++;
-      managers[mgr].budget += budget;
+    if (oDate) {
+      if (!daily[oDate]) daily[oDate] = [0,0,0];
+      daily[oDate][1]++; daily[oDate][2] += budget;
+      if (mgrName) {
+        if (!mgrs[mgrName]) mgrs[mgrName] = {leads:0,deals:0,budget:0,daily:{}};
+        mgrs[mgrName].deals++; mgrs[mgrName].budget += budget;
+        if (!mgrs[mgrName].daily[oDate]) mgrs[mgrName].daily[oDate] = [0,0,0];
+        mgrs[mgrName].daily[oDate][1]++; mgrs[mgrName].daily[oDate][2] += budget;
+      }
     }
   }
-
-  const mgrList = Object.entries(managers)
-    .map(([name, v]) => ({
-      name,
-      leads:    v.leads,
-      deals:    v.deals,
-      budget:   Math.round(v.budget),
-      conv:     v.leads ? +(v.deals / v.leads * 100).toFixed(1) : 0,
-      avgCheck: v.deals ? Math.round(v.budget / v.deals) : 0,
-    }))
-    .sort((a, b) => b.budget - a.budget);
-
-  return { daily, mgrList };
+  const managers = Object.entries(mgrs).map(([name,v]) => ({
+    name, leads:v.leads, deals:v.deals, budget:Math.round(v.budget),
+    conv: v.leads>0 ? +(v.deals/v.leads*100).toFixed(1) : 0,
+    avgCheck: v.deals>0 ? Math.round(v.budget/v.deals) : 0,
+    daily: v.daily,
+  })).sort((a,b) => b.budget-a.budget);
+  return { daily, managers };
 }
 
-// ════════════════════════════════════════════════════════════════
-// MAIN SYNC
-// ════════════════════════════════════════════════════════════════
-let isSyncing = false;
+// ── Supabase ─────────────────────────────────────────────────────
+const sbHeaders = {
+  'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`,
+  'Content-Type': 'application/json', 'Prefer': 'return=minimal',
+};
+const sbGet  = path => fetchJSON(`${SUPABASE_URL}/rest/v1/${path}`, { headers: sbHeaders });
+const sbDel  = path => fetchJSON(`${SUPABASE_URL}/rest/v1/${path}`, { method:'DELETE', headers: sbHeaders });
+const sbPost = (path, body) => fetchJSON(`${SUPABASE_URL}/rest/v1/${path}`, { method:'POST', headers: sbHeaders, body: JSON.stringify(body) });
+
+async function sbSave(payload) {
+  try { await sbDel('weglow_data?id=eq.1'); } catch(e) {}
+  await sbPost('weglow_data', { id:1, data:payload, updated_at: new Date().toISOString() });
+}
+
+// ── Caches ───────────────────────────────────────────────────────
+const statusCache = {}, fieldCache = {}, userCache = {};
+
+// ── Main sync ────────────────────────────────────────────────────
+let lastSync='', syncStatus='Ожидание...', syncErrors=[], isSyncing=false;
 
 async function syncAll() {
-  if (isSyncing) { console.log('Already syncing, skip'); return; }
+  if (isSyncing) { console.log('[SKIP] Already syncing'); return; }
   isSyncing = true;
-
-  console.log('\n════════════════════════════════════════════════');
-  console.log(`SYNC START: ${new Date().toISOString()}`);
-  console.log('════════════════════════════════════════════════');
-
+  const t0 = Date.now();
+  console.log(`\n[${new Date().toISOString()}] ══ SYNC START ══`);
+  syncErrors = [];
   const RAW = {}, MANAGERS = {};
-  let totalLeads = 0;
 
-  for (const account of ACCOUNTS) {
+  for (const acc of ACCOUNTS) {
     try {
-      const [userMap, orderDateFieldId] = await Promise.all([
-        fetchUsers(account),
-        findOrderDateFieldId(account),
-      ]);
-      const leads = await fetchAllLeads(account);
-      totalLeads += leads.length;
-      const { daily, mgrList } = processLeads(leads, userMap, orderDateFieldId);
-      RAW[account.name]      = daily;
-      MANAGERS[account.name] = mgrList;
-      const totalBudget = Object.values(daily).reduce((s, v) => s + v[2], 0);
-      const totalDeals  = Object.values(daily).reduce((s, v) => s + v[1], 0);
-      console.log(`[${account.name}] ✓ ${leads.length} сделок → ${totalDeals} с бюджетом ${(totalBudget/1e6).toFixed(2)}М ₸`);
-    } catch (err) {
-      console.error(`[${account.name}] ОШИБКА:`, err.message);
+      if (!statusCache[acc.name]) { statusCache[acc.name] = await loadPipelines(acc); await sleep(200); }
+      if (fieldCache[acc.name] === undefined) { fieldCache[acc.name] = await findOrderField(acc); await sleep(200); }
+      if (!userCache[acc.name])  { userCache[acc.name]  = await loadUsers(acc);     await sleep(200); }
+      acc.orderDateFieldId = fieldCache[acc.name];
+
+      const leads = await fetchAllLeads(acc);
+      const { daily, managers } = parseLeads(leads, acc, statusCache[acc.name], userCache[acc.name]);
+      RAW[acc.name] = daily; MANAGERS[acc.name] = managers;
+
+      const deals  = managers.reduce((s,m) => s+m.deals, 0);
+      const budget = managers.reduce((s,m) => s+m.budget, 0);
+      console.log(`[${acc.name}] ✅ ${Object.keys(daily).length} дней | ${deals} сделок | ${(budget/1e6).toFixed(1)}M ₸`);
+    } catch(e) {
+      console.error(`[${acc.name}] ❌`, e.message);
+      syncErrors.push(`${acc.name}: ${e.message}`);
+      delete statusCache[acc.name]; delete fieldCache[acc.name]; delete userCache[acc.name];
     }
-    await sleep(500);
   }
 
-  console.log('\nСохраняем в Supabase...');
-  const { error } = await supabase.from('wg_data').upsert({
-    id: 1, raw: RAW, managers: MANAGERS,
-    updated_at: new Date().toISOString(), updated_by: 'auto-sync',
-  }, { onConflict: 'id' });
+  // Preserve AD_SPEND from ad.html
+  let AD_SPEND = {};
+  try { const r = await sbGet('weglow_data?id=eq.1&select=data'); if (r[0]?.data?.AD_SPEND) AD_SPEND = r[0].data.AD_SPEND; } catch(e) {}
 
-  if (error) {
-    console.error('Supabase error:', error);
-  } else {
-    console.log(`✓ Данные сохранены в Supabase (${totalLeads} сделок)`);
-  }
+  await sbSave({ RAW, MANAGERS, AD_SPEND, updatedAt: new Date().toISOString() });
 
-  console.log(`SYNC END: ${new Date().toISOString()}\n`);
+  const elapsed = ((Date.now()-t0)/1000).toFixed(1);
+  lastSync = new Date().toISOString();
+  syncStatus = syncErrors.length ? `Частично за ${elapsed}с (${syncErrors.length} ошибок)` : `✅ OK за ${elapsed}с`;
+  console.log(`[DONE] ${syncStatus}\n`);
   isSyncing = false;
 }
 
-// ════════════════════════════════════════════════════════════════
-// ROUTES
-// ════════════════════════════════════════════════════════════════
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  next();
-});
-
-app.get('/', (req, res) => res.json({
-  status: 'WeGlow Sync Server running',
-  time: new Date().toISOString(),
-  syncing: isSyncing,
-  accounts: ACCOUNTS.map(a => ({ name: a.name, domain: a.domain })),
-}));
-
-app.get('/sync/trigger', (req, res) => {
-  res.json({ message: 'Sync triggered', time: new Date().toISOString() });
-  syncAll().catch(console.error);
-});
-
-app.get('/status', async (req, res) => {
-  try {
-    const { data } = await supabase.from('wg_data').select('updated_at').eq('id', 1).single();
-    res.json({ last_sync: data?.updated_at, syncing: isSyncing, server_time: new Date().toISOString() });
-  } catch (e) { res.json({ error: e.message }); }
-});
-
-app.get('/data', async (req, res) => {
-  try {
-    const { data, error } = await supabase.from('wg_data').select('raw,managers,ad_spend,updated_at').eq('id', 1).single();
-    if (error) throw new Error(error.message);
-    res.json({ ok: true, ...data });
-  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
-});
-
-app.get('/debug-fields/:acc', async (req, res) => {
-  const map = { col: ACCOUNTS[0], ummi: ACCOUNTS[1], coffee: ACCOUNTS[2] };
-  const acc = map[req.params.acc];
-  if (!acc) return res.json({ error: 'Use: col, ummi, coffee' });
-  try {
-    const r = await axios.get(`https://${acc.domain}/api/v4/leads/custom_fields`, {
-      headers: { Authorization: `Bearer ${acc.token}` }, params: { limit: 100 },
-    });
-    res.json({ fields: (r.data?._embedded?.custom_fields || []).map(f => ({ id: f.id, name: f.name, type: f.field_type })) });
-  } catch (e) { res.status(500).json({ error: e.message, status: e.response?.status }); }
-});
-
-// ════════════════════════════════════════════════════════════════
-// CRON — каждый час
-// ════════════════════════════════════════════════════════════════
-cron.schedule('0 * * * *', () => {
-  console.log('⏰ Cron: hourly sync');
-  syncAll().catch(console.error);
-});
-
-// Keep-alive
-setInterval(() => {
-  axios.get(`http://localhost:${process.env.PORT || 3000}/status`).catch(() => {});
-}, 14 * 60 * 1000);
-
-// ════════════════════════════════════════════════════════════════
-// START
-// ════════════════════════════════════════════════════════════════
+// ── HTTP Server ──────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, async () => {
-  console.log(`\n🚀 WeGlow Sync Server запущен на порту ${PORT}`);
-  console.log(`Аккаунты: ${ACCOUNTS.map(a => a.name).join(', ')}`);
-  await sleep(2000);
-  syncAll().catch(console.error);
+http.createServer((req, res) => {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+
+  if (req.url === '/sync') {
+    syncAll().catch(console.error);
+    res.end(JSON.stringify({ message: 'Sync triggered' }));
+    return;
+  }
+  if (req.url === '/clear-cache') {
+    ACCOUNTS.forEach(a => { delete statusCache[a.name]; delete fieldCache[a.name]; delete userCache[a.name]; });
+    res.end(JSON.stringify({ message: 'Cache cleared' }));
+    return;
+  }
+
+  res.end(JSON.stringify({
+    status: isSyncing ? '⏳ syncing' : '✅ idle',
+    lastSync, syncStatus, syncErrors,
+    nextSync: lastSync ? new Date(new Date(lastSync).getTime() + SYNC_INTERVAL_MS).toISOString() : 'soon',
+    accounts: ACCOUNTS.map(a => ({
+      name: a.name, domain: a.domain,
+      orderDateFieldId: fieldCache[a.name] ?? 'не найдено',
+      statuses: Object.keys(statusCache[a.name]||{}).length,
+      users:    Object.keys(userCache[a.name]||{}).length,
+    })),
+    endpoints: { status:'GET /', sync:'GET /sync', clearCache:'GET /clear-cache' }
+  }, null, 2));
+}).listen(PORT, () => {
+  console.log(`🚀 WeGlow AutoSync | port ${PORT} | interval ${SYNC_INTERVAL_MS/1000}s`);
+  syncAll();
+  setInterval(syncAll, SYNC_INTERVAL_MS);
 });
