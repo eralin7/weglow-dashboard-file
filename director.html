@@ -634,63 +634,46 @@ async function loadRopStats() {
       }
     }
 
-    // 3. Actual fact from RAW daily data filtered by date range
+    // 3. Load managers data with daily breakdown from weglow_data
     const dataRows = await sbGet(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data`);
-    const rawData = dataRows[0]?.data?.RAW || {};
     const managersData = dataRows[0]?.data?.MANAGERS || {};
 
-    // Build per-manager fact from RAW — for each date in range, 
-    // distribute total revenue proportionally by manager's all-time share
-    // First compute all-time totals per manager per product
-    const mgrAllTime = {}; // manager → {budget}
-    for (const [prod, mgrList] of Object.entries(managersData)) {
-      for (const mgr of (mgrList || [])) {
-        if (!mgrAllTime[mgr.name]) mgrAllTime[mgr.name] = { budget: 0, leads: 0, deals: 0 };
-        mgrAllTime[mgr.name].budget += mgr.budget || 0;
-        mgrAllTime[mgr.name].leads  += mgr.leads  || 0;
-        mgrAllTime[mgr.name].deals  += mgr.deals  || 0;
-      }
-    }
-
-    // Compute period totals from RAW per product
-    const periodByProd = {}; // prod → {leads, deals, budget}
-    for (const [prod, dates] of Object.entries(rawData)) {
-      periodByProd[prod] = { leads:0, deals:0, budget:0 };
-      for (const [dateStr, vals] of Object.entries(dates)) {
-        const [dd,dmo,dy] = dateStr.split('.').map(Number);
-        const d = new Date(dy, dmo-1, dd);
-        if (d >= fromD && d <= toD) {
-          periodByProd[prod].leads  += vals[0]||0;
-          periodByProd[prod].deals  += vals[1]||0;
-          periodByProd[prod].budget += vals[2]||0;
-        }
-      }
-    }
-
-    // All-time totals per product
-    const allTimeByProd = {};
-    for (const [prod, dates] of Object.entries(rawData)) {
-      allTimeByProd[prod] = { leads:0, deals:0, budget:0 };
-      for (const vals of Object.values(dates)) {
-        allTimeByProd[prod].leads  += vals[0]||0;
-        allTimeByProd[prod].deals  += vals[1]||0;
-        allTimeByProd[prod].budget += vals[2]||0;
-      }
-    }
-
-    // Per manager fact = sum over products of: mgr_alltime_share * period_total
+    // Compute per-manager fact directly from manager's daily data for the period
     const mgrFact = {}; // manager → {leads, deals, budget}
     for (const [prod, mgrList] of Object.entries(managersData)) {
-      const at = allTimeByProd[prod] || {};
-      const pt = periodByProd[prod]  || {};
-      for (const mgr of (mgrList||[])) {
+      for (const mgr of (mgrList || [])) {
         if (!mgrFact[mgr.name]) mgrFact[mgr.name] = { leads:0, deals:0, budget:0 };
-        const shareL = at.leads  > 0 ? (mgr.leads ||0)/at.leads  : 0;
-        const shareD = at.deals  > 0 ? (mgr.deals ||0)/at.deals  : 0;
-        const shareB = at.budget > 0 ? (mgr.budget||0)/at.budget : 0;
-        mgrFact[mgr.name].leads  += Math.round(shareL * (pt.leads ||0));
-        mgrFact[mgr.name].deals  += Math.round(shareD * (pt.deals ||0));
-        mgrFact[mgr.name].budget += Math.round(shareB * (pt.budget||0));
+        // Use daily breakdown if available (uploaded from CSV)
+        if (mgr.daily && Object.keys(mgr.daily).length > 0) {
+          for (const [dateStr, vals] of Object.entries(mgr.daily)) {
+            const [dd,dmo,dy] = dateStr.split('.').map(Number);
+            const d = new Date(dy, dmo-1, dd);
+            if (d >= fromD && d <= toD) {
+              mgrFact[mgr.name].leads  += vals[0]||0;
+              mgrFact[mgr.name].deals  += vals[1]||0;
+              mgrFact[mgr.name].budget += vals[2]||0;
+            }
+          }
+        } else {
+          // Fallback: proportional from all-time data using RAW totals
+          const rawData = dataRows[0]?.data?.RAW || {};
+          const pt = {leads:0,deals:0,budget:0}, at = {leads:0,deals:0,budget:0};
+          const prodDates = rawData[prod] || {};
+          for (const [dateStr, vals] of Object.entries(prodDates)) {
+            const [dd,dmo,dy] = dateStr.split('.').map(Number);
+            const d = new Date(dy,dmo-1,dd);
+            at.leads+=vals[0]||0; at.deals+=vals[1]||0; at.budget+=vals[2]||0;
+            if (d>=fromD && d<=toD) {
+              pt.leads+=vals[0]||0; pt.deals+=vals[1]||0; pt.budget+=vals[2]||0;
+            }
+          }
+          const sL=at.leads>0?(mgr.leads||0)/at.leads:0;
+          const sD=at.deals>0?(mgr.deals||0)/at.deals:0;
+          const sB=at.budget>0?(mgr.budget||0)/at.budget:0;
+          mgrFact[mgr.name].leads  += Math.round(sL*pt.leads);
+          mgrFact[mgr.name].deals  += Math.round(sD*pt.deals);
+          mgrFact[mgr.name].budget += Math.round(sB*pt.budget);
+        }
       }
     }
 

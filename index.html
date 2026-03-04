@@ -337,8 +337,12 @@ function parseSales(rows, keyHint){
       daily[cDate][0]++;
       totalLeads++;
       if(manager){
-        if(!managers[manager]) managers[manager]={leads:0,deals:0,budget:0};
+        if(!managers[manager]) managers[manager]={leads:0,deals:0,budget:0,daily:{}};
         managers[manager].leads++;
+        if(cDate){
+          if(!managers[manager].daily[cDate]) managers[manager].daily[cDate]=[0,0,0];
+          managers[manager].daily[cDate][0]++;
+        }
       }
     }
 
@@ -351,9 +355,14 @@ function parseSales(rows, keyHint){
       totalDeals++;
       totalBudget+=budget;
       if(manager){
-        if(!managers[manager]) managers[manager]={leads:0,deals:0,budget:0};
+        if(!managers[manager]) managers[manager]={leads:0,deals:0,budget:0,daily:{}};
         managers[manager].deals++;
         managers[manager].budget+=budget;
+        if(oDate){
+          if(!managers[manager].daily[oDate]) managers[manager].daily[oDate]=[0,0,0];
+          managers[manager].daily[oDate][1]++;
+          managers[manager].daily[oDate][2]+=budget;
+        }
       }
     }
   }
@@ -363,7 +372,8 @@ function parseSales(rows, keyHint){
     .map(([name,v])=>({
       name, leads:v.leads, deals:v.deals, budget:Math.round(v.budget),
       conv: v.leads ? +(v.deals/v.leads*100).toFixed(1) : 0,
-      avgCheck: v.deals ? Math.round(v.budget/v.deals) : 0
+      avgCheck: v.deals ? Math.round(v.budget/v.deals) : 0,
+      daily: v.daily || {}
     }))
     .sort((a,b)=>b.budget-a.budget);
 
