@@ -1021,50 +1021,46 @@ function render(){
 
 // ═══════════════════ MANAGERS ═════════════════════════════════════
 function aggregateManagersByPeriod(prodKey, from, to) {
-  // prodKey = 'Коллаген' | 'Ummi' | 'Кофе'
-  // We need per-lead data — but we only have daily aggregates in RAW
-  // MANAGERS has all-time per-manager data, so we re-read from the uploaded CSV data
-  // Fallback: use MANAGERS but filter via RAW daily totals ratio (approximation)
-  // Best approach: use _loaded.MANAGERS which has full list, and scale by period
-  // Actually the correct fix: index.html should pass per-manager daily breakdown
-  // For now: use MANAGERS as full dataset but show note; 
-  // The real fix is to compute managers from RAW period totals using original CSV manager data
-
-  // Since we store MANAGERS as full all-time aggregates, we compute period managers
-  // from the _loaded payload which has per-manager data indexed by product
   const allMgrs = (MANAGERS[prodKey] || []);
-  
-  // If period is "all time" equivalent (we can't filter managers by date from aggregated data)
-  // We compute from RAW daily data the total for this period, 
-  // then proportionally scale each manager's contribution
-  const raw = RAW[prodKey] || {};
-  const dates = getDatesInRange(from, to);
-  let periodBudget = 0, periodLeads = 0, periodDeals = 0;
-  for (const d of dates) {
-    const v = raw[d] || [0,0,0];
-    periodLeads += v[0]; periodDeals += v[1]; periodBudget += v[2];
-  }
-  
-  // Total all-time from managers
-  const totalBudget = allMgrs.reduce((s,m) => s + m.budget, 0);
-  const totalLeads  = allMgrs.reduce((s,m) => s + m.leads,  0);
-  const totalDeals  = allMgrs.reduce((s,m) => s + m.deals,  0);
-  
-  if (totalBudget === 0) return allMgrs;
-  
-  // Scale each manager proportionally to period
-  const bRatio = totalBudget ? periodBudget / totalBudget : 1;
-  const lRatio = totalLeads  ? periodLeads  / totalLeads  : 1;
-  const dRatio = totalDeals  ? periodDeals  / totalDeals  : 1;
-  
+  const dates = new Set(getDatesInRange(from, to));
+
   return allMgrs.map(m => {
-    const budget   = Math.round(m.budget * bRatio);
-    const leads    = Math.round(m.leads  * lRatio);
-    const deals    = Math.round(m.deals  * dRatio);
-    const conv     = leads ? +(deals / leads * 100).toFixed(1) : 0;
-    const avgCheck = deals ? Math.round(budget / deals) : 0;
-    return { ...m, budget, leads, deals, conv, avgCheck };
-  }).sort((a,b) => b.budget - a.budget);
+    // If manager has per-date breakdown — use it directly (accurate)
+    if (m.daily && Object.keys(m.daily).length > 0) {
+      let leads=0, deals=0, budget=0;
+      for (const [d, v] of Object.entries(m.daily)) {
+        if (dates.has(d)) {
+          leads  += v[0]||0;
+          deals  += v[1]||0;
+          budget += v[2]||0;
+        }
+      }
+      const conv     = leads  > 0 ? +(deals/leads*100).toFixed(1)    : 0;
+      const avgCheck = deals  > 0 ? Math.round(budget/deals)          : 0;
+      return { name:m.name, leads, deals, budget:Math.round(budget), conv, avgCheck };
+    }
+
+    // Fallback: proportional scaling from all-time data
+    const raw = RAW[prodKey] || {};
+    let periodBudget=0, periodLeads=0, periodDeals=0;
+    let totalBudget=0,  totalLeads=0,  totalDeals=0;
+    for (const [d,v] of Object.entries(raw)) {
+      totalLeads+=v[0]||0; totalDeals+=v[1]||0; totalBudget+=v[2]||0;
+      if (dates.has(d)) {
+        periodLeads+=v[0]||0; periodDeals+=v[1]||0; periodBudget+=v[2]||0;
+      }
+    }
+    const bR = totalBudget ? periodBudget/totalBudget : 0;
+    const lR = totalLeads  ? periodLeads /totalLeads  : 0;
+    const dR = totalDeals  ? periodDeals /totalDeals  : 0;
+    const budget   = Math.round(m.budget * bR);
+    const leads    = Math.round(m.leads  * lR);
+    const deals    = Math.round(m.deals  * dR);
+    const conv     = leads > 0 ? +(deals/leads*100).toFixed(1) : 0;
+    const avgCheck = deals > 0 ? Math.round(budget/deals) : 0;
+    return { name:m.name, leads, deals, budget, conv, avgCheck };
+  }).filter(m => m.leads > 0 || m.deals > 0 || m.budget > 0)
+    .sort((a,b) => b.budget - a.budget);
 }
 
 function renderManagers(){
