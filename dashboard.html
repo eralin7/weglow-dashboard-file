@@ -1218,8 +1218,8 @@ async function loadFromSupabase() {
 
       // Switch to current month (Almaty UTC+5)
       PRESETS = buildPresets();
-      const _now = new Date();
-      const _cy = _now.getFullYear(), _cm = _now.getMonth()+1;
+      const _curNow = new Date();
+      const _cy = _curNow.getFullYear(), _cm = _curNow.getMonth()+1;
       const _curKey = 'm_'+_cy+'_'+_cm;
       if (PRESETS[_curKey]) {
         activePeriod    = { ...PRESETS[_curKey], preset:_curKey };
