@@ -1215,6 +1215,33 @@ async function loadFromSupabase() {
       }
       // Save to sessionStorage for next load (faster)
       sessionStorage.setItem('wg_data', JSON.stringify(d));
+
+      // Find latest date across all products → switch to that month
+      let _latest = null;
+      for (const prod of Object.values(RAW)) {
+        for (const ds of Object.keys(prod)) {
+          const [dd,mm,yy] = ds.split('.').map(Number);
+          const dt = new Date(yy,mm-1,dd);
+          if (!_latest || dt > _latest) _latest = dt;
+        }
+      }
+      if (_latest) {
+        const fy = _latest.getFullYear(), fm = _latest.getMonth()+1;
+        const key = 'm_'+fy+'_'+fm;
+        PRESETS = buildPresets();
+        if (!PRESETS[key]) {
+          const last = _lastDay(fy,fm);
+          const pad = n=>String(n).padStart(2,'0');
+          PRESETS[key] = { from:'01.'+pad(fm)+'.'+fy, to:pad(last)+'.'+pad(fm)+'.'+fy, label:MONTH_NAMES[fm-1]+' '+fy, preset:key };
+        }
+        activePeriod    = { ...PRESETS[key], preset:key };
+        activeMgrPeriod = { ...PRESETS[key], preset:key };
+        activeAdPeriod  = { ...PRESETS[key], preset:key };
+        document.querySelectorAll('.pill[data-preset]').forEach(p=>{
+          p.classList.toggle('active', p.dataset.preset===key);
+        });
+      }
+
       // Re-render with fresh data
       render();
       if(activeView==='managers') renderManagers();
