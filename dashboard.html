@@ -972,17 +972,58 @@ function renderLine(stats){
   if(chartLine)chartLine.destroy();
   const ml={budget:'Выручка по дням',leads:'Лиды по дням',deals:'Сделки по дням'};
   document.getElementById('chart-lbl').textContent=ml[activeMetric];
+  const labels=stats.daily.labels;
   let datasets=[];
   if(activeProd==='all'){
     ['col','ummi','coffee'].forEach(k=>{
       const p=stats.parts[k];
-      datasets.push({label:PROD_CFG[k].name,data:p.daily[activeMetric],borderColor:PROD_CFG[k].color,backgroundColor:PROD_CFG[k].color+'18',borderWidth:2,fill:false,tension:.4,pointRadius:2.5,pointHoverRadius:5});
+      datasets.push({label:PROD_CFG[k].name,data:p.daily[activeMetric],yAxisID:'y',borderColor:PROD_CFG[k].color,backgroundColor:PROD_CFG[k].color+'18',borderWidth:2,fill:false,tension:.4,pointRadius:2.5,pointHoverRadius:5});
     });
   } else {
     const p=stats.parts?stats.parts[activeProd]:stats;
-    datasets=[{label:PROD_CFG[activeProd].name,data:p.daily[activeMetric],borderColor:PROD_CFG[activeProd].color,backgroundColor:PROD_CFG[activeProd].color+'20',borderWidth:2.5,fill:true,tension:.4,pointRadius:2.5,pointHoverRadius:5}];
+    datasets=[{label:PROD_CFG[activeProd].name,data:p.daily[activeMetric],yAxisID:'y',borderColor:PROD_CFG[activeProd].color,backgroundColor:PROD_CFG[activeProd].color+'20',borderWidth:2.5,fill:true,tension:.4,pointRadius:2.5,pointHoverRadius:5}];
   }
-  chartLine=new Chart(ctx,{type:'line',data:{labels:stats.daily.labels,datasets},options:{responsive:true,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:TICK,font:{family:FONT,size:11},boxWidth:10,padding:16}},tooltip:{callbacks:{label:c=>activeMetric==='budget'?` ${c.dataset.label}: ${fmt(c.raw)} ₸`:` ${c.dataset.label}: ${c.raw}`}}},scales:{x:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10},maxTicksLimit:16}},y:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10},callback:v=>activeMetric==='budget'?fmtK(v):v}}}}});
+
+  // Расходы на рекламу — только на метрике Выручка
+  if(activeMetric==='budget'){
+    const {from,to}=activePeriod;
+    const dateList=getDatesInRange(from,to);
+    const prodNames=activeProd==='all'
+      ?['Коллаген','Ummi','Кофе']
+      :[PROD_CFG[activeProd]?.name].filter(Boolean);
+    const adByDate={};
+    prodNames.forEach(name=>{
+      Object.entries(AD_SPEND[name]||{}).forEach(([d,v])=>{ adByDate[d]=(adByDate[d]||0)+v; });
+    });
+    const adData=dateList.map(d=>adByDate[d]||null);
+    if(adData.some(v=>v!==null)){
+      datasets.push({
+        label:'📣 Реклама',
+        data:adData,
+        yAxisID:'yAd',
+        type:'bar',
+        backgroundColor:'rgba(251,191,36,.22)',
+        borderColor:'rgba(251,191,36,.65)',
+        borderWidth:1,
+        borderRadius:3,
+        order:10,
+      });
+    }
+  }
+
+  const scales={
+    x:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10},maxTicksLimit:16}},
+    y:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10},callback:v=>activeMetric==='budget'?fmtK(v):v}},
+  };
+  if(activeMetric==='budget'){
+    scales.yAd={
+      position:'right',
+      grid:{drawOnChartArea:false},
+      ticks:{color:'rgba(202,138,4,.7)',font:{family:FONT,size:10},callback:v=>fmtK(v)},
+    };
+  }
+
+  chartLine=new Chart(ctx,{type:'line',data:{labels,datasets},options:{responsive:true,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:TICK,font:{family:FONT,size:11},boxWidth:10,padding:16}},tooltip:{callbacks:{label:c=>{if(c.dataset.label==='📣 Реклама')return ` Реклама: ${fmt(c.raw)} ₸`;return activeMetric==='budget'?` ${c.dataset.label}: ${fmt(c.raw)} ₸`:` ${c.dataset.label}: ${c.raw}`;} }}},scales}});
 }
 
 function renderDonut(stats){
