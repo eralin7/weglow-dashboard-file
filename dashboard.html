@@ -508,6 +508,7 @@ const AD_SPEND_STATIC = {"Коллаген":{"01.02.2026":318000,"02.02.2026":32
 let AD_SPEND = AD_SPEND_STATIC; // Always start fresh, Supabase overwrites below
 
 let CROSS_SALES = (_loaded && _loaded.CROSS_SALES) ? _loaded.CROSS_SALES : {};
+let PRODUCTS    = (_loaded && _loaded.PRODUCTS)    ? _loaded.PRODUCTS    : {};
 let PLANS = _loaded && _loaded.PLANS ? _loaded.PLANS : {'col':{'03.2026':86000000,'02.2026':60000000,'01.2026':60000000,'12.2025':60000000,'11.2025':60000000,'10.2025':60000000},'ummi':{'03.2026':25000000,'02.2026':30000000,'01.2026':30000000,'12.2025':30000000,'11.2025':30000000},'coffee':{'03.2026':30000000,'02.2026':15000000,'01.2026':15000000,'12.2025':15000000}};
 
 const PROD_CFG = {
@@ -1224,6 +1225,7 @@ async function loadFromSupabase() {
       if (d.AD_SPEND)    AD_SPEND    = d.AD_SPEND;
       if (d.PLANS)       PLANS       = d.PLANS;
       if (d.CROSS_SALES) CROSS_SALES = d.CROSS_SALES;
+      if (d.PRODUCTS)    PRODUCTS    = d.PRODUCTS;
       // Update badge
       const badge = document.getElementById('data-badge');
       if (badge && rows[0].updated_at) {
@@ -1372,84 +1374,88 @@ loadFromSupabase();
 
 
 // ═══════════════════ PRODUCTS VIEW ════════════════════════════════
-const PROD_MONTHS = ['09.2025','10.2025','11.2025','12.2025','01.2026','02.2026','03.2026'];
-const PROD_MLbl   = {'09.2025':'Сен 25','10.2025':'Окт 25','11.2025':'Ноя 25','12.2025':'Дек 25','01.2026':'Янв 26','02.2026':'Фев 26','03.2026':'Мар 26'};
-
-const PROD_DATA = {
-  'Коллаген': {
-    color:'#818cf8',
-    products: {
-      'Коллаген (упак.)': { own:true,  by_month:{'02.2026':105535,'01.2026':1779,'12.2025':1302,'11.2025':1896,'10.2025':859,'09.2025':1} },
-      'Коллаген Красный': { own:true,  by_month:{'02.2026':2105,'01.2026':1460,'12.2025':1130,'11.2025':1827,'10.2025':846} },
-      'Коллаген Синий':   { own:true,  by_month:{'02.2026':164,'01.2026':90,'12.2025':53,'11.2025':69,'10.2025':72,'09.2025':1} },
-      'Коллаген Кофе':    { own:true,  by_month:{'02.2026':245,'01.2026':213,'12.2025':111} },
-      'Детский Ummi':     { own:false, by_month:{'02.2026':34,'01.2026':35,'12.2025':10} },
-    }
-  },
-  'Ummi': {
-    color:'#34d399',
-    products: {
-      'Ummi (кол-во)':    { own:true,  by_month:{'02.2026':369,'01.2026':428,'12.2025':25} },
-      'Коллаген Красный': { own:false, by_month:{'02.2026':49,'01.2026':8} },
-      'Коллаген Синий':   { own:false, by_month:{'02.2026':7,'01.2026':1} },
-      'Коллаген Кофе':    { own:false, by_month:{'02.2026':9,'01.2026':4} },
-    }
-  },
-  'Кофе': {
-    color:'#fbbf24',
-    products: {
-      'Кофе (кол-во)':    { own:true,  by_month:{'02.2026':166,'03.2026':1,'01.2026':27} },
-      'Коллаген Красный': { own:false, by_month:{'03.2026':49,'02.2026':158,'01.2026':21} },
-      'Коллаген Синий':   { own:false, by_month:{'03.2026':2,'02.2026':18} },
-      'Ummi':             { own:false, by_month:{'03.2026':6,'02.2026':2} },
-    }
-  }
+// Fallback static data (used before server sync arrives)
+const PROD_STATIC = {
+  'Коллаген': { color:'#818cf8', prods: {
+    'Коллаген (упак.)': { own:true,  daily:{'01.02.2026':3680,'02.02.2026':3521,'03.02.2026':3401} },
+    'Коллаген Красный': { own:true,  daily:{'01.02.2026':72,'02.02.2026':68,'03.02.2026':61} },
+    'Коллаген Синий':   { own:true,  daily:{'01.02.2026':6,'02.02.2026':5,'03.02.2026':4} },
+    'Коллаген Кофе':    { own:true,  daily:{'01.02.2026':9,'02.02.2026':8,'03.02.2026':7} },
+    'Детский Ummi':     { own:false, daily:{'01.02.2026':1,'02.02.2026':1} },
+  }},
+  'Ummi': { color:'#34d399', prods: {
+    'Ummi (кол-во)':    { own:true,  daily:{'01.02.2026':13,'02.02.2026':12,'03.02.2026':11} },
+    'Коллаген Красный': { own:false, daily:{'01.02.2026':2,'02.02.2026':1} },
+    'Коллаген Синий':   { own:false, daily:{'01.02.2026':1} },
+    'Коллаген Кофе':    { own:false, daily:{'01.02.2026':1} },
+  }},
+  'Кофе': { color:'#fbbf24', prods: {
+    'Кофе (кол-во)':    { own:true,  daily:{'01.02.2026':6,'02.02.2026':5,'03.02.2026':4} },
+    'Коллаген Красный': { own:false, daily:{'01.02.2026':5,'02.02.2026':6,'03.02.2026':4} },
+    'Коллаген Синий':   { own:false, daily:{'01.02.2026':1} },
+    'Ummi':             { own:false, daily:{'01.02.2026':1} },
+  }},
 };
 
 let _prodPeriod = 'all';
+let _prodFrom   = null; // 'DD.MM.YYYY'
+let _prodTo     = null;
 
-function _prodQty(p, period) {
-  if (period === 'all') return Object.values(p.by_month).reduce((a,b)=>a+b,0);
-  return p.by_month[period] || 0;
+function _getProdsForComp(comp) {
+  // Use live PRODUCTS from Supabase if available, else fallback to static
+  if (PRODUCTS && PRODUCTS[comp] && Object.keys(PRODUCTS[comp]).length) {
+    const color = PROD_STATIC[comp]?.color || '#818cf8';
+    const liveProds = {};
+    for (const [name, info] of Object.entries(PRODUCTS[comp])) {
+      liveProds[name] = { own: info.own, daily: info.daily || {} };
+    }
+    return { color, prods: liveProds };
+  }
+  return PROD_STATIC[comp] || { color:'#818cf8', prods:{} };
 }
 
-// For daily periods (today/yesterday/custom) use RAW data
-let _prodDateRange = null; // {from:'DD.MM.YYYY', to:'DD.MM.YYYY'}
+function _dateRange() {
+  // Returns array of 'DD.MM.YYYY' dates for current filter
+  const now = new Date();
+  const _fd = d => `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+  if (_prodPeriod === 'today') {
+    const s = _fd(now); return [s];
+  }
+  if (_prodPeriod === 'yesterday') {
+    const y = new Date(now); y.setDate(y.getDate()-1); return [_fd(y)];
+  }
+  if (_prodPeriod === 'custom' && _prodFrom && _prodTo) {
+    return getDatesInRange(_prodFrom, _prodTo);
+  }
+  return null; // null = use all daily keys
+}
 
-function _prodQtyDaily(comp, prodName, isOwn) {
-  if (!_prodDateRange) return null;
-  // We can't get per-product daily from RAW (RAW has [leads,deals,budget] not product qty)
-  // Return null to indicate "use monthly fallback"
-  return null;
+function _prodTotal(daily, dates) {
+  if (!dates) return Object.values(daily).reduce((a,b)=>a+b,0);
+  return dates.reduce((s,d) => s + (daily[d]||0), 0);
+}
+
+function setProdPeriod(period, el) {
+  _prodPeriod = period;
+  _prodFrom = null; _prodTo = null;
+  const wrap = document.getElementById('prod-custom-wrap');
+  if (wrap) wrap.style.display = 'none';
+  document.querySelectorAll('#prod-period-pills .pill').forEach(p => p.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderProducts();
 }
 
 function applyProdCustom() {
   const f = document.getElementById('prod-from').value;
   const t = document.getElementById('prod-to').value;
   if (!f || !t) return;
-  // Convert YYYY-MM-DD to MM.YYYY for monthly lookup
-  const [fy,fm] = f.split('-'); const [ty,tm] = t.split('-');
+  // Convert YYYY-MM-DD → DD.MM.YYYY
+  const cvt = s => { const [y,m,d]=s.split('-'); return `${d}.${m}.${y}`; };
+  _prodFrom = cvt(f); _prodTo = cvt(t);
   _prodPeriod = 'custom';
-  _prodDateRange = { fromMonth: fm+'.'+fy, toMonth: tm+'.'+ty };
-  document.querySelectorAll('#prod-period-pills .pill').forEach(p=>p.classList.remove('active'));
-  document.getElementById('prod-custom-wrap').style.display='none';
-  renderProducts();
-}
-
-function setProdPeriod(period, el) {
-  _prodPeriod = period;
-  _prodDateRange = null;
-  document.getElementById('prod-custom-wrap') && (document.getElementById('prod-custom-wrap').style.display='none');
   document.querySelectorAll('#prod-period-pills .pill').forEach(p => p.classList.remove('active'));
-  if (el) el.classList.add('active');
-  // For today/yesterday set date range
-  if (period === 'today' || period === 'yesterday') {
-    const now = new Date();
-    if (period === 'yesterday') now.setDate(now.getDate()-1);
-    const mm = String(now.getMonth()+1).padStart(2,'0');
-    const yy = now.getFullYear();
-    _prodDateRange = { fromMonth: mm+'.'+yy, toMonth: mm+'.'+yy, singleDay: `${String(now.getDate()).padStart(2,'0')}.${mm}.${yy}` };
-  }
+  const wrap = document.getElementById('prod-custom-wrap');
+  if (wrap) wrap.style.display = 'none';
   renderProducts();
 }
 
@@ -1458,117 +1464,122 @@ function renderProducts() {
   const pillsEl = document.getElementById('prod-period-pills');
   if (pillsEl && !pillsEl.dataset.built) {
     pillsEl.dataset.built = '1';
-
-    // Today / Yesterday
-    const now = new Date();
-    const yest = new Date(now); yest.setDate(yest.getDate()-1);
-    const _fd = d => `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
-    const todayStr = _fd(now), yesterdayStr = _fd(yest);
-
-    [['today', 'Сегодня'], ['yesterday', 'Вчера'], ['all', 'Всё время']].forEach(([key, label]) => {
+    const defs = [
+      ['today','Сегодня'], ['yesterday','Вчера'], ['all','Всё время'],
+      ['03.2026','Мар 26'], ['02.2026','Фев 26'], ['01.2026','Янв 26'],
+      ['12.2025','Дек 25'], ['11.2025','Ноя 25'], ['10.2025','Окт 25'],
+    ];
+    defs.forEach(([key, label]) => {
       const btn = document.createElement('button');
       btn.className = 'pill' + (key === 'all' ? ' active' : '');
-      btn.textContent = label;
-      btn.dataset.key = key;
+      btn.dataset.key = key; btn.textContent = label;
       btn.onclick = function(){ setProdPeriod(key, this); };
       pillsEl.appendChild(btn);
     });
-
-    [...PROD_MONTHS].reverse().forEach(m => {
-      const btn = document.createElement('button');
-      btn.className = 'pill'; btn.textContent = PROD_MLbl[m];
-      btn.dataset.key = m;
-      btn.onclick = function(){ setProdPeriod(m, this); };
-      pillsEl.appendChild(btn);
-    });
-
-    // Custom range button
+    // Custom range
     const customBtn = document.createElement('button');
     customBtn.className = 'pill'; customBtn.textContent = '📅 Диапазон';
-    customBtn.dataset.key = 'custom';
-    customBtn.onclick = function(){ document.getElementById('prod-custom-wrap').style.display='flex'; };
+    customBtn.onclick = function(){
+      const wrap = document.getElementById('prod-custom-wrap');
+      if (wrap) wrap.style.display = wrap.style.display==='none'?'flex':'none';
+    };
     pillsEl.appendChild(customBtn);
 
-    // Custom range inputs
+    // Inputs row
     const wrap = document.createElement('div');
     wrap.id = 'prod-custom-wrap';
-    wrap.style.cssText = 'display:none;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap';
-    wrap.innerHTML = `<input type="date" id="prod-from" style="background:#1a2235;border:1px solid rgba(255,255,255,.15);color:#f1f5f9;border-radius:8px;padding:5px 10px;font-size:12px">
-      <span style="color:rgba(255,255,255,.4);font-size:12px">—</span>
-      <input type="date" id="prod-to" style="background:#1a2235;border:1px solid rgba(255,255,255,.15);color:#f1f5f9;border-radius:8px;padding:5px 10px;font-size:12px">
-      <button onclick="applyProdCustom()" style="background:#6366f1;color:#fff;border:none;border-radius:8px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer">Применить</button>
-      <button onclick="document.getElementById('prod-custom-wrap').style.display='none'" style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.5);border:none;border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer">✕</button>`;
+    wrap.style.cssText = 'display:none;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;width:100%';
+    wrap.innerHTML = `
+      <input type="date" id="prod-from" style="background:#1a2235;border:1px solid rgba(255,255,255,.15);color:#f1f5f9;border-radius:8px;padding:5px 10px;font-size:12px;font-family:inherit">
+      <span style="color:rgba(255,255,255,.4);font-size:13px">—</span>
+      <input type="date" id="prod-to" style="background:#1a2235;border:1px solid rgba(255,255,255,.15);color:#f1f5f9;border-radius:8px;padding:5px 10px;font-size:12px;font-family:inherit">
+      <button onclick="applyProdCustom()" style="background:#6366f1;color:#fff;border:none;border-radius:8px;padding:6px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Применить</button>
+      <button onclick="document.getElementById('prod-custom-wrap').style.display='none'" style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.4);border:none;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer">✕</button>`;
     pillsEl.parentNode.insertBefore(wrap, pillsEl.nextSibling);
   }
 
-  const period = _prodPeriod;
+  const dates = _dateRange(); // null = all time, array = specific days
   const fmt = n => Math.round(n).toLocaleString('ru-RU');
-  // For today/yesterday/custom, resolve to month key for PROD_DATA lookup
-  let _resolvedPeriod = period;
-  if (_prodDateRange) _resolvedPeriod = _prodDateRange.fromMonth;
-  let html = '';
+
+  // Period label
+  const now = new Date();
+  const _fd = d => `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+  const periodLabel = {
+    today: 'Сегодня, ' + _fd(now),
+    yesterday: (() => { const y=new Date(now); y.setDate(y.getDate()-1); return 'Вчера, '+_fd(y); })(),
+    all: 'Всё время',
+    custom: _prodFrom && _prodTo ? `${_prodFrom} — ${_prodTo}` : 'Диапазон',
+  }[_prodPeriod] || _prodPeriod;
+
+  let html = `<div style="font-size:12px;color:rgba(255,255,255,.35);margin-bottom:16px">${periodLabel}</div>`;
 
   ['Коллаген','Ummi','Кофе'].forEach(comp => {
-    const d = PROD_DATA[comp];
-    const color = d.color;
-    const prods = Object.entries(d.products);
-    const qtys = prods.map(([,p]) => _prodQty(p, _resolvedPeriod));
+    const { color, prods } = _getProdsForComp(comp);
+    const entries = Object.entries(prods);
+    if (!entries.length) return;
+
+    const qtys = entries.map(([,p]) => _prodTotal(p.daily, dates));
     const total = qtys.reduce((a,b)=>a+b,0);
-    const maxQ = Math.max(...qtys, 1);
+    const maxQ  = Math.max(...qtys, 1);
 
-    // Cards row
-    const cards = prods.map(([name, p], i) => {
+    // Cards
+    const cards = entries.map(([name, p], i) => {
       const qty = qtys[i];
-      if (_resolvedPeriod !== 'all' && qty === 0) return '';
-      const pct = Math.round(qty/maxQ*100);
-      const ownTag = p.own
-        ? `<div style="font-size:10px;font-weight:700;color:${color};margin-top:6px">● свой товар</div>`
-        : `<div style="font-size:10px;color:rgba(255,255,255,.3);margin-top:6px">○ партнёр</div>`;
+      if (qty === 0 && _prodPeriod !== 'all') return '';
+      const own = p.own;
+      const tag = own
+        ? `<div style="font-size:10px;font-weight:700;color:${color};margin-top:5px">● свой</div>`
+        : `<div style="font-size:10px;color:rgba(255,255,255,.3);margin-top:5px">○ партнёр</div>`;
 
-      // Mini bars per month
-      const maxB = Math.max(...PROD_MONTHS.map(m=>p.by_month[m]||0),1);
-      const bars = PROD_MONTHS.map(m=>{
-        const v = p.by_month[m]||0;
+      // Mini bars - last 7 available days or current month days
+      const allDays = Object.keys(p.daily).sort((a,b) => {
+        const pa=a.split('.').reverse().join(''), pb=b.split('.').reverse().join('');
+        return pa.localeCompare(pb);
+      }).slice(-14);
+      const maxB = Math.max(...allDays.map(d=>p.daily[d]||0),1);
+      const miniBars = allDays.map(d => {
+        const v = p.daily[d]||0;
         const h = v>0 ? Math.max(3,Math.round(v/maxB*32)) : 2;
-        const op = period===m?1 : period==='all'?.6:.18;
+        const isActive = dates ? dates.includes(d) : true;
         return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
-          <div style="width:100%;height:${h}px;background:${color};opacity:${op};border-radius:2px 2px 0 0" title="${PROD_MLbl[m]}: ${v} шт"></div>
-          <div style="font-size:7px;color:rgba(255,255,255,.25)">${PROD_MLbl[m].split(' ')[0]}</div>
+          <div style="width:100%;height:${h}px;background:${color};opacity:${isActive?0.8:0.2};border-radius:2px 2px 0 0" title="${d}: ${v} шт"></div>
         </div>`;
       }).join('');
 
-      return `<div style="background:#1a2235;border-radius:12px;padding:16px;border:1px solid rgba(255,255,255,.07);position:relative;overflow:hidden">
-        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${p.own?color:'rgba(255,255,255,.12)'}"></div>
-        <div style="font-size:11px;color:rgba(255,255,255,.45);margin-bottom:8px;font-weight:500">${name}</div>
-        <div style="font-size:26px;font-weight:800;color:${p.own?color:'#f1f5f9'};letter-spacing:-1px;line-height:1">${fmt(qty)}</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.3);margin-bottom:4px">шт</div>
-        ${ownTag}
-        <div style="display:flex;gap:3px;margin-top:14px;align-items:flex-end;height:46px">${bars}</div>
+      return `<div style="background:#1a2235;border-radius:12px;padding:14px;border:1px solid rgba(255,255,255,.07);position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${own?color:'rgba(255,255,255,.1)'}"></div>
+        <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:6px;font-weight:500">${name}</div>
+        <div style="font-size:28px;font-weight:800;color:${own?color:'#f1f5f9'};letter-spacing:-1px;line-height:1">${fmt(qty)}</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.3)">шт</div>
+        ${tag}
+        <div style="display:flex;gap:2px;margin-top:12px;align-items:flex-end;height:36px">${miniBars}</div>
       </div>`;
     }).filter(Boolean).join('');
 
-    // Summary bar chart
-    const barRows = prods.map(([name,p],i)=>{
+    // Bar chart
+    const bars = entries.map(([name,p],i) => {
       const qty = qtys[i]; if(!qty) return '';
       const pct = Math.round(qty/maxQ*100);
       return `<div style="display:grid;grid-template-columns:150px 1fr 72px;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)">
-        <div style="font-size:12px;color:rgba(255,255,255,.6);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.55);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</div>
         <div style="background:rgba(255,255,255,.05);border-radius:4px;height:7px;overflow:hidden">
           <div style="height:100%;width:${pct}%;background:${p.own?color:'rgba(255,255,255,.2)'};border-radius:4px"></div>
         </div>
-        <div style="font-size:12px;font-weight:700;text-align:right;color:${p.own?color:'rgba(255,255,255,.4)'}">${fmt(qty)}</div>
+        <div style="font-size:12px;font-weight:700;text-align:right;color:${p.own?color:'rgba(255,255,255,.35)'}">${fmt(qty)}</div>
       </div>`;
     }).filter(Boolean).join('');
 
-    html += `<div style="margin-bottom:24px;background:#111827;border-radius:16px;border:1px solid rgba(255,255,255,.07);overflow:hidden">
-      <div style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:10px">
-        <div style="width:8px;height:8px;border-radius:50%;background:${color};box-shadow:0 0 8px ${color}88"></div>
+    html += `<div style="margin-bottom:20px;background:#111827;border-radius:16px;border:1px solid rgba(255,255,255,.07);overflow:hidden">
+      <div style="padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:10px">
+        <div style="width:8px;height:8px;border-radius:50%;background:${color};box-shadow:0 0 8px ${color}77"></div>
         <div style="font-size:15px;font-weight:800;color:${color}">${comp}</div>
         <div style="font-size:12px;color:rgba(255,255,255,.3);margin-left:auto">${fmt(total)} ед. итого</div>
       </div>
-      <div style="padding:16px 20px">
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:16px">${cards || '<div style="color:rgba(255,255,255,.3);font-size:13px;padding:8px">Нет данных за период</div>'}</div>
-        <div style="border-top:1px solid rgba(255,255,255,.06);padding-top:14px">${barRows}</div>
+      <div style="padding:14px 18px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin-bottom:14px">
+          ${cards || '<div style="color:rgba(255,255,255,.3);font-size:13px;padding:8px 0">Нет данных за период</div>'}
+        </div>
+        ${bars ? `<div style="border-top:1px solid rgba(255,255,255,.06);padding-top:12px">${bars}</div>` : ''}
       </div>
     </div>`;
   });
