@@ -715,14 +715,15 @@ function switchView(v,el){
   document.getElementById('view-main').style.display=v==='main'?'block':'none';
   document.getElementById('view-managers').style.display=v==='managers'?'block':'none';
   document.getElementById('view-adspend').style.display=v==='adspend'?'block':'none';
+  document.getElementById('view-products').style.display=v==='products'?'block':'none';
   document.getElementById('global-filters').style.display=v==='main'?'flex':'none';
   const mgrF = document.getElementById('mgr-filters'); if(mgrF) mgrF.style.display=v==='managers'?'flex':'none';
-  document.getElementById('mgr-filters').style.display=v==='managers'?'flex':'none';
   document.getElementById('ad-filters').style.display=v==='adspend'?'flex':'none';
-  const titles={main:'Обзор продаж',managers:'Менеджеры',adspend:'Расходы на рекламу'};
-  document.getElementById('tb-title').textContent=titles[v];
+  const titles={main:'Обзор продаж',managers:'Менеджеры',adspend:'Расходы на рекламу',products:'Товары'};
+  document.getElementById('tb-title').textContent=titles[v]||'';
   if(v==='managers'){renderManagers();}
   if(v==='adspend'){renderAdSpend();}
+  if(v==='products'){renderProducts();}
 }
 
 // ═══════════════════ PERIOD PRESETS ═══════════════════════════════
