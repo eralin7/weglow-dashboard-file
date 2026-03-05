@@ -457,6 +457,22 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
     </div>
 
     <!-- ══ AD SPEND VIEW ══ -->
+  
+  <!-- ═══════════════════ PRODUCTS VIEW ═════════════════════════ -->
+  <div id="view-products" style="display:none;">
+    <div class="view-hdr" style="margin-bottom:18px">
+      <h2 style="font-size:20px;font-weight:700;color:#f1f5f9;margin:0">📦 Товары по компаниям</h2>
+      <div style="font-size:13px;color:rgba(255,255,255,.4);margin-top:4px">Количество проданных единиц · только завершённые сделки</div>
+    </div>
+    <!-- Period pills -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:22px" id="prod-period-pills">
+      <button class="pill active" onclick="setProdPeriod('all',this)">Всё время</button>
+    </div>
+    <!-- Company blocks rendered by JS -->
+    <div id="prod-content"></div>
+  </div>
+
+
     <div id="view-adspend" class="ad-view">
       <div class="view-hdr">
         <h2>Расходы на рекламу</h2>
@@ -1526,17 +1542,3 @@ pingRender();
 </script>
 </body>
 </html>
-  <!-- ═══════════════════ PRODUCTS VIEW ═════════════════════════ -->
-  <div id="view-products" style="display:none;">
-    <div class="view-hdr" style="margin-bottom:18px">
-      <h2 style="font-size:20px;font-weight:700;color:#f1f5f9;margin:0">📦 Товары по компаниям</h2>
-      <div style="font-size:13px;color:rgba(255,255,255,.4);margin-top:4px">Количество проданных единиц · только завершённые сделки</div>
-    </div>
-    <!-- Period pills -->
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:22px" id="prod-period-pills">
-      <button class="pill active" onclick="setProdPeriod('all',this)">Всё время</button>
-    </div>
-    <!-- Company blocks rendered by JS -->
-    <div id="prod-content"></div>
-  </div>
-
