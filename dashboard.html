@@ -307,6 +307,9 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
     <button class="nav-item" onclick="switchView('adspend',this)">
       <span class="icon">◇</span> Реклама
     </button>
+    <a onclick="switchView('products',this)" class="nav-item" id="nav-products" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:rgba(255,255,255,.55);cursor:pointer;padding:6px 8px;border-radius:8px;transition:all .15s;">
+      <span class="icon">📦</span> <span style="font-size:13px;">Товары</span>
+    </a>
     <a href="ad.html" class="nav-item" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:rgba(255,255,255,.55);margin-top:4px;border-top:1px solid rgba(255,255,255,.07);padding-top:8px;">
       <span class="icon">✏️</span> <span style="font-size:13px;">Кабинет рекламы</span>
     </a>
@@ -492,6 +495,7 @@ let MANAGERS = MANAGERS_STATIC; // Always start fresh, Supabase overwrites below
 const AD_SPEND_STATIC = {"Коллаген":{"01.02.2026":318000,"02.02.2026":327010,"03.02.2026":296270,"04.02.2026":172640,"05.02.2026":190840,"06.02.2026":267280,"07.02.2026":309920,"08.02.2026":267280,"09.02.2026":45240,"10.02.2026":353600,"11.02.2026":442000,"12.02.2026":624000,"13.02.2026":660920,"14.02.2026":589160,"15.02.2026":440440,"16.02.2026":534560,"17.02.2026":310960,"18.02.2026":424320,"19.02.2026":323440,"20.02.2026":327600,"21.02.2026":278200,"22.02.2026":278200,"23.02.2026":313560,"24.02.2026":364000,"25.02.2026":264160,"26.02.2026":229320},"Ummi":{"01.02.2026":163240,"02.02.2026":158470,"03.02.2026":124550,"04.02.2026":122720,"05.02.2026":157840,"06.02.2026":112320,"07.02.2026":130520,"08.02.2026":132080,"09.02.2026":46800,"10.02.2026":162760,"11.02.2026":166920,"12.02.2026":175240,"13.02.2026":305760,"14.02.2026":326040,"15.02.2026":251160,"16.02.2026":162760,"17.02.2026":120120,"18.02.2026":144040,"19.02.2026":121680,"20.02.2026":119600,"21.02.2026":109720,"22.02.2026":114920,"23.02.2026":145600,"24.02.2026":82160,"25.02.2026":100880,"26.02.2026":124800},"Кофе":{"01.02.2026":93280,"02.02.2026":96460,"03.02.2026":74200,"04.02.2026":62960,"05.02.2026":47230,"06.02.2026":47840,"07.02.2026":50960,"08.02.2026":61360,"09.02.2026":9360,"10.02.2026":52000,"11.02.2026":67600,"12.02.2026":197600,"13.02.2026":174200,"14.02.2026":187200,"15.02.2026":204360,"16.02.2026":88920,"17.02.2026":71240,"18.02.2026":91520,"19.02.2026":63920,"20.02.2026":106600,"21.02.2026":66560,"22.02.2026":92560,"23.02.2026":121160,"24.02.2026":130000,"25.02.2026":94640,"26.02.2026":107640}};
 let AD_SPEND = AD_SPEND_STATIC; // Always start fresh, Supabase overwrites below
 
+let CROSS_SALES = (_loaded && _loaded.CROSS_SALES) ? _loaded.CROSS_SALES : {};
 let PLANS = _loaded && _loaded.PLANS ? _loaded.PLANS : {'col':{'03.2026':86000000,'02.2026':60000000,'01.2026':60000000,'12.2025':60000000,'11.2025':60000000,'10.2025':60000000},'ummi':{'03.2026':25000000,'02.2026':30000000,'01.2026':30000000,'12.2025':30000000,'11.2025':30000000},'coffee':{'03.2026':30000000,'02.2026':15000000,'01.2026':15000000,'12.2025':15000000}};
 
 const PROD_CFG = {
@@ -712,6 +716,7 @@ function switchView(v,el){
   document.getElementById('view-managers').style.display=v==='managers'?'block':'none';
   document.getElementById('view-adspend').style.display=v==='adspend'?'block':'none';
   document.getElementById('global-filters').style.display=v==='main'?'flex':'none';
+  const mgrF = document.getElementById('mgr-filters'); if(mgrF) mgrF.style.display=v==='managers'?'flex':'none';
   document.getElementById('mgr-filters').style.display=v==='managers'?'flex':'none';
   document.getElementById('ad-filters').style.display=v==='adspend'?'flex':'none';
   const titles={main:'Обзор продаж',managers:'Менеджеры',adspend:'Расходы на рекламу'};
@@ -1203,8 +1208,9 @@ async function loadFromSupabase() {
       // Reassign mutable globals
       if (d.RAW)      RAW      = d.RAW;
       if (d.MANAGERS) MANAGERS = d.MANAGERS;
-      if (d.AD_SPEND) AD_SPEND = d.AD_SPEND;
-      if (d.PLANS)    PLANS    = d.PLANS;
+      if (d.AD_SPEND)    AD_SPEND    = d.AD_SPEND;
+      if (d.PLANS)       PLANS       = d.PLANS;
+      if (d.CROSS_SALES) CROSS_SALES = d.CROSS_SALES;
       // Update badge
       const badge = document.getElementById('data-badge');
       if (badge && rows[0].updated_at) {
@@ -1232,6 +1238,7 @@ async function loadFromSupabase() {
       render();
       if(activeView==='managers') renderManagers();
       if(activeView==='adspend') renderAdSpend();
+      if(activeView==='products') renderProducts();
       // Update sidebar KPI with fresh data
       const _now=new Date(); const _td=_lastDay(_now.getFullYear(),_now.getMonth()+1);
       renderSidebarKPI(_now, _now.getDate(), _td);
@@ -1332,7 +1339,7 @@ function initDynamicUI() {
 
   // Build month pills dynamically for all 3 filter groups
   const monthKeys = Object.keys(PRESETS).filter(k => k.startsWith('m_'));
-  [['main','setPreset'],['mgr','setMgrPreset'],['ad','setAdPreset']].forEach(([prefix, fn]) => {
+  [['main','setPreset'],['mgr','setMgrPreset'],['ad','setAdPreset'],['prod','setProdPreset']].forEach(([prefix, fn]) => {
     const container = document.getElementById(`${prefix}-month-pills`);
     if (!container) return;
     monthKeys.forEach(key => {
@@ -1349,6 +1356,138 @@ initDynamicUI();
 render(); // render immediately with embedded data so page is not blank
 // Then load fresh data from Supabase (will re-render with live data)
 loadFromSupabase();
+
+
+// ═══════════════════ PRODUCTS VIEW ════════════════════════════════
+const PROD_MONTHS_ORDER = ['09.2025','10.2025','11.2025','12.2025','01.2026','02.2026','03.2026'];
+const PROD_MONTH_LABELS = {'09.2025':'Сен','10.2025':'Окт','11.2025':'Ноя','12.2025':'Дек','01.2026':'Янв','02.2026':'Фев','03.2026':'Мар'};
+
+// Static product data (from CSV analysis) — updated by server via CROSS_SALES
+const PROD_DATA_STATIC = {
+  'Коллаген': {
+    color:'#818cf8',
+    products: {
+      'Коллаген (упаковки)': { own:true,  total:111374, by_month:{'02.2026':105535,'01.2026':1779,'12.2025':1302,'11.2025':1896,'10.2025':859,'09.2025':1} },
+      'Коллаген Красный':    { own:true,  total:7370,   by_month:{'02.2026':2105,'01.2026':1460,'12.2025':1130,'11.2025':1827,'10.2025':846} },
+      'Коллаген Синий':      { own:true,  total:449,    by_month:{'02.2026':164,'01.2026':90,'12.2025':53,'11.2025':69,'10.2025':72,'09.2025':1} },
+      'Коллаген Кофе':       { own:true,  total:569,    by_month:{'02.2026':245,'01.2026':213,'12.2025':111} },
+      'Детский Ummi':        { own:false, total:79,     by_month:{'02.2026':34,'01.2026':35,'12.2025':10} },
+    }
+  },
+  'Ummi': {
+    color:'#34d399',
+    products: {
+      'Ummi (кол-во)':    { own:true,  total:823, by_month:{'02.2026':369,'01.2026':428,'12.2025':25,'02.2025':1} },
+      'Коллаген Красный': { own:false, total:57,  by_month:{'02.2026':49,'01.2026':8} },
+      'Коллаген Синий':   { own:false, total:8,   by_month:{'02.2026':7,'01.2026':1} },
+      'Коллаген Кофе':    { own:false, total:13,  by_month:{'02.2026':9,'01.2026':4} },
+    }
+  },
+  'Кофе': {
+    color:'#fbbf24',
+    products: {
+      'Кофе (кол-во)':    { own:true,  total:194, by_month:{'02.2026':166,'03.2026':1,'01.2026':27} },
+      'Коллаген Красный': { own:false, total:228, by_month:{'03.2026':49,'02.2026':158,'01.2026':21} },
+      'Коллаген Синий':   { own:false, total:20,  by_month:{'02.2026':18,'03.2026':2} },
+      'Ummi':             { own:false, total:8,   by_month:{'03.2026':6,'02.2026':2} },
+    }
+  }
+};
+
+let activeProdPeriod2 = 'all';
+
+function getQtyProd(prod, period) {
+  if (period === 'all') return prod.total;
+  return prod.by_month[period] || 0;
+}
+
+function setProdPeriod(period, el) {
+  activeProdPeriod2 = period;
+  document.querySelectorAll('#prod-period-pills .pill').forEach(p => p.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderProducts();
+}
+
+function renderProducts() {
+  const period = activeProdPeriod2;
+
+  // Build period pills dynamically on first render
+  const pillsEl = document.getElementById('prod-period-pills');
+  if (pillsEl && pillsEl.children.length <= 1) {
+    const months = PROD_MONTHS_ORDER.slice().reverse();
+    months.forEach(m => {
+      const btn = document.createElement('button');
+      btn.className = 'pill';
+      btn.textContent = PROD_MONTH_LABELS[m] + ' ' + m.split('.')[1];
+      btn.onclick = function(){ setProdPeriod(m, this); };
+      pillsEl.appendChild(btn);
+    });
+  }
+
+  const companies = ['Коллаген','Ummi','Кофе'];
+  let html = '';
+
+  for (const comp of companies) {
+    const d = PROD_DATA_STATIC[comp];
+    const color = d.color;
+    const prods = Object.entries(d.products);
+    const totalQty = prods.reduce((s,[,p]) => s + getQtyProd(p, period), 0);
+    const maxQty = Math.max(...prods.map(([,p]) => getQtyProd(p, period)), 1);
+
+    // Product cards
+    const cards = prods.map(([name, p]) => {
+      const qty = getQtyProd(p, period);
+      if (period !== 'all' && qty === 0) return '';
+      const tag = p.own
+        ? `<span style="display:inline-block;margin-top:8px;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;background:${color}22;color:${color}">свой товар</span>`
+        : `<span style="display:inline-block;margin-top:8px;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;background:rgba(255,255,255,.07);color:rgba(255,255,255,.4)">партнёр</span>`;
+      const maxBar = Math.max(...PROD_MONTHS_ORDER.map(m => p.by_month[m]||0), 1);
+      const miniBars = PROD_MONTHS_ORDER.map(m => {
+        const v = p.by_month[m]||0;
+        const h = v>0 ? Math.max(4, Math.round(v/maxBar*36)) : 2;
+        const op = period===m?'1': period==='all'?'.65':'.2';
+        return `<div style="display:flex;flex-direction:column;align-items:center;flex:1">
+          <div title="${PROD_MONTH_LABELS[m]}: ${v.toLocaleString('ru-RU')} шт" style="height:${h}px;background:${color};opacity:${op};width:100%;border-radius:3px 3px 0 0;cursor:default"></div>
+          <div style="font-size:8px;color:rgba(255,255,255,.3);margin-top:2px">${PROD_MONTH_LABELS[m]}</div>
+        </div>`;
+      }).join('');
+      return `<div style="background:#1a2235;border-radius:10px;padding:14px;border:1px solid rgba(255,255,255,.07);position:relative;overflow:hidden;transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:${p.own?color:'rgba(255,255,255,.15)'};border-radius:10px 10px 0 0"></div>
+        <div style="font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">${name}</div>
+        <div style="font-size:28px;font-weight:800;letter-spacing:-1px;color:${p.own?color:'#f1f5f9'};line-height:1">${qty.toLocaleString('ru-RU')}</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.3);margin-top:2px">единиц</div>
+        ${tag}
+        <div style="display:flex;gap:4px;margin-top:14px;align-items:flex-end;height:44px">${miniBars}</div>
+      </div>`;
+    }).filter(Boolean).join('');
+
+    // Horizontal bars
+    const barRows = prods.map(([name, p]) => {
+      const qty = getQtyProd(p, period);
+      if (!qty) return '';
+      const pct = Math.round(qty/maxQty*100);
+      return `<div style="display:grid;grid-template-columns:170px 1fr 80px;align-items:center;gap:10px;padding:7px 0">
+        <div style="font-size:12px;color:rgba(255,255,255,.6);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</div>
+        <div style="background:rgba(255,255,255,.05);border-radius:4px;height:8px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${p.own?color:'rgba(255,255,255,.2)'};border-radius:4px;transition:width .5s"></div>
+        </div>
+        <div style="font-size:12px;font-weight:700;text-align:right;color:${p.own?color:'rgba(255,255,255,.4)'}">${qty.toLocaleString('ru-RU')} шт</div>
+      </div>`;
+    }).filter(Boolean).join('');
+
+    html += `<div style="margin-bottom:28px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.07)">
+        <div style="width:10px;height:10px;border-radius:50%;background:${color}"></div>
+        <div style="font-size:16px;font-weight:800;letter-spacing:-.3px;color:${color}">${comp}</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.35);margin-left:auto">Итого: ${totalQty.toLocaleString('ru-RU')} ед.</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:10px;margin-bottom:14px">${cards}</div>
+      <div class="card"><div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.5);margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px">Сравнение</div>${barRows}</div>
+    </div>`;
+  }
+
+  document.getElementById('prod-content').innerHTML = html;
+}
 
 // ── Keep Render alive + auto-refresh data every 60s ──────────
 const RENDER_URL = 'https://weglow-autosync.onrender.com';
@@ -1386,3 +1525,17 @@ pingRender();
 </script>
 </body>
 </html>
+  <!-- ═══════════════════ PRODUCTS VIEW ═════════════════════════ -->
+  <div id="view-products" style="display:none;">
+    <div class="view-hdr" style="margin-bottom:18px">
+      <h2 style="font-size:20px;font-weight:700;color:#f1f5f9;margin:0">📦 Товары по компаниям</h2>
+      <div style="font-size:13px;color:rgba(255,255,255,.4);margin-top:4px">Количество проданных единиц · только завершённые сделки</div>
+    </div>
+    <!-- Period pills -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:22px" id="prod-period-pills">
+      <button class="pill active" onclick="setProdPeriod('all',this)">Всё время</button>
+    </div>
+    <!-- Company blocks rendered by JS -->
+    <div id="prod-content"></div>
+  </div>
+
