@@ -287,535 +287,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script>
-// ══════════════════════════════════════════════
-// CONFIG
-// ══════════════════════════════════════════════
-const DIR_PASSWORD = 'director2026';
-const SUPABASE_URL = 'https://bdyakgmeibpdkisbiykt.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkeWFrZ21laWJwZGtpc2JpeWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTQzOTMsImV4cCI6MjA4Nzc5MDM5M30.nA187grJR6XFQRmTP6WOM-6-1dZK1EzYNNP2JH9aAMg';
 
-const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
-
-// ══════════════════════════════════════════════
-// PASSWORD
-// ══════════════════════════════════════════════
-function checkPw(){
-  if(document.getElementById('pw-input').value === DIR_PASSWORD){
-    document.getElementById('pw-screen').style.display='none';
-    document.getElementById('app').style.display='block';
-    sessionStorage.setItem('dir_auth','1');
-    init();
-  } else {
-    document.getElementById('pw-err').style.display='block';
-    document.getElementById('pw-input').value='';
-    document.getElementById('pw-input').focus();
-  }
-}
-if(sessionStorage.getItem('dir_auth')==='1'){
-  document.getElementById('pw-screen').style.display='none';
-  document.getElementById('app').style.display='block';
-}
-
-// ══════════════════════════════════════════════
-// SUPABASE
-// ══════════════════════════════════════════════
-const SB_H = {
-  'apikey': SUPABASE_KEY,
-  'Authorization': `Bearer ${SUPABASE_KEY}`,
-  'Content-Type': 'application/json'
-};
-async function sbGet(url){ const r=await fetch(url,{headers:SB_H}); if(!r.ok)throw new Error(r.status); return r.json(); }
-async function sbPost(url,body,method='POST'){ const r=await fetch(url,{method,headers:{...SB_H,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(body)}); if(!r.ok){const t=await r.text();throw new Error(t);} }
-
-// ══════════════════════════════════════════════
-// STATE
-// ══════════════════════════════════════════════
-// plans format: { "MM.YYYY": {col, ummi, coffee} }
-let plans = {};
-let selectedMonth = null;
-
-function fmtM(n){ if(!n)return '0 ₸'; return Math.round(n).toLocaleString('ru-RU')+' ₸'; }
-function fmt(n){ return (n||0).toLocaleString('ru-RU'); }
-
-// ══════════════════════════════════════════════
-// LOAD
-// ══════════════════════════════════════════════
-async function loadPlans(){
-  setBadge('Загрузка...','load');
-  try {
-    const rows = await sbGet(`${SUPABASE_URL}/rest/v1/weglow_plans?select=month,col,ummi,coffee&order=month.desc`);
-    plans = {};
-    for(const r of rows) plans[r.month] = {col:r.col||0, ummi:r.ummi||0, coffee:r.coffee||0};
-    setBadge('Синхронизировано ✓','ok');
-    buildMonthSelector();
-    renderHistory();
-    fillForm();
-    // Populate ROP month selector with same months
-    const ropSel = document.getElementById('rop-month-sel');
-    if(ropSel){
-      ropSel.innerHTML = '';
-      const monthOpts = document.getElementById('month-sel').options;
-      for(const opt of monthOpts){
-        ropSel.appendChild(opt.cloneNode(true));
-      }
-      if(ropSel.options.length) { ropSel.value = ropSel.options[0].value; loadRopStats(); }
-    }
-  } catch(e){
-    setBadge('Ошибка','err');
-    console.error(e);
-    // Fallback to embedded plans if Supabase fails
-    plans = {
-      '03.2026':{col:86000000,ummi:25000000,coffee:30000000},
-      '02.2026':{col:60000000,ummi:30000000,coffee:15000000},
-      '01.2026':{col:60000000,ummi:30000000,coffee:15000000},
-      '12.2025':{col:60000000,ummi:30000000,coffee:15000000},
-    };
-    buildMonthSelector();
-    renderHistory();
-    fillForm();
-  }
-}
-
-// ══════════════════════════════════════════════
-// MONTH SELECTOR
-// ══════════════════════════════════════════════
-function buildMonthSelector(){
-  const now = new Date();
-  const curMK = `${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
-
-  // Collect all months: existing + current + next 2
-  const monthSet = new Set(Object.keys(plans));
-  monthSet.add(curMK);
-  // Add next 2 months
-  for(let i=1;i<=2;i++){
-    const d = new Date(now.getFullYear(), now.getMonth()+i, 1);
-    monthSet.add(`${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`);
-  }
-
-  const sorted = [...monthSet].sort((a,b)=>{
-    const [am,ay]=a.split('.'); const [bm,by]=b.split('.');
-    return (+by*12+ +bm)-(+ay*12+ +am);
-  });
-
-  const sel = document.getElementById('month-sel');
-  sel.innerHTML = sorted.map(m=>{
-    const [mm,yy] = m.split('.');
-    const label = `${MONTH_NAMES[+mm-1]} ${yy}`;
-    return `<option value="${m}" ${m===curMK?'selected':''}>${label}${m===curMK?' (текущий)':''}</option>`;
-  }).join('');
-
-  if(!selectedMonth) selectedMonth = curMK;
-  sel.value = selectedMonth;
-  updateMonthLabel();
-}
-
-function onMonthChange(){
-  selectedMonth = document.getElementById('month-sel').value;
-  updateMonthLabel();
-  fillForm();
-}
-
-function updateMonthLabel(){
-  if(!selectedMonth) return;
-  const [mm,yy] = selectedMonth.split('.');
-  document.getElementById('selected-month-label').textContent = `${MONTH_NAMES[+mm-1]} ${yy}`;
-}
-
-function addNextMonth(){
-  // Find latest month in selector and add one more after it
-  const sel = document.getElementById('month-sel');
-  const options = [...sel.options].map(o=>o.value);
-  // Find earliest (last in sorted desc list)
-  const earliest = options[options.length-1];
-  const [mm,yy] = earliest.split('.');
-  const d = new Date(+yy, +mm-1-1, 1); // one month before earliest
-  const newMK = `${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
-  if(!options.includes(newMK)){
-    plans[newMK] = {col:0,ummi:0,coffee:0};
-    selectedMonth = newMK;
-    buildMonthSelector();
-    fillForm();
-  }
-}
-
-// ══════════════════════════════════════════════
-// FORM
-// ══════════════════════════════════════════════
-function fillForm(){
-  if(!selectedMonth) return;
-  const p = plans[selectedMonth] || {col:0,ummi:0,coffee:0};
-  document.getElementById('plan-col').value    = p.col    || '';
-  document.getElementById('plan-ummi').value   = p.ummi   || '';
-  document.getElementById('plan-coffee').value = p.coffee || '';
-
-  const showCur = (id, val) => {
-    document.getElementById(id).innerHTML = val
-      ? `Текущий: <strong>${fmtM(val)}</strong>`
-      : `<span style="color:var(--muted)">Не задан</span>`;
-  };
-  showCur('cur-col',    p.col);
-  showCur('cur-ummi',   p.ummi);
-  showCur('cur-coffee', p.coffee);
-}
-
-// ══════════════════════════════════════════════
-// SAVE
-// ══════════════════════════════════════════════
-async function savePlans(){
-  const col    = parseInt(document.getElementById('plan-col').value)||0;
-  const ummi   = parseInt(document.getElementById('plan-ummi').value)||0;
-  const coffee = parseInt(document.getElementById('plan-coffee').value)||0;
-
-  if(!col && !ummi && !coffee){ showStatus('Введите хотя бы один план', 'err'); return; }
-
-  document.getElementById('save-btn').disabled = true;
-  showStatus('Сохранение...', 'load');
-
-  try {
-    // Save to weglow_plans table
-    await sbPost(`${SUPABASE_URL}/rest/v1/weglow_plans`,
-      {month: selectedMonth, col, ummi, coffee});
-
-    plans[selectedMonth] = {col, ummi, coffee};
-
-    // Sync plans into weglow_data so dashboard reads them
-    await syncPlansToDashboard();
-
-    fillForm();
-    renderHistory();
-    toast(`✓ Планы на ${document.getElementById('selected-month-label').textContent} сохранены`, 'ok');
-    showStatus('');
-  } catch(e){
-    showStatus('Ошибка: '+e.message, 'err');
-    toast('Ошибка сохранения', 'err');
-  } finally {
-    document.getElementById('save-btn').disabled = false;
-  }
-}
-
-async function syncPlansToDashboard(){
-  // Build PLANS in dashboard format: {col:{MM.YYYY:amount}, ummi:{...}, coffee:{...}}
-  const PLANS = {col:{}, ummi:{}, coffee:{}};
-  for(const [month, p] of Object.entries(plans)){
-    const [mm,yy] = month.split('.');
-    const key = `${mm}.${yy}`;
-    if(p.col)    PLANS.col[key]    = p.col;
-    if(p.ummi)   PLANS.ummi[key]   = p.ummi;
-    if(p.coffee) PLANS.coffee[key] = p.coffee;
-  }
-  // Get existing weglow_data and update PLANS
-  let rows;
-  try { rows = await sbGet(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data`); }
-  catch(e){ rows = []; }
-  let payload = rows && rows[0] ? rows[0].data : {};
-  payload.PLANS = PLANS;
-  payload.updatedAt = new Date().toISOString();
-  await sbPost(`${SUPABASE_URL}/rest/v1/weglow_data`,
-    {id:1, data:payload, updated_at:new Date().toISOString()});
-}
-
-function showStatus(text, type){
-  const el = document.getElementById('save-status');
-  el.textContent = text;
-  el.className = 'save-status' + (type==='ok'?' save-ok':type==='err'?' save-err':'');
-}
-
-// ══════════════════════════════════════════════
-// HISTORY TABLE
-// ══════════════════════════════════════════════
-function renderHistory(){
-  const now = new Date();
-  const curMK = `${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
-
-  const sorted = Object.entries(plans).sort((a,b)=>{
-    const [am,ay]=a[0].split('.'); const [bm,by]=b[0].split('.');
-    return (+by*12+ +bm)-(+ay*12+ +am);
-  });
-
-  if(!sorted.length){
-    document.getElementById('history-wrap-new')||document.getElementById('history-wrap').innerHTML='<div style="color:var(--muted);padding:24px;text-align:center">Нет данных</div>';
-    return;
-  }
-
-  const rows = sorted.map(([month, p])=>{
-    const [mm,yy] = month.split('.');
-    const label = `${MONTH_NAMES[+mm-1]} ${yy}`;
-    const isCur = month===curMK;
-    const isSel = month===selectedMonth;
-    const total = (p.col||0)+(p.ummi||0)+(p.coffee||0);
-    return `<tr class="${isCur?'cur-row':''}">
-      <td style="font-weight:600">${label} ${isCur?'<span class="tag-cur">текущий</span>':''}</td>
-      <td style="color:#1a56db;font-weight:600">${fmtM(p.col)}</td>
-      <td style="color:#0a7c5c;font-weight:600">${fmtM(p.ummi)}</td>
-      <td style="color:#b45309;font-weight:600">${fmtM(p.coffee)}</td>
-      <td style="font-weight:700">${fmtM(total)}</td>
-      <td><button class="edit-btn" onclick="editMonth('${month}')">✏️ Изменить</button></td>
-    </tr>`;
-  }).join('');
-
-  document.getElementById('history-wrap-new')||document.getElementById('history-wrap').innerHTML = `
-    <table class="dt">
-      <thead><tr>
-        <th>Месяц</th>
-        <th style="color:#1a56db">Коллаген</th>
-        <th style="color:#0a7c5c">Ummi</th>
-        <th style="color:#b45309">Кофе</th>
-        <th>Итого</th>
-        <th></th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
-}
-
-function editMonth(month){
-  selectedMonth = month;
-  document.getElementById('month-sel').value = month;
-  updateMonthLabel();
-  fillForm();
-  window.scrollTo({top:0,behavior:'smooth'});
-}
-
-// ══════════════════════════════════════════════
-// UI HELPERS
-// ══════════════════════════════════════════════
-function setBadge(text, type){
-  const b = document.getElementById('sync-badge');
-  b.textContent = text;
-  b.style.color = type==='ok'?'#4ade80':type==='err'?'#f87171':'#a5b4fc';
-}
-
-let toastTimer;
-function toast(text, type='ok'){
-  const el = document.getElementById('toast');
-  el.textContent = text;
-  el.className = `toast ${type} show`;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=>el.classList.remove('show'), 3000);
-}
-
-// ══════════════════════════════════════════════
-// INIT
-// ══════════════════════════════════════════════
-function init(){ loadPlans(); }
-if(sessionStorage.getItem('dir_auth')==='1') init();
-
-
-// ═══════════════════ ROP PLAN / FACT ═══════════════════════════
-function onRopPeriodChange() {
-  const type = document.getElementById('rop-period-type').value;
-  document.getElementById('rop-month-sel').style.display = type === 'month' ? '' : 'none';
-  const cw = document.getElementById('rop-custom-wrap');
-  cw.style.display = type === 'custom' ? 'flex' : 'none';
-  loadRopStats();
-}
-
-function getRopDateRange() {
-  const type = document.getElementById('rop-period-type').value;
-  if (type === 'custom') {
-    const from = document.getElementById('rop-from').value;
-    const to   = document.getElementById('rop-to').value;
-    if (!from || !to) return null;
-    // convert YYYY-MM-DD → DD.MM.YYYY
-    const cvt = s => s.split('-').reverse().join('.');
-    return { from: cvt(from), to: cvt(to), label: cvt(from) + ' — ' + cvt(to) };
-  }
-  // month mode
-  const month = document.getElementById('rop-month-sel').value;
-  if (!month) return null;
-  const [y, m] = month.split('-').map(Number);
-  const lastDay = new Date(y, m, 0).getDate();
-  const pad = n => String(n).padStart(2,'0');
-  return {
-    from: `01.${pad(m)}.${y}`,
-    to:   `${pad(lastDay)}.${pad(m)}.${y}`,
-    label: new Date(y, m-1, 1).toLocaleString('ru-RU',{month:'long',year:'numeric'})
-  };
-}
-
-async function loadRopStats() {
-  const wrap = document.getElementById('rop-stats-wrap');
-  wrap.innerHTML = '<div style="color:var(--muted);padding:24px;text-align:center;">⟳ Загрузка...</div>';
-
-  try {
-    const range = getRopDateRange();
-    if (!range) { wrap.innerHTML = '<div style="color:var(--muted);padding:16px;text-align:center">Выберите период</div>'; return; }
-
-    const parseD = s => { const [d,m,y]=s.split('.').map(Number); return new Date(y,m-1,d); };
-    const fromD = parseD(range.from), toD = parseD(range.to);
-
-    // 1. ROP groups from weglow_rop_managers
-    const allMgrs = await sbGet(`${SUPABASE_URL}/rest/v1/weglow_rop_managers?select=rop,name`);
-    const ropGroups = {};
-    for (const r of allMgrs) {
-      if (!ropGroups[r.rop]) ropGroups[r.rop] = [];
-      ropGroups[r.rop].push(r.name);
-    }
-    const ropNames = Object.keys(ropGroups).sort();
-    if (!ropNames.length) {
-      wrap.innerHTML = '<div style="color:var(--muted);padding:16px;text-align:center">Нет групп РОП. Настройте в кабинете РОП.</div>';
-      return;
-    }
-
-    // 2. Plans: sum all months in range from weglow_mgr_plans
-    // Get all months that overlap with range
-    const months = [];
-    let cur = new Date(fromD.getFullYear(), fromD.getMonth(), 1);
-    const endM = new Date(toD.getFullYear(), toD.getMonth(), 1);
-    while (cur <= endM) {
-      months.push(`${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}`);
-      cur.setMonth(cur.getMonth()+1);
-    }
-    const mgrPlan = {}; // manager → total plan for period
-    for (const mo of months) {
-      const rows = await sbGet(`${SUPABASE_URL}/rest/v1/weglow_mgr_plans?month=eq.${mo}&select=manager,plan`);
-      for (const r of rows) {
-        mgrPlan[r.manager] = (mgrPlan[r.manager] || 0) + (r.plan || 0);
-      }
-    }
-
-    // 3. Load managers data with daily breakdown from weglow_data
-    const dataRows = await sbGet(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data`);
-    const managersData = dataRows[0]?.data?.MANAGERS || {};
-
-    // Compute per-manager fact directly from manager's daily data for the period
-    const mgrFact = {}; // manager → {leads, deals, budget}
-    for (const [prod, mgrList] of Object.entries(managersData)) {
-      for (const mgr of (mgrList || [])) {
-        if (!mgrFact[mgr.name]) mgrFact[mgr.name] = { leads:0, deals:0, budget:0 };
-        // Use daily breakdown if available (uploaded from CSV)
-        if (mgr.daily && Object.keys(mgr.daily).length > 0) {
-          for (const [dateStr, vals] of Object.entries(mgr.daily)) {
-            const [dd,dmo,dy] = dateStr.split('.').map(Number);
-            const d = new Date(dy, dmo-1, dd);
-            if (d >= fromD && d <= toD) {
-              mgrFact[mgr.name].leads  += vals[0]||0;
-              mgrFact[mgr.name].deals  += vals[1]||0;
-              mgrFact[mgr.name].budget += vals[2]||0;
-            }
-          }
-        } else {
-          // Fallback: proportional from all-time data using RAW totals
-          const rawData = dataRows[0]?.data?.RAW || {};
-          const pt = {leads:0,deals:0,budget:0}, at = {leads:0,deals:0,budget:0};
-          const prodDates = rawData[prod] || {};
-          for (const [dateStr, vals] of Object.entries(prodDates)) {
-            const [dd,dmo,dy] = dateStr.split('.').map(Number);
-            const d = new Date(dy,dmo-1,dd);
-            at.leads+=vals[0]||0; at.deals+=vals[1]||0; at.budget+=vals[2]||0;
-            if (d>=fromD && d<=toD) {
-              pt.leads+=vals[0]||0; pt.deals+=vals[1]||0; pt.budget+=vals[2]||0;
-            }
-          }
-          const sL=at.leads>0?(mgr.leads||0)/at.leads:0;
-          const sD=at.deals>0?(mgr.deals||0)/at.deals:0;
-          const sB=at.budget>0?(mgr.budget||0)/at.budget:0;
-          mgrFact[mgr.name].leads  += Math.round(sL*pt.leads);
-          mgrFact[mgr.name].deals  += Math.round(sD*pt.deals);
-          mgrFact[mgr.name].budget += Math.round(sB*pt.budget);
-        }
-      }
-    }
-
-    const fmt  = v => v >= 1000000 ? (v/1000000).toFixed(1)+'M' : v >= 1000 ? Math.round(v/1000)+'K' : String(v);
-    const pctCls = p => p>=80?'pct-g':p>=50?'pct-y':'pct-r';
-    const barClr  = p => p>=80?'#16a34a':p>=50?'#ca8a04':'#dc2626';
-
-    // ─── Build HTML ───────────────────────────────────────────
-    let html = `<div style="font-size:12px;color:var(--muted);margin-bottom:16px">Период: <strong style="color:var(--ink)">${range.label}</strong></div>`;
-
-    for (const rop of ropNames) {
-      const mgrs = ropGroups[rop] || [];
-      let ropPlan=0, ropBudget=0, ropLeads=0, ropDeals=0;
-
-      const mgrRows = mgrs.map(mgr => {
-        const plan   = mgrPlan[mgr] || 0;
-        const fact   = mgrFact[mgr] || {budget:0,leads:0,deals:0};
-        ropPlan   += plan;
-        ropBudget += fact.budget;
-        ropLeads  += fact.leads;
-        ropDeals  += fact.deals;
-        const pct  = plan>0 ? Math.round(fact.budget/plan*100) : 0;
-        const conv = fact.leads>0 ? (fact.deals/fact.leads*100).toFixed(1) : '0';
-        return {mgr, plan, fact, pct, conv};
-      });
-
-      const ropPct = ropPlan>0 ? Math.round(ropBudget/ropPlan*100) : 0;
-      const ropConv = ropLeads>0 ? (ropDeals/ropLeads*100).toFixed(1) : '0';
-
-      html += `
-      <div style="margin-bottom:24px;border:1px solid var(--line);border-radius:12px;overflow:hidden">
-        <!-- ROP header -->
-        <div style="background:var(--bg);padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-          <div style="font-weight:700;font-size:15px;color:var(--ink);flex:1">${rop}</div>
-          <div style="display:flex;gap:16px;flex-wrap:wrap">
-            <div style="text-align:center">
-              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Лиды</div>
-              <div style="font-size:16px;font-weight:700;color:var(--ink)">${ropLeads.toLocaleString('ru')}</div>
-            </div>
-            <div style="text-align:center">
-              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Сделки</div>
-              <div style="font-size:16px;font-weight:700;color:var(--ink)">${ropDeals.toLocaleString('ru')}</div>
-            </div>
-            <div style="text-align:center">
-              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Конверсия</div>
-              <div style="font-size:16px;font-weight:700;color:var(--ink)">${ropConv}%</div>
-            </div>
-            <div style="text-align:center">
-              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Факт</div>
-              <div style="font-size:16px;font-weight:700;color:var(--ink)">${fmt(ropBudget)} ₸</div>
-            </div>
-            <div style="text-align:center">
-              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">План</div>
-              <div style="font-size:16px;font-weight:700;color:var(--muted)">${fmt(ropPlan)} ₸</div>
-            </div>
-            <div style="text-align:center;min-width:70px">
-              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">% плана</div>
-              <div style="font-size:18px;font-weight:800" class="${pctCls(ropPct)}">${ropPct}%</div>
-              <div class="rop-bar" style="margin-top:4px"><div class="rop-fill" style="width:${Math.min(100,ropPct)}%;background:${barClr(ropPct)}"></div></div>
-            </div>
-          </div>
-        </div>
-        <!-- Managers table -->
-        <table class="rop-table" style="margin:0">
-          <thead><tr>
-            <th>Менеджер</th>
-            <th>Лиды</th>
-            <th>Сделки</th>
-            <th>Конверсия</th>
-            <th>Факт ₸</th>
-            <th>План ₸</th>
-            <th>%</th>
-          </tr></thead>
-          <tbody>
-            ${mgrRows.map(({mgr,plan,fact,pct,conv})=>`
-            <tr>
-              <td><div class="rop-name">${mgr}</div></td>
-              <td>${fact.leads.toLocaleString('ru')}</td>
-              <td>${fact.deals.toLocaleString('ru')}</td>
-              <td>${conv}%</td>
-              <td style="font-weight:600">${fmt(fact.budget)} ₸</td>
-              <td style="color:var(--muted)">${fmt(plan)} ₸</td>
-              <td>
-                <span class="${pctCls(pct)}">${pct}%</span>
-                <div class="rop-bar"><div class="rop-fill" style="width:${Math.min(100,pct)}%;background:${barClr(pct)}"></div></div>
-              </td>
-            </tr>`).join('')}
-          </tbody>
-        </table>
-      </div>`;
-    }
-
-    wrap.innerHTML = html;
-
-  } catch(e) {
-    wrap.innerHTML = `<div style="color:#dc2626;padding:16px">⚠ Ошибка: ${e.message}</div>`;
-    console.error(e);
-  }
-}
-</script>
-</body>
-</html>
 
 <script>
 // ══════════════════════════════════════════════
@@ -1168,19 +640,28 @@ function getRopDateRange() {
     const from = document.getElementById('rop-from').value;
     const to   = document.getElementById('rop-to').value;
     if (!from || !to) return null;
-    // convert YYYY-MM-DD → DD.MM.YYYY
     const cvt = s => s.split('-').reverse().join('.');
     return { from: cvt(from), to: cvt(to), label: cvt(from) + ' — ' + cvt(to) };
   }
-  // month mode
-  const month = document.getElementById('rop-month-sel').value;
-  if (!month) return null;
-  const [y, m] = month.split('-').map(Number);
+  // month mode — handle both YYYY-MM and MM.YYYY formats
+  let month = document.getElementById('rop-month-sel').value;
+  if (!month) {
+    // default to current month in YYYY-MM
+    const now = new Date();
+    month = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  }
+  let y, m;
+  if (month.includes('-')) {
+    [y, m] = month.split('-').map(Number);           // YYYY-MM
+  } else {
+    const parts = month.split('.');
+    m = Number(parts[0]); y = Number(parts[1]);       // MM.YYYY
+  }
   const lastDay = new Date(y, m, 0).getDate();
   const pad = n => String(n).padStart(2,'0');
   return {
-    from: `01.${pad(m)}.${y}`,
-    to:   `${pad(lastDay)}.${pad(m)}.${y}`,
+    from:  `01.${pad(m)}.${y}`,
+    to:    `${pad(lastDay)}.${pad(m)}.${y}`,
     label: new Date(y, m-1, 1).toLocaleString('ru-RU',{month:'long',year:'numeric'})
   };
 }
@@ -1400,9 +881,20 @@ function buildOverviewMonthSel() {
   }
   const sel = document.getElementById('overview-month-sel');
   if(sel) sel.innerHTML = opts.join('');
-  // Also populate history month sel
-  const rop = document.getElementById('rop-month-sel');
-  if(rop) rop.innerHTML = opts.join('');
+  // Also populate rop-month-sel in YYYY-MM format (needed by getRopDateRange)
+  const ropSel = document.getElementById('rop-month-sel');
+  if(ropSel) {
+    const now2 = new Date();
+    const ropOpts = [];
+    for(let i=-5; i<=2; i++){
+      const d = new Date(now2.getFullYear(), now2.getMonth()+i, 1);
+      const val = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      const lbl = `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
+      const isCur = (d.getMonth()===now2.getMonth() && d.getFullYear()===now2.getFullYear());
+      ropOpts.push(`<option value="${val}" ${isCur?'selected':''}>${lbl}${isCur?' (текущий)':''}</option>`);
+    }
+    ropSel.innerHTML = ropOpts.join('');
+  }
 }
 
 async function loadWgData() {
@@ -1667,6 +1159,28 @@ function dirTab(name, el) {
     if (d) d.style.display = t===name ? '' : 'none';
   });
   if (name==='analytics') { buildDirPeriod(); renderDirectorAnalytics(); }
+  if (name==='rop') { _ensureRopMonthSel(); loadRopStats(); }
+}
+
+function _ensureRopMonthSel() {
+  const sel = document.getElementById('rop-month-sel');
+  if (!sel) return;
+  if (sel.options.length === 0) {
+    const now = new Date();
+    const opts = [];
+    for (let i = -5; i <= 2; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth()+i, 1);
+      const val = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      const lbl = `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
+      const isCur = (d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear());
+      opts.push(`<option value="${val}" ${isCur?'selected':''}>${lbl}${isCur?' (текущий)':''}</option>`);
+    }
+    sel.innerHTML = opts.join('');
+  }
+  if (!sel.value) {
+    const now = new Date();
+    sel.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  }
 }
 
 // ══════════════════════════════════════════════
@@ -1676,15 +1190,20 @@ let _dirDonut=null, _dirTrend=null;
 
 function buildDirPeriod() {
   const sel = document.getElementById('dir-analytics-period');
-  if (!sel || sel.options.length > 0) return;
-  const months = Object.keys(plans).sort((a,b)=>{
+  if (!sel) return;
+  const now = new Date();
+  const curMK = `${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
+  const months = [...new Set([...Object.keys(plans), curMK])].sort((a,b)=>{
     const [am,ay]=a.split('.'), [bm,by]=b.split('.');
     return (+by*12+ +bm)-(+ay*12+ +am);
   });
   sel.innerHTML = months.map(m=>{
     const [mm,yy]=m.split('.');
-    return `<option value="${m}">${MONTH_NAMES[+mm-1]} ${yy}</option>`;
+    const isCur = m===curMK;
+    return `<option value="${m}" ${isCur?'selected':''}>${MONTH_NAMES[+mm-1]} ${yy}${isCur?' (текущий)':''}</option>`;
   }).join('');
+  // Force current month selected
+  if (!sel.value || sel.value !== curMK) sel.value = curMK;
 }
 
 async function renderDirectorAnalytics() {
