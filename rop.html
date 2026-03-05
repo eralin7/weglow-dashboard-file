@@ -178,6 +178,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
     <div class="tabs">
       <button class="tab active" onclick="switchTab('plans',this)">📊 Планы менеджеров</button>
       <button class="tab" onclick="switchTab('managers',this)">👥 Менеджеры группы</button>
+      <button class="tab" onclick="switchTab('analytics',this)">🏆 Рейтинг</button>
     </div>
 
     <!-- PLANS TAB -->
@@ -199,7 +200,24 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
     </div>
 
     <!-- MANAGERS TAB -->
-    <div id="tab-managers" style="display:none">
+    
+
+    <!-- ANALYTICS TAB -->
+    <div id="tab-analytics" style="display:none">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+        <span style="font-size:12px;font-weight:600;color:var(--muted)">Период:</span>
+        <select id="analytics-month-sel" class="month-sel" onchange="renderAnalytics()"></select>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">🏆 Рейтинг менеджеров <span id="analytics-period-label" style="font-size:11px;font-weight:500;color:var(--muted);margin-left:8px"></span></div>
+        <div id="analytics-rating"></div>
+      </div>
+      <div id="analytics-kpi" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:16px"></div>
+      <div class="card">
+        <div class="card-title">📈 Выручка по менеджерам</div>
+        <div style="padding:12px 16px 16px"><canvas id="analytics-chart" height="180"></canvas></div>
+      </div>
+    </div><div id="tab-managers" style="display:none">
       <div class="card">
         <div class="card-title">👥 Менеджеры в группе <span id="mgr-group-label" style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:8px;margin-left:4px"></span></div>
         <div class="mgr-list" id="mgr-list"></div>
@@ -216,8 +234,27 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
   </div>
 </div>
 
+    <!-- ANALYTICS TAB -->
+    <div id="tab-analytics" style="display:none">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+        <span style="font-size:12px;font-weight:600;color:var(--muted)">Период:</span>
+        <select id="analytics-month-sel" class="month-sel" onchange="renderAnalytics()"></select>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">🏆 Рейтинг менеджеров <span id="analytics-period-label" style="font-size:11px;font-weight:500;color:var(--muted);margin-left:8px"></span></div>
+        <div id="analytics-rating"></div>
+      </div>
+      <div id="analytics-kpi" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:16px"></div>
+      <div class="card">
+        <div class="card-title">📈 Выручка по менеджерам</div>
+        <div style="padding:12px 16px 16px"><canvas id="analytics-chart" height="180"></canvas></div>
+      </div>
+    </div>
+
+
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 // ══════════════════════════════════════════════
 // CONFIG
@@ -321,6 +358,7 @@ async function loadAll(){
     allSiteMgrs = [];
     if(wgRows && wgRows[0] && wgRows[0].data && wgRows[0].data.MANAGERS){
       const MANAGERS = wgRows[0].data.MANAGERS;
+      _storeWgManagers(MANAGERS);
       // Collect unique manager names across all products (mainly Коллаген for ROP)
       const nameSet = new Set();
       for(const [prod, list] of Object.entries(MANAGERS)){
@@ -391,8 +429,10 @@ if(_savedRop && ROP_PASSWORDS[_savedRop]) startApp();
 function switchTab(tab, el){
   document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
-  document.getElementById('tab-plans').style.display = tab==='plans'?'block':'none';
-  document.getElementById('tab-managers').style.display = tab==='managers'?'block':'none';
+  document.getElementById('tab-plans').style.display     = tab==='plans'?'block':'none';
+  document.getElementById('tab-managers').style.display  = tab==='managers'?'block':'none';
+  document.getElementById('tab-analytics').style.display = tab==='analytics'?'block':'none';
+  if (tab === 'analytics') renderAnalytics();
 }
 
 // ══════════════════════════════════════════════
@@ -406,11 +446,13 @@ function buildMonthSelector(){
     months.push(`${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`);
   }
   const curMK = `${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
-  const sel = document.getElementById('plan-month-sel');
-  sel.innerHTML = months.map(m=>{
+  const opts = months.map(m=>{
     const [mm,yy]=m.split('.');
     return `<option value="${m}" ${m===curMK?'selected':''}>${MONTH_NAMES[+mm-1]} ${yy}${m===curMK?' (текущий)':''}</option>`;
   }).join('');
+  document.getElementById('plan-month-sel').innerHTML = opts;
+  const asel = document.getElementById('analytics-month-sel');
+  if (asel) asel.innerHTML = opts;
   selectedPlanMonth = curMK;
 }
 
@@ -642,6 +684,186 @@ function toast(text,type='ok'){
   clearTimeout(_toastTimer);
   _toastTimer=setTimeout(()=>el.classList.remove('show'),3000);
 }
+
+
+// ══════════════════════════════════════════════
+// ANALYTICS TAB — Rating + Chart
+// ══════════════════════════════════════════════
+let analyticsChart = null;
+
+function renderAnalytics() {
+  const sel = document.getElementById('analytics-month-sel');
+  const monthKey = sel ? sel.value : selectedPlanMonth;
+  const [mm, yy] = monthKey.split('.');
+  const monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  const label = `${monthNames[+mm-1]} ${yy}`;
+  const el = document.getElementById('analytics-period-label');
+  if (el) el.textContent = label;
+
+  // Get MANAGERS data from loaded weglow_data
+  // managers[] is the current ROP group, planData has per-manager plans
+  // We need actual deals data → from wgData.MANAGERS
+  const mgrStats = [];
+
+  if (window._wgManagers) {
+    // Build from daily MANAGERS data
+    const from = `01.${monthKey}`;
+    const daysInMonth = new Date(+yy, +mm, 0).getDate();
+    const to = `${String(daysInMonth).padStart(2,'0')}.${monthKey}`;
+
+    managers.forEach(name => {
+      let leads=0, deals=0, budget=0;
+      // Search across all products
+      for (const [prod, list] of Object.entries(window._wgManagers)) {
+        if (!Array.isArray(list)) continue;
+        const mgr = list.find(m => m.name === name);
+        if (!mgr || !mgr.daily) continue;
+        for (const [d, v] of Object.entries(mgr.daily)) {
+          // Check if date is in this month
+          const parts = d.split('.');
+          if (parts.length === 3 && parts[1] === mm && parts[2] === yy) {
+            leads  += v[0]||0;
+            deals  += v[1]||0;
+            budget += v[2]||0;
+          }
+        }
+      }
+      const plan = planData[name]?.[monthKey] || 0;
+      const pct  = plan > 0 ? Math.round(budget/plan*100) : null;
+      const conv = leads > 0 ? +(deals/leads*100).toFixed(1) : 0;
+      const avgCheck = deals > 0 ? Math.round(budget/deals) : 0;
+      mgrStats.push({ name, leads, deals, budget, plan, pct, conv, avgCheck });
+    });
+  } else {
+    // Fallback: show plan-only data
+    managers.forEach(name => {
+      const plan = planData[name]?.[monthKey] || 0;
+      mgrStats.push({ name, leads:0, deals:0, budget:0, plan, pct:null, conv:0, avgCheck:0 });
+    });
+  }
+
+  mgrStats.sort((a,b) => b.budget - a.budget);
+  const medals = ['🥇','🥈','🥉'];
+  const totalBudget = mgrStats.reduce((s,m)=>s+m.budget,0);
+  const totalDeals  = mgrStats.reduce((s,m)=>s+m.deals,0);
+  const totalLeads  = mgrStats.reduce((s,m)=>s+m.leads,0);
+  const maxBudget   = mgrStats[0]?.budget || 1;
+
+  // Render rating table
+  const ratingEl = document.getElementById('analytics-rating');
+  if (ratingEl) {
+    if (!mgrStats.length) {
+      ratingEl.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:13px">Нет менеджеров в группе</div>';
+    } else {
+      ratingEl.innerHTML = `
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr style="border-bottom:2px solid var(--line)">
+              <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">#</th>
+              <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">Менеджер</th>
+              <th style="padding:10px 12px;text-align:right;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">Выручка</th>
+              <th style="padding:10px 12px;text-align:right;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">План %</th>
+              <th style="padding:10px 12px;text-align:right;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">Сделки</th>
+              <th style="padding:10px 12px;text-align:right;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">Конв.</th>
+              <th style="padding:10px 12px;text-align:right;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">Доля</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${mgrStats.map((m,i)=>{
+              const share = totalBudget>0 ? (m.budget/totalBudget*100).toFixed(1) : 0;
+              const barW  = maxBudget>0   ? Math.round(m.budget/maxBudget*100) : 0;
+              const pctColor = m.pct===null?'var(--muted)':m.pct>=100?'#16a34a':m.pct>=80?'#ca8a04':'#c0392b';
+              const pctText  = m.pct!==null ? m.pct+'%' : '—';
+              return `<tr style="border-bottom:1px solid var(--line2)" onmouseenter="this.style.background='var(--line2)'" onmouseleave="this.style.background=''">
+                <td style="padding:10px 12px;font-size:15px">${i<3?medals[i]:i+1}</td>
+                <td style="padding:10px 12px">
+                  <div style="font-size:13px;font-weight:${i===0?'700':'500'};color:var(--ink)">${m.name}</div>
+                  <div style="height:3px;background:var(--line);border-radius:2px;margin-top:5px;overflow:hidden">
+                    <div style="height:100%;width:${barW}%;background:${ropColor};border-radius:2px"></div>
+                  </div>
+                </td>
+                <td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:700;color:${ropColor}">${m.budget?fmt(m.budget)+' ₸':'—'}</td>
+                <td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:700;color:${pctColor}">${pctText}</td>
+                <td style="padding:10px 12px;text-align:right;font-size:13px;color:var(--ink)">${m.deals}</td>
+                <td style="padding:10px 12px;text-align:right;font-size:13px;color:var(--ink)">${m.conv}%</td>
+                <td style="padding:10px 12px;text-align:right;font-size:12px;color:var(--muted)">${share}%</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>`;
+    }
+  }
+
+  // KPI summary
+  const kpiEl = document.getElementById('analytics-kpi');
+  if (kpiEl) {
+    const avgConv = totalLeads>0 ? +(totalDeals/totalLeads*100).toFixed(1) : 0;
+    const avgCheck= totalDeals>0 ? Math.round(totalBudget/totalDeals) : 0;
+    const kpis = [
+      {l:'Выручка группы', v:totalBudget?(totalBudget/1e6).toFixed(2)+' М ₸':'—', c:ropColor},
+      {l:'Всего сделок',   v:totalDeals, c:'#1a56db'},
+      {l:'Всего лидов',    v:totalLeads, c:'#6366f1'},
+      {l:'Конверсия',      v:avgConv+'%', c:avgConv>=12?'#16a34a':'#c0392b'},
+      {l:'Средний чек',    v:avgCheck?fmt(avgCheck)+' ₸':'—', c:'#ca8a04'},
+    ];
+    kpiEl.innerHTML = kpis.map(k=>`
+      <div style="background:var(--bg);border:1.5px solid var(--line);border-radius:10px;padding:14px 16px">
+        <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">${k.l}</div>
+        <div style="font-size:20px;font-weight:700;color:${k.c}">${k.v}</div>
+      </div>`).join('');
+  }
+
+  // Bar chart
+  const ctx = document.getElementById('analytics-chart');
+  if (ctx && mgrStats.length && typeof Chart !== 'undefined') {
+    if (analyticsChart) analyticsChart.destroy();
+    const sorted = [...mgrStats].filter(m=>m.budget>0).sort((a,b)=>b.budget-a.budget);
+    analyticsChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: sorted.map(m => m.name.split(' ')[0]),
+        datasets: [
+          {
+            label: 'Выручка',
+            data: sorted.map(m=>m.budget),
+            backgroundColor: ropColor+'88',
+            borderColor: ropColor,
+            borderWidth: 1.5,
+            borderRadius: 4,
+          },
+          {
+            label: 'План',
+            data: sorted.map(m=>m.plan),
+            backgroundColor: 'rgba(148,163,184,.2)',
+            borderColor: 'rgba(148,163,184,.5)',
+            borderWidth: 1.5,
+            borderRadius: 4,
+            type: 'bar',
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        interaction: {mode:'index', intersect:false},
+        plugins: {
+          legend: { labels:{ font:{size:11}, padding:14, boxWidth:10 } },
+          tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${c.raw?Math.round(c.raw/1000)+'K ₸':'—'}` } }
+        },
+        scales: {
+          x: { ticks:{font:{size:10},maxRotation:30} },
+          y: { ticks:{font:{size:10}, callback:v=>v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v} }
+        }
+      }
+    });
+  }
+}
+
+// Store MANAGERS data when loaded for analytics use
+function _storeWgManagers(mgrs) { window._wgManagers = mgrs; }
+
+// fmt helper if not defined
+function fmt(n){ if(!n&&n!==0) return '—'; if(n>=1e6) return (n/1e6).toFixed(2)+' М'; if(n>=1e3) return (n/1e3).toFixed(0)+' К'; return n.toLocaleString('ru-RU'); }
+
 </script>
 </body>
 </html>

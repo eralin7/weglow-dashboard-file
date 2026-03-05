@@ -50,6 +50,8 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
   padding: 0 0 24px;
   position:fixed; top:0; left:0; bottom:0;
   z-index:100;
+  transition: transform .28s cubic-bezier(.4,0,.2,1);
+  overflow-y: auto;
 }
 .sb-logo {
   padding: 28px 24px 24px;
@@ -103,7 +105,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
 .sp-kpi-row .sp-kv.yellow { color:#fbbf24; }
 
 /* ─── MAIN ───────────────────────────────────────────── */
-.main { margin-left:220px; flex:1; display:flex; flex-direction:column; min-height:100vh; }
+.main { margin-left:220px; flex:1; display:flex; flex-direction:column; min-height:100vh; transition:margin-left .25s; }
 
 /* ─── TOPBAR ─────────────────────────────────────────── */
 .topbar {
@@ -288,7 +290,9 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
 }
 .sidebar-overlay {
   display:none; position:fixed; inset:0;
-  background:rgba(0,0,0,.55); z-index:99;
+  background:rgba(0,0,0,.55); z-index:150;
+  backdrop-filter:blur(2px);
+  -webkit-backdrop-filter:blur(2px);
 }
 .sidebar-overlay.open { display:block; }
 
@@ -317,23 +321,40 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
 .roi-val { font-size:13px; font-weight:700; }
 
 @media (max-width: 768px) {
-  .mob-menu-btn { display:flex; }
-  .sidebar { transform:translateX(-100%); transition:transform .25s ease; z-index:100; }
-  .sidebar.open { transform:translateX(0); }
-  .main { margin-left:0 !important; padding-top:0; }
-  .topbar { padding:0 12px 0 54px; height:48px; }
+  .mob-menu-btn { display:flex !important; }
+  .sidebar { transform:translateX(-100%); z-index:200; }
+  .sidebar.open { transform:translateX(0); box-shadow:4px 0 24px rgba(0,0,0,.3); }
+  .main { margin-left:0 !important; }
+  .topbar { padding:0 12px 0 56px; height:50px; position:sticky; top:0; z-index:50; }
   .topbar-title { font-size:13px; }
   #global-filters, #mgr-filters, #ad-filters { display:none !important; }
-  .page { padding:14px; }
+  .page { padding:12px; padding-top:16px; }
   .kpi-grid { grid-template-columns:repeat(2,1fr) !important; gap:8px; }
+  .kpi-card { padding:12px 14px; }
+  .kc-val { font-size:20px !important; }
   .charts-row { grid-template-columns:1fr !important; }
   .prod-stats { grid-template-columns:1fr !important; }
   .mgr-charts-3 { grid-template-columns:1fr !important; }
-  .dt-wrap { overflow-x:auto; }
-  table.dt { min-width:580px; }
+  .dt-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  table.dt { min-width:600px; }
   .card { padding:12px; }
+  .card-pad { padding:14px; }
   .sb-progress { display:none; }
   .view-hdr h2 { font-size:20px; }
+  .view-hdr p  { font-size:12px; }
+  .charts-row .card { min-width:0; }
+  .sec-label { font-size:9px; }
+  /* Horizontal scroll for pills */
+  #global-filters.pills-scroll,
+  .topbar-filters { flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+  .pill { flex-shrink:0; }
+  /* Heatmap scroll */
+  #heatmap-wrap { overflow-x:auto; }
+}
+@media (max-width: 480px) {
+  .kpi-grid { grid-template-columns:1fr 1fr !important; }
+  .kc-val { font-size:17px !important; }
+  .kc-lbl { font-size:9px; }
 }
 @media (max-width:480px) {
   .kpi-grid { grid-template-columns:1fr 1fr !important; }
@@ -495,6 +516,17 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
       </div>
       <div class="sec-label mb20">Эффективность по продуктам</div>
       <div class="prod-stats" id="prod-stats"></div>
+
+      <!-- ALERTS -->
+      <div id="alerts-wrap" style="margin-bottom:20px"></div>
+
+      <!-- TOP MANAGER -->
+      <div class="sec-label mb20" id="top-mgr-label" style="display:none">Топ менеджеры сегодня</div>
+      <div id="top-mgr-wrap" style="margin-bottom:20px"></div>
+
+      <!-- HEATMAP -->
+      <div class="sec-label mb20">Тепловая карта активности</div>
+      <div class="card card-pad mb24" id="heatmap-wrap"></div>
     </div>
 
     <!-- ══ MANAGERS VIEW ══ -->
@@ -1187,6 +1219,9 @@ function render(){
   renderLine(stats);
   renderDonut(stats);
   renderProdStats(stats);
+  renderAlerts(stats);
+  renderTopManager();
+  renderHeatmap();
 }
 
 // ═══════════════════ MANAGERS ═════════════════════════════════════
@@ -1832,18 +1867,275 @@ function drawAllSparks(kpis, activeProd, activePeriod) {
 
 // ═══════════════ MOBILE SIDEBAR ══════════════════════════════════
 function toggleSidebar() {
-  document.querySelector('.sidebar').classList.toggle('open');
-  document.getElementById('sb-overlay').classList.toggle('open');
+  const sb = document.querySelector('.sidebar');
+  const ov = document.getElementById('sb-overlay');
+  if (!sb || !ov) return;
+  const isOpen = sb.classList.contains('open');
+  sb.classList.toggle('open');
+  ov.style.display = isOpen ? 'none' : 'block';
+  document.body.style.overflow = isOpen ? '' : 'hidden';
 }
 function closeSidebar() {
-  document.querySelector('.sidebar').classList.remove('open');
-  document.getElementById('sb-overlay').classList.remove('open');
+  const sb = document.querySelector('.sidebar');
+  const ov = document.getElementById('sb-overlay');
+  if (!sb || !ov) return;
+  sb.classList.remove('open');
+  ov.style.display = 'none';
+  document.body.style.overflow = '';
 }
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', () => { if(window.innerWidth<=768) closeSidebar(); });
   });
+  // Close on ESC
+  document.addEventListener('keydown', e => { if(e.key==='Escape') closeSidebar(); });
 });
+
+
+// ═══════════════════════════════════════════════════════════
+//  ТРЕВОЖНЫЕ СИГНАЛЫ
+// ═══════════════════════════════════════════════════════════
+function renderAlerts(stats) {
+  const wrap = document.getElementById('alerts-wrap');
+  if (!wrap) return;
+  const alerts = [];
+  const now = new Date();
+  const dayOfMonth = now.getDate();
+  const totalDays = _lastDay(now.getFullYear(), now.getMonth()+1);
+  const monthPct = Math.round(dayOfMonth / totalDays * 100);
+
+  const keys = activeProd === 'all' ? ['col','ummi','coffee'] : [activeProd];
+
+  keys.forEach(k => {
+    const d = stats.parts ? stats.parts[k] : stats;
+    if (!d) return;
+    const name = PROD_CFG[k].name;
+    const color = PROD_CFG[k].color;
+
+    // 1. Отставание от плана
+    if (d.plan > 0 && d.isCurrentMonth) {
+      const execPct = Math.round(d.monthBudget / d.plan * 100);
+      const lag = monthPct - execPct;
+      if (lag >= 20) {
+        alerts.push({ type:'danger', icon:'🚨', color:'#c0392b', bg:'#fde8e8',
+          title: `${name} — критическое отставание от плана`,
+          text: `Прошло ${monthPct}% месяца, выполнено только ${execPct}%. Отставание ${lag}%. При текущем темпе прогноз: ${Math.round(d.monthBudget/dayOfMonth*totalDays/d.plan*100)}%` });
+      } else if (lag >= 10) {
+        alerts.push({ type:'warn', icon:'⚠️', color:'#ca8a04', bg:'#fef3c7',
+          title: `${name} — отставание от плана`,
+          text: `Прошло ${monthPct}% месяца, выполнено ${execPct}%. Нужно ускориться: ${fmtM(d.perDay)}/день.` });
+      }
+    }
+
+    // 2. Конверсия упала ниже порога
+    if (d.conv < 8 && d.leads > 10) {
+      alerts.push({ type:'warn', icon:'📉', color:'#ca8a04', bg:'#fef3c7',
+        title: `${name} — низкая конверсия`,
+        text: `Конверсия ${d.conv}% — ниже нормы (12%). Проверьте качество лидов и работу менеджеров.` });
+    }
+
+    // 3. ДРР слишком высокий
+    if (d.adTotal > 0 && d.budget > 0) {
+      const drr = +(d.adTotal/d.budget*100).toFixed(1);
+      if (drr > 30) {
+        alerts.push({ type:'danger', icon:'💸', color:'#c0392b', bg:'#fde8e8',
+          title: `${name} — высокий ДРР`,
+          text: `Расходы на рекламу составляют ${drr}% от выручки (норма до 25%). Проверьте эффективность кампаний.` });
+      }
+    }
+
+    // 4. Нет сделок сегодня (только текущий месяц)
+    if (d.isCurrentMonth && activePeriod.preset) {
+      const todayStr = (() => { const t=new Date(); return `${String(t.getDate()).padStart(2,'0')}.${String(t.getMonth()+1).padStart(2,'0')}.${t.getFullYear()}`; })();
+      const raw = RAW[PROD_CFG[k].rawKey] || {};
+      const todayDeals = raw[todayStr] ? raw[todayStr][1] : 0;
+      if (todayDeals === 0 && now.getHours() >= 14) {
+        alerts.push({ type:'info', icon:'ℹ️', color:'#1a56db', bg:'#e8f0fe',
+          title: `${name} — нет сделок сегодня`,
+          text: `По состоянию на ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')} сегодня нет закрытых сделок.` });
+      }
+    }
+  });
+
+  if (!alerts.length) {
+    wrap.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:12px 16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;font-size:13px;color:#16a34a;margin-bottom:4px"><span>✅</span> Всё в норме — тревожных сигналов нет</div>';
+    return;
+  }
+
+  wrap.innerHTML = `
+    <div style="margin-bottom:12px">
+      <div class="sec-label mb20">⚡ Тревожные сигналы (${alerts.length})</div>
+      ${alerts.map(a => `
+        <div style="display:flex;gap:12px;padding:14px 16px;background:${a.bg};border:1px solid ${a.color}22;border-radius:10px;margin-bottom:8px;border-left:3px solid ${a.color}">
+          <span style="font-size:18px;flex-shrink:0">${a.icon}</span>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:${a.color};margin-bottom:3px">${a.title}</div>
+            <div style="font-size:12px;color:#374151">${a.text}</div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ТОП МЕНЕДЖЕР ДНЯ
+// ═══════════════════════════════════════════════════════════
+function renderTopManager() {
+  const wrap = document.getElementById('top-mgr-wrap');
+  const label = document.getElementById('top-mgr-label');
+  if (!wrap) return;
+
+  const todayStr = (() => {
+    const t = new Date();
+    return `${String(t.getDate()).padStart(2,'0')}.${String(t.getMonth()+1).padStart(2,'0')}.${t.getFullYear()}`;
+  })();
+
+  // Collect today's stats per manager across selected products
+  const mgrToday = {};
+  const keys = activeProd === 'all' ? ['col','ummi','coffee'] : [activeProd];
+
+  keys.forEach(k => {
+    const mgrs = MANAGERS[PROD_CFG[k].rawKey] || MANAGERS[PROD_CFG[k].name] || [];
+    mgrs.forEach(m => {
+      if (!m.daily || !m.daily[todayStr]) return;
+      const v = m.daily[todayStr];
+      if (!mgrToday[m.name]) mgrToday[m.name] = {leads:0, deals:0, budget:0};
+      mgrToday[m.name].leads  += v[0]||0;
+      mgrToday[m.name].deals  += v[1]||0;
+      mgrToday[m.name].budget += v[2]||0;
+    });
+  });
+
+  const ranked = Object.entries(mgrToday)
+    .filter(([,v]) => v.deals > 0 || v.budget > 0)
+    .sort((a,b) => b[1].budget - a[1].budget)
+    .slice(0, 5);
+
+  if (!ranked.length) { wrap.innerHTML=''; if(label) label.style.display='none'; return; }
+  if (label) label.style.display='flex';
+
+  const medals = ['🥇','🥈','🥉','4️⃣','5️⃣'];
+  const maxBudget = ranked[0][1].budget || 1;
+
+  wrap.innerHTML = `<div class="card card-pad">
+    <div style="font-size:11px;color:var(--muted);margin-bottom:14px">📅 ${todayStr} · топ по выручке</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+    ${ranked.map(([name, v], i) => {
+      const barW = Math.round(v.budget/maxBudget*100);
+      const color = i===0?'#16a34a':i===1?'#1a56db':i===2?'#ca8a04':'#6366f1';
+      return `<div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:16px">${medals[i]}</span>
+            <span style="font-size:13px;font-weight:${i===0?'700':'500'};color:var(--ink)">${name}</span>
+          </div>
+          <div style="text-align:right">
+            <span style="font-size:13px;font-weight:700;color:${color}">${fmt(v.budget)} ₸</span>
+            <span style="font-size:11px;color:var(--muted);margin-left:8px">${v.deals} сд · ${v.leads} лид</span>
+          </div>
+        </div>
+        <div style="height:4px;background:var(--line);border-radius:2px;overflow:hidden">
+          <div style="height:100%;width:${barW}%;background:${color};border-radius:2px;transition:width .5s"></div>
+        </div>
+      </div>`;
+    }).join('')}
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  HEATMAP АКТИВНОСТИ (GitHub-style)
+// ═══════════════════════════════════════════════════════════
+function renderHeatmap() {
+  const wrap = document.getElementById('heatmap-wrap');
+  if (!wrap) return;
+
+  // Build daily budget for last 52 weeks (364 days)
+  const DAYS = 364;
+  const today = new Date();
+  const dailyData = {};
+
+  const keys = activeProd === 'all' ? ['col','ummi','coffee'] : [activeProd];
+  keys.forEach(k => {
+    const raw = RAW[PROD_CFG[k].rawKey] || {};
+    Object.entries(raw).forEach(([d, v]) => {
+      dailyData[d] = (dailyData[d] || 0) + (v[2] || 0);
+    });
+  });
+
+  // Build array of last DAYS days
+  const days = [];
+  for (let i = DAYS-1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+    days.push({ date: d, key, val: dailyData[key] || 0 });
+  }
+
+  const maxVal = Math.max(...days.map(d => d.val), 1);
+  const getColor = (val) => {
+    if (!val) return '#f0f3fa';
+    const pct = val / maxVal;
+    if (pct < 0.2) return '#c7d2fe';
+    if (pct < 0.4) return '#818cf8';
+    if (pct < 0.65) return '#6366f1';
+    if (pct < 0.85) return '#4338ca';
+    return '#3730a3';
+  };
+
+  // Group by week
+  const weeks = [];
+  let week = [];
+  // Pad start to Monday
+  const firstDay = days[0].date.getDay(); // 0=Sun
+  const pad = firstDay === 0 ? 6 : firstDay - 1;
+  for (let p = 0; p < pad; p++) week.push(null);
+  days.forEach(d => {
+    week.push(d);
+    if (week.length === 7) { weeks.push(week); week = []; }
+  });
+  if (week.length) { while(week.length<7) week.push(null); weeks.push(week); }
+
+  const months = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
+  const weekdays = ['Пн','','Ср','','Пт','',''];
+
+  const totalVal = days.reduce((s,d)=>s+d.val,0);
+  const activeDays = days.filter(d=>d.val>0).length;
+
+  wrap.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--ink)">${fmtM(totalVal)} ₸ за год</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${activeDays} активных дней из ${DAYS}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)">
+        Меньше
+        ${['#f0f3fa','#c7d2fe','#818cf8','#6366f1','#4338ca','#3730a3'].map(c=>`<div style="width:12px;height:12px;background:${c};border-radius:2px"></div>`).join('')}
+        Больше
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <div style="display:flex;gap:3px;min-width:max-content">
+        <!-- Weekday labels -->
+        <div style="display:flex;flex-direction:column;gap:3px;margin-right:4px">
+          <div style="height:16px"></div>
+          ${weekdays.map(d=>`<div style="height:12px;font-size:9px;color:var(--muted);line-height:12px;text-align:right;min-width:16px">${d}</div>`).join('')}
+        </div>
+        ${weeks.map((wk, wi) => {
+          // Month label
+          const firstReal = wk.find(d=>d);
+          const showMonth = firstReal && (wi===0 || firstReal.date.getDate() <= 7);
+          const monthLbl = firstReal ? months[firstReal.date.getMonth()] : '';
+          return `<div style="display:flex;flex-direction:column;gap:3px">
+            <div style="height:16px;font-size:9px;color:var(--muted);white-space:nowrap">${showMonth?monthLbl:''}</div>
+            ${wk.map(d => d
+              ? `<div title="${d.key}: ${fmt(d.val)} ₸" style="width:12px;height:12px;border-radius:2px;background:${getColor(d.val)};cursor:pointer;transition:transform .1s" onmouseenter="this.style.transform='scale(1.4)'" onmouseleave="this.style.transform='scale(1)'"></div>`
+              : `<div style="width:12px;height:12px"></div>`
+            ).join('')}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
 
 // ── Keep Render alive + auto-refresh data every 60s ──────────
 const RENDER_URL = 'https://weglow-autosync.onrender.com';
