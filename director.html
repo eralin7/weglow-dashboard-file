@@ -2,146 +2,138 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>WeGlow — Кабинет Директора</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>WeGlow — Кабинет директора</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
   --ink:#0f1623;--ink2:#1e2840;--slate:#4a5568;--muted:#8896ae;
-  --line:#e8ecf4;--line2:#f1f4f9;--bg:#f7f8fc;--white:#fff;
+  --line:#e8ecf4;--bg:#f7f8fc;--white:#fff;
   --acc:#6366f1;--acc-l:#eef2ff;
-  --col:#1a56db;--ummi:#0a7c5c;--cof:#b45309;
-  --green:#16a34a;--red:#dc2626;--yellow:#ca8a04;
+  --col:#1a56db;--col-l:#eff6ff;
+  --ummi:#0a7c5c;--ummi-l:#ecfdf5;
+  --cof:#b45309;--cof-l:#fffbeb;
+  --green:#16a34a;--green-l:#dcfce7;
+  --red:#dc2626;--red-l:#fde8e8;
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 html{font-size:15px;-webkit-font-smoothing:antialiased;}
-body{font-family:"DM Sans",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
 
-/* PASSWORD */
+/* ── PASSWORD ── */
 #pw-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
 .pw-box{background:var(--white);border:1px solid var(--line);border-radius:20px;padding:44px 48px;max-width:400px;width:100%;box-shadow:0 4px 24px rgba(15,22,35,.08);}
-.pw-logo{font-family:"Playfair Display",serif;font-size:28px;font-weight:700;color:var(--ink);}
-.pw-sub{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin:4px 0 28px;}
+.logo{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--ink);}
+.logo-sub{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:32px;margin-top:2px;}
 .pw-title{font-size:17px;font-weight:600;margin-bottom:6px;}
-.pw-hint{font-size:13px;color:var(--muted);margin-bottom:20px;}
-.pw-inp{width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:14px;outline:none;font-family:inherit;background:var(--bg);color:var(--ink);margin-bottom:12px;transition:border-color .2s;}
+.pw-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
+.pw-inp{width:100%;padding:12px 16px;border:1.5px solid var(--line);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:15px;outline:none;transition:border-color .15s;background:var(--bg);}
 .pw-inp:focus{border-color:var(--acc);}
-.pw-btn{width:100%;padding:12px;background:var(--acc);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;}
-.pw-btn:hover{opacity:.9;}
-.pw-err{display:none;color:var(--red);font-size:13px;margin-top:10px;text-align:center;}
+.pw-btn{width:100%;padding:13px;background:var(--ink2);color:#fff;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;margin-top:12px;transition:opacity .15s;}
+.pw-btn:hover{opacity:.88;}
+.pw-err{color:var(--red);font-size:13px;margin-top:8px;display:none;}
 
-/* APP */
+/* ── APP ── */
 #app{display:none;}
-.topbar{background:var(--ink2);color:#fff;padding:0 28px;height:52px;display:flex;align-items:center;justify-content:space-between;}
-.top-logo{font-family:"Playfair Display",serif;font-size:18px;font-weight:700;}
-.top-sub{font-size:11px;color:rgba(255,255,255,.5);letter-spacing:1.5px;text-transform:uppercase;margin-left:8px;}
-.top-links{display:flex;align-items:center;gap:14px;}
-.top-link{color:rgba(255,255,255,.7);text-decoration:none;font-size:13px;font-weight:500;}
+
+/* Topbar */
+.topbar{background:var(--ink2);color:#fff;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;}
+.top-brand{display:flex;flex-direction:column;}
+.top-logo{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;}
+.top-sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#8896ae;}
+.top-links{display:flex;gap:16px;}
+.top-link{font-size:13px;color:#8896ae;text-decoration:none;transition:color .15s;}
 .top-link:hover{color:#fff;}
-.badge{padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;}
-.badge.ok{background:rgba(22,163,74,.25);color:#86efac;}
-.badge.err{background:rgba(220,38,38,.25);color:#fca5a5;}
-.badge.load{background:rgba(255,255,255,.1);color:rgba(255,255,255,.6);}
+.badge{font-size:12px;padding:4px 12px;border-radius:20px;background:rgba(255,255,255,.08);color:#a5b4fc;}
 
-/* TABS */
-.tabs-nav{background:var(--white);border-bottom:2px solid var(--line);padding:0 28px;display:flex;}
-.tab-btn{padding:14px 20px;border:none;background:none;font-size:13px;font-weight:600;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;cursor:pointer;transition:color .15s,border-color .15s;font-family:inherit;}
-.tab-btn.active{color:var(--acc);border-bottom-color:var(--acc);}
-.tab-btn:hover:not(.active){color:var(--slate);}
+/* Content */
+.content{max-width:1000px;margin:0 auto;padding:36px 24px;}
+.page-hdr{margin-bottom:36px;}
+.page-title{font-size:28px;font-weight:700;color:var(--ink);}
+.page-sub{font-size:14px;color:var(--muted);margin-top:4px;}
 
-/* CONTENT */
-.content{max-width:1100px;margin:0 auto;padding:28px 24px;}
-.page-hdr{margin-bottom:24px;}
-.page-title{font-size:22px;font-weight:700;}
-.page-sub{font-size:13px;color:var(--muted);margin-top:4px;}
+/* Section */
+.section{margin-bottom:32px;}
+.section-title{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:16px;}
 
-/* CARDS */
-.card{background:var(--white);border:1px solid var(--line);border-radius:14px;padding:22px 24px;box-shadow:0 1px 4px rgba(0,0,0,.04);}
-.card-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px;}
-
-/* KPI */
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:14px;margin-bottom:24px;}
-.kpi-card{background:var(--white);border:1.5px solid var(--line);border-radius:12px;padding:16px 18px;}
-.kpi-lbl{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
-.kpi-val{font-size:22px;font-weight:700;margin-bottom:3px;}
-.kpi-sub{font-size:11px;color:var(--muted);}
-.kpi-bar{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:8px;}
-.kpi-bar-fill{height:100%;border-radius:2px;transition:width .6s;}
-
-/* PLANS */
-.month-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:24px;}
-.month-sel{padding:8px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;font-family:inherit;background:var(--white);color:var(--ink);outline:none;cursor:pointer;}
+/* Month selector */
+.month-row{display:flex;align-items:center;gap:12px;margin-bottom:28px;flex-wrap:wrap;}
+.month-sel{padding:10px 16px;border:1.5px solid var(--line);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);background:var(--white);outline:none;cursor:pointer;transition:border-color .15s;}
 .month-sel:focus{border-color:var(--acc);}
-.plan-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:20px;}
-.plan-card{background:var(--white);border:1.5px solid var(--line);border-radius:12px;padding:20px;}
-.pc-head{display:flex;align-items:center;gap:8px;margin-bottom:14px;}
-.pc-dot{width:10px;height:10px;border-radius:50%;}
-.pc-name{font-weight:700;font-size:14px;}
-.pc-label{font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
-.pc-inp{width:100%;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:14px;font-family:inherit;outline:none;color:var(--ink);}
-.pc-inp:focus{border-color:var(--acc);}
-.pc-current{font-size:12px;color:var(--muted);margin-top:8px;}
-.save-wrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
-.save-btn{padding:11px 28px;background:var(--acc);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;}
-.save-btn:hover{opacity:.9;}
-.save-status{font-size:13px;color:var(--muted);}
+.month-label{font-size:18px;font-weight:700;color:var(--ink);}
 
-/* TABLE */
+/* Plan cards */
+.plan-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:24px;}
+.plan-card{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 1px 6px rgba(15,22,35,.04);transition:box-shadow .2s;}
+.plan-card:hover{box-shadow:0 4px 16px rgba(15,22,35,.08);}
+.pc-head{display:flex;align-items:center;gap:10px;margin-bottom:20px;}
+.pc-dot{width:12px;height:12px;border-radius:50%;}
+.pc-name{font-size:15px;font-weight:700;color:var(--ink);}
+.pc-field{display:flex;flex-direction:column;gap:6px;}
+.pc-label{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;}
+.pc-inp{width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:9px;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;color:var(--ink);outline:none;transition:border-color .15s;background:var(--bg);}
+.pc-inp:focus{border-color:var(--acc);background:var(--white);}
+.pc-current{font-size:12px;color:var(--muted);margin-top:6px;}
+.pc-current strong{color:var(--ink);}
+
+/* Save btn */
+.save-wrap{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.save-btn{padding:13px 36px;background:var(--ink2);color:#fff;border:none;border-radius:11px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:opacity .15s;}
+.save-btn:hover{opacity:.88;}
+.save-btn:disabled{opacity:.5;cursor:default;}
+.save-status{font-size:14px;font-weight:500;}
+.save-ok{color:var(--green);}
+.save-err{color:var(--red);}
+
+/* History table */
+.history-card{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:28px 32px;box-shadow:0 1px 6px rgba(15,22,35,.04);}
+.history-title{font-size:15px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:8px;}
 .dt{width:100%;border-collapse:collapse;font-size:13px;}
-.dt th{padding:9px 12px;text-align:right;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--line);}
-.dt th:first-child{text-align:left;}
-.dt td{padding:9px 12px;text-align:right;border-bottom:1px solid var(--line2);}
-.dt td:first-child{text-align:left;}
-.dt tr:hover td{background:var(--line2);}
-.edit-btn{padding:4px 12px;border-radius:6px;border:1px solid var(--line);background:none;font-size:12px;cursor:pointer;color:var(--slate);}
-.edit-btn:hover{background:var(--line2);}
+.dt th{text-align:left;padding:9px 14px;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;border-bottom:2px solid var(--line);}
+.dt td{padding:10px 14px;border-bottom:1px solid var(--line);}
+.dt tr:last-child td{border-bottom:none;}
+.dt tr:hover td{background:var(--bg);}
+.dt .cur-row td{background:var(--acc-l);font-weight:600;}
+.edit-btn{background:none;border:1.5px solid var(--line);border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;color:var(--slate);font-family:'DM Sans',sans-serif;transition:all .15s;}
+.edit-btn:hover{border-color:var(--acc);color:var(--acc);}
+.tag-cur{background:var(--acc-l);color:var(--acc);font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;}
 
-/* ROP */
-.pct-g{color:var(--green);font-weight:700;}
-.pct-y{color:var(--yellow);font-weight:700;}
-.pct-r{color:var(--red);font-weight:700;}
-.rop-bar{height:5px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:4px;}
-.rop-fill{height:100%;border-radius:3px;transition:width .5s;}
-.rop-table{width:100%;border-collapse:collapse;font-size:13px;}
-.rop-table th{padding:8px 12px;text-align:right;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);}
-.rop-table th:first-child{text-align:left;}
-.rop-table td{padding:9px 12px;text-align:right;border-bottom:1px solid var(--line2);}
-.rop-table td:first-child{text-align:left;}
-.rop-name{font-weight:600;}
-
-/* P&L */
-.pnl-row{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--line2);}
-.pnl-row.sep{border-top:2px solid var(--line);margin-top:4px;padding-top:10px;border-bottom:none;}
-.pnl-lbl{font-size:12px;color:var(--slate);}
-.pnl-lbl.bold{font-size:13px;font-weight:700;color:var(--ink);}
-.pnl-val{font-size:12px;font-weight:600;}
-.pnl-val.bold{font-size:14px;font-weight:700;}
-
-/* TOAST */
-.toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;color:#fff;background:var(--ink2);opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;}
-.toast.show{opacity:1;}
-
-.tag-cur{display:inline-block;padding:2px 8px;border-radius:6px;background:var(--acc-l);color:var(--acc);font-size:10px;font-weight:700;margin-left:6px;}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-.mb24{margin-bottom:24px;}
+/* Status toast */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--ink2);color:#fff;padding:14px 24px;border-radius:12px;font-size:14px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s;z-index:999;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.ok{background:#16a34a;}
+.toast.err{background:var(--red);}
 
 @media(max-width:700px){
-  .grid-2{grid-template-columns:1fr;}
   .plan-grid{grid-template-columns:1fr;}
-  .kpi-grid{grid-template-columns:1fr 1fr;}
-  .content{padding:16px;}
+  .content{padding:20px 16px;}
+  .history-card{padding:20px 16px;}
 }
+
+/* ── ROP STATS ── */
+.rop-table { width:100%; border-collapse:collapse; font-size:13px; }
+.rop-table th { padding:9px 14px; text-align:left; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); border-bottom:2px solid var(--line); font-weight:600; }
+.rop-table td { padding:11px 14px; border-bottom:1px solid var(--line); }
+.rop-table tr:last-child td { border-bottom:none; }
+.rop-table tr:hover td { background:var(--bg); }
+.rop-name { font-weight:700; color:var(--ink); }
+.rop-mgr  { font-size:11px; color:var(--muted); margin-top:2px; }
+.rop-bar  { height:6px; background:var(--line); border-radius:3px; overflow:hidden; margin-top:5px; }
+.rop-fill { height:100%; border-radius:3px; transition:width .5s; }
+.pct-g { color:#16a34a; font-weight:700; }
+.pct-y { color:#ca8a04; font-weight:700; }
+.pct-r { color:#dc2626; font-weight:700; }
 </style>
 </head>
 <body>
 
+<!-- PASSWORD -->
 <div id="pw-screen">
   <div class="pw-box">
-    <div class="pw-logo">WeGlow</div>
-    <div class="pw-sub">Director Cabinet</div>
-    <div class="pw-title">Вход в кабинет</div>
-    <div class="pw-hint">Только для директора</div>
+    <div class="logo">WeGlow</div>
+    <div class="logo-sub">Director Cabinet</div>
+    <div class="pw-title">Кабинет директора</div>
+    <div class="pw-sub">Управление планами продаж по месяцам</div>
     <input class="pw-inp" type="password" id="pw-input" placeholder="Пароль"
            onkeydown="if(event.key==='Enter')checkPw()">
     <button class="pw-btn" onclick="checkPw()">Войти</button>
@@ -149,196 +141,127 @@ body{font-family:"DM Sans",sans-serif;background:var(--bg);color:var(--ink);min-
   </div>
 </div>
 
+<!-- APP -->
 <div id="app">
   <div class="topbar">
-    <div style="display:flex;align-items:center;gap:6px">
-      <span class="top-logo">WeGlow</span>
-      <span class="top-sub">Director</span>
+    <div class="top-brand">
+      <div class="top-logo">WeGlow</div>
+      <div class="top-sub">Director Cabinet</div>
     </div>
     <div class="top-links">
-      <span class="badge load" id="sync-badge">Загрузка...</span>
-      <a href="dashboard.html" class="top-link">&#8592; Дашборд</a>
+      <span class="badge" id="sync-badge">Загрузка...</span>
+      <a href="dashboard.html" class="top-link">← Дашборд</a>
     </div>
   </div>
 
-  <div class="tabs-nav">
-    <button class="tab-btn active" onclick="showTab('overview',this)">&#128202; Обзор</button>
-    <button class="tab-btn" onclick="showTab('plans',this)">&#127919; Планы</button>
-    <button class="tab-btn" onclick="showTab('rop',this)">&#128101; РОП</button>
-    <button class="tab-btn" onclick="showTab('history',this)">&#128197; История</button>
-  </div>
-
-  <!-- TAB: OVERVIEW -->
-  <div id="tab-overview" class="content">
-    <div class="page-hdr">
-      <div class="page-title">Обзор компании</div>
-      <div class="page-sub" id="overview-sub">Загрузка...</div>
-    </div>
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:20px">
-      <select class="month-sel" id="overview-month-sel" onchange="renderOverview()"></select>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button class="month-sel prod-pill active" onclick="setProd('all',this)" style="cursor:pointer;font-weight:600">Все</button>
-        <button class="month-sel prod-pill" onclick="setProd('col',this)" style="cursor:pointer;color:#1a56db">Коллаген</button>
-        <button class="month-sel prod-pill" onclick="setProd('ummi',this)" style="cursor:pointer;color:#0a7c5c">Ummi</button>
-        <button class="month-sel prod-pill" onclick="setProd('coffee',this)" style="cursor:pointer;color:#b45309">Кофе</button>
-      </div>
-    </div>
-    <div class="kpi-grid" id="overview-kpi"></div>
-    <div class="grid-2 mb24">
-      <div class="card"><div class="card-title">P&amp;L — доходы / расходы</div><div id="pnl-body"></div></div>
-      <div class="card"><div class="card-title">Структура выручки</div><canvas id="overview-donut" height="200"></canvas></div>
-    </div>
-    <div class="card mb24"><div class="card-title" id="overview-chart-lbl">Выручка по дням</div><canvas id="overview-chart" height="140"></canvas></div>
-    <div class="grid-2 mb24">
-      <div class="card"><div class="card-title">Последние 6 месяцев</div><canvas id="mom-chart" height="180"></canvas></div>
-      <div class="card"><div class="card-title">Выполнение плана</div><canvas id="plan-chart" height="180"></canvas></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Сравнение продуктов</div>
-      <div style="overflow-x:auto">
-        <table class="dt">
-          <thead><tr>
-            <th style="text-align:left">Продукт</th><th>Выручка</th><th>% плана</th>
-            <th>Лиды</th><th>Сделки</th><th>Конверсия</th><th>Ср.чек</th><th>Реклама</th><th>ROI</th>
-          </tr></thead>
-          <tbody id="cmp-tbody"></tbody>
-          <tfoot id="cmp-tfoot" style="border-top:2px solid var(--line)"></tfoot>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- TAB: PLANS -->
-  <div id="tab-plans" class="content" style="display:none">
+  <div class="content">
     <div class="page-hdr">
       <div class="page-title">Планы продаж</div>
       <div class="page-sub">Устанавливайте и редактируйте планы на любой месяц</div>
     </div>
+
+    <!-- MONTH PICKER -->
     <div class="month-row">
-      <span style="font-size:13px;font-weight:600;color:var(--muted)">Месяц:</span>
+      <div class="section-title" style="margin-bottom:0">Месяц:</div>
       <select class="month-sel" id="month-sel" onchange="onMonthChange()"></select>
-      <button class="month-sel" onclick="addNextMonth()" style="background:var(--acc-l);color:var(--acc);border-color:var(--acc-l);font-weight:600;cursor:pointer">+ Добавить месяц</button>
+      <button class="month-sel" onclick="addNextMonth()" style="background:var(--acc-l);color:var(--acc);border-color:var(--acc-l);font-weight:600;cursor:pointer;">+ Добавить месяц</button>
     </div>
-    <div style="font-size:14px;font-weight:600;color:var(--slate);margin-bottom:14px">
-      Установить план на <span id="selected-month-label" style="color:var(--ink)">—</span>
-    </div>
-    <div class="plan-grid">
-      <div class="plan-card">
-        <div class="pc-head"><div class="pc-dot" style="background:#1a56db"></div><div class="pc-name">Коллаген</div></div>
-        <div class="pc-label">План ₸</div>
-        <input class="pc-inp" type="number" id="plan-col" placeholder="60 000 000" min="0" step="1000000">
-        <div class="pc-current" id="cur-col">Текущий: —</div>
-      </div>
-      <div class="plan-card">
-        <div class="pc-head"><div class="pc-dot" style="background:#0a7c5c"></div><div class="pc-name">Ummi</div></div>
-        <div class="pc-label">План ₸</div>
-        <input class="pc-inp" type="number" id="plan-ummi" placeholder="30 000 000" min="0" step="1000000">
-        <div class="pc-current" id="cur-ummi">Текущий: —</div>
-      </div>
-      <div class="plan-card">
-        <div class="pc-head"><div class="pc-dot" style="background:#b45309"></div><div class="pc-name">Кофе</div></div>
-        <div class="pc-label">План ₸</div>
-        <input class="pc-inp" type="number" id="plan-coffee" placeholder="15 000 000" min="0" step="1000000">
-        <div class="pc-current" id="cur-coffee">Текущий: —</div>
-      </div>
-    </div>
-    <div class="save-wrap">
-      <button class="save-btn" id="save-btn" onclick="savePlans()">Сохранить планы</button>
-      <span class="save-status" id="save-status"></span>
-    </div>
-  </div>
 
-  <!-- TAB: ROP -->
-  <div id="tab-rop" class="content" style="display:none">
-    <div class="page-hdr">
-      <div class="page-title">РОП — план / факт</div>
-      <div class="page-sub">Выполнение плана по группам менеджеров</div>
-    </div>
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:20px">
-      <select class="month-sel" id="rop-period-type" onchange="onRopPeriodChange()">
-        <option value="month">Месяц</option>
-        <option value="custom">Произвольный период</option>
-      </select>
-      <select class="month-sel" id="rop-month-sel" onchange="loadRopStats()"></select>
-      <div id="rop-custom-wrap" style="display:none;align-items:center;gap:6px">
-        <input type="date" id="rop-from" onchange="loadRopStats()" style="padding:7px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;background:var(--white);color:var(--ink);outline:none;">
-        <span style="color:var(--muted)">—</span>
-        <input type="date" id="rop-to" onchange="loadRopStats()" style="padding:7px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;background:var(--white);color:var(--ink);outline:none;">
+    <!-- PLAN CARDS -->
+    <div class="section">
+      <div class="section-title">Установить план на <span id="selected-month-label">—</span></div>
+      <div class="plan-grid">
+        <div class="plan-card">
+          <div class="pc-head">
+            <div class="pc-dot" style="background:#1a56db"></div>
+            <div class="pc-name">Коллаген</div>
+          </div>
+          <div class="pc-field">
+            <div class="pc-label">План ₸</div>
+            <input class="pc-inp" type="number" id="plan-col" placeholder="60 000 000" min="0" step="1000000">
+          </div>
+          <div class="pc-current" id="cur-col">Текущий: —</div>
+        </div>
+        <div class="plan-card">
+          <div class="pc-head">
+            <div class="pc-dot" style="background:#0a7c5c"></div>
+            <div class="pc-name">Ummi</div>
+          </div>
+          <div class="pc-field">
+            <div class="pc-label">План ₸</div>
+            <input class="pc-inp" type="number" id="plan-ummi" placeholder="30 000 000" min="0" step="1000000">
+          </div>
+          <div class="pc-current" id="cur-ummi">Текущий: —</div>
+        </div>
+        <div class="plan-card">
+          <div class="pc-head">
+            <div class="pc-dot" style="background:#b45309"></div>
+            <div class="pc-name">Кофе</div>
+          </div>
+          <div class="pc-field">
+            <div class="pc-label">План ₸</div>
+            <input class="pc-inp" type="number" id="plan-coffee" placeholder="15 000 000" min="0" step="1000000">
+          </div>
+          <div class="pc-current" id="cur-coffee">Текущий: —</div>
+        </div>
       </div>
-      <button onclick="loadRopStats()" style="padding:7px 16px;border-radius:8px;background:var(--acc-l);color:var(--acc);border:1px solid var(--acc-l);font-weight:600;cursor:pointer;font-size:13px">&#8635; Обновить</button>
-    </div>
-    <div id="rop-stats-wrap">
-      <div style="color:var(--muted);padding:40px;text-align:center">Выберите период</div>
-    </div>
-  </div>
 
-  <!-- TAB: HISTORY -->
-  <div id="tab-history" class="content" style="display:none">
-    <div class="page-hdr">
-      <div class="page-title">История планов</div>
-      <div class="page-sub">Все установленные планы по месяцам</div>
+      <div class="save-wrap">
+        <button class="save-btn" id="save-btn" onclick="savePlans()">Сохранить планы</button>
+        <span class="save-status" id="save-status"></span>
+      </div>
     </div>
-    <div class="card">
+
+    <!-- HISTORY TABLE -->
+    <div class="history-card">
+      <div class="history-title">📋 Все планы</div>
       <div id="history-wrap">
-        <div style="color:var(--muted);padding:40px;text-align:center">Загрузка...</div>
+        <div style="color:var(--muted);padding:24px;text-align:center;">Загрузка...</div>
+      </div>
+    </div>
+
+    <!-- ROP PLAN/FACT -->
+    <div class="history-card" style="margin-top:24px">
+      <div class="history-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <span>👥 РОП — план / факт</span>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <select class="month-sel" id="rop-period-type" onchange="onRopPeriodChange()" style="font-size:12px;padding:5px 10px">
+            <option value="month">Месяц</option>
+            <option value="custom">Произвольный период</option>
+          </select>
+          <select class="month-sel" id="rop-month-sel" onchange="loadRopStats()" style="font-size:12px;padding:5px 10px"></select>
+          <div id="rop-custom-wrap" style="display:none;align-items:center;gap:6px">
+            <input type="date" id="rop-from" onchange="loadRopStats()" style="font-size:12px;padding:5px 8px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink)">
+            <span style="color:var(--muted);font-size:12px">—</span>
+            <input type="date" id="rop-to" onchange="loadRopStats()" style="font-size:12px;padding:5px 8px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink)">
+          </div>
+          <button onclick="loadRopStats()" style="padding:5px 14px;border-radius:7px;background:var(--acc-l);color:var(--acc);border:1px solid var(--acc-l);font-weight:600;cursor:pointer;font-size:12px">↺ Обновить</button>
+        </div>
+      </div>
+      <div id="rop-stats-wrap" style="margin-top:16px">
+        <div style="color:var(--muted);padding:24px;text-align:center;">Загрузка...</div>
       </div>
     </div>
   </div>
+</div>
 
-</div><!-- /app -->
 <div class="toast" id="toast"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
+// ══════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════
 const DIR_PASSWORD = 'director2026';
 const SUPABASE_URL = 'https://bdyakgmeibpdkisbiykt.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkeWFrZ21laWJwZGtpc2JpeWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTQzOTMsImV4cCI6MjA4Nzc5MDM5M30.nA187grJR6XFQRmTP6WOM-6-1dZK1EzYNNP2JH9aAMg';
-const SB_H = {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'};
+
 const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
-const PROD_CFG = {
-  col:   {name:'Коллаген', color:'#1a56db', raw:'Коллаген'},
-  ummi:  {name:'Ummi',     color:'#0a7c5c', raw:'Ummi'},
-  coffee:{name:'Кофе',     color:'#b45309', raw:'Кофе'}
-};
 
-let plans = {};
-let selectedMonth = null;
-let overviewProd  = 'all';
-let _charts       = {};
-let _wgData       = null;
-
-// HELPERS
-function fmtM(n){ if(!n&&n!==0)return '—'; return Math.round(n).toLocaleString('ru-RU')+' ₸'; }
-function fmt(n){ return (n||0).toLocaleString('ru-RU'); }
-function fmtK(v){ if(v>=1e6)return (v/1e6).toFixed(1)+'М'; if(v>=1e3)return Math.round(v/1e3)+'К'; return v||0; }
-function pctColor(p){ return p>=100?'#16a34a':p>=80?'#ca8a04':'#dc2626'; }
-async function sbGet(url){ const r=await fetch(url,{headers:SB_H}); if(!r.ok)throw new Error(r.status); return r.json(); }
-async function sbPost(url,body,method='POST'){
-  const r=await fetch(url,{method,headers:{...SB_H,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(body)});
-  if(!r.ok)throw new Error(r.status); return r.json();
-}
-function setBadge(txt,cls){ const b=document.getElementById('sync-badge'); if(!b)return; b.textContent=txt; b.className='badge '+(cls||''); }
-function toast(msg,type='ok'){ const t=document.getElementById('toast'); t.textContent=msg; t.style.background=type==='err'?'#dc2626':'#1e2840'; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
-function getDates(from,to){
-  const d=[];
-  let c=new Date(from.split('.').reverse().join('-'));
-  const e=new Date(to.split('.').reverse().join('-'));
-  while(c<=e){
-    d.push(`${String(c.getDate()).padStart(2,'0')}.${String(c.getMonth()+1).padStart(2,'0')}.${c.getFullYear()}`);
-    c.setDate(c.getDate()+1);
-  }
-  return d;
-}
-function monthDates(mk){
-  const [mm,yy]=mk.split('.');
-  const last=new Date(+yy,+mm,0).getDate();
-  return getDates(`01.${mk}`,`${String(last).padStart(2,'0')}.${mk}`);
-}
-
-// AUTH
+// ══════════════════════════════════════════════
+// PASSWORD
+// ══════════════════════════════════════════════
 function checkPw(){
-  const val=document.getElementById('pw-input').value;
-  if(val===DIR_PASSWORD){
+  if(document.getElementById('pw-input').value === DIR_PASSWORD){
     document.getElementById('pw-screen').style.display='none';
     document.getElementById('app').style.display='block';
     sessionStorage.setItem('dir_auth','1');
@@ -349,366 +272,325 @@ function checkPw(){
     document.getElementById('pw-input').focus();
   }
 }
-
-// TABS
-function showTab(name,el){
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  if(el) el.classList.add('active');
-  ['overview','plans','rop','history'].forEach(t=>{
-    const d=document.getElementById('tab-'+t);
-    if(d) d.style.display=t===name?'':'none';
-  });
-  if(name==='overview') renderOverview();
-  if(name==='rop')      { buildRopSel(); loadRopStats(); }
-  if(name==='history')  loadHistory();
+if(sessionStorage.getItem('dir_auth')==='1'){
+  document.getElementById('pw-screen').style.display='none';
+  document.getElementById('app').style.display='block';
 }
 
-// INIT
-async function init(){
-  await loadPlans();
-  buildMonthSels();
-  renderOverview();
-}
+// ══════════════════════════════════════════════
+// SUPABASE
+// ══════════════════════════════════════════════
+const SB_H = {
+  'apikey': SUPABASE_KEY,
+  'Authorization': `Bearer ${SUPABASE_KEY}`,
+  'Content-Type': 'application/json'
+};
+async function sbGet(url){ const r=await fetch(url,{headers:SB_H}); if(!r.ok)throw new Error(r.status); return r.json(); }
+async function sbPost(url,body,method='POST'){ const r=await fetch(url,{method,headers:{...SB_H,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(body)}); if(!r.ok){const t=await r.text();throw new Error(t);} }
 
-// DATA
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+// plans format: { "MM.YYYY": {col, ummi, coffee} }
+let plans = {};
+let selectedMonth = null;
+
+function fmtM(n){ if(!n)return '0 ₸'; return Math.round(n).toLocaleString('ru-RU')+' ₸'; }
+function fmt(n){ return (n||0).toLocaleString('ru-RU'); }
+
+// ══════════════════════════════════════════════
+// LOAD
+// ══════════════════════════════════════════════
 async function loadPlans(){
   setBadge('Загрузка...','load');
   try {
-    const rows=await sbGet(`${SUPABASE_URL}/rest/v1/weglow_plans?select=month,col,ummi,coffee&order=month.desc`);
-    plans={};
-    for(const r of rows) plans[r.month]={col:r.col||0,ummi:r.ummi||0,coffee:r.coffee||0};
+    const rows = await sbGet(`${SUPABASE_URL}/rest/v1/weglow_plans?select=month,col,ummi,coffee&order=month.desc`);
+    plans = {};
+    for(const r of rows) plans[r.month] = {col:r.col||0, ummi:r.ummi||0, coffee:r.coffee||0};
     setBadge('Синхронизировано ✓','ok');
+    buildMonthSelector();
+    renderHistory();
+    fillForm();
+    // Populate ROP month selector with same months
+    const ropSel = document.getElementById('rop-month-sel');
+    if(ropSel){
+      ropSel.innerHTML = '';
+      const monthOpts = document.getElementById('month-sel').options;
+      for(const opt of monthOpts){
+        ropSel.appendChild(opt.cloneNode(true));
+      }
+      if(ropSel.options.length) { ropSel.value = ropSel.options[0].value; loadRopStats(); }
+    }
   } catch(e){
-    setBadge('Нет связи','err');
-    toast('Ошибка загрузки планов','err');
+    setBadge('Ошибка','err');
+    console.error(e);
+    // Fallback to embedded plans if Supabase fails
+    plans = {
+      '03.2026':{col:86000000,ummi:25000000,coffee:30000000},
+      '02.2026':{col:60000000,ummi:30000000,coffee:15000000},
+      '01.2026':{col:60000000,ummi:30000000,coffee:15000000},
+      '12.2025':{col:60000000,ummi:30000000,coffee:15000000},
+    };
+    buildMonthSelector();
+    renderHistory();
+    fillForm();
   }
 }
 
-async function loadWgData(){
-  if(_wgData) return _wgData;
-  try {
-    const rows=await sbGet(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data`);
-    if(rows&&rows[0]) _wgData=rows[0].data;
-  } catch(e){ console.warn('wgData error',e); }
-  return _wgData;
-}
+// ══════════════════════════════════════════════
+// MONTH SELECTOR
+// ══════════════════════════════════════════════
+function buildMonthSelector(){
+  const now = new Date();
+  const curMK = `${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
 
-// MONTH SELECTORS
-function buildMonthSels(){
-  const now=new Date();
-  const curMK=`${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
-  const monthSet=new Set([...Object.keys(plans),curMK]);
+  // Collect all months: existing + current + next 2
+  const monthSet = new Set(Object.keys(plans));
+  monthSet.add(curMK);
+  // Add next 2 months
   for(let i=1;i<=2;i++){
-    const d=new Date(now.getFullYear(),now.getMonth()+i,1);
+    const d = new Date(now.getFullYear(), now.getMonth()+i, 1);
     monthSet.add(`${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`);
   }
-  const sorted=[...monthSet].sort((a,b)=>{
+
+  const sorted = [...monthSet].sort((a,b)=>{
     const [am,ay]=a.split('.'); const [bm,by]=b.split('.');
     return (+by*12+ +bm)-(+ay*12+ +am);
   });
-  const opts=sorted.map(m=>{
-    const [mm,yy]=m.split('.');
-    const lbl=`${MONTH_NAMES[+mm-1]} ${yy}${m===curMK?' (текущий)':''}`;
-    return `<option value="${m}" ${m===curMK?'selected':''}>${lbl}</option>`;
-  }).join('');
-  const ps=document.getElementById('month-sel');
-  if(ps){ ps.innerHTML=opts; selectedMonth=curMK; ps.value=curMK; updateMonthLabel(); fillForm(); }
-  const os=document.getElementById('overview-month-sel');
-  if(os){ os.innerHTML=opts; os.value=curMK; }
-  buildRopSel();
-}
 
-function buildRopSel(){
-  const sel=document.getElementById('rop-month-sel');
-  if(!sel||sel.options.length>0) return;
-  const now=new Date();
-  const opts=[];
-  for(let i=-5;i<=2;i++){
-    const d=new Date(now.getFullYear(),now.getMonth()+i,1);
-    const val=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-    const isCur=i===0;
-    opts.push(`<option value="${val}" ${isCur?'selected':''}>${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}${isCur?' (текущий)':''}</option>`);
-  }
-  sel.innerHTML=opts.join('');
+  const sel = document.getElementById('month-sel');
+  sel.innerHTML = sorted.map(m=>{
+    const [mm,yy] = m.split('.');
+    const label = `${MONTH_NAMES[+mm-1]} ${yy}`;
+    return `<option value="${m}" ${m===curMK?'selected':''}>${label}${m===curMK?' (текущий)':''}</option>`;
+  }).join('');
+
+  if(!selectedMonth) selectedMonth = curMK;
+  sel.value = selectedMonth;
+  updateMonthLabel();
 }
 
 function onMonthChange(){
-  const sel=document.getElementById('month-sel');
-  selectedMonth=sel.value;
-  updateMonthLabel(); fillForm();
+  selectedMonth = document.getElementById('month-sel').value;
+  updateMonthLabel();
+  fillForm();
 }
 
 function updateMonthLabel(){
-  const el=document.getElementById('selected-month-label');
-  if(!el||!selectedMonth) return;
-  const [mm,yy]=selectedMonth.split('.');
-  el.textContent=`${MONTH_NAMES[+mm-1]} ${yy}`;
-}
-
-// OVERVIEW
-function setProd(prod,el){
-  overviewProd=prod;
-  document.querySelectorAll('.prod-pill').forEach(p=>p.classList.remove('active'));
-  if(el) el.classList.add('active');
-  renderOverview();
-}
-
-function aggregateMonth(rawAll,adAll,mk){
-  const dates=new Set(monthDates(mk));
-  const keys=overviewProd==='all'?Object.keys(PROD_CFG):[overviewProd];
-  let tL=0,tD=0,tB=0,tA=0;
-  const byProd={};
-  keys.forEach(k=>{
-    const raw=(rawAll||{})[PROD_CFG[k].raw]||{};
-    const ad=(adAll||{})[PROD_CFG[k].raw]||{};
-    let l=0,d=0,b=0,a=0;
-    Object.entries(raw).forEach(([dt,v])=>{ if(dates.has(dt)){l+=v[0]||0;d+=v[1]||0;b+=v[2]||0;} });
-    Object.entries(ad).forEach(([dt,v])=>{ if(dates.has(dt))a+=v||0; });
-    byProd[k]={leads:l,deals:d,budget:b,ad:a,conv:l?+(d/l*100).toFixed(1):0,avgCheck:d?Math.round(b/d):0};
-    tL+=l;tD+=d;tB+=b;tA+=a;
-  });
-  byProd.total={leads:tL,deals:tD,budget:tB,ad:tA,conv:tL?+(tD/tL*100).toFixed(1):0,avgCheck:tD?Math.round(tB/tD):0};
-  return byProd;
-}
-
-async function renderOverview(){
-  const sel=document.getElementById('overview-month-sel');
-  if(!sel||!sel.value) return;
-  const mk=sel.value;
-  const [mm,yy]=mk.split('.');
-  document.getElementById('overview-sub').textContent=
-    `${MONTH_NAMES[+mm-1]} ${yy} — ${overviewProd==='all'?'Все продукты':PROD_CFG[overviewProd]?.name||''}`;
-
-  const data=await loadWgData();
-  const rawAll=data?.RAW||{};
-  const adAll=data?.AD_SPEND||{};
-  const agg=aggregateMonth(rawAll,adAll,mk);
-  const tot=agg.total;
-  const plan=plans[mk]||{};
-  const planAmt=overviewProd==='all'?(plan.col||0)+(plan.ummi||0)+(plan.coffee||0):(plan[overviewProd]||0);
-
-  const prevMM=+mm===1?12:+mm-1, prevYY=+mm===1?+yy-1:+yy;
-  const prevAgg=aggregateMonth(rawAll,adAll,`${String(prevMM).padStart(2,'0')}.${prevYY}`);
-  const growth=prevAgg.total.budget>0?Math.round((tot.budget-prevAgg.total.budget)/prevAgg.total.budget*100):null;
-  const drr=tot.budget>0?+(tot.ad/tot.budget*100).toFixed(1):0;
-  const roi=tot.ad>0?Math.round((tot.budget-tot.ad)/tot.ad*100):null;
-  const pct=planAmt>0?Math.round(tot.budget/planAmt*100):0;
-
-  // KPI
-  document.getElementById('overview-kpi').innerHTML=[
-    {l:'Выручка',     v:fmtM(tot.budget), s:growth!==null?(growth>=0?'↑':'↓')+Math.abs(growth)+'% vs пред.',c:'#6366f1',bar:pct,barC:pctColor(pct)},
-    {l:'Выполнение',  v:pct+'%',          s:'план '+fmtM(planAmt),   c:pctColor(pct)},
-    {l:'Лиды',        v:fmt(tot.leads),   s:'входящие',              c:'#6366f1'},
-    {l:'Сделки',      v:fmt(tot.deals),   s:'выиграно',              c:'#1a56db'},
-    {l:'Конверсия',   v:tot.conv+'%',     s:'план 12%',              c:tot.conv>=12?'#16a34a':'#dc2626'},
-    {l:'Ср. чек',     v:fmt(tot.avgCheck)+' ₸', s:'',              c:tot.avgCheck>=80000?'#16a34a':'#ca8a04'},
-    {l:'Реклама',     v:fmtM(tot.ad),     s:'ДРР '+drr+'%',         c:drr<=15?'#16a34a':drr<=25?'#ca8a04':'#dc2626'},
-    {l:'ROI рекламы', v:roi!==null?roi+'%':'—', s:'(выр−расх)/расх',c:roi>=100?'#16a34a':roi>=0?'#ca8a04':'#dc2626'},
-  ].map(k=>`<div class="kpi-card">
-    <div class="kpi-lbl">${k.l}</div>
-    <div class="kpi-val" style="color:${k.c}">${k.v}</div>
-    <div class="kpi-sub">${k.s}</div>
-    ${k.bar!=null?`<div class="kpi-bar"><div class="kpi-bar-fill" style="width:${Math.min(k.bar,100)}%;background:${k.barC}"></div></div>`:''}
-  </div>`).join('');
-
-  // P&L
-  const profit=tot.budget-tot.ad;
-  document.getElementById('pnl-body').innerHTML=[
-    {l:'Выручка',          v:tot.budget,  c:'#1a56db',bold:true},
-    {l:'Расходы рекламы',  v:-tot.ad,     c:'#dc2626',bold:true},
-    {l:'Валовая прибыль',  v:profit,      c:profit>=0?'#16a34a':'#dc2626',bold:true,sep:true},
-    {l:'ДРР',              str:drr+'%',   c:drr<=15?'#16a34a':drr<=25?'#ca8a04':'#dc2626'},
-    {l:'ROI рекламы',      str:roi!==null?roi+'%':'—', c:roi>=100?'#16a34a':roi>=0?'#ca8a04':'#dc2626'},
-  ].map(r=>`<div class="pnl-row ${r.sep?'sep':''}">
-    <span class="pnl-lbl ${r.bold?'bold':''}">${r.l}</span>
-    <span class="pnl-val ${r.bold?'bold':''}" style="color:${r.c}">${r.str||(r.v>=0?'+':'')+fmtM(Math.abs(r.v))}</span>
-  </div>`).join('');
-
-  if(typeof Chart==='undefined') return;
-
-  // Donut
-  if(_charts.donut) _charts.donut.destroy();
-  _charts.donut=new Chart(document.getElementById('overview-donut').getContext('2d'),{
-    type:'doughnut',
-    data:{labels:['Коллаген','Ummi','Кофе'],
-      datasets:[{data:Object.keys(PROD_CFG).map(k=>{
-          const a=aggregateMonth(rawAll,adAll,mk); return a[k]?.budget||0;
-        }),backgroundColor:['#1a56db','#0a7c5c','#b45309'],borderWidth:0,hoverOffset:6}]},
-    options:{cutout:'72%',responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:10,padding:12}},
-      tooltip:{callbacks:{label:c=>`${c.label}: ${fmtM(c.raw)}`}}}}
-  });
-
-  // Daily line
-  const dates=monthDates(mk);
-  const pKeys=overviewProd==='all'?Object.keys(PROD_CFG):[overviewProd];
-  if(_charts.line) _charts.line.destroy();
-  document.getElementById('overview-chart-lbl').textContent=`Выручка по дням — ${MONTH_NAMES[+mm-1]} ${yy}`;
-  _charts.line=new Chart(document.getElementById('overview-chart').getContext('2d'),{
-    type:'line',
-    data:{labels:dates.map(d=>d.slice(0,5)),
-      datasets:pKeys.map(k=>({label:PROD_CFG[k].name,
-        data:dates.map(d=>(rawAll[PROD_CFG[k].raw]||{})[d]?.[2]||0),
-        borderColor:PROD_CFG[k].color,backgroundColor:PROD_CFG[k].color+'20',
-        borderWidth:2,fill:overviewProd!=='all',tension:.4,pointRadius:1}))},
-    options:{responsive:true,interaction:{mode:'index',intersect:false},
-      plugins:{legend:{labels:{font:{size:11},boxWidth:10}}},
-      scales:{x:{ticks:{font:{size:9},maxTicksLimit:16,maxRotation:0},grid:{color:'rgba(0,0,0,.03)'}},
-        y:{ticks:{font:{size:9},callback:v=>fmtK(v)},grid:{color:'rgba(0,0,0,.03)'}}}}
-  });
-
-  // MoM
-  const momL=[],momR=[],momA=[];
-  for(let i=5;i>=0;i--){
-    const d=new Date(+yy,+mm-1-i,1);
-    const mk2=`${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
-    const a=aggregateMonth(rawAll,adAll,mk2);
-    momL.push(MONTH_NAMES[d.getMonth()].slice(0,3));
-    momR.push(a.total.budget); momA.push(a.total.ad);
-  }
-  if(_charts.mom) _charts.mom.destroy();
-  _charts.mom=new Chart(document.getElementById('mom-chart').getContext('2d'),{
-    type:'bar',
-    data:{labels:momL,datasets:[
-      {label:'Выручка',data:momR,backgroundColor:'rgba(99,102,241,.7)',borderRadius:4},
-      {label:'Реклама',data:momA,backgroundColor:'rgba(251,191,36,.6)',borderRadius:4},
-    ]},
-    options:{responsive:true,plugins:{legend:{labels:{font:{size:11},boxWidth:10}}},
-      scales:{y:{ticks:{font:{size:9},callback:v=>fmtK(v)},grid:{color:'rgba(0,0,0,.03)'}},
-        x:{ticks:{font:{size:10}},grid:{display:false}}}}
-  });
-
-  // Plan chart
-  const pK=Object.keys(PROD_CFG);
-  if(_charts.plan) _charts.plan.destroy();
-  _charts.plan=new Chart(document.getElementById('plan-chart').getContext('2d'),{
-    type:'bar',
-    data:{labels:pK.map(k=>PROD_CFG[k].name),datasets:[
-      {label:'Факт',data:pK.map(k=>agg[k]?.budget||0),backgroundColor:pK.map(k=>PROD_CFG[k].color+'cc'),borderRadius:5},
-      {label:'План',data:pK.map(k=>plan[k]||0),backgroundColor:'rgba(148,163,184,.25)',borderColor:'rgba(148,163,184,.6)',borderWidth:1.5,borderRadius:5},
-    ]},
-    options:{responsive:true,plugins:{legend:{labels:{font:{size:11},boxWidth:10}}},
-      scales:{y:{ticks:{font:{size:9},callback:v=>fmtK(v)},grid:{color:'rgba(0,0,0,.03)'}},
-        x:{ticks:{font:{size:11}},grid:{display:false}}}}
-  });
-
-  // Table
-  let tL2=0,tD2=0,tB2=0,tA2=0;
-  document.getElementById('cmp-tbody').innerHTML=pK.map(k=>{
-    const d=agg[k]||{leads:0,deals:0,budget:0,ad:0,conv:0,avgCheck:0};
-    const pl=plan[k]||0, pc=pl>0?Math.round(d.budget/pl*100):null;
-    const r2=d.ad>0?Math.round((d.budget-d.ad)/d.ad*100):null;
-    tL2+=d.leads;tD2+=d.deals;tB2+=d.budget;tA2+=d.ad;
-    return `<tr>
-      <td style="font-weight:600;color:${PROD_CFG[k].color}">${PROD_CFG[k].name}</td>
-      <td style="font-weight:700">${fmtM(d.budget)}</td>
-      <td style="font-weight:700;color:${pc!=null?pctColor(pc):'var(--muted)'}">${pc!=null?pc+'%':'—'}</td>
-      <td>${fmt(d.leads)}</td><td>${fmt(d.deals)}</td>
-      <td style="color:${d.conv>=12?'#16a34a':'#dc2626'};font-weight:600">${d.conv}%</td>
-      <td>${fmt(d.avgCheck)} ₸</td><td>${fmtM(d.ad)}</td>
-      <td style="color:${r2>=100?'#16a34a':r2>=0?'#ca8a04':'#dc2626'};font-weight:600">${r2!=null?r2+'%':'—'}</td>
-    </tr>`;
-  }).join('');
-  const tR=tA2>0?Math.round((tB2-tA2)/tA2*100):null;
-  document.getElementById('cmp-tfoot').innerHTML=`<tr style="background:var(--line2)">
-    <td style="font-weight:700">Итого</td><td style="font-weight:700">${fmtM(tB2)}</td><td>—</td>
-    <td>${fmt(tL2)}</td><td>${fmt(tD2)}</td>
-    <td style="font-weight:600">${tL2?+(tD2/tL2*100).toFixed(1):0}%</td>
-    <td>${tD2?fmt(Math.round(tB2/tD2)):0} ₸</td>
-    <td>${fmtM(tA2)}</td><td style="font-weight:700">${tR!=null?tR+'%':'—'}</td>
-  </tr>`;
-}
-
-// PLANS
-function fillForm(){
   if(!selectedMonth) return;
-  const p=plans[selectedMonth]||{};
-  document.getElementById('plan-col').value=p.col||'';
-  document.getElementById('plan-ummi').value=p.ummi||'';
-  document.getElementById('plan-coffee').value=p.coffee||'';
-  const sc=(id,v)=>{ document.getElementById(id).textContent=v?`Текущий: ${fmtM(v)}`:'Не задан'; };
-  sc('cur-col',p.col); sc('cur-ummi',p.ummi); sc('cur-coffee',p.coffee);
+  const [mm,yy] = selectedMonth.split('.');
+  document.getElementById('selected-month-label').textContent = `${MONTH_NAMES[+mm-1]} ${yy}`;
 }
 
 function addNextMonth(){
-  const keys=Object.keys(plans);
-  let latest=keys.length?keys.reduce((a,b)=>{
-    const [am,ay]=a.split('.'); const [bm,by]=b.split('.');
-    return (+ay*12+ +am)>(+by*12+ +bm)?a:b;
-  }):null;
-  const now=new Date();
-  let nextD;
-  if(latest){ const [lm,ly]=latest.split('.'); nextD=new Date(+ly,+lm,1); }
-  else { nextD=new Date(now.getFullYear(),now.getMonth()+1,1); }
-  const nk=`${String(nextD.getMonth()+1).padStart(2,'0')}.${nextD.getFullYear()}`;
-  if(!plans[nk]) plans[nk]={col:0,ummi:0,coffee:0};
-  buildMonthSels();
-  document.getElementById('month-sel').value=nk;
-  selectedMonth=nk; updateMonthLabel(); fillForm();
-}
-
-async function savePlans(){
-  const btn=document.getElementById('save-btn');
-  btn.disabled=true;
-  document.getElementById('save-status').textContent='Сохранение...';
-  try {
-    const col=parseInt(document.getElementById('plan-col').value)||0;
-    const ummi=parseInt(document.getElementById('plan-ummi').value)||0;
-    const coffee=parseInt(document.getElementById('plan-coffee').value)||0;
-    await sbPost(`${SUPABASE_URL}/rest/v1/weglow_plans`,{month:selectedMonth,col,ummi,coffee});
-    plans[selectedMonth]={col,ummi,coffee};
+  // Find latest month in selector and add one more after it
+  const sel = document.getElementById('month-sel');
+  const options = [...sel.options].map(o=>o.value);
+  // Find earliest (last in sorted desc list)
+  const earliest = options[options.length-1];
+  const [mm,yy] = earliest.split('.');
+  const d = new Date(+yy, +mm-1-1, 1); // one month before earliest
+  const newMK = `${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+  if(!options.includes(newMK)){
+    plans[newMK] = {col:0,ummi:0,coffee:0};
+    selectedMonth = newMK;
+    buildMonthSelector();
     fillForm();
-    document.getElementById('save-status').textContent='✓ Сохранено';
-    toast('Планы сохранены ✓');
-    setBadge('Синхронизировано ✓','ok');
-    setTimeout(()=>document.getElementById('save-status').textContent='',3000);
-  } catch(e){
-    document.getElementById('save-status').textContent='Ошибка: '+e.message;
-    toast('Ошибка сохранения','err');
-  } finally { btn.disabled=false; }
+  }
 }
 
-// HISTORY
-async function loadHistory(){
-  const wrap=document.getElementById('history-wrap');
-  if(!wrap) return;
-  wrap.innerHTML='<div style="color:var(--muted);padding:40px;text-align:center">Загрузка...</div>';
+// ══════════════════════════════════════════════
+// FORM
+// ══════════════════════════════════════════════
+function fillForm(){
+  if(!selectedMonth) return;
+  const p = plans[selectedMonth] || {col:0,ummi:0,coffee:0};
+  document.getElementById('plan-col').value    = p.col    || '';
+  document.getElementById('plan-ummi').value   = p.ummi   || '';
+  document.getElementById('plan-coffee').value = p.coffee || '';
+
+  const showCur = (id, val) => {
+    document.getElementById(id).innerHTML = val
+      ? `Текущий: <strong>${fmtM(val)}</strong>`
+      : `<span style="color:var(--muted)">Не задан</span>`;
+  };
+  showCur('cur-col',    p.col);
+  showCur('cur-ummi',   p.ummi);
+  showCur('cur-coffee', p.coffee);
+}
+
+// ══════════════════════════════════════════════
+// SAVE
+// ══════════════════════════════════════════════
+async function savePlans(){
+  const col    = parseInt(document.getElementById('plan-col').value)||0;
+  const ummi   = parseInt(document.getElementById('plan-ummi').value)||0;
+  const coffee = parseInt(document.getElementById('plan-coffee').value)||0;
+
+  if(!col && !ummi && !coffee){ showStatus('Введите хотя бы один план', 'err'); return; }
+
+  document.getElementById('save-btn').disabled = true;
+  showStatus('Сохранение...', 'load');
+
   try {
-    const rows=await sbGet(`${SUPABASE_URL}/rest/v1/weglow_plans?select=month,col,ummi,coffee&order=month.desc`);
-    if(!rows.length){ wrap.innerHTML='<div style="color:var(--muted);padding:40px;text-align:center">Нет данных</div>'; return; }
-    const now=new Date();
-    const curMK=`${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
-    wrap.innerHTML=`<div style="overflow-x:auto"><table class="dt">
-      <thead><tr><th style="text-align:left">Месяц</th><th>Коллаген</th><th>Ummi</th><th>Кофе</th><th>Итого</th><th></th></tr></thead>
-      <tbody>${rows.map(r=>{
-        const [mm,yy]=r.month.split('.');
-        const total=(r.col||0)+(r.ummi||0)+(r.coffee||0);
-        const isCur=r.month===curMK;
-        return `<tr>
-          <td style="font-weight:600">${MONTH_NAMES[+mm-1]} ${yy}${isCur?'<span class="tag-cur">текущий</span>':''}</td>
-          <td style="color:#1a56db;font-weight:600">${fmtM(r.col)}</td>
-          <td style="color:#0a7c5c;font-weight:600">${fmtM(r.ummi)}</td>
-          <td style="color:#b45309;font-weight:600">${fmtM(r.coffee)}</td>
-          <td style="font-weight:700">${fmtM(total)}</td>
-          <td><button class="edit-btn" onclick="editPlan('${r.month}')">✏️ Изменить</button></td>
-        </tr>`;
-      }).join('')}</tbody>
-    </table></div>`;
-  } catch(e){ wrap.innerHTML=`<div style="color:#dc2626;padding:20px">Ошибка: ${e.message}</div>`; }
+    // Save to weglow_plans table
+    await sbPost(`${SUPABASE_URL}/rest/v1/weglow_plans`,
+      {month: selectedMonth, col, ummi, coffee});
+
+    plans[selectedMonth] = {col, ummi, coffee};
+
+    // Sync plans into weglow_data so dashboard reads them
+    await syncPlansToDashboard();
+
+    fillForm();
+    renderHistory();
+    toast(`✓ Планы на ${document.getElementById('selected-month-label').textContent} сохранены`, 'ok');
+    showStatus('');
+  } catch(e){
+    showStatus('Ошибка: '+e.message, 'err');
+    toast('Ошибка сохранения', 'err');
+  } finally {
+    document.getElementById('save-btn').disabled = false;
+  }
 }
 
-function editPlan(mk){
-  showTab('plans', document.querySelectorAll('.tab-btn')[1]);
-  selectedMonth=mk;
-  document.getElementById('month-sel').value=mk;
-  updateMonthLabel(); fillForm();
+async function syncPlansToDashboard(){
+  // Build PLANS in dashboard format: {col:{MM.YYYY:amount}, ummi:{...}, coffee:{...}}
+  const PLANS = {col:{}, ummi:{}, coffee:{}};
+  for(const [month, p] of Object.entries(plans)){
+    const [mm,yy] = month.split('.');
+    const key = `${mm}.${yy}`;
+    if(p.col)    PLANS.col[key]    = p.col;
+    if(p.ummi)   PLANS.ummi[key]   = p.ummi;
+    if(p.coffee) PLANS.coffee[key] = p.coffee;
+  }
+  // Get existing weglow_data and update PLANS
+  let rows;
+  try { rows = await sbGet(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data`); }
+  catch(e){ rows = []; }
+  let payload = rows && rows[0] ? rows[0].data : {};
+  payload.PLANS = PLANS;
+  payload.updatedAt = new Date().toISOString();
+  await sbPost(`${SUPABASE_URL}/rest/v1/weglow_data`,
+    {id:1, data:payload, updated_at:new Date().toISOString()});
 }
 
-// ROP
-function onRopPeriodChange(){
-  const type=document.getElementById('rop-period-type').value;
-  document.getElementById('rop-month-sel').style.display=type==='month'?'':'none';
-  document.getElementById('rop-custom-wrap').style.display=type==='custom'?'flex':'none';
-  if(type==='month') loadRopStats();
+function showStatus(text, type){
+  const el = document.getElementById('save-status');
+  el.textContent = text;
+  el.className = 'save-status' + (type==='ok'?' save-ok':type==='err'?' save-err':'');
+}
+
+// ══════════════════════════════════════════════
+// HISTORY TABLE
+// ══════════════════════════════════════════════
+function renderHistory(){
+  const now = new Date();
+  const curMK = `${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
+
+  const sorted = Object.entries(plans).sort((a,b)=>{
+    const [am,ay]=a[0].split('.'); const [bm,by]=b[0].split('.');
+    return (+by*12+ +bm)-(+ay*12+ +am);
+  });
+
+  if(!sorted.length){
+    document.getElementById('history-wrap').innerHTML='<div style="color:var(--muted);padding:24px;text-align:center">Нет данных</div>';
+    return;
+  }
+
+  const rows = sorted.map(([month, p])=>{
+    const [mm,yy] = month.split('.');
+    const label = `${MONTH_NAMES[+mm-1]} ${yy}`;
+    const isCur = month===curMK;
+    const isSel = month===selectedMonth;
+    const total = (p.col||0)+(p.ummi||0)+(p.coffee||0);
+    return `<tr class="${isCur?'cur-row':''}">
+      <td style="font-weight:600">${label} ${isCur?'<span class="tag-cur">текущий</span>':''}</td>
+      <td style="color:#1a56db;font-weight:600">${fmtM(p.col)}</td>
+      <td style="color:#0a7c5c;font-weight:600">${fmtM(p.ummi)}</td>
+      <td style="color:#b45309;font-weight:600">${fmtM(p.coffee)}</td>
+      <td style="font-weight:700">${fmtM(total)}</td>
+      <td><button class="edit-btn" onclick="editMonth('${month}')">✏️ Изменить</button></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('history-wrap').innerHTML = `
+    <table class="dt">
+      <thead><tr>
+        <th>Месяц</th>
+        <th style="color:#1a56db">Коллаген</th>
+        <th style="color:#0a7c5c">Ummi</th>
+        <th style="color:#b45309">Кофе</th>
+        <th>Итого</th>
+        <th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function editMonth(month){
+  selectedMonth = month;
+  document.getElementById('month-sel').value = month;
+  updateMonthLabel();
+  fillForm();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ══════════════════════════════════════════════
+// UI HELPERS
+// ══════════════════════════════════════════════
+function setBadge(text, type){
+  const b = document.getElementById('sync-badge');
+  b.textContent = text;
+  b.style.color = type==='ok'?'#4ade80':type==='err'?'#f87171':'#a5b4fc';
+}
+
+let toastTimer;
+function toast(text, type='ok'){
+  const el = document.getElementById('toast');
+  el.textContent = text;
+  el.className = `toast ${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 3000);
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+function init(){ loadPlans(); }
+if(sessionStorage.getItem('dir_auth')==='1') init();
+
+
+// ═══════════════════ ROP PLAN / FACT ═══════════════════════════
+function onRopPeriodChange() {
+  const type = document.getElementById('rop-period-type').value;
+  document.getElementById('rop-month-sel').style.display = type === 'month' ? '' : 'none';
+  const cw = document.getElementById('rop-custom-wrap');
+  cw.style.display = type === 'custom' ? 'flex' : 'none';
+  loadRopStats();
+}
+
+function getRopDateRange() {
+  const type = document.getElementById('rop-period-type').value;
+  if (type === 'custom') {
+    const from = document.getElementById('rop-from').value;
+    const to   = document.getElementById('rop-to').value;
+    if (!from || !to) return null;
+    // convert YYYY-MM-DD → DD.MM.YYYY
+    const cvt = s => s.split('-').reverse().join('.');
+    return { from: cvt(from), to: cvt(to), label: cvt(from) + ' — ' + cvt(to) };
+  }
+  // month mode
+  const month = document.getElementById('rop-month-sel').value;
+  if (!month) return null;
+  const [y, m] = month.split('-').map(Number);
+  const lastDay = new Date(y, m, 0).getDate();
+  const pad = n => String(n).padStart(2,'0');
+  return {
+    from: `01.${pad(m)}.${y}`,
+    to:   `${pad(lastDay)}.${pad(m)}.${y}`,
+    label: new Date(y, m-1, 1).toLocaleString('ru-RU',{month:'long',year:'numeric'})
+  };
 }
 
 async function loadRopStats() {
@@ -890,94 +772,6 @@ async function loadRopStats() {
     wrap.innerHTML = `<div style="color:#dc2626;padding:16px">⚠ Ошибка: ${e.message}</div>`;
     console.error(e);
   }
-}
-// ══════════════════════════════════════════════════════════════════
-//  OVERVIEW TAB — Analytics
-// ══════════════════════════════════════════════════════════════════
-let overviewProd = 'all';
-let overviewChart = null, momChart = null, planChart = null;
-let wgData = null; // cached weglow_data
-
-const PROD_CFG_DIR = {
-  col:    {name:'Коллаген', color:'#1a56db', rawKey:'Коллаген'},
-  ummi:   {name:'Ummi',     color:'#0a7c5c', rawKey:'Ummi'},
-  coffee: {name:'Кофе',     color:'#b45309', rawKey:'Кофе'},
-};
-
-function fmtK(v){ if(!v&&v!==0)return '—'; if(v>=1e6)return (v/1e6).toFixed(1)+' М'; if(v>=1e3)return (v/1e3).toFixed(0)+' К'; return v; }
-function pctBg(p){ return p>=100?'bg-g':p>=80?'bg-y':'bg-r'; }
-
-function setOverviewProd(prod, el) {
-  overviewProd = prod;
-  document.querySelectorAll('.prod-pill').forEach(p=>p.classList.remove('active'));
-  if(el) el.classList.add('active');
-  renderOverview();
-}
-
-function buildOverviewMonthSel() {
-  const now = new Date();
-  const opts = [];
-  for(let i=-5; i<=1; i++){
-    const d = new Date(now.getFullYear(), now.getMonth()+i, 1);
-    const mk = `${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
-    const curMK = `${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
-    opts.push(`<option value="${mk}" ${mk===curMK?'selected':''}>${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}</option>`);
-  }
-  const sel = document.getElementById('overview-month-sel');
-  if(sel) sel.innerHTML = opts.join('');
-  // Also populate rop-month-sel in YYYY-MM format (needed by getRopDateRange)
-  const ropSel = document.getElementById('rop-month-sel');
-  if(ropSel) {
-    const now2 = new Date();
-    const ropOpts = [];
-    for(let i=-5; i<=2; i++){
-      const d = new Date(now2.getFullYear(), now2.getMonth()+i, 1);
-      const val = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-      const lbl = `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
-      const isCur = (d.getMonth()===now2.getMonth() && d.getFullYear()===now2.getFullYear());
-      ropOpts.push(`<option value="${val}" ${isCur?'selected':''}>${lbl}${isCur?' (текущий)':''}</option>`);
-    }
-    ropSel.innerHTML = ropOpts.join('');
-  }
-}
-
-function getRopDateRange() {
-  const type = document.getElementById('rop-period-type').value;
-  if (type === 'custom') {
-    const from = document.getElementById('rop-from').value;
-    const to   = document.getElementById('rop-to').value;
-    if (!from || !to) return null;
-    const cvt = s => s.split('-').reverse().join('.');
-    return { from: cvt(from), to: cvt(to), label: cvt(from) + ' — ' + cvt(to) };
-  }
-  // month mode — handle both YYYY-MM and MM.YYYY formats
-  let month = document.getElementById('rop-month-sel').value;
-  if (!month) {
-    // default to current month in YYYY-MM
-    const now = new Date();
-    month = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  }
-  let y, m;
-  if (month.includes('-')) {
-    [y, m] = month.split('-').map(Number);           // YYYY-MM
-  } else {
-    const parts = month.split('.');
-    m = Number(parts[0]); y = Number(parts[1]);       // MM.YYYY
-  }
-  const lastDay = new Date(y, m, 0).getDate();
-  const pad = n => String(n).padStart(2,'0');
-  return {
-    from:  `01.${pad(m)}.${y}`,
-    to:    `${pad(lastDay)}.${pad(m)}.${y}`,
-    label: new Date(y, m-1, 1).toLocaleString('ru-RU',{month:'long',year:'numeric'})
-  };
-}
-
-// AUTO LOGIN
-if(sessionStorage.getItem('dir_auth')==='1'){
-  document.getElementById('pw-screen').style.display='none';
-  document.getElementById('app').style.display='block';
-  init();
 }
 </script>
 </body>
