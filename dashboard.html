@@ -1415,11 +1415,11 @@ function _getProdsForComp(comp) {
 }
 
 function _dateRange() {
-  // Returns array of 'DD.MM.YYYY' dates for current filter
+  // Returns array of 'DD.MM.YYYY' dates, or null = all time
   const now = new Date();
   const _fd = d => `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
   if (_prodPeriod === 'today') {
-    const s = _fd(now); return [s];
+    return [_fd(now)];
   }
   if (_prodPeriod === 'yesterday') {
     const y = new Date(now); y.setDate(y.getDate()-1); return [_fd(y)];
@@ -1427,7 +1427,17 @@ function _dateRange() {
   if (_prodPeriod === 'custom' && _prodFrom && _prodTo) {
     return getDatesInRange(_prodFrom, _prodTo);
   }
-  return null; // null = use all daily keys
+  // Month filter e.g. '02.2026' → all days in that month
+  if (_prodPeriod && _prodPeriod.match(/^\d{2}\.\d{4}$/)) {
+    const [mm, yyyy] = _prodPeriod.split('.');
+    const daysInMonth = new Date(+yyyy, +mm, 0).getDate();
+    const days = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      days.push(`${String(d).padStart(2,'0')}.${mm}.${yyyy}`);
+    }
+    return days;
+  }
+  return null; // all time
 }
 
 function _prodTotal(daily, dates) {
