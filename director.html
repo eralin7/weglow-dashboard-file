@@ -169,7 +169,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
   </div>
 
   <div class="content">
-    <div id="dir-tab-plans">
+    <div id="dir-tab-plans" style="display:none">
     <div class="page-hdr">
       <div class="page-title">Планы продаж</div>
       <div class="page-sub">Устанавливайте и редактируйте планы на любой месяц</div>
@@ -609,14 +609,21 @@ function switchDirTab(tab, el) {
     if(d) d.style.display = t===tab ? 'block' : 'none';
   });
   if(tab==='overview') renderOverview();
-  if(tab==='rop')      loadRopStats();
+  if(tab==='rop') {
+    // Ensure rop-month-sel has current month selected
+    const ropSel = document.getElementById('rop-month-sel');
+    if (ropSel && !ropSel.value) buildOverviewMonthSel();
+    loadRopStats();
+  }
   if(tab==='history')  loadHistory();
 }
 
 function init(){
   loadPlans();
   buildOverviewMonthSel();
-  renderOverview();
+  // Activate overview tab by default
+  const defaultBtn = document.querySelector('.dir-tab.active');
+  switchDirTab('overview', defaultBtn);
 }
 if(sessionStorage.getItem('dir_auth')==='1'){
   document.getElementById('pw-screen').style.display='none';
@@ -846,7 +853,6 @@ async function loadRopStats() {
     console.error(e);
   }
 }
-</script>
 // ══════════════════════════════════════════════════════════════════
 //  OVERVIEW TAB — Analytics
 // ══════════════════════════════════════════════════════════════════
@@ -1151,37 +1157,6 @@ async function loadHistory() {
 // ══════════════════════════════════════════════
 // DIRECTOR TABS
 // ══════════════════════════════════════════════
-function dirTab(name, el) {
-  document.querySelectorAll('.dir-tab').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  ['plans','analytics','rop'].forEach(t => {
-    const d = document.getElementById('dir-tab-'+t);
-    if (d) d.style.display = t===name ? '' : 'none';
-  });
-  if (name==='analytics') { buildDirPeriod(); renderDirectorAnalytics(); }
-  if (name==='rop') { _ensureRopMonthSel(); loadRopStats(); }
-}
-
-function _ensureRopMonthSel() {
-  const sel = document.getElementById('rop-month-sel');
-  if (!sel) return;
-  if (sel.options.length === 0) {
-    const now = new Date();
-    const opts = [];
-    for (let i = -5; i <= 2; i++) {
-      const d = new Date(now.getFullYear(), now.getMonth()+i, 1);
-      const val = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-      const lbl = `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
-      const isCur = (d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear());
-      opts.push(`<option value="${val}" ${isCur?'selected':''}>${lbl}${isCur?' (текущий)':''}</option>`);
-    }
-    sel.innerHTML = opts.join('');
-  }
-  if (!sel.value) {
-    const now = new Date();
-    sel.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  }
-}
 
 // ══════════════════════════════════════════════
 // DIRECTOR ANALYTICS — P&L + Charts
