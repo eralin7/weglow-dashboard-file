@@ -123,6 +123,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 .pct-g { color:#16a34a; font-weight:700; }
 .pct-y { color:#ca8a04; font-weight:700; }
 .pct-r { color:#dc2626; font-weight:700; }
+
+.dir-tab { padding:13px 18px;border:none;background:none;font-size:13px;font-weight:600;
+  color:var(--muted);border-bottom:2px solid transparent;cursor:pointer;
+  transition:color .15s,border-color .15s; }
+.dir-tab.active { color:var(--acc);border-bottom-color:var(--acc); }
+.dir-tab:not(.active):hover { color:var(--slate); }
 </style>
 </head>
 <body>
@@ -154,7 +160,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
     </div>
   </div>
 
+  <!-- TABS NAV -->
+  <div style="background:var(--white);border-bottom:1px solid var(--line);padding:0 32px;display:flex;gap:0">
+    <button class="dir-tab active" onclick="switchDirTab('overview',this)">📊 Обзор</button>
+    <button class="dir-tab" onclick="switchDirTab('plans',this)">🎯 Планы</button>
+    <button class="dir-tab" onclick="switchDirTab('rop',this)">👥 РОП</button>
+    <button class="dir-tab" onclick="switchDirTab('history',this)">📅 История</button>
+  </div>
+
   <div class="content">
+    <div id="dir-tab-plans">
     <div class="page-hdr">
       <div class="page-title">Планы продаж</div>
       <div class="page-sub">Устанавливайте и редактируйте планы на любой месяц</div>
@@ -220,6 +235,25 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
       </div>
     </div>
 
+    </div><!-- /dir-tab-plans -->
+
+    <!-- ═══ ANALYTICS TAB ═══ -->
+    <div id="dir-tab-analytics" style="display:none">
+      <div class="page-hdr"><div class="page-title">Аналитика компании</div><div class="page-sub">P&amp;L, выручка vs план, динамика</div></div>
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:20px;flex-wrap:wrap">
+        <select id="dir-analytics-period" class="month-sel" onchange="renderDirectorAnalytics()"></select>
+      </div>
+      <div id="dir-kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:14px;margin-bottom:20px"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+        <div class="history-card" style="margin:0"><div class="history-title">💰 P&amp;L</div><div id="dir-pnl"></div></div>
+        <div class="history-card" style="margin:0"><div class="history-title">📊 Структура выручки</div><canvas id="dir-donut" height="190"></canvas></div>
+      </div>
+      <div class="history-card" style="margin-bottom:20px"><div class="history-title">📈 Динамика планов по месяцам</div><canvas id="dir-trend-chart" height="140"></canvas></div>
+      <div class="history-card"><div class="history-title">📅 Сравнение месяцев</div><div id="dir-compare-table"></div></div>
+    </div><!-- /dir-tab-analytics -->
+
+    <!-- ═══ ROP TAB ═══ -->
+    <div id="dir-tab-rop" style="display:none">
     <!-- ROP PLAN/FACT -->
     <div class="history-card" style="margin-top:24px">
       <div class="history-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
@@ -245,8 +279,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
   </div>
 </div>
 
+    </div><!-- /dir-tab-rop -->
+    <div id="dir-tab-history" style="display:none">
+      <div class="page-hdr"><div class="page-title">История планов</div><div class="page-sub">Все установленные планы</div></div>
+      <div id="history-wrap-new"><div style="color:var(--muted);padding:40px;text-align:center">Загрузка...</div></div>
+    </div>
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 // ══════════════════════════════════════════════
 // CONFIG
@@ -494,7 +534,7 @@ function renderHistory(){
   });
 
   if(!sorted.length){
-    document.getElementById('history-wrap').innerHTML='<div style="color:var(--muted);padding:24px;text-align:center">Нет данных</div>';
+    document.getElementById('history-wrap-new')||document.getElementById('history-wrap').innerHTML='<div style="color:var(--muted);padding:24px;text-align:center">Нет данных</div>';
     return;
   }
 
@@ -514,7 +554,7 @@ function renderHistory(){
     </tr>`;
   }).join('');
 
-  document.getElementById('history-wrap').innerHTML = `
+  document.getElementById('history-wrap-new')||document.getElementById('history-wrap').innerHTML = `
     <table class="dt">
       <thead><tr>
         <th>Месяц</th>
@@ -773,6 +813,1027 @@ async function loadRopStats() {
     console.error(e);
   }
 }
+</script>
+</body>
+</html>
+
+<script>
+// ══════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════
+const DIR_PASSWORD = 'director2026';
+const SUPABASE_URL = 'https://bdyakgmeibpdkisbiykt.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkeWFrZ21laWJwZGtpc2JpeWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTQzOTMsImV4cCI6MjA4Nzc5MDM5M30.nA187grJR6XFQRmTP6WOM-6-1dZK1EzYNNP2JH9aAMg';
+
+const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+
+// ══════════════════════════════════════════════
+// PASSWORD
+// ══════════════════════════════════════════════
+function checkPw(){
+  if(document.getElementById('pw-input').value === DIR_PASSWORD){
+    document.getElementById('pw-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+    sessionStorage.setItem('dir_auth','1');
+    init();
+  } else {
+    document.getElementById('pw-err').style.display='block';
+    document.getElementById('pw-input').value='';
+    document.getElementById('pw-input').focus();
+  }
+}
+
+
+// ══════════════════════════════════════════════
+// SUPABASE
+// ══════════════════════════════════════════════
+const SB_H = {
+  'apikey': SUPABASE_KEY,
+  'Authorization': `Bearer ${SUPABASE_KEY}`,
+  'Content-Type': 'application/json'
+};
+async function sbGet(url){ const r=await fetch(url,{headers:SB_H}); if(!r.ok)throw new Error(r.status); return r.json(); }
+async function sbPost(url,body,method='POST'){ const r=await fetch(url,{method,headers:{...SB_H,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(body)}); if(!r.ok){const t=await r.text();throw new Error(t);} }
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+// plans format: { "MM.YYYY": {col, ummi, coffee} }
+let plans = {};
+let selectedMonth = null;
+
+function fmtM(n){ if(!n)return '0 ₸'; return Math.round(n).toLocaleString('ru-RU')+' ₸'; }
+function fmt(n){ return (n||0).toLocaleString('ru-RU'); }
+
+// ══════════════════════════════════════════════
+// LOAD
+// ══════════════════════════════════════════════
+async function loadPlans(){
+  setBadge('Загрузка...','load');
+  try {
+    const rows = await sbGet(`${SUPABASE_URL}/rest/v1/weglow_plans?select=month,col,ummi,coffee&order=month.desc`);
+    plans = {};
+    for(const r of rows) plans[r.month] = {col:r.col||0, ummi:r.ummi||0, coffee:r.coffee||0};
+    setBadge('Синхронизировано ✓','ok');
+    buildMonthSelector();
+    renderHistory();
+    fillForm();
+    // Populate ROP month selector with same months
+    const ropSel = document.getElementById('rop-month-sel');
+    if(ropSel){
+      ropSel.innerHTML = '';
+      const monthOpts = document.getElementById('month-sel').options;
+      for(const opt of monthOpts){
+        ropSel.appendChild(opt.cloneNode(true));
+      }
+      if(ropSel.options.length) { ropSel.value = ropSel.options[0].value; loadRopStats(); }
+    }
+  } catch(e){
+    setBadge('Ошибка','err');
+    console.error(e);
+    // Fallback to embedded plans if Supabase fails
+    plans = {
+      '03.2026':{col:86000000,ummi:25000000,coffee:30000000},
+      '02.2026':{col:60000000,ummi:30000000,coffee:15000000},
+      '01.2026':{col:60000000,ummi:30000000,coffee:15000000},
+      '12.2025':{col:60000000,ummi:30000000,coffee:15000000},
+    };
+    buildMonthSelector();
+    renderHistory();
+    fillForm();
+  }
+}
+
+// ══════════════════════════════════════════════
+// MONTH SELECTOR
+// ══════════════════════════════════════════════
+function buildMonthSelector(){
+  const now = new Date();
+  const curMK = `${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
+
+  // Collect all months: existing + current + next 2
+  const monthSet = new Set(Object.keys(plans));
+  monthSet.add(curMK);
+  // Add next 2 months
+  for(let i=1;i<=2;i++){
+    const d = new Date(now.getFullYear(), now.getMonth()+i, 1);
+    monthSet.add(`${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`);
+  }
+
+  const sorted = [...monthSet].sort((a,b)=>{
+    const [am,ay]=a.split('.'); const [bm,by]=b.split('.');
+    return (+by*12+ +bm)-(+ay*12+ +am);
+  });
+
+  const sel = document.getElementById('month-sel');
+  sel.innerHTML = sorted.map(m=>{
+    const [mm,yy] = m.split('.');
+    const label = `${MONTH_NAMES[+mm-1]} ${yy}`;
+    return `<option value="${m}" ${m===curMK?'selected':''}>${label}${m===curMK?' (текущий)':''}</option>`;
+  }).join('');
+
+  if(!selectedMonth) selectedMonth = curMK;
+  sel.value = selectedMonth;
+  updateMonthLabel();
+}
+
+function onMonthChange(){
+  selectedMonth = document.getElementById('month-sel').value;
+  updateMonthLabel();
+  fillForm();
+}
+
+function updateMonthLabel(){
+  if(!selectedMonth) return;
+  const [mm,yy] = selectedMonth.split('.');
+  document.getElementById('selected-month-label').textContent = `${MONTH_NAMES[+mm-1]} ${yy}`;
+}
+
+function addNextMonth(){
+  // Find latest month in selector and add one more after it
+  const sel = document.getElementById('month-sel');
+  const options = [...sel.options].map(o=>o.value);
+  // Find earliest (last in sorted desc list)
+  const earliest = options[options.length-1];
+  const [mm,yy] = earliest.split('.');
+  const d = new Date(+yy, +mm-1-1, 1); // one month before earliest
+  const newMK = `${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+  if(!options.includes(newMK)){
+    plans[newMK] = {col:0,ummi:0,coffee:0};
+    selectedMonth = newMK;
+    buildMonthSelector();
+    fillForm();
+  }
+}
+
+// ══════════════════════════════════════════════
+// FORM
+// ══════════════════════════════════════════════
+function fillForm(){
+  if(!selectedMonth) return;
+  const p = plans[selectedMonth] || {col:0,ummi:0,coffee:0};
+  document.getElementById('plan-col').value    = p.col    || '';
+  document.getElementById('plan-ummi').value   = p.ummi   || '';
+  document.getElementById('plan-coffee').value = p.coffee || '';
+
+  const showCur = (id, val) => {
+    document.getElementById(id).innerHTML = val
+      ? `Текущий: <strong>${fmtM(val)}</strong>`
+      : `<span style="color:var(--muted)">Не задан</span>`;
+  };
+  showCur('cur-col',    p.col);
+  showCur('cur-ummi',   p.ummi);
+  showCur('cur-coffee', p.coffee);
+}
+
+// ══════════════════════════════════════════════
+// SAVE
+// ══════════════════════════════════════════════
+async function savePlans(){
+  const col    = parseInt(document.getElementById('plan-col').value)||0;
+  const ummi   = parseInt(document.getElementById('plan-ummi').value)||0;
+  const coffee = parseInt(document.getElementById('plan-coffee').value)||0;
+
+  if(!col && !ummi && !coffee){ showStatus('Введите хотя бы один план', 'err'); return; }
+
+  document.getElementById('save-btn').disabled = true;
+  showStatus('Сохранение...', 'load');
+
+  try {
+    // Save to weglow_plans table
+    await sbPost(`${SUPABASE_URL}/rest/v1/weglow_plans`,
+      {month: selectedMonth, col, ummi, coffee});
+
+    plans[selectedMonth] = {col, ummi, coffee};
+
+    // Sync plans into weglow_data so dashboard reads them
+    await syncPlansToDashboard();
+
+    fillForm();
+    renderHistory();
+    toast(`✓ Планы на ${document.getElementById('selected-month-label').textContent} сохранены`, 'ok');
+    showStatus('');
+  } catch(e){
+    showStatus('Ошибка: '+e.message, 'err');
+    toast('Ошибка сохранения', 'err');
+  } finally {
+    document.getElementById('save-btn').disabled = false;
+  }
+}
+
+async function syncPlansToDashboard(){
+  // Build PLANS in dashboard format: {col:{MM.YYYY:amount}, ummi:{...}, coffee:{...}}
+  const PLANS = {col:{}, ummi:{}, coffee:{}};
+  for(const [month, p] of Object.entries(plans)){
+    const [mm,yy] = month.split('.');
+    const key = `${mm}.${yy}`;
+    if(p.col)    PLANS.col[key]    = p.col;
+    if(p.ummi)   PLANS.ummi[key]   = p.ummi;
+    if(p.coffee) PLANS.coffee[key] = p.coffee;
+  }
+  // Get existing weglow_data and update PLANS
+  let rows;
+  try { rows = await sbGet(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data`); }
+  catch(e){ rows = []; }
+  let payload = rows && rows[0] ? rows[0].data : {};
+  payload.PLANS = PLANS;
+  payload.updatedAt = new Date().toISOString();
+  await sbPost(`${SUPABASE_URL}/rest/v1/weglow_data`,
+    {id:1, data:payload, updated_at:new Date().toISOString()});
+}
+
+function showStatus(text, type){
+  const el = document.getElementById('save-status');
+  el.textContent = text;
+  el.className = 'save-status' + (type==='ok'?' save-ok':type==='err'?' save-err':'');
+}
+
+// ══════════════════════════════════════════════
+// HISTORY TABLE
+// ══════════════════════════════════════════════
+function renderHistory(){
+  const now = new Date();
+  const curMK = `${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
+
+  const sorted = Object.entries(plans).sort((a,b)=>{
+    const [am,ay]=a[0].split('.'); const [bm,by]=b[0].split('.');
+    return (+by*12+ +bm)-(+ay*12+ +am);
+  });
+
+  if(!sorted.length){
+    document.getElementById('history-wrap-new')||document.getElementById('history-wrap').innerHTML='<div style="color:var(--muted);padding:24px;text-align:center">Нет данных</div>';
+    return;
+  }
+
+  const rows = sorted.map(([month, p])=>{
+    const [mm,yy] = month.split('.');
+    const label = `${MONTH_NAMES[+mm-1]} ${yy}`;
+    const isCur = month===curMK;
+    const isSel = month===selectedMonth;
+    const total = (p.col||0)+(p.ummi||0)+(p.coffee||0);
+    return `<tr class="${isCur?'cur-row':''}">
+      <td style="font-weight:600">${label} ${isCur?'<span class="tag-cur">текущий</span>':''}</td>
+      <td style="color:#1a56db;font-weight:600">${fmtM(p.col)}</td>
+      <td style="color:#0a7c5c;font-weight:600">${fmtM(p.ummi)}</td>
+      <td style="color:#b45309;font-weight:600">${fmtM(p.coffee)}</td>
+      <td style="font-weight:700">${fmtM(total)}</td>
+      <td><button class="edit-btn" onclick="editMonth('${month}')">✏️ Изменить</button></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('history-wrap-new')||document.getElementById('history-wrap').innerHTML = `
+    <table class="dt">
+      <thead><tr>
+        <th>Месяц</th>
+        <th style="color:#1a56db">Коллаген</th>
+        <th style="color:#0a7c5c">Ummi</th>
+        <th style="color:#b45309">Кофе</th>
+        <th>Итого</th>
+        <th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function editMonth(month){
+  selectedMonth = month;
+  document.getElementById('month-sel').value = month;
+  updateMonthLabel();
+  fillForm();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ══════════════════════════════════════════════
+// UI HELPERS
+// ══════════════════════════════════════════════
+function setBadge(text, type){
+  const b = document.getElementById('sync-badge');
+  b.textContent = text;
+  b.style.color = type==='ok'?'#4ade80':type==='err'?'#f87171':'#a5b4fc';
+}
+
+let toastTimer;
+function toast(text, type='ok'){
+  const el = document.getElementById('toast');
+  el.textContent = text;
+  el.className = `toast ${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 3000);
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+// ══════════════════════════════════════════════
+// DIRECTOR TAB SWITCHING
+// ══════════════════════════════════════════════
+function switchDirTab(tab, el) {
+  document.querySelectorAll('.dir-tab').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  // Map logical tab names to actual HTML IDs
+  const tabMap = { overview:'dir-tab-analytics', plans:'dir-tab-plans', rop:'dir-tab-rop', history:'dir-tab-history' };
+  Object.entries(tabMap).forEach(([t, id]) => {
+    const d = document.getElementById(id);
+    if(d) d.style.display = t===tab ? 'block' : 'none';
+  });
+  if(tab==='overview') renderOverview();
+  if(tab==='rop')      loadRopStats();
+  if(tab==='history')  loadHistory();
+}
+
+function init(){
+  loadPlans();
+  buildOverviewMonthSel();
+  renderOverview();
+}
+if(sessionStorage.getItem('dir_auth')==='1'){
+  document.getElementById('pw-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  init();
+}
+
+
+// ═══════════════════ ROP PLAN / FACT ═══════════════════════════
+function onRopPeriodChange() {
+  const type = document.getElementById('rop-period-type').value;
+  document.getElementById('rop-month-sel').style.display = type === 'month' ? '' : 'none';
+  const cw = document.getElementById('rop-custom-wrap');
+  cw.style.display = type === 'custom' ? 'flex' : 'none';
+  loadRopStats();
+}
+
+function getRopDateRange() {
+  const type = document.getElementById('rop-period-type').value;
+  if (type === 'custom') {
+    const from = document.getElementById('rop-from').value;
+    const to   = document.getElementById('rop-to').value;
+    if (!from || !to) return null;
+    // convert YYYY-MM-DD → DD.MM.YYYY
+    const cvt = s => s.split('-').reverse().join('.');
+    return { from: cvt(from), to: cvt(to), label: cvt(from) + ' — ' + cvt(to) };
+  }
+  // month mode
+  const month = document.getElementById('rop-month-sel').value;
+  if (!month) return null;
+  const [y, m] = month.split('-').map(Number);
+  const lastDay = new Date(y, m, 0).getDate();
+  const pad = n => String(n).padStart(2,'0');
+  return {
+    from: `01.${pad(m)}.${y}`,
+    to:   `${pad(lastDay)}.${pad(m)}.${y}`,
+    label: new Date(y, m-1, 1).toLocaleString('ru-RU',{month:'long',year:'numeric'})
+  };
+}
+
+async function loadRopStats() {
+  const wrap = document.getElementById('rop-stats-wrap');
+  wrap.innerHTML = '<div style="color:var(--muted);padding:24px;text-align:center;">⟳ Загрузка...</div>';
+
+  try {
+    const range = getRopDateRange();
+    if (!range) { wrap.innerHTML = '<div style="color:var(--muted);padding:16px;text-align:center">Выберите период</div>'; return; }
+
+    const parseD = s => { const [d,m,y]=s.split('.').map(Number); return new Date(y,m-1,d); };
+    const fromD = parseD(range.from), toD = parseD(range.to);
+
+    // 1. ROP groups from weglow_rop_managers
+    const allMgrs = await sbGet(`${SUPABASE_URL}/rest/v1/weglow_rop_managers?select=rop,name`);
+    const ropGroups = {};
+    for (const r of allMgrs) {
+      if (!ropGroups[r.rop]) ropGroups[r.rop] = [];
+      ropGroups[r.rop].push(r.name);
+    }
+    const ropNames = Object.keys(ropGroups).sort();
+    if (!ropNames.length) {
+      wrap.innerHTML = '<div style="color:var(--muted);padding:16px;text-align:center">Нет групп РОП. Настройте в кабинете РОП.</div>';
+      return;
+    }
+
+    // 2. Plans: sum all months in range from weglow_mgr_plans
+    // Get all months that overlap with range
+    const months = [];
+    let cur = new Date(fromD.getFullYear(), fromD.getMonth(), 1);
+    const endM = new Date(toD.getFullYear(), toD.getMonth(), 1);
+    while (cur <= endM) {
+      months.push(`${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}`);
+      cur.setMonth(cur.getMonth()+1);
+    }
+    const mgrPlan = {}; // manager → total plan for period
+    for (const mo of months) {
+      const rows = await sbGet(`${SUPABASE_URL}/rest/v1/weglow_mgr_plans?month=eq.${mo}&select=manager,plan`);
+      for (const r of rows) {
+        mgrPlan[r.manager] = (mgrPlan[r.manager] || 0) + (r.plan || 0);
+      }
+    }
+
+    // 3. Load managers data with daily breakdown from weglow_data
+    const dataRows = await sbGet(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data`);
+    const managersData = dataRows[0]?.data?.MANAGERS || {};
+
+    // Compute per-manager fact directly from manager's daily data for the period
+    const mgrFact = {}; // manager → {leads, deals, budget}
+    for (const [prod, mgrList] of Object.entries(managersData)) {
+      for (const mgr of (mgrList || [])) {
+        if (!mgrFact[mgr.name]) mgrFact[mgr.name] = { leads:0, deals:0, budget:0 };
+        // Use daily breakdown if available (uploaded from CSV)
+        if (mgr.daily && Object.keys(mgr.daily).length > 0) {
+          for (const [dateStr, vals] of Object.entries(mgr.daily)) {
+            const [dd,dmo,dy] = dateStr.split('.').map(Number);
+            const d = new Date(dy, dmo-1, dd);
+            if (d >= fromD && d <= toD) {
+              mgrFact[mgr.name].leads  += vals[0]||0;
+              mgrFact[mgr.name].deals  += vals[1]||0;
+              mgrFact[mgr.name].budget += vals[2]||0;
+            }
+          }
+        } else {
+          // Fallback: proportional from all-time data using RAW totals
+          const rawData = dataRows[0]?.data?.RAW || {};
+          const pt = {leads:0,deals:0,budget:0}, at = {leads:0,deals:0,budget:0};
+          const prodDates = rawData[prod] || {};
+          for (const [dateStr, vals] of Object.entries(prodDates)) {
+            const [dd,dmo,dy] = dateStr.split('.').map(Number);
+            const d = new Date(dy,dmo-1,dd);
+            at.leads+=vals[0]||0; at.deals+=vals[1]||0; at.budget+=vals[2]||0;
+            if (d>=fromD && d<=toD) {
+              pt.leads+=vals[0]||0; pt.deals+=vals[1]||0; pt.budget+=vals[2]||0;
+            }
+          }
+          const sL=at.leads>0?(mgr.leads||0)/at.leads:0;
+          const sD=at.deals>0?(mgr.deals||0)/at.deals:0;
+          const sB=at.budget>0?(mgr.budget||0)/at.budget:0;
+          mgrFact[mgr.name].leads  += Math.round(sL*pt.leads);
+          mgrFact[mgr.name].deals  += Math.round(sD*pt.deals);
+          mgrFact[mgr.name].budget += Math.round(sB*pt.budget);
+        }
+      }
+    }
+
+    const fmt  = v => v >= 1000000 ? (v/1000000).toFixed(1)+'M' : v >= 1000 ? Math.round(v/1000)+'K' : String(v);
+    const pctCls = p => p>=80?'pct-g':p>=50?'pct-y':'pct-r';
+    const barClr  = p => p>=80?'#16a34a':p>=50?'#ca8a04':'#dc2626';
+
+    // ─── Build HTML ───────────────────────────────────────────
+    let html = `<div style="font-size:12px;color:var(--muted);margin-bottom:16px">Период: <strong style="color:var(--ink)">${range.label}</strong></div>`;
+
+    for (const rop of ropNames) {
+      const mgrs = ropGroups[rop] || [];
+      let ropPlan=0, ropBudget=0, ropLeads=0, ropDeals=0;
+
+      const mgrRows = mgrs.map(mgr => {
+        const plan   = mgrPlan[mgr] || 0;
+        const fact   = mgrFact[mgr] || {budget:0,leads:0,deals:0};
+        ropPlan   += plan;
+        ropBudget += fact.budget;
+        ropLeads  += fact.leads;
+        ropDeals  += fact.deals;
+        const pct  = plan>0 ? Math.round(fact.budget/plan*100) : 0;
+        const conv = fact.leads>0 ? (fact.deals/fact.leads*100).toFixed(1) : '0';
+        return {mgr, plan, fact, pct, conv};
+      });
+
+      const ropPct = ropPlan>0 ? Math.round(ropBudget/ropPlan*100) : 0;
+      const ropConv = ropLeads>0 ? (ropDeals/ropLeads*100).toFixed(1) : '0';
+
+      html += `
+      <div style="margin-bottom:24px;border:1px solid var(--line);border-radius:12px;overflow:hidden">
+        <!-- ROP header -->
+        <div style="background:var(--bg);padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div style="font-weight:700;font-size:15px;color:var(--ink);flex:1">${rop}</div>
+          <div style="display:flex;gap:16px;flex-wrap:wrap">
+            <div style="text-align:center">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Лиды</div>
+              <div style="font-size:16px;font-weight:700;color:var(--ink)">${ropLeads.toLocaleString('ru')}</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Сделки</div>
+              <div style="font-size:16px;font-weight:700;color:var(--ink)">${ropDeals.toLocaleString('ru')}</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Конверсия</div>
+              <div style="font-size:16px;font-weight:700;color:var(--ink)">${ropConv}%</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Факт</div>
+              <div style="font-size:16px;font-weight:700;color:var(--ink)">${fmt(ropBudget)} ₸</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">План</div>
+              <div style="font-size:16px;font-weight:700;color:var(--muted)">${fmt(ropPlan)} ₸</div>
+            </div>
+            <div style="text-align:center;min-width:70px">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">% плана</div>
+              <div style="font-size:18px;font-weight:800" class="${pctCls(ropPct)}">${ropPct}%</div>
+              <div class="rop-bar" style="margin-top:4px"><div class="rop-fill" style="width:${Math.min(100,ropPct)}%;background:${barClr(ropPct)}"></div></div>
+            </div>
+          </div>
+        </div>
+        <!-- Managers table -->
+        <table class="rop-table" style="margin:0">
+          <thead><tr>
+            <th>Менеджер</th>
+            <th>Лиды</th>
+            <th>Сделки</th>
+            <th>Конверсия</th>
+            <th>Факт ₸</th>
+            <th>План ₸</th>
+            <th>%</th>
+          </tr></thead>
+          <tbody>
+            ${mgrRows.map(({mgr,plan,fact,pct,conv})=>`
+            <tr>
+              <td><div class="rop-name">${mgr}</div></td>
+              <td>${fact.leads.toLocaleString('ru')}</td>
+              <td>${fact.deals.toLocaleString('ru')}</td>
+              <td>${conv}%</td>
+              <td style="font-weight:600">${fmt(fact.budget)} ₸</td>
+              <td style="color:var(--muted)">${fmt(plan)} ₸</td>
+              <td>
+                <span class="${pctCls(pct)}">${pct}%</span>
+                <div class="rop-bar"><div class="rop-fill" style="width:${Math.min(100,pct)}%;background:${barClr(pct)}"></div></div>
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+    }
+
+    wrap.innerHTML = html;
+
+  } catch(e) {
+    wrap.innerHTML = `<div style="color:#dc2626;padding:16px">⚠ Ошибка: ${e.message}</div>`;
+    console.error(e);
+  }
+}
+</script>
+// ══════════════════════════════════════════════════════════════════
+//  OVERVIEW TAB — Analytics
+// ══════════════════════════════════════════════════════════════════
+let overviewProd = 'all';
+let overviewChart = null, momChart = null, planChart = null;
+let wgData = null; // cached weglow_data
+
+const PROD_CFG_DIR = {
+  col:    {name:'Коллаген', color:'#1a56db', rawKey:'Коллаген'},
+  ummi:   {name:'Ummi',     color:'#0a7c5c', rawKey:'Ummi'},
+  coffee: {name:'Кофе',     color:'#b45309', rawKey:'Кофе'},
+};
+
+function fmtK(v){ if(!v&&v!==0)return '—'; if(v>=1e6)return (v/1e6).toFixed(1)+' М'; if(v>=1e3)return (v/1e3).toFixed(0)+' К'; return v; }
+function pctBg(p){ return p>=100?'bg-g':p>=80?'bg-y':'bg-r'; }
+
+function setOverviewProd(prod, el) {
+  overviewProd = prod;
+  document.querySelectorAll('.prod-pill').forEach(p=>p.classList.remove('active'));
+  if(el) el.classList.add('active');
+  renderOverview();
+}
+
+function buildOverviewMonthSel() {
+  const now = new Date();
+  const opts = [];
+  for(let i=-5; i<=1; i++){
+    const d = new Date(now.getFullYear(), now.getMonth()+i, 1);
+    const mk = `${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+    const curMK = `${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
+    opts.push(`<option value="${mk}" ${mk===curMK?'selected':''}>${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}</option>`);
+  }
+  const sel = document.getElementById('overview-month-sel');
+  if(sel) sel.innerHTML = opts.join('');
+  // Also populate history month sel
+  const rop = document.getElementById('rop-month-sel');
+  if(rop) rop.innerHTML = opts.join('');
+}
+
+async function loadWgData() {
+  if (wgData) return wgData;
+  try {
+    const rows = await sbGet(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data`);
+    if(rows && rows[0]) wgData = rows[0].data;
+  } catch(e) { console.error('wgData load error:', e); }
+  return wgData;
+}
+
+function getDatesInRangeDir(from, to) {
+  const dates = [];
+  const [df,mf,yf] = from.split('.').map(Number);
+  const [dt,mt,yt] = to.split('.').map(Number);
+  let d = new Date(yf, mf-1, df);
+  const end = new Date(yt, mt-1, dt);
+  while(d <= end) {
+    dates.push(`${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`);
+    d.setDate(d.getDate()+1);
+  }
+  return dates;
+}
+
+function aggregateDir(rawAll, adSpend, monthKey) {
+  const [mm, yy] = monthKey.split('.');
+  const lastDay = new Date(+yy, +mm, 0).getDate();
+  const from = `01.${monthKey}`, to = `${String(lastDay).padStart(2,'0')}.${monthKey}`;
+  const dates = new Set(getDatesInRangeDir(from, to));
+
+  const result = {};
+  const keys = overviewProd === 'all' ? Object.keys(PROD_CFG_DIR) : [overviewProd];
+  let totLeads=0,totDeals=0,totBudget=0,totAd=0;
+
+  keys.forEach(k => {
+    const raw = (rawAll||{})[PROD_CFG_DIR[k].rawKey] || {};
+    let leads=0,deals=0,budget=0,ad=0;
+    Object.entries(raw).forEach(([d,v])=>{
+      if(dates.has(d)){ leads+=v[0]||0; deals+=v[1]||0; budget+=v[2]||0; }
+    });
+    const adRaw = (adSpend||{})[PROD_CFG_DIR[k].rawKey] || {};
+    Object.entries(adRaw).forEach(([d,v])=>{
+      if(dates.has(d)) ad+=v||0;
+    });
+    result[k] = {leads,deals,budget,ad,
+      conv:leads?+(deals/leads*100).toFixed(1):0,
+      avgCheck:deals?Math.round(budget/deals):0};
+    totLeads+=leads; totDeals+=deals; totBudget+=budget; totAd+=ad;
+  });
+
+  result.total = {leads:totLeads,deals:totDeals,budget:totBudget,ad:totAd,
+    conv:totLeads?+(totDeals/totLeads*100).toFixed(1):0,
+    avgCheck:totDeals?Math.round(totBudget/totDeals):0};
+  return result;
+}
+
+async function renderOverview() {
+  const sel = document.getElementById('overview-month-sel');
+  if(!sel) return;
+  const monthKey = sel.value;
+  const [mm,yy] = monthKey.split('.');
+  const label = `${MONTH_NAMES[+mm-1]} ${yy}`;
+
+  document.getElementById('overview-period-sub').textContent = `${label} · ${overviewProd==='all'?'Все продукты':PROD_CFG_DIR[overviewProd]?.name||''}`;
+  document.getElementById('overview-chart-lbl').textContent = label;
+  document.getElementById('overview-cmp-period').textContent = label;
+
+  const data = await loadWgData();
+  const rawAll  = data?.RAW       || {};
+  const adSpend = data?.AD_SPEND  || {};
+  const plansSrc = data?.PLANS    || plans; // fallback to local
+
+  const agg = aggregateDir(rawAll, adSpend, monthKey);
+  const tot = agg.total;
+
+  // Plan for this month
+  const planRow = plansSrc.col?.[monthKey] || plansSrc[monthKey]?.col || 0;
+  const planKeys = overviewProd==='all'
+    ? Object.keys(PROD_CFG_DIR).reduce((s,k)=>{
+        const pm = plans[k] ? plans[k][monthKey] : 0;
+        return s + (pm||0);
+      }, 0)
+    : (plans[overviewProd]?.[monthKey] || 0);
+
+  // Prev month for growth
+  const prevMM = +mm === 1 ? 12 : +mm-1;
+  const prevYY = +mm === 1 ? +yy-1 : +yy;
+  const prevKey = `${String(prevMM).padStart(2,'0')}.${prevYY}`;
+  const prevAgg = aggregateDir(rawAll, adSpend, prevKey);
+  const prevTot = prevAgg.total;
+
+  const growth = prevTot.budget>0 ? Math.round((tot.budget-prevTot.budget)/prevTot.budget*100) : null;
+  const roi = tot.ad>0 ? Math.round((tot.budget-tot.ad)/tot.ad*100) : null;
+  const drr = tot.budget>0 ? +(tot.ad/tot.budget*100).toFixed(1) : 0;
+
+  // KPI cards
+  const kpis = [
+    {l:'Выручка',       v:fmtM(tot.budget),        s:`vs пред.: ${growth!==null?(growth>0?'↑':'↓')+Math.abs(growth)+'%':'—'}`, c:overviewProd==='all'?'#6366f1':PROD_CFG_DIR[overviewProd].color,
+     badge:growth!==null?(growth>0?`↑ ${growth}%`:`↓ ${Math.abs(growth)}%`):null, bc:growth>0?'bg-g':'bg-r'},
+    {l:'Лиды',          v:fmt(tot.leads),           s:'входящие', c:'#6366f1'},
+    {l:'Сделки',        v:fmt(tot.deals),           s:'выиграно',  c:'#6366f1'},
+    {l:'Конверсия',     v:tot.conv+'%',             s:'план 12%',  c:tot.conv>=12?'#16a34a':'#c0392b',
+     badge:tot.conv>=12?'✓ В норме':'⚠ Ниже', bc:tot.conv>=12?'bg-g':'bg-r'},
+    {l:'Средний чек',   v:fmt(tot.avgCheck)+' ₸',  s:'план 80К',  c:tot.avgCheck>=80000?'#16a34a':'#ca8a04'},
+    {l:'Расходы рекл.', v:fmtM(tot.ad),             s:`ДРР ${drr}%`, c:drr<=15?'#16a34a':drr<=25?'#ca8a04':'#c0392b',
+     badge:`ДРР ${drr}%`, bc:drr<=15?'bg-g':drr<=25?'bg-y':'bg-r'},
+    {l:'ROI рекламы',   v:roi!==null?roi+'%':'—',   s:'(выручка−расход)/расход', c:roi>=100?'#16a34a':roi>=0?'#ca8a04':'#c0392b',
+     badge:roi!==null?(roi>=200?'Отлично':roi>=100?'Хорошо':roi>=0?'Норма':'Убыток'):'—',
+     bc:roi>=100?'bg-g':roi>=0?'bg-y':'bg-r'},
+  ];
+
+  document.getElementById('overview-kpi').innerHTML = kpis.map(k=>`
+    <div class="kpi-card" style="--kc:${k.c}">
+      <div class="kc-lbl">${k.l}</div>
+      <div class="kc-val">${k.v}</div>
+      <div class="kc-sub">${k.s||''}</div>
+      ${k.badge?`<div class="kc-badge ${k.bc}">${k.badge}</div>`:''}
+    </div>`).join('');
+
+  // P&L
+  const profit = tot.budget - tot.ad;
+  document.getElementById('pnl-body').innerHTML = `
+    <div class="pnl-row"><span class="pnl-lbl">💰 Выручка</span><span class="pnl-val" style="color:#1a56db">${fmtM(tot.budget)}</span></div>
+    <div class="pnl-row"><span class="pnl-lbl">📣 Расходы на рекламу</span><span class="pnl-val pnl-negative">− ${fmtM(tot.ad)}</span></div>
+    <div class="pnl-row" style="margin-top:4px"><span class="pnl-lbl" style="font-weight:700">Валовая прибыль</span><span class="pnl-val ${profit>=0?'pnl-positive':'pnl-negative'}">${profit>=0?'+ ':'− '}${fmtM(Math.abs(profit))}</span></div>
+    <div style="margin-top:12px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px">Рентабельность</div>
+      <div class="prog-wrap">
+        <div class="prog-track"><div class="prog-fill" style="width:${Math.min(100, Math.max(0,100-drr))}%;background:${drr<=25?'#16a34a':'#c0392b'}"></div></div>
+        <div style="font-size:11px;margin-top:4px;color:var(--muted)">${(100-drr).toFixed(1)}% маржа после рекламы</div>
+      </div>
+    </div>`;
+
+  // Product comparison table
+  const keys = Object.keys(PROD_CFG_DIR);
+  let tLeads=0,tDeals=0,tBudget=0,tAd=0;
+  const tbodyRows = keys.map(k=>{
+    const d = agg[k] || {leads:0,deals:0,budget:0,ad:0,conv:0,avgCheck:0};
+    const plan = plans[k]?.[monthKey] || 0;
+    const pct  = plan>0 ? Math.round(d.budget/plan*100) : null;
+    const roi2 = d.ad>0 ? Math.round((d.budget-d.ad)/d.ad*100) : null;
+    tLeads+=d.leads; tDeals+=d.deals; tBudget+=d.budget; tAd+=d.ad;
+    const color = PROD_CFG_DIR[k].color;
+    return `<tr>
+      <td><span style="font-weight:700;color:${color}">${PROD_CFG_DIR[k].name}</span></td>
+      <td style="font-weight:700;color:${color}">${fmtM(d.budget)}</td>
+      <td><span class="kc-badge ${pct?pctBg(pct):'bg-y'}" style="font-size:10px">${pct!==null?pct+'%':'—'}</span></td>
+      <td>${fmt(d.leads)}</td><td>${fmt(d.deals)}</td>
+      <td style="color:${d.conv>=12?'#16a34a':'#c0392b'}">${d.conv}%</td>
+      <td>${fmt(d.avgCheck)} ₸</td>
+      <td>${fmtM(d.ad)}</td>
+      <td style="color:${roi2>=100?'#16a34a':roi2>=0?'#ca8a04':'#c0392b'}">${roi2!==null?roi2+'%':'—'}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('cmp-tbody').innerHTML = tbodyRows;
+  const tROI = tAd>0?Math.round((tBudget-tAd)/tAd*100):null;
+  document.getElementById('cmp-tfoot').innerHTML = `<tr>
+    <td>Итого</td><td>${fmtM(tBudget)}</td><td>—</td>
+    <td>${fmt(tLeads)}</td><td>${fmt(tDeals)}</td>
+    <td>${tLeads?+(tDeals/tLeads*100).toFixed(1):0}%</td>
+    <td>${tDeals?fmt(Math.round(tBudget/tDeals)):0} ₸</td>
+    <td>${fmtM(tAd)}</td><td>${tROI!==null?tROI+'%':'—'}</td>
+  </tr>`;
+
+  // Revenue line chart
+  const lastDay = new Date(+yy,+mm,0).getDate();
+  const dates = getDatesInRangeDir(`01.${monthKey}`,`${String(lastDay).padStart(2,'0')}.${monthKey}`);
+  const labels = dates.map(d=>d.slice(0,5));
+  const datasets = (overviewProd==='all' ? Object.keys(PROD_CFG_DIR) : [overviewProd]).map(k=>{
+    const raw = (rawAll[PROD_CFG_DIR[k].rawKey]||{});
+    return { label:PROD_CFG_DIR[k].name, data:dates.map(d=>(raw[d]||[0,0,0])[2]),
+      borderColor:PROD_CFG_DIR[k].color, backgroundColor:PROD_CFG_DIR[k].color+'18',
+      borderWidth:2, fill:overviewProd!=='all', tension:.4, pointRadius:1.5 };
+  });
+  const ctx1 = document.getElementById('overview-chart').getContext('2d');
+  if(overviewChart) overviewChart.destroy();
+  overviewChart = new Chart(ctx1,{type:'line',data:{labels,datasets},options:{
+    responsive:true, interaction:{mode:'index',intersect:false},
+    plugins:{legend:{labels:{font:{size:11},boxWidth:10,padding:12}}},
+    scales:{
+      x:{ticks:{font:{size:9},maxTicksLimit:16,maxRotation:0},grid:{color:'rgba(0,0,0,.04)'}},
+      y:{ticks:{font:{size:9},callback:v=>fmtK(v)},grid:{color:'rgba(0,0,0,.04)'}}
+    }
+  }});
+
+  // MoM chart — last 6 months
+  const momMonths=[], momRevenue=[], momAd=[];
+  for(let i=5;i>=0;i--){
+    const d2=new Date(+yy,+mm-1-i,1);
+    const mk2=`${String(d2.getMonth()+1).padStart(2,'0')}.${d2.getFullYear()}`;
+    const a2 = aggregateDir(rawAll,adSpend,mk2);
+    momMonths.push(MONTH_NAMES[d2.getMonth()].slice(0,3));
+    momRevenue.push(a2.total.budget);
+    momAd.push(a2.total.ad);
+  }
+  const ctx2 = document.getElementById('mom-chart').getContext('2d');
+  if(momChart) momChart.destroy();
+  momChart = new Chart(ctx2,{type:'bar',data:{
+    labels:momMonths,
+    datasets:[
+      {label:'Выручка',backgroundColor:'rgba(99,102,241,.7)',data:momRevenue,borderRadius:4},
+      {label:'Реклама',backgroundColor:'rgba(251,191,36,.6)',data:momAd,borderRadius:4},
+    ]
+  },options:{responsive:true,plugins:{legend:{labels:{font:{size:11},boxWidth:10}}},
+    scales:{y:{ticks:{font:{size:9},callback:v=>fmtK(v)},grid:{color:'rgba(0,0,0,.04)'}},
+            x:{ticks:{font:{size:10}},grid:{display:false}}}}});
+
+  // Plan execution chart
+  const planLabels=[], planFact=[], planPlan=[];
+  Object.keys(PROD_CFG_DIR).forEach(k=>{
+    const d3 = agg[k] || {budget:0};
+    const p3 = plans[k]?.[monthKey] || 0;
+    planLabels.push(PROD_CFG_DIR[k].name);
+    planFact.push(d3.budget);
+    planPlan.push(p3);
+  });
+  const ctx3 = document.getElementById('plan-chart').getContext('2d');
+  if(planChart) planChart.destroy();
+  planChart = new Chart(ctx3,{type:'bar',data:{
+    labels:planLabels,
+    datasets:[
+      {label:'Факт',  data:planFact, backgroundColor:Object.values(PROD_CFG_DIR).map(p=>p.color+'cc'), borderRadius:5, borderSkipped:false},
+      {label:'План',  data:planPlan, backgroundColor:'rgba(148,163,184,.25)', borderColor:'rgba(148,163,184,.6)', borderWidth:1.5, borderRadius:5, borderSkipped:false},
+    ]
+  },options:{responsive:true,plugins:{legend:{labels:{font:{size:11},boxWidth:10}}},
+    scales:{y:{ticks:{font:{size:9},callback:v=>fmtK(v)},grid:{color:'rgba(0,0,0,.04)'}},
+            x:{ticks:{font:{size:11}},grid:{display:false}}}}});
+}
+
+async function loadHistory() {
+  const wrap = document.getElementById('history-wrap-new')||document.getElementById('history-wrap');
+  if(!wrap) return;
+  try {
+    const rows = await sbGet(`${SUPABASE_URL}/rest/v1/weglow_plans?select=month,col,ummi,coffee&order=month.desc`);
+    if(!rows.length){ wrap.innerHTML='<div style="padding:32px;text-align:center;color:var(--muted)">Нет данных</div>'; return; }
+    wrap.innerHTML = `<div class="hist-wrap"><table class="hist-table">
+      <thead><tr><th>Месяц</th><th>Коллаген</th><th>Ummi</th><th>Кофе</th><th>Итого</th><th></th></tr></thead>
+      <tbody>${rows.map(r=>{
+        const [mm2,yy2]=r.month.split('.');
+        const total=(r.col||0)+(r.ummi||0)+(r.coffee||0);
+        return `<tr>
+          <td>${MONTH_NAMES[+mm2-1]} ${yy2}</td>
+          <td>${fmtM(r.col)}</td><td>${fmtM(r.ummi)}</td><td>${fmtM(r.coffee)}</td>
+          <td style="font-weight:700">${fmtM(total)}</td>
+          <td><button class="edit-btn" onclick="editMonth('${r.month}')">✏️ Изменить</button></td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>`;
+  } catch(e) { wrap.innerHTML='<div style="padding:32px;text-align:center;color:var(--red)">Ошибка загрузки</div>'; }
+}
+
+
+
+// ══════════════════════════════════════════════
+// DIRECTOR TABS
+// ══════════════════════════════════════════════
+function dirTab(name, el) {
+  document.querySelectorAll('.dir-tab').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  ['plans','analytics','rop'].forEach(t => {
+    const d = document.getElementById('dir-tab-'+t);
+    if (d) d.style.display = t===name ? '' : 'none';
+  });
+  if (name==='analytics') { buildDirPeriod(); renderDirectorAnalytics(); }
+}
+
+// ══════════════════════════════════════════════
+// DIRECTOR ANALYTICS — P&L + Charts
+// ══════════════════════════════════════════════
+let _dirDonut=null, _dirTrend=null;
+
+function buildDirPeriod() {
+  const sel = document.getElementById('dir-analytics-period');
+  if (!sel || sel.options.length > 0) return;
+  const months = Object.keys(plans).sort((a,b)=>{
+    const [am,ay]=a.split('.'), [bm,by]=b.split('.');
+    return (+by*12+ +bm)-(+ay*12+ +am);
+  });
+  sel.innerHTML = months.map(m=>{
+    const [mm,yy]=m.split('.');
+    return `<option value="${m}">${MONTH_NAMES[+mm-1]} ${yy}</option>`;
+  }).join('');
+}
+
+async function renderDirectorAnalytics() {
+  buildDirPeriod();
+  const sel = document.getElementById('dir-analytics-period');
+  const mk = sel ? sel.value : null;
+  if (!mk) return;
+  const [mm, yy] = mk.split('.');
+
+  // Load fact data from Supabase
+  let factData = {col:{leads:0,deals:0,budget:0}, ummi:{leads:0,deals:0,budget:0}, coffee:{leads:0,deals:0,budget:0}};
+  let adSpend  = {col:0, ummi:0, coffee:0};
+  try {
+    const rows = await sbGet(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data`);
+    const raw  = rows[0]?.data?.RAW || {};
+    const ad   = rows[0]?.data?.AD_SPEND || {};
+    const from = `01.${mk}`, to = `${new Date(+yy,+mm,0).getDate()}.${mk}`;
+    const getDates = (f,t) => { const d=[],fd=parseD(f),td=parseD(t); for(let x=new Date(fd);x<=td;x.setDate(x.getDate()+1)) d.push(fmt2(new Date(x))); return d; };
+    const parseD = s=>{ const [d,m,y]=s.split('.').map(Number); return new Date(y,m-1,d); };
+    const fmt2 = d=>`${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+    const dateSet = new Set(getDates(from,to));
+    const map = {col:'Коллаген', ummi:'Ummi', coffee:'Кофе'};
+    for (const [pk,pname] of Object.entries(map)) {
+      for (const [d,v] of Object.entries(raw[pname]||{})) {
+        if (dateSet.has(d)) { factData[pk].leads+=v[0]||0; factData[pk].deals+=v[1]||0; factData[pk].budget+=v[2]||0; }
+      }
+      for (const [d,v] of Object.entries(ad[pname]||{})) {
+        const dd = d.includes('.') ? d : d; // date format
+        if (dateSet.has(dd)||true) { /* ad spend aggregated by month */ }
+      }
+      adSpend[pk] = Object.values(ad[pname]||{}).reduce((s,v)=>s+v,0);
+    }
+  } catch(e) { console.warn('Analytics load error:', e); }
+
+  const plan = plans[mk]||{};
+  const planTotal = (plan.col||0)+(plan.ummi||0)+(plan.coffee||0);
+  const factTotal = factData.col.budget+factData.ummi.budget+factData.coffee.budget;
+  const adTotal   = adSpend.col+adSpend.ummi+adSpend.coffee;
+  const profit    = factTotal - adTotal;
+  const drr       = factTotal>0 ? (adTotal/factTotal*100).toFixed(1) : '—';
+  const pct       = planTotal>0 ? Math.round(factTotal/planTotal*100) : 0;
+  const pctColor  = pct>=100?'#16a34a':pct>=80?'#ca8a04':'#c0392b';
+
+  // KPI grid
+  const kpiEl = document.getElementById('dir-kpi-grid');
+  if (kpiEl) kpiEl.innerHTML = [
+    {l:'Выручка (факт)',    v:fmtM(factTotal), s:'план '+fmtM(planTotal), c:'#1a56db', bar:true, barPct:Math.min(pct,100), barC:pctColor},
+    {l:'Выполнение плана', v:pct+'%',         s:'от плана',              c:pctColor},
+    {l:'Расходы рекламы',  v:fmtM(adTotal),   s:'ДРР '+drr+'%',          c:'#c0392b'},
+    {l:'Валовая прибыль',  v:fmtM(profit),    s:'выручка − расходы',     c:profit>=0?'#16a34a':'#c0392b'},
+    {l:'Коллаген',         v:fmtM(factData.col.budget),    s:'план '+fmtM(plan.col||0), c:'#1a56db'},
+    {l:'Ummi',             v:fmtM(factData.ummi.budget),   s:'план '+fmtM(plan.ummi||0), c:'#0a7c5c'},
+    {l:'Кофе',             v:fmtM(factData.coffee.budget), s:'план '+fmtM(plan.coffee||0), c:'#b45309'},
+  ].map(k=>`<div style="background:var(--white);border:1.5px solid var(--line);border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+    <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">${k.l}</div>
+    <div style="font-size:20px;font-weight:700;color:${k.c};margin-bottom:3px">${k.v}</div>
+    <div style="font-size:11px;color:var(--muted)">${k.s}</div>
+    ${k.bar?`<div style="height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:8px"><div style="height:100%;width:${k.barPct}%;background:${k.barC};border-radius:2px;transition:width .6s"></div></div>`:'' }
+  </div>`).join('');
+
+  // P&L
+  const pnlEl = document.getElementById('dir-pnl');
+  if (pnlEl) {
+    const rows = [
+      {l:'Выручка (факт)',v:factTotal,  c:'#1a56db', bold:true},
+      {l:'  Коллаген',    v:factData.col.budget, c:'#1a56db'},
+      {l:'  Ummi',        v:factData.ummi.budget, c:'#0a7c5c'},
+      {l:'  Кофе',        v:factData.coffee.budget, c:'#b45309'},
+      {l:'Расходы рекл.',v:-adTotal,   c:'#c0392b', bold:true},
+      {l:'  Коллаген',    v:-adSpend.col, c:'#c0392b'},
+      {l:'  Ummi',        v:-adSpend.ummi, c:'#c0392b'},
+      {l:'  Кофе',        v:-adSpend.coffee, c:'#c0392b'},
+      {l:'Валовая прибыль',v:profit,   c:profit>=0?'#16a34a':'#c0392b', bold:true, sep:true},
+      {l:'ДРР',           v:null, str:drr+'%', c:+drr<=15?'#16a34a':+drr<=25?'#ca8a04':'#c0392b'},
+    ];
+    pnlEl.innerHTML = rows.map(r=>`<div style="display:flex;justify-content:space-between;padding:7px 0;${r.sep?'border-top:2px solid var(--line);margin-top:4px':'border-bottom:1px solid var(--line2)'}">
+      <span style="font-size:${r.bold?13:12}px;font-weight:${r.bold?700:400};color:${r.bold?'var(--ink)':'var(--slate)'}">${r.l}</span>
+      <span style="font-size:${r.bold?14:12}px;font-weight:${r.bold?700:600};color:${r.c}">${r.str||(r.v!=null?(r.v>=0?'+':'')+fmtM(Math.abs(r.v))+' ₸':'—')}</span>
+    </div>`).join('');
+  }
+
+  // Donut
+  const donutCtx = document.getElementById('dir-donut');
+  if (donutCtx && typeof Chart!=='undefined') {
+    if (_dirDonut) _dirDonut.destroy();
+    _dirDonut = new Chart(donutCtx, {
+      type:'doughnut',
+      data:{labels:['Коллаген','Ummi','Кофе'],
+        datasets:[{data:[factData.col.budget,factData.ummi.budget,factData.coffee.budget],
+          backgroundColor:['#1a56db','#0a7c5c','#b45309'],borderWidth:0,hoverOffset:6}]},
+      options:{cutout:'70%',responsive:true,
+        plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:12,boxWidth:10}},
+          tooltip:{callbacks:{label:c=>`${c.label}: ${fmtM(c.raw)} ₸`}}}}
+    });
+  }
+
+  // Trend chart — all plan months
+  const trendCtx = document.getElementById('dir-trend-chart');
+  if (trendCtx && typeof Chart!=='undefined') {
+    const allM = Object.keys(plans).sort((a,b)=>{
+      const [am,ay]=a.split('.'), [bm,by]=b.split('.');
+      return (+ay*12+ +am)-(+by*12+ +bm);
+    });
+    const planVals  = allM.map(m=>(plans[m]?.col||0)+(plans[m]?.ummi||0)+(plans[m]?.coffee||0));
+    const lbls = allM.map(m=>{ const [mm2,yy2]=m.split('.'); return MONTH_NAMES[+mm2-1].slice(0,3)+' '+yy2.slice(2); });
+    if (_dirTrend) _dirTrend.destroy();
+    _dirTrend = new Chart(trendCtx,{
+      type:'bar',
+      data:{labels:lbls, datasets:[
+        {label:'План',data:planVals,backgroundColor:'rgba(99,102,241,.2)',borderColor:'rgba(99,102,241,.5)',borderWidth:1.5,borderRadius:5,type:'bar'},
+      ]},
+      options:{responsive:true,
+        plugins:{legend:{labels:{font:{size:11},boxWidth:10}},
+          tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmtM(c.raw)} ₸`}}},
+        scales:{
+          x:{ticks:{font:{size:10}},grid:{display:false}},
+          y:{ticks:{font:{size:10},callback:v=>v>=1e6?(v/1e6).toFixed(0)+'М':v},grid:{color:'rgba(0,0,0,.04)'}}
+        }}
+    });
+  }
+
+  // Compare table
+  const cmpEl = document.getElementById('dir-compare-table');
+  if (cmpEl) {
+    const allM = Object.keys(plans).sort((a,b)=>{
+      const [am,ay]=a.split('.'), [bm,by]=b.split('.');
+      return (+by*12+ +bm)-(+ay*12+ +am);
+    });
+    cmpEl.innerHTML = `<table style="width:100%;border-collapse:collapse">
+      <thead><tr style="border-bottom:2px solid var(--line)">
+        ${['Месяц','Коллаген','Ummi','Кофе','Итого план','Рост'].map(h=>`<th style="padding:9px 10px;text-align:${h==='Месяц'?'left':'right'};font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">${h}</th>`).join('')}
+      </tr></thead>
+      <tbody>${allM.map((m,i)=>{
+        const p=plans[m]||{}, total=(p.col||0)+(p.ummi||0)+(p.coffee||0);
+        const prev=allM[i+1], prevTotal=prev?((plans[prev]?.col||0)+(plans[prev]?.ummi||0)+(plans[prev]?.coffee||0)):null;
+        const gr=prevTotal&&prevTotal>0?Math.round((total-prevTotal)/prevTotal*100):null;
+        const [mm2,yy2]=m.split('.'), isCur=m===mk;
+        return `<tr style="border-bottom:1px solid var(--line2);background:${isCur?'rgba(99,102,241,.07)':''}" onmouseenter="this.style.background='var(--line2)'" onmouseleave="this.style.background='${isCur?'rgba(99,102,241,.07)':''}'">
+          <td style="padding:9px 10px;font-size:13px;font-weight:${isCur?700:500}">${MONTH_NAMES[+mm2-1]} ${yy2}${isCur?' ◀':''}</td>
+          <td style="padding:9px 10px;text-align:right;font-size:12px;color:#1a56db;font-weight:600">${fmtM(p.col||0)}</td>
+          <td style="padding:9px 10px;text-align:right;font-size:12px;color:#0a7c5c;font-weight:600">${fmtM(p.ummi||0)}</td>
+          <td style="padding:9px 10px;text-align:right;font-size:12px;color:#b45309;font-weight:600">${fmtM(p.coffee||0)}</td>
+          <td style="padding:9px 10px;text-align:right;font-size:13px;font-weight:700">${fmtM(total)}</td>
+          <td style="padding:9px 10px;text-align:right;font-size:12px;font-weight:700;color:${gr===null?'var(--muted)':gr>=0?'#16a34a':'#c0392b'}">${gr===null?'—':(gr>=0?'↑':'↓')+Math.abs(gr)+'%'}</td>
+        </tr>`;
+      }).join('')}</tbody></table>`;
+  }
+}
+
 </script>
 </body>
 </html>

@@ -108,6 +108,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
   .content{padding:20px 16px;}
   .entry-card,.table-card{padding:20px 16px;}
 }
+.ad-tab{padding:13px 16px;border:none;background:none;font-size:13px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;cursor:pointer;transition:color .15s,border-color .15s}
+.ad-tab.active{color:var(--acc);border-bottom-color:var(--acc)}
+.ad-tab:not(.active):hover{color:var(--slate)}
+.ad-tab{padding:13px 16px;border:none;background:none;font-size:13px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;cursor:pointer;transition:color .15s,border-color .15s;}
+.ad-tab.active{color:var(--acc);border-bottom-color:var(--acc);}
+.ad-tab:not(.active):hover{color:var(--slate);}
 </style>
 </head>
 <body>
@@ -139,7 +145,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
     </div>
   </div>
 
+  <!-- TABS NAV -->
+  <div style="background:#fff;border-bottom:1px solid var(--line);padding:0 24px;display:flex;gap:4px">
+    <button class="ad-tab active" onclick="adTab('data',this)">📝 Данные</button>
+    <button class="ad-tab" onclick="adTab('analytics',this)">📊 Аналитика</button>
+  </div>
+
   <div class="content">
+    <div id="ad-tab-data">
     <div class="page-title">Расходы на рекламу</div>
     <div class="page-sub">Вводите расходы вручную каждый день. Данные автоматически появятся в дашборде.</div>
 
@@ -178,10 +191,40 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
       <div id="table-wrap">
         <div class="empty"><div class="empty-icon">📭</div><div>Нет данных за этот период</div></div>
       </div>
-    </div>
+    </div><!-- /ad-tab-data -->
+
+    <!-- ANALYTICS TAB -->
+    <div id="ad-tab-analytics" style="display:none">
+      <div style="font-size:18px;font-weight:700;margin-bottom:4px;color:var(--ink)">Аналитика рекламы</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:20px">ROI, ДРР, динамика расходов</div>
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:20px">
+        <select id="ad-analytics-month" onchange="renderAdAnalytics()" style="padding:7px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;background:#fff;color:var(--ink)"></select>
+      </div>
+      <div id="ad-kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+        <div style="background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px">
+          <div style="font-size:13px;font-weight:700;margin-bottom:14px;color:var(--ink)">💰 ROI и ДРР по продуктам</div>
+          <div id="ad-roi-table"></div>
+        </div>
+        <div style="background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px">
+          <div style="font-size:13px;font-weight:700;margin-bottom:14px;color:var(--ink)">📊 Структура расходов</div>
+          <canvas id="ad-donut" height="180"></canvas>
+        </div>
+      </div>
+      <div style="background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:20px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:14px;color:var(--ink)">📈 Динамика по дням</div>
+        <canvas id="ad-trend-chart" height="160"></canvas>
+      </div>
+      <div style="background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:14px;color:var(--ink)">📅 Сравнение месяцев</div>
+        <div id="ad-monthly-table"></div>
+      </div>
+    </div><!-- /ad-tab-analytics -->
+
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 // ══════════════════════════════════════════════
 // CONFIG
@@ -259,6 +302,11 @@ async function loadAdData(){
       adData[r.date] = {col: r.col||0, ummi: r.ummi||0, coffee: r.coffee||0};
     }
     setBadge('Синхронизировано ✓', 'ok');
+    // Also load revenue data for ROI/CPL calculations
+    try {
+      const wgRows = await sbGet('weglow_data?id=eq.1&select=data');
+      if(wgRows&&wgRows[0]) window._adWgData = wgRows[0].data;
+    } catch(e2) { console.warn('wgData load skipped:', e2); }
     renderMonthTabs();
     renderTable();
   } catch(e){
@@ -491,6 +539,204 @@ function init(){
 
 // Auto-init if already authenticated
 if(sessionStorage.getItem('ad_auth')==='1') init();
+
+
+// ══════════════════════════════════════════════
+// AD TABS
+// ══════════════════════════════════════════════
+function adTab(name, el) {
+  document.querySelectorAll('.ad-tab').forEach(b=>{
+    b.classList.remove('active');
+  });
+  el.classList.add('active');
+  ['data','analytics'].forEach(t=>{
+    const el2=document.getElementById('ad-tab-'+t);
+    if(el2) el2.style.display=t===name?'':'none';
+  });
+  if(name==='analytics') { buildAdAnalyticsPeriod(); renderAdAnalytics(); }
+}
+
+// ══════════════════════════════════════════════
+// AD ANALYTICS
+// ══════════════════════════════════════════════
+let adAnalyticsDonut=null, adTrendChart=null;
+
+function buildAdAnalyticsPeriod() {
+  const sel=document.getElementById('ad-analytics-month');
+  if(!sel||sel.options.length>0) return;
+  const months=getMonths();
+  sel.innerHTML=months.map(m=>{
+    const [mm,yy]=m.split('.');
+    const names=['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
+    return `<option value="${m}">${names[+mm-1]} ${yy}</option>`;
+  }).join('');
+  // Select active month
+  if(activeMonth) sel.value=activeMonth;
+}
+
+function renderAdAnalytics() {
+  const sel=document.getElementById('ad-analytics-month');
+  const month=sel?sel.value:activeMonth;
+  if(!month) return;
+
+  const [mm,yy]=month.split('.');
+  const daysInMonth=new Date(+yy,+mm,0).getDate();
+
+  // Collect daily data for this month
+  let colTotal=0, ummiTotal=0, coffeeTotal=0;
+  const labels=[], colArr=[], ummiArr=[], coffeeArr=[];
+
+  for(let d=1;d<=daysInMonth;d++){
+    const date=`${String(d).padStart(2,'0')}.${mm}.${yy}`;
+    const v=adData[date]||null;
+    labels.push(String(d).padStart(2,'0'));
+    colArr.push(v?v.col||0:0);
+    ummiArr.push(v?v.ummi||0:0);
+    coffeeArr.push(v?v.coffee||0:0);
+    if(v){ colTotal+=v.col||0; ummiTotal+=v.ummi||0; coffeeTotal+=v.coffee||0; }
+  }
+
+  const total=colTotal+ummiTotal+coffeeTotal;
+
+  // We don't have revenue in ad.html directly — show spend KPIs
+  // KPI: total spend, per product, days with data
+  const daysWithData=labels.filter((_,i)=>(colArr[i]+ummiArr[i]+coffeeArr[i])>0).length;
+  const avgDaily=daysWithData>0?Math.round(total/daysWithData):0;
+
+  // Cross-reference revenue data for ROI/CPL
+  const wgd = window._adWgData || {};
+  const rawAll = wgd.RAW || {};
+  let totalRevenue=0, totalLeads=0;
+  const prodMap = {'Коллаген':'col','Ummi':'ummi','Кофе':'coffee'};
+  for(let d2=1;d2<=daysInMonth;d2++){
+    const date2=`${String(d2).padStart(2,'0')}.${mm}.${yy}`;
+    Object.entries(prodMap).forEach(([prodName]) => {
+      const raw2 = (rawAll[prodName]||{})[date2];
+      if(raw2){ totalLeads+=(raw2[0]||0); totalRevenue+=(raw2[2]||0); }
+    });
+  }
+  const roi = total>0&&totalRevenue>0 ? Math.round((totalRevenue-total)/total*100) : null;
+  const cpl  = totalLeads>0 ? Math.round(total/totalLeads) : null;
+  const drr  = totalRevenue>0 ? (total/totalRevenue*100).toFixed(1) : null;
+
+  const kpiEl=document.getElementById('ad-kpi-grid');
+  if(kpiEl) kpiEl.innerHTML=[
+    {l:'Итого расходы', v:fmtM(total), c:'#c0392b'},
+    {l:'Выручка',       v:totalRevenue?fmtM(totalRevenue):'—', c:'#1a56db'},
+    {l:'ROI',           v:roi!==null?roi+'%':'—', c:roi>=100?'#16a34a':roi>=0?'#ca8a04':'#c0392b'},
+    {l:'ДРР',           v:drr!==null?drr+'%':'—', c:+drr<=15?'#16a34a':+drr<=25?'#ca8a04':'#c0392b'},
+    {l:'CPL (стоимость лида)', v:cpl?fmt(cpl)+' ₸':'—', c:cpl&&cpl<=3000?'#16a34a':cpl<=6000?'#ca8a04':'#c0392b'},
+    {l:'Ср. расход/день',v:fmtM(avgDaily), c:'#ca8a04'},
+  ].map(k=>`<div style="background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:14px 16px">
+    <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:5px">${k.l}</div>
+    <div style="font-size:20px;font-weight:700;color:${k.c}">${k.v}</div>
+  </div>`).join('');
+
+  // ROI table (spend only — no revenue data here, show share %)
+  const roiEl=document.getElementById('ad-roi-table');
+  if(roiEl){
+    const rows=[
+      {name:'Коллаген', spend:colTotal, color:'#1a56db'},
+      {name:'Ummi',     spend:ummiTotal, color:'#0a7c5c'},
+      {name:'Кофе',     spend:coffeeTotal, color:'#b45309'},
+    ];
+    const maxSpend=Math.max(...rows.map(r=>r.spend),1);
+    roiEl.innerHTML=rows.map(r=>{
+      const share=total>0?(r.spend/total*100).toFixed(1):0;
+      const barW=Math.round(r.spend/maxSpend*100);
+      return `<div style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">
+          <span style="font-size:13px;font-weight:600;color:${r.color}">${r.name}</span>
+          <span style="font-size:13px;font-weight:700;color:var(--ink)">${fmtM(r.spend)} ₸
+            <span style="font-size:11px;color:var(--muted);margin-left:4px">${share}%</span>
+          </span>
+        </div>
+        <div style="height:6px;background:var(--line);border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${barW}%;background:${r.color};border-radius:3px;transition:width .5s"></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Donut
+  const donutCtx=document.getElementById('ad-donut');
+  if(donutCtx&&typeof Chart!=='undefined'){
+    if(adAnalyticsDonut) adAnalyticsDonut.destroy();
+    adAnalyticsDonut=new Chart(donutCtx,{
+      type:'doughnut',
+      data:{
+        labels:['Коллаген','Ummi','Кофе'],
+        datasets:[{data:[colTotal,ummiTotal,coffeeTotal],
+          backgroundColor:['#1a56db','#0a7c5c','#b45309'],borderWidth:0,hoverOffset:6}]
+      },
+      options:{cutout:'72%',responsive:true,
+        plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:12,boxWidth:10}},
+          tooltip:{callbacks:{label:c=>`${c.label}: ${fmtM(c.raw)} ₸`}}}}
+    });
+  }
+
+  // Trend chart
+  const trendCtx=document.getElementById('ad-trend-chart');
+  if(trendCtx&&typeof Chart!=='undefined'){
+    if(adTrendChart) adTrendChart.destroy();
+    adTrendChart=new Chart(trendCtx,{
+      type:'bar',
+      data:{labels,datasets:[
+        {label:'Коллаген',data:colArr,backgroundColor:'rgba(26,86,219,.7)',borderRadius:3,stack:'s'},
+        {label:'Ummi',data:ummiArr,backgroundColor:'rgba(10,124,92,.7)',borderRadius:3,stack:'s'},
+        {label:'Кофе',data:coffeeArr,backgroundColor:'rgba(180,83,9,.7)',borderRadius:3,stack:'s'},
+      ]},
+      options:{
+        responsive:true,
+        plugins:{legend:{labels:{font:{size:11},boxWidth:10}},
+          tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmtM(c.raw)} ₸`}}},
+        scales:{
+          x:{ticks:{font:{size:9},maxTicksLimit:16},grid:{display:false}},
+          y:{ticks:{font:{size:9},callback:v=>v>=1e6?(v/1e6).toFixed(1)+'М':v>=1e3?(v/1e3).toFixed(0)+'К':v},grid:{color:'rgba(0,0,0,.04)'}}
+        }
+      }
+    });
+  }
+
+  // Monthly comparison
+  const cmpEl=document.getElementById('ad-monthly-table');
+  if(cmpEl){
+    const allMonths=getMonths().slice().reverse();
+    const monthTotals=allMonths.map(m=>{
+      const [mm2,yy2]=m.split('.');
+      const days=new Date(+yy2,+mm2,0).getDate();
+      let col=0,ummi=0,coffee=0;
+      for(let d=1;d<=days;d++){
+        const date=`${String(d).padStart(2,'0')}.${mm2}.${yy2}`;
+        const v=adData[date]||null;
+        if(v){ col+=v.col||0; ummi+=v.ummi||0; coffee+=v.coffee||0; }
+      }
+      return {m,col,ummi,coffee,total:col+ummi+coffee};
+    });
+    const names=['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
+    cmpEl.innerHTML=`<table style="width:100%;border-collapse:collapse">
+      <thead><tr style="border-bottom:2px solid var(--line)">
+        <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">Месяц</th>
+        <th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:#1a56db;text-transform:uppercase;letter-spacing:1px">Коллаген</th>
+        <th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:#0a7c5c;text-transform:uppercase;letter-spacing:1px">Ummi</th>
+        <th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:#b45309;text-transform:uppercase;letter-spacing:1px">Кофе</th>
+        <th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">Итого</th>
+      </tr></thead>
+      <tbody>${monthTotals.map(r=>{
+        const [mm3]=r.m.split('.');
+        const isCur=r.m===month;
+        return `<tr style="border-bottom:1px solid var(--line2);${isCur?'background:rgba(99,102,241,.06)':''}" onmouseenter="if(!${isCur})this.style.background='var(--line2)'" onmouseleave="if(!${isCur})this.style.background=''">
+          <td style="padding:8px 10px;font-size:13px;font-weight:${isCur?700:500}">${names[+mm3-1]}</td>
+          <td style="padding:8px 10px;text-align:right;font-size:12px;color:#1a56db">${fmtM(r.col)}</td>
+          <td style="padding:8px 10px;text-align:right;font-size:12px;color:#0a7c5c">${fmtM(r.ummi)}</td>
+          <td style="padding:8px 10px;text-align:right;font-size:12px;color:#b45309">${fmtM(r.coffee)}</td>
+          <td style="padding:8px 10px;text-align:right;font-size:13px;font-weight:700">${fmtM(r.total)}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+  }
+}
+
 </script>
 </body>
 </html>

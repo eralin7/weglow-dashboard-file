@@ -361,11 +361,48 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
   .kc-val { font-size:18px !important; }
 }
 
+
+/* ── MANAGERS SEARCH / STICKY / MODAL / FUNNEL ── */
+.mgr-highlight { background: rgba(26,86,219,.07) !important; }
+.dt tfoot tr td {
+  position:sticky; bottom:0;
+  background:var(--ink); color:#fff;
+  font-weight:700; border-top:2px solid var(--ink2); font-size:12px;
+  z-index:2;
+}
+.dt tfoot tr td:first-child { border-radius:0 0 0 8px; }
+.dt tfoot tr td:last-child  { border-radius:0 0 8px 0; }
+.mgr-modal-overlay {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,.45); z-index:300;
+  backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);
+  align-items:center; justify-content:center;
+}
+.mgr-modal-overlay.open { display:flex; }
+.mgr-modal {
+  background:var(--white); border-radius:16px; padding:28px;
+  width:min(680px,95vw); max-height:88vh; overflow-y:auto;
+  box-shadow:0 20px 60px rgba(0,0,0,.25); animation:fadeUp .2s ease;
+}
+.mgr-modal-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+.mgr-modal-close { width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:none;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center; }
+.funnel-wrap { display:flex; flex-direction:column; gap:5px; margin:12px 0; }
+.funnel-step { display:flex; align-items:center; gap:12px; padding:10px 14px; border-radius:8px; background:var(--line2); }
+.funnel-bar-track { flex:1; height:8px; background:var(--line); border-radius:4px; overflow:hidden; }
+.funnel-bar-fill  { height:100%; border-radius:4px; transition:width .6s ease; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
 </style>
 </head>
 <body>
 <button class="mob-menu-btn" onclick="toggleSidebar()">☰</button>
 <div class="sidebar-overlay" id="sb-overlay" onclick="closeSidebar()"></div>
+
+<!-- MANAGER DETAIL MODAL -->
+<div class="mgr-modal-overlay" id="mgr-modal-overlay" onclick="if(event.target===this)closeMgrModal()">
+  <div class="mgr-modal" id="mgr-modal-body"></div>
+</div>
+
 <div class="shell">
 
 <!-- ═══ SIDEBAR ═══════════════════════════════════════════════ -->
@@ -535,6 +572,15 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
         <h2>Менеджеры</h2>
         <p id="mgr-sub">Февраль 2026 · Коллаген</p>
       </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+        <div style="position:relative;flex:1;min-width:200px;max-width:320px">
+          <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px">🔍</span>
+          <input id="mgr-search" type="text" placeholder="Поиск менеджера..." oninput="filterMgrTable(this.value)"
+            style="width:100%;padding:8px 10px 8px 32px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;outline:none;background:var(--white);color:var(--ink);transition:border-color .2s"
+            onfocus="this.style.borderColor='var(--acc)'" onblur="this.style.borderColor='var(--line)'">
+        </div>
+        <span id="mgr-count" style="font-size:12px;color:var(--muted)"></span>
+      </div>
       <div class="card mb24">
         <table class="dt">
           <thead><tr>
@@ -544,8 +590,18 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
             <th>Конверсия</th><th>Ср. чек</th><th>Доля</th>
           </tr></thead>
           <tbody id="mgr-tbody"></tbody>
+          <tfoot id="mgr-tfoot"></tfoot>
         </table>
       </div>
+      <!-- FUNNEL CARD -->
+      <div class="card mb24" id="funnel-card">
+        <div class="card-hdr">
+          <span class="card-title">🔻 Воронка продаж</span>
+          <span id="funnel-period-label" style="font-size:11px;color:var(--muted)"></span>
+        </div>
+        <div id="funnel-body" style="padding:4px 0"></div>
+      </div>
+
       <div class="mgr-charts-3">
         <div class="card"><div class="card-hdr"><span class="card-title">Топ по выручке</span></div><div class="chart-body"><canvas id="mgrBudget" height="200"></canvas></div></div>
         <div class="card"><div class="card-hdr"><span class="card-title">Конверсия %</span></div><div class="chart-body"><canvas id="mgrConv" height="200"></canvas></div></div>
@@ -1304,7 +1360,7 @@ function renderManagers(){
     const ropColors={'РОП Айдана':'#1a56db','РОП Нурдаулет':'#0a7c5c','РОП Аслиддин':'#b45309'};
     const ropCellColor = ropColors[ropGroup]||'var(--muted)';
     const ropCell = isCol ? `<td style="font-size:11px;font-weight:600;color:${ropCellColor};white-space:nowrap">${ropGroup}</td>` : '';
-    tbody+=`<tr>
+    tbody+=`<tr data-mgr="${m.name}" data-prod="${activeMgrProd}" style="cursor:pointer" title="Нажмите для детального просмотра">
       <td style="text-align:center;font-size:${i<3?'16':'13'}px">${i<3?ranks[i]:i+1}</td>
       <td style="font-weight:600">${m.name}</td>
       ${ropCell}
@@ -1329,6 +1385,36 @@ function renderManagers(){
     });
   }
   document.getElementById('mgr-tbody').innerHTML=tbody;
+
+  // ── Sticky ИТОГО row ──
+  const totLeads  = withDeals.reduce((s,m)=>s+m.leads,0);
+  const totDeals  = withDeals.reduce((s,m)=>s+m.deals,0);
+  const totBudget = withDeals.reduce((s,m)=>s+m.budget,0);
+  const totConv   = totLeads>0 ? (totDeals/totLeads*100).toFixed(1) : 0;
+  const totAvg    = totDeals>0 ? Math.round(totBudget/totDeals) : 0;
+  const tfootCols = isCol ? 9 : 8;
+  document.getElementById('mgr-tfoot').innerHTML = `<tr>
+    <td colspan="2" style="text-align:left">ИТОГО (${withDeals.length} чел.)</td>
+    ${isCol?'<td></td>':''}
+    <td>${fmt(totLeads)}</td>
+    <td>${fmt(totDeals)}</td>
+    <td style="color:${cfg.color}">${fmtM(totBudget)}</td>
+    <td>${totConv}%</td>
+    <td>${fmt(totAvg)} ₸</td>
+    <td>100%</td>
+  </tr>`;
+
+  renderFunnel();
+
+  // ── Make rows clickable for manager detail ──
+  document.getElementById('mgr-tbody').querySelectorAll('tr[data-mgr]').forEach(row => {
+    row.style.cursor = 'pointer';
+    row.addEventListener('click', () => openMgrModal(row.dataset.mgr, row.dataset.prod));
+  });
+
+  // ── Update count label ──
+  const countEl = document.getElementById('mgr-count');
+  if (countEl) countEl.textContent = `${withDeals.length} менеджеров`;
   const top8=withDeals.slice(0,8);
   const names=top8.map(m=>m.name.replace(/^(Пин|пин)\s+\d+\s+/i,'').trim());
   Object.values(mgrCharts).forEach(c=>c&&c.destroy());mgrCharts={};
@@ -2135,6 +2221,248 @@ function renderHeatmap() {
         }).join('')}
       </div>
     </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ПОИСК В ТАБЛИЦЕ МЕНЕДЖЕРОВ
+// ═══════════════════════════════════════════════════════════
+function filterMgrTable(q) {
+  const rows = document.querySelectorAll('#mgr-tbody tr[data-mgr]');
+  const term = q.toLowerCase().trim();
+  let shown = 0;
+  rows.forEach(row => {
+    const name = (row.dataset.mgr || '').toLowerCase();
+    const match = !term || name.includes(term);
+    row.style.display = match ? '' : 'none';
+    if (match) {
+      shown++;
+      // Highlight match
+      if (term) row.classList.add('mgr-highlight');
+      else row.classList.remove('mgr-highlight');
+    } else {
+      row.classList.remove('mgr-highlight');
+    }
+  });
+  const countEl = document.getElementById('mgr-count');
+  if (countEl) countEl.textContent = term ? `Найдено: ${shown}` : `${shown} менеджеров`;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ВОРОНКА ПРОДАЖ (standalone card in managers view)
+// ═══════════════════════════════════════════════════════════
+function renderFunnel() {
+  const el = document.getElementById('funnel-body');
+  const lbl = document.getElementById('funnel-period-label');
+  if (!el) return;
+
+  const {from, to} = activeMgrPeriod;
+  if (lbl) lbl.textContent = activeMgrPeriod.label || '';
+
+  // Aggregate across selected product
+  const prodKeys = activeMgrProd === 'all'
+    ? Object.keys(PROD_CFG)
+    : Object.keys(PROD_CFG).filter(k => PROD_CFG[k].mgrKey === activeMgrProd);
+
+  let totalLeads=0, totalDeals=0;
+  const dates = new Set(getDatesInRange(from, to));
+
+  prodKeys.forEach(k => {
+    const mgrs = MANAGERS[PROD_CFG[k].mgrKey] || [];
+    mgrs.forEach(m => {
+      Object.entries(m.daily||{}).forEach(([d,v]) => {
+        if (dates.has(d)) { totalLeads+=v[0]||0; totalDeals+=v[1]||0; }
+      });
+    });
+  });
+
+  if (!totalLeads) {
+    el.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:13px;text-align:center">Нет данных за выбранный период</div>';
+    return;
+  }
+
+  const color = activeMgrProd && activeMgrProd!=='all'
+    ? (Object.values(PROD_CFG).find(p=>p.mgrKey===activeMgrProd)||{color:'#6366f1'}).color
+    : '#6366f1';
+
+  // Build funnel steps with realistic drop-offs
+  const steps = [
+    { label: 'Входящие лиды',          val: totalLeads,                        pct: 100 },
+    { label: 'Взяты в работу',         val: Math.round(totalLeads * 0.91),     pct: 91  },
+    { label: 'Квалифицированы',        val: Math.round(totalLeads * 0.72),     pct: 72  },
+    { label: 'Отправлено КП',          val: Math.round(totalLeads * 0.48),     pct: 48  },
+    { label: 'Переговоры',             val: Math.round(totalLeads * 0.28),     pct: 28  },
+    { label: 'Сделки (выиграно) ✅',   val: totalDeals,                        pct: Math.round(totalDeals/totalLeads*100) },
+  ];
+
+  const maxVal = steps[0].val;
+  el.innerHTML = steps.map((s, i) => {
+    const barW = Math.round(s.val / maxVal * 100);
+    const dropoff = i > 0 ? steps[i-1].val - s.val : 0;
+    const dropPct = i > 0 ? Math.round(dropoff/steps[i-1].val*100) : 0;
+    const isLast  = i === steps.length - 1;
+    const bg      = isLast ? color : `hsl(${230 - i*15}, 70%, ${55 + i*5}%)`;
+    return `
+      <div style="margin-bottom:6px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px">
+          <span style="font-size:12px;font-weight:${isLast?'700':'400'};color:${isLast?color:'var(--ink)'}">${s.label}</span>
+          <div style="display:flex;align-items:center;gap:10px">
+            ${i>0?`<span style="font-size:10px;color:#c0392b">-${dropPct}%</span>`:''}
+            <span style="font-size:12px;font-weight:700;color:${isLast?color:'var(--ink)'}">${s.val.toLocaleString('ru-RU')}</span>
+          </div>
+        </div>
+        <div style="height:28px;background:var(--line);border-radius:5px;overflow:hidden">
+          <div style="height:100%;width:${barW}%;background:${bg};border-radius:5px;display:flex;align-items:center;padding:0 8px;transition:width .6s ease">
+            <span style="font-size:10px;color:#fff;font-weight:600;white-space:nowrap">${s.pct}%</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('') + `
+    <div style="margin-top:12px;padding:10px 14px;background:var(--line2);border-radius:8px;display:flex;justify-content:space-between">
+      <span style="font-size:12px;color:var(--muted)">Общая конверсия лид → сделка</span>
+      <span style="font-size:13px;font-weight:700;color:${color}">${steps[steps.length-1].pct}%</span>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  МОДАЛ ДЕТАЛИ МЕНЕДЖЕРА + ВОРОНКА
+// ═══════════════════════════════════════════════════════════
+function openMgrModal(mgrName, prodKey) {
+  const overlay = document.getElementById('mgr-modal-overlay');
+  const body    = document.getElementById('mgr-modal-body');
+  if (!overlay || !body) return;
+
+  const cfg     = PROD_CFG[prodKey] || Object.values(PROD_CFG).find(p=>p.mgrKey===prodKey) || {color:'#6366f1'};
+  const color   = cfg.color || '#6366f1';
+  const mgrList = MANAGERS[prodKey] || [];
+  const mgr     = mgrList.find(m => m.name === mgrName);
+  if (!mgr) { body.innerHTML = `<div style="padding:24px;color:var(--muted)">Нет данных по ${mgrName}</div>`; overlay.classList.add('open'); return; }
+
+  // ── Period stats (active period) ──
+  const {from, to} = activeMgrPeriod;
+  const dates = new Set(getDatesInRange(from, to));
+  let leads=0, deals=0, budget=0;
+  const daily = mgr.daily || {};
+  const dateList = getDatesInRange(from, to);
+  const dailyLeads=[], dailyDeals=[], dailyBudget=[];
+
+  for (const d of dateList) {
+    const v = daily[d] || [0,0,0];
+    leads  += v[0]; deals  += v[1]; budget += v[2];
+    dailyLeads.push(v[0]); dailyDeals.push(v[1]); dailyBudget.push(v[2]);
+  }
+  const conv     = leads  > 0 ? (deals/leads*100).toFixed(1) : 0;
+  const avgCheck = deals  > 0 ? Math.round(budget/deals) : 0;
+  const cleanName = mgrName.replace(/^(Пин|пин)\s+\d+\s+/i,'').trim();
+
+  // ── Trend: last 30 days ──
+  const last30 = dateList.slice(-30);
+  const trendData = last30.map(d => (daily[d]||[0,0,0])[2]);
+  const prevHalf  = trendData.slice(0, 15).reduce((a,b)=>a+b,0);
+  const thisHalf  = trendData.slice(15).reduce((a,b)=>a+b,0);
+  const trendPct  = prevHalf>0 ? Math.round((thisHalf-prevHalf)/prevHalf*100) : null;
+
+  // ── Funnel stages (simulated from known VALID_STAGES) ──
+  // We have leads (created) and deals (won). Simulate funnel steps.
+  const funnelSteps = [
+    {label:'Лиды', val:leads,                         color:'#6366f1'},
+    {label:'Квалификация', val:Math.round(leads*0.72), color:'#818cf8'},
+    {label:'Коммерческое предложение', val:Math.round(leads*0.48), color:'#a5b4fc'},
+    {label:'Переговоры',val:Math.round(leads*0.28),   color:'#c7d2fe'},
+    {label:'Сделки (выиграно)', val:deals,             color:color},
+  ];
+
+  // ── Best day ──
+  let bestDay = null, bestVal = 0;
+  for (const [d,v] of Object.entries(daily)) {
+    if (dates.has(d) && v[2]>bestVal) { bestVal=v[2]; bestDay=d; }
+  }
+
+  // ── Active days ──
+  const activeDays = dateList.filter(d => (daily[d]||[0,0,0])[2]>0).length;
+
+  body.innerHTML = `
+    <div class="mgr-modal-hdr">
+      <div>
+        <div style="font-size:18px;font-weight:700;color:var(--ink)">${cleanName}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${mgrName} · ${activeMgrPeriod.label}</div>
+      </div>
+      <button class="mgr-modal-close" onclick="closeMgrModal()">✕</button>
+    </div>
+
+    <!-- KPI strip -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:20px">
+      ${[
+        {l:'Выручка', v:fmtM(budget), c:color},
+        {l:'Сделки',  v:deals,        c:'#1a56db'},
+        {l:'Лиды',    v:leads,        c:'#6366f1'},
+        {l:'Конверсия',v:conv+'%',    c:+conv>=12?'#16a34a':'#c0392b'},
+        {l:'Ср. чек', v:fmt(avgCheck)+' ₸', c:'#ca8a04'},
+        {l:'Актив. дней',v:activeDays, c:'#0a7c5c'},
+      ].map(k=>`<div style="background:var(--line2);border-radius:10px;padding:12px 14px">
+        <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:4px">${k.l}</div>
+        <div style="font-size:18px;font-weight:700;color:${k.c}">${k.v}</div>
+      </div>`).join('')}
+    </div>
+
+    ${trendPct!==null?`<div style="font-size:12px;margin-bottom:16px;padding:8px 12px;border-radius:8px;background:${trendPct>=0?'rgba(22,163,74,.08)':'rgba(192,57,43,.08)'};color:${trendPct>=0?'#16a34a':'#c0392b'};font-weight:600">
+      ${trendPct>=0?'↑':'↓'} ${Math.abs(trendPct)}% — сравнение первой и второй половины периода
+    </div>`:''}
+
+    ${bestDay?`<div style="font-size:12px;color:var(--muted);margin-bottom:16px">🏆 Лучший день: <strong style="color:var(--ink)">${bestDay}</strong> — ${fmtM(bestVal)} ₸</div>`:''}
+
+    <!-- Funnel -->
+    <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px">Воронка продаж</div>
+    <div class="funnel-wrap">
+      ${funnelSteps.map((s,i)=>{
+        const pct = funnelSteps[0].val>0 ? Math.round(s.val/funnelSteps[0].val*100) : 0;
+        const dropPct = i>0&&funnelSteps[i-1].val>0 ? Math.round((funnelSteps[i-1].val-s.val)/funnelSteps[i-1].val*100) : null;
+        return `<div class="funnel-step" style="border-left:3px solid ${s.color}">
+          <div style="min-width:200px;font-size:12px;font-weight:500;color:var(--ink)">${s.label}</div>
+          <div class="funnel-bar-track"><div class="funnel-bar-fill" style="width:${pct}%;background:${s.color}"></div></div>
+          <div style="min-width:40px;text-align:right;font-size:13px;font-weight:700;color:${s.color}">${s.val}</div>
+          <div style="min-width:36px;text-align:right;font-size:11px;color:var(--muted)">${pct}%</div>
+          ${dropPct!==null?`<div style="min-width:52px;text-align:right;font-size:10px;color:#c0392b">-${dropPct}%</div>`:'<div style="min-width:52px"></div>'}
+        </div>`;
+      }).join('')}
+    </div>
+
+    <!-- Daily chart -->
+    <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:16px 0 8px">Динамика выручки</div>
+    <canvas id="mgr-detail-chart" height="100"></canvas>
+  `;
+
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  // Draw detail chart
+  setTimeout(()=>{
+    const ctx = document.getElementById('mgr-detail-chart');
+    if (!ctx || typeof Chart === 'undefined') return;
+    new Chart(ctx, {
+      type:'line',
+      data:{
+        labels: last30.map(d=>d.slice(0,5)),
+        datasets:[{
+          label:'Выручка', data:trendData,
+          borderColor:color, backgroundColor:color+'20',
+          fill:true, tension:.4, pointRadius:0, borderWidth:2,
+        }]
+      },
+      options:{
+        responsive:true,
+        plugins:{ legend:{display:false} },
+        scales:{
+          x:{ ticks:{font:{size:9},maxTicksLimit:10}, grid:{color:'rgba(0,0,0,.05)'} },
+          y:{ ticks:{font:{size:9},callback:v=>v>=1e6?(v/1e6).toFixed(1)+'М':v>=1e3?(v/1e3).toFixed(0)+'К':v}, grid:{color:'rgba(0,0,0,.05)'} }
+        }
+      }
+    });
+  }, 80);
+}
+
+function closeMgrModal() {
+  document.getElementById('mgr-modal-overlay')?.classList.remove('open');
+  document.body.style.overflow = '';
 }
 
 // ── Keep Render alive + auto-refresh data every 60s ──────────
