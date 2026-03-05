@@ -277,9 +277,74 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
 .mb16     { margin-bottom:16px; }
 .mb20     { margin-bottom:20px; }
 .mb24     { margin-bottom:24px; }
+
+/* ── MOBILE ──────────────────────────────── */
+.mob-menu-btn {
+  display:none; position:fixed; top:10px; left:10px; z-index:200;
+  width:40px; height:40px; border-radius:10px;
+  background:var(--ink); border:1px solid rgba(255,255,255,.15);
+  color:#fff; font-size:18px; cursor:pointer;
+  align-items:center; justify-content:center;
+}
+.sidebar-overlay {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,.55); z-index:99;
+}
+.sidebar-overlay.open { display:block; }
+
+/* ── SPARKLINES & GROWTH ─────────────────── */
+.kpi-spark { margin-top:8px; }
+.kpi-growth {
+  display:inline-flex; align-items:center; gap:3px;
+  font-size:10px; font-weight:700;
+  padding:2px 7px; border-radius:20px; margin-top:5px;
+}
+.kpi-growth.up   { background:var(--green-l); color:var(--green); }
+.kpi-growth.down { background:var(--red-l);   color:var(--red);   }
+.kpi-growth.flat { background:var(--line2);   color:var(--muted); }
+
+/* ── PLAN PROGRESS BAR ───────────────────── */
+.plan-bar-wrap { margin:8px 0 4px; }
+.plan-bar-track { height:5px; background:var(--line); border-radius:3px; overflow:hidden; }
+.plan-bar-fill  { height:100%; border-radius:3px; transition:width .6s ease; }
+.plan-forecast  { font-size:10px; margin-top:3px; font-weight:600; }
+
+/* ── ROI CARD EXTRAS ─────────────────────── */
+.roi-row { display:flex; justify-content:space-between; align-items:baseline;
+           padding:6px 0; border-bottom:1px solid var(--line2); }
+.roi-row:last-child { border-bottom:none; }
+.roi-lbl { font-size:11px; color:var(--muted); }
+.roi-val { font-size:13px; font-weight:700; }
+
+@media (max-width: 768px) {
+  .mob-menu-btn { display:flex; }
+  .sidebar { transform:translateX(-100%); transition:transform .25s ease; z-index:100; }
+  .sidebar.open { transform:translateX(0); }
+  .main { margin-left:0 !important; padding-top:0; }
+  .topbar { padding:0 12px 0 54px; height:48px; }
+  .topbar-title { font-size:13px; }
+  #global-filters, #mgr-filters, #ad-filters { display:none !important; }
+  .page { padding:14px; }
+  .kpi-grid { grid-template-columns:repeat(2,1fr) !important; gap:8px; }
+  .charts-row { grid-template-columns:1fr !important; }
+  .prod-stats { grid-template-columns:1fr !important; }
+  .mgr-charts-3 { grid-template-columns:1fr !important; }
+  .dt-wrap { overflow-x:auto; }
+  table.dt { min-width:580px; }
+  .card { padding:12px; }
+  .sb-progress { display:none; }
+  .view-hdr h2 { font-size:20px; }
+}
+@media (max-width:480px) {
+  .kpi-grid { grid-template-columns:1fr 1fr !important; }
+  .kc-val { font-size:18px !important; }
+}
+
 </style>
 </head>
 <body>
+<button class="mob-menu-btn" onclick="toggleSidebar()">☰</button>
+<div class="sidebar-overlay" id="sb-overlay" onclick="closeSidebar()"></div>
 <div class="shell">
 
 <!-- ═══ SIDEBAR ═══════════════════════════════════════════════ -->
@@ -863,38 +928,85 @@ function renderKPI(d){
 
   const cpl = d.cplMonth || 0;  // расходы рекл. за месяц / лиды за месяц
 
+  // ── Prev period for growth comparison ──
+  const _prevGrowth = (cur, prev) => prev>0 ? Math.round((cur-prev)/prev*100) : undefined;
+  let prev = null;
+  try {
+    // Get prev month period
+    const pFrom = activePeriod.from, pTo = activePeriod.to;
+    const fd = parseDate(pFrom), td = parseDate(pTo);
+    const span = Math.round((td-fd)/86400000)+1;
+    const pfd = new Date(fd); pfd.setDate(pfd.getDate()-span);
+    const ptd = new Date(fd); ptd.setDate(ptd.getDate()-1);
+    const fmtD = d2 => `${String(d2.getDate()).padStart(2,'0')}.${String(d2.getMonth()+1).padStart(2,'0')}.${d2.getFullYear()}`;
+    const prevFrom = fmtD(pfd), prevTo = fmtD(ptd);
+    if(activeProd==='all') prev = aggregateAll(prevFrom, prevTo);
+    else { const pd2 = aggregate(activeProd, prevFrom, prevTo); prev = {...pd2, parts:{[activeProd]:pd2}}; }
+  } catch(e) {}
+
+  // ── ROI / CPL enhanced ──
+  const roi = d.adTotal>0 ? Math.round((d.budget - d.adTotal)/d.adTotal*100) : null;
+
+  // ── Forecast: if current month, project end-of-month ──
+  let forecast = null;
+  if(isCur && d.plan>0) {
+    const now2 = new Date();
+    const dayOfMonth = now2.getDate();
+    const totalDays = _lastDay(now2.getFullYear(), now2.getMonth()+1);
+    const dailyRate = dayOfMonth>0 ? d.monthBudget/dayOfMonth : 0;
+    const projected = Math.round(dailyRate * totalDays);
+    forecast = d.plan>0 ? Math.round(projected/d.plan*100) : null;
+  }
+
   const kpis=[
-    {l:'Выручка',      v:fmtM(d.budget),        s:revSub,  s2:revS2,  s2c:'#6366f1',
-     badge:`${pct}%`, bc:pctBg(pct), c:clr},
-    {l:'Лиды',         v:fmt(d.leads),           s:'дата создания', c:'#6366f1'},
-    {l:'Сделки',       v:fmt(d.deals),           s:'дата заказа',   c:'#6366f1'},
-    {l:'Конверсия',    v:`${d.conv}%`,           s:'план 12%',
+    {l:'Выручка',      v:fmtM(d.budget), s:revSub, s2:revS2, s2c:'#6366f1',
+     growth:prev?_prevGrowth(d.budget,prev.budget):undefined,
+     planBar:!!d.plan, planPct:pct, forecast, daysLeft:isCur?d.daysLeft:null, c:clr},
+    {l:'Лиды',         v:fmt(d.leads), s:'дата создания', c:'#6366f1',
+     growth:prev?_prevGrowth(d.leads,prev.leads):undefined},
+    {l:'Сделки',       v:fmt(d.deals), s:'дата заказа', c:'#6366f1',
+     growth:prev?_prevGrowth(d.deals,prev.deals):undefined},
+    {l:'Конверсия',    v:`${d.conv}%`, s:'план 12%',
      badge:d.conv>=12?'В норме':'Ниже плана', bc:d.conv>=12?'bg-g':'bg-r',
+     growth:prev?_prevGrowth(d.conv,prev.conv):undefined,
      c:d.conv>=12?'#16a34a':'#c0392b'},
     {l:'Средний чек',  v:`${fmt(d.avgCheck)} ₸`, s:'план 80 000 ₸',
      badge:d.avgCheck>=80000?'В норме':'Ниже', bc:d.avgCheck>=80000?'bg-g':'bg-y',
+     growth:prev?_prevGrowth(d.avgCheck,prev.avgCheck):undefined,
      c:d.avgCheck>=80000?'#16a34a':'#ca8a04'},
-    {l:'Ст. лида (реклама)',v:cpl?`${fmt(cpl)} ₸`:'—', s:'расх. рекл. / лиды',
-     badge:cpl?`${fmt(cpl)} ₸`:'нет данных', bc:cpl<=3000?'bg-g':cpl<=6000?'bg-y':'bg-r',
+    {l:'CPL (реклама)', v:cpl?`${fmt(cpl)} ₸`:'—', s:'расход / лиды',
+     badge:cpl?(cpl<=3000?'Отлично':cpl<=6000?'Норма':'Дорого'):'нет данных',
+     bc:cpl<=3000?'bg-g':cpl<=6000?'bg-y':'bg-r',
+     growth:prev&&prev.cplMonth?_prevGrowth(cpl,prev.cplMonth):undefined,
      c:cpl<=3000?'#16a34a':cpl<=6000?'#ca8a04':'#c0392b'},
-    {l:'Ст. лида (продажи)',v:d.rpl?`${fmt(d.rpl)} ₸`:'—', s:'выручка / лиды',
-     badge:d.rpl?`${fmt(d.rpl)} ₸`:'—', bc:'bg-g',
-     c:'#6366f1'},
-    {l:'Выполнение',   v:`${pct}%`,              s:execSub,
-     badge:pct>=100?'Выполнен':pct>=80?'Близко':'В процессе',
+    {l:'ROI рекламы',  v:roi!==null?`${roi}%`:'—', s:'(выручка−расход)/расход',
+     badge:roi!==null?(roi>=200?'Отлично':roi>=100?'Хорошо':roi>=0?'Норма':'Убыток'):'нет данных',
+     bc:roi>=200?'bg-g':roi>=100?'bg-g':roi>=0?'bg-y':'bg-r',
+     c:roi>=100?'#16a34a':roi>=0?'#ca8a04':'#c0392b'},
+    {l:'Выполнение',   v:`${pct}%`, s:execSub,
+     planBar:!!d.plan, planPct:pct, forecast, daysLeft:isCur?d.daysLeft:null,
      bc:pctBg(pct), c:pct>=100?'#16a34a':pct>=80?'#ca8a04':'#c0392b'},
-    {l:'Расходы рекл.',v:fmtM(d.adTotal),        s:`ДРР ${drr}%`,
-     badge:`${drr}%`, bc:drr<=15?'bg-g':drr<=25?'bg-y':'bg-r',
+    {l:'Расходы рекл.',v:fmtM(d.adTotal), s:`ДРР ${drr}%`,
+     badge:`ДРР ${drr}%`, bc:drr<=15?'bg-g':drr<=25?'bg-y':'bg-r',
+     growth:prev?_prevGrowth(d.adTotal,prev.adTotal):undefined,
      c:drr<=15?'#16a34a':drr<=25?'#ca8a04':'#c0392b'},
   ];
-  document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`
-    <div class="kpi-card" style="--kc:${k.c}">
+  document.getElementById('kpi-grid').innerHTML=kpis.map((k,i)=>`
+    <div class="kpi-card" style="--kc:${k.c}" data-kpi="${i}">
       <div class="kc-lbl">${k.l}</div>
       <div class="kc-val" style="color:${k.c}">${k.v}</div>
       <div class="kc-sub">${k.s||''}</div>
       ${k.s2?`<div class="kc-sub" style="color:${k.s2c||'#6366f1'};font-weight:700;margin-top:2px;font-size:11px">${k.s2}</div>`:''}
-      ${k.badge?`<div class="kc-badge ${k.bc}">${k.badge}</div>`:''}
+      ${k.growth!==undefined?`<div class="kpi-growth ${k.growth>0?'up':k.growth<0?'down':'flat'}">${k.growth>0?'↑':'↓'} ${Math.abs(k.growth)}% vs пред.</div>`:''}
+      ${k.planBar?`<div class="plan-bar-wrap">
+        <div class="plan-bar-track"><div class="plan-bar-fill" style="width:${Math.min(k.planPct,100)}%;background:${k.c}"></div></div>
+        <div class="plan-forecast" style="color:${k.c}">${k.planPct}% выполнено${k.forecast?` · прогноз: ${k.forecast}%`:''}${k.daysLeft?' · ост. '+k.daysLeft+' дн.':''}</div>
+      </div>`:''}
+      ${k.badge&&!k.planBar?`<div class="kc-badge ${k.bc}">${k.badge}</div>`:''}
+      <div class="kpi-spark"><canvas id="spark-${i}" style="width:100%;height:32px"></canvas></div>
     </div>`).join('');
+  // Draw sparklines after DOM update
+  setTimeout(()=>drawAllSparks(kpis, activeProd, activePeriod), 50);
 }
 
 // ═══════════════════ RENDER PLAN TABLE ════════════════════════════
@@ -1638,6 +1750,100 @@ function renderProducts() {
   document.getElementById('prod-content').innerHTML = html;
 }
 
+
+// ═══════════════ SPARKLINES ══════════════════════════════════════
+function drawSparkline(canvasId, data, color) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const w = canvas.width  = canvas.offsetWidth  || 120;
+  const h = canvas.height = canvas.offsetHeight || 32;
+  if (!data || data.length < 2) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, w, h);
+  const max = Math.max(...data, 1), min = Math.min(...data, 0);
+  const range = max - min || 1;
+  const pts = data.map((v,i) => ({
+    x: (i / (data.length-1)) * w,
+    y: h - 3 - ((v-min)/range) * (h-6)
+  }));
+  // Fill
+  const grad = ctx.createLinearGradient(0,0,0,h);
+  grad.addColorStop(0, color+'44');
+  grad.addColorStop(1, color+'00');
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, h);
+  pts.forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.lineTo(pts[pts.length-1].x, h);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+  // Line
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  pts.forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  // Last dot
+  const lp = pts[pts.length-1];
+  ctx.beginPath(); ctx.arc(lp.x, lp.y, 2.5, 0, Math.PI*2);
+  ctx.fillStyle = color; ctx.fill();
+}
+
+function getSparkData(prodKey, metricIdx, days=30) {
+  const raw = prodKey === 'all'
+    ? (() => {
+        const m={};
+        ['Коллаген','Ummi','Кофе'].forEach(k=>{
+          Object.entries(RAW[k]||{}).forEach(([d,v])=>{
+            if(!m[d]) m[d]=[0,0,0];
+            m[d][0]+=(v[0]||0); m[d][1]+=(v[1]||0); m[d][2]+=(v[2]||0);
+          });
+        });
+        return m;
+      })()
+    : (RAW[PROD_CFG[prodKey]?.rawKey || prodKey] || RAW[prodKey] || {});
+  const sorted = Object.keys(raw).sort((a,b)=>{
+    const pa=a.split('.').reverse().join(''), pb=b.split('.').reverse().join('');
+    return pa.localeCompare(pb);
+  }).slice(-days);
+  return sorted.map(d => raw[d]?.[metricIdx] || 0);
+}
+
+function drawAllSparks(kpis, activeProd, activePeriod) {
+  const pKey = activeProd==='all' ? 'all' : activeProd;
+  const prodColor = activeProd==='all' ? '#6366f1' : (PROD_CFG[activeProd]?.color || '#6366f1');
+  const sparkMeta = [
+    { metric:2, color: prodColor },           // Выручка
+    { metric:0, color:'#6366f1' },            // Лиды
+    { metric:1, color:'#6366f1' },            // Сделки
+    { metric:1, color:'#16a34a' },            // Конверсия — use deals trend
+    { metric:2, color:'#ca8a04' },            // Средний чек — budget trend
+    { metric:0, color:'#c0392b' },            // CPL — leads trend
+    { metric:2, color:'#1a56db' },            // ROI — budget trend
+    { metric:2, color: prodColor },           // Выполнение — budget trend
+    { metric:2, color:'#c0392b' },            // Расходы
+  ];
+  sparkMeta.forEach((sm, i) => {
+    const data = getSparkData(pKey, sm.metric);
+    drawSparkline(`spark-${i}`, data, sm.color);
+  });
+}
+
+// ═══════════════ MOBILE SIDEBAR ══════════════════════════════════
+function toggleSidebar() {
+  document.querySelector('.sidebar').classList.toggle('open');
+  document.getElementById('sb-overlay').classList.toggle('open');
+}
+function closeSidebar() {
+  document.querySelector('.sidebar').classList.remove('open');
+  document.getElementById('sb-overlay').classList.remove('open');
+}
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', () => { if(window.innerWidth<=768) closeSidebar(); });
+  });
+});
 
 // ── Keep Render alive + auto-refresh data every 60s ──────────
 const RENDER_URL = 'https://weglow-autosync.onrender.com';
