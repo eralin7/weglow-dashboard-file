@@ -529,6 +529,64 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
 }
 
 
+/* ── FIRST-TOUCH PANEL ── */
+.ft-panel {
+  background: linear-gradient(135deg, #f0f4ff, #fdf4ff);
+  border: 1.5px solid rgba(99,102,241,.2);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.ft-status { font-size: 12px; color: var(--slate); flex: 1; min-width: 160px; }
+.ft-status b { color: var(--ink); }
+.ft-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(99,102,241,.1); color: #4f46e5;
+  font-size: 11px; font-weight: 700; padding: 4px 10px;
+  border-radius: 20px; border: 1px solid rgba(99,102,241,.2);
+}
+.ft-inp {
+  background: #fff; border: 1.5px solid var(--line);
+  border-radius: 8px; padding: 6px 10px;
+  font-family: 'DM Sans',sans-serif; font-size: 12px;
+  color: var(--ink); outline: none; width: 160px;
+}
+.ft-inp:focus { border-color: var(--acc); }
+.ft-btn {
+  background: var(--acc); color: #fff;
+  border: none; border-radius: 8px;
+  padding: 7px 14px; font-family: 'DM Sans',sans-serif;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; gap: 5px;
+  transition: opacity .15s;
+}
+.ft-btn:hover { opacity: .85; }
+.ft-btn:disabled { opacity: .5; cursor: not-allowed; }
+.ft-progress { font-size: 11px; color: var(--muted); font-style: italic; }
+
+/* Колонка first-touch в таблице */
+.ft-conv-cell { font-weight: 700; }
+.ft-conv-hi { color: #16a34a; }
+.ft-conv-mid { color: #ca8a04; }
+.ft-conv-lo { color: #dc2626; }
+.ft-tooltip {
+  position: relative; cursor: help;
+}
+.ft-tooltip::after {
+  content: attr(data-tip);
+  position: absolute; bottom: calc(100% + 6px); left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink); color: #fff; font-size: 10px;
+  font-weight: 500; padding: 5px 9px; border-radius: 7px;
+  white-space: nowrap; pointer-events: none; opacity: 0;
+  transition: opacity .15s; z-index: 100;
+}
+.ft-tooltip:hover::after { opacity: 1; }
+
 /* ── MANAGERS SEARCH / STICKY / MODAL / FUNNEL ── */
 .mgr-highlight { background: rgba(26,86,219,.07) !important; }
 .dt tfoot tr td {
@@ -1466,6 +1524,228 @@ function render(){
   renderHeatmap();
 }
 
+// ═══════════════════ FIRST-TOUCH (AmoCRM) ════════════════════════
+const WORKER_URL_FT = 'https://purple-moon-c773.eralin097.workers.dev/';
+let FT_DATA = {}; // { 'Имя менеджера': { fresh: N, won: N, conv: X } }
+let FT_USERS = {}; // { userId: 'Имя' }
+let FT_LOADED = false;
+
+async function amoReqFT(domain, token, path) {
+  const target = `https://${domain}.amocrm.ru${path}`;
+  const r = await fetch(WORKER_URL_FT, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ amo_proxy: true, url: target, token })
+  });
+  return r.ok ? r.json() : null;
+}
+
+async function loadFirstTouch() {
+  const domain = document.getElementById('ft-domain').value.trim().replace('.amocrm.ru','');
+  const token  = document.getElementById('ft-token').value.trim();
+  if (!domain || !token) { alert('Введите домен и токен AmoCRM'); return; }
+
+  const btn  = document.getElementById('ft-btn');
+  const prog = document.getElementById('ft-progress');
+  btn.disabled = true;
+  prog.style.display = '';
+
+  try {
+    // ── 1. Роли в AmoCRM ─────────────────────────────────────
+    prog.textContent = 'Загружаю роли...';
+    // Загружаем роли — ищем роли с названием РОП/руководитель/supervisor
+    const rolesData = await amoReqFT(domain, token, '/api/v4/roles?limit=250');
+    const ROP_ROLE_IDS = new Set();
+    if (rolesData?._embedded?.roles) {
+      rolesData._embedded.roles.forEach(r => {
+        const n = (r.name || '').toLowerCase();
+        if (n.includes('роп') || n.includes('rop') || n.includes('руководитель') ||
+            n.includes('supervisor') || n.includes('head') || n.includes('manager lead')) {
+          ROP_ROLE_IDS.add(r.id);
+        }
+      });
+    }
+
+    // ── 2. Пользователи + определяем РОПов по role_id ────────
+    prog.textContent = 'Загружаю пользователей...';
+    const usersData = await amoReqFT(domain, token, '/api/v4/users?limit=250&with=role');
+    if (!usersData?._embedded?.users) throw new Error('Ошибка загрузки пользователей');
+
+    FT_USERS = {};
+    const ROP_IDS = new Set();
+
+    usersData._embedded.users.forEach(u => {
+      FT_USERS[u.id] = u.name;
+      // Проверяем role_id пользователя
+      const roleId = u.role?.id || u._embedded?.roles?.[0]?.id;
+      if (roleId && ROP_ROLE_IDS.has(roleId)) {
+        ROP_IDS.add(u.id);
+      }
+    });
+
+    // Fallback: если роли не загрузились — определяем по имени
+    if (ROP_IDS.size === 0) {
+      usersData._embedded.users.forEach(u => {
+        const n = (u.name || '').toLowerCase();
+        if (n.includes('роп') || n.includes('rop') || n.includes('руководитель')) {
+          ROP_IDS.add(u.id);
+        }
+      });
+    }
+
+    // ── 2. Сделки ─────────────────────────────────────────────
+    prog.textContent = 'Загружаю сделки...';
+    const perPage = 250;
+    let page = 1, allLeads = [];
+    while (true) {
+      const data = await amoReqFT(domain, token, `/api/v4/leads?limit=${perPage}&page=${page}`);
+      const leads = data?._embedded?.leads;
+      if (!leads?.length) break;
+      allLeads = allLeads.concat(leads);
+      prog.textContent = `Загружаю сделки... ${allLeads.length}`;
+      if (leads.length < perPage) break;
+      if (++page > 20) break;
+    }
+
+    // ── 3. События изменения ответственного ──────────────────
+    prog.textContent = `Загружаю события для ${allLeads.length} сделок...`;
+    const FT = {}; // userId → { fresh, won, selfCreated, ropDistributed }
+
+    const batchSize = 50;
+    let skippedSelfCreate = 0;
+    let skippedNoManager  = 0;
+    let processed = 0;
+
+    for (let i = 0; i < allLeads.length; i += batchSize) {
+      const batch = allLeads.slice(i, i + batchSize);
+      const ids   = batch.map(l => l.id);
+
+      // Запрашиваем два типа событий:
+      // 1) responsible_user_changed — смена ответственного
+      // 2) lead_added — кто создал сделку
+      const evPath = `/api/v4/events?filter[entity]=lead&filter[type][]=responsible_user_changed&filter[type][]=lead_added&filter[entity_id][]=${ids.join('&filter[entity_id][]=')}}&limit=250&order[id]=asc`;
+      const evData = await amoReqFT(domain, token, evPath);
+      const events = evData?._embedded?.events || [];
+
+      // Группируем по сделке, сортируем по времени
+      const evByLead = {};
+      events.forEach(ev => {
+        if (!evByLead[ev.entity_id]) evByLead[ev.entity_id] = [];
+        evByLead[ev.entity_id].push(ev);
+      });
+
+      batch.forEach(lead => {
+        const evs = (evByLead[lead.id] || []).sort((a, b) => a.created_at - b.created_at);
+
+        // Кто создал сделку
+        const createEv  = evs.find(e => e.type === 'lead_added');
+        const createdBy = createEv?.created_by || lead.created_by;
+
+        // Строим цепочку ответственных: [первый, второй, ...]
+        // Начинаем с created_by как первого владельца
+        // Затем по событиям смены берём value_after
+        const changeEvs = evs
+          .filter(e => e.type === 'responsible_user_changed')
+          .sort((a, b) => a.created_at - b.created_at);
+
+        // Первоначальный ответственный — before первого события смены
+        // Если смен не было — текущий ответственный
+        let chain = []; // хронологическая цепочка userId
+        if (changeEvs.length > 0) {
+          const firstBefore = changeEvs[0].value_before?.[0]?.responsible_user_id;
+          if (firstBefore) chain.push(firstBefore);
+          changeEvs.forEach(ev => {
+            const after = ev.value_after?.[0]?.responsible_user_id;
+            if (after && after !== chain[chain.length - 1]) chain.push(after);
+          });
+        } else {
+          chain = [lead.responsible_user_id];
+        }
+
+        // ── ПРАВИЛО 1: Менеджер сам создал сделку → не считаем ──
+        // Сделка создана не РОПом и не системой, а тем же кто стал первым ответственным
+        if (createdBy && !ROP_IDS.has(createdBy) && chain[0] === createdBy) {
+          skippedSelfCreate++;
+          return; // пропускаем
+        }
+
+        // ── ПРАВИЛО 2: Найти первого менеджера после РОПа ──
+        // Ищем в цепочке первый userId, который НЕ РОП
+        let ownerUserId = null;
+        for (const uid of chain) {
+          if (!ROP_IDS.has(uid)) {
+            ownerUserId = uid;
+            break;
+          }
+        }
+
+        // Если вся цепочка — РОПы (например только распределяли) → пропускаем
+        if (!ownerUserId) {
+          skippedNoManager++;
+          return;
+        }
+
+        if (!FT[ownerUserId]) FT[ownerUserId] = { fresh: 0, won: 0 };
+        FT[ownerUserId].fresh++;
+        if (lead.status_id === 142) FT[ownerUserId].won++; // 142 = won
+      });
+
+      processed += batch.length;
+      prog.textContent = `Обработано ${processed}/${allLeads.length}... (пропущено самосоздан.: ${skippedSelfCreate})`;
+    }
+
+    // ── 4. Строим FT_DATA по именам ──────────────────────────
+    FT_DATA = {};
+    Object.entries(FT).forEach(([uid, v]) => {
+      const name = FT_USERS[uid];
+      if (!name) return;
+      const conv = v.fresh > 0 ? +(v.won / v.fresh * 100).toFixed(1) : 0;
+      FT_DATA[name] = { fresh: v.fresh, won: v.won, conv };
+    });
+
+    FT_LOADED = true;
+    const ropNames = [...ROP_IDS].map(id => FT_USERS[id]).filter(Boolean).join(', ') || '—';
+    const ropSrc   = ROP_ROLE_IDS.size > 0 ? 'по роли в AmoCRM' : 'по имени (fallback)';
+    document.getElementById('ft-status').innerHTML =
+      `✅ <b>Загружено</b> — ${Object.keys(FT_DATA).length} менеджеров · ${allLeads.length} сделок · ` +
+      `самосозданных пропущено: <b>${skippedSelfCreate}</b> · ` +
+      `РОПы (<i>${ropSrc}</i>): <b>${ropNames}</b>`;
+    document.getElementById('ft-panel').style.borderColor = 'rgba(22,163,74,.3)';
+    document.getElementById('ft-panel').style.background  = 'linear-gradient(135deg,#f0fdf4,#f7fff4)';
+    prog.style.display = 'none';
+    btn.disabled = false;
+    renderManagers();
+
+  } catch(e) {
+    prog.textContent = '❌ Ошибка: ' + e.message;
+    console.error(e);
+    btn.disabled = false;
+  }
+}
+
+function renderFtCell(mgrName) {
+  if (!FT_LOADED) return '<span style="color:var(--muted);font-size:11px">—</span>';
+  let d = FT_DATA[mgrName];
+  if (!d) {
+    // Fuzzy match: ищем по имени без "Пин N"
+    const clean = mgrName.toLowerCase().replace(/^(пин|pin)\s*\d+\s*/i,'').trim();
+    const key = Object.keys(FT_DATA).find(k =>
+      k.toLowerCase().includes(clean) || clean.includes(k.toLowerCase().trim())
+    );
+    if (key) d = FT_DATA[key];
+  }
+  if (!d) return '<span style="color:var(--muted);font-size:11px">н/д</span>';
+  const cls = d.conv >= 12 ? 'ft-conv-hi' : d.conv >= 7 ? 'ft-conv-mid' : 'ft-conv-lo';
+  const tip = `Распределено РОПом: ${d.fresh} · Выиграно: ${d.won} · Самосозданные: исключены`;
+  return `<span class="ft-conv-cell ${cls} ft-tooltip" data-tip="${tip}">${d.conv}%</span>`;
+}
+
+function renderFtTotal() {
+  if (!FT_LOADED) return '<span style="color:var(--muted);font-size:11px">—</span>';
+  const total = Object.values(FT_DATA).reduce((s,d) => ({ fresh: s.fresh+d.fresh, won: s.won+d.won }), {fresh:0,won:0});
+  const conv  = total.fresh > 0 ? +(total.won / total.fresh * 100).toFixed(1) : 0;
+  return `<b>${conv}%</b>`;
+}
+
 // ═══════════════════ MANAGERS ═════════════════════════════════════
 function aggregateManagersByPeriod(prodKey, from, to) {
   const allMgrs = (MANAGERS[prodKey] || []);
@@ -1538,7 +1818,7 @@ function renderManagers(){
      <th style="text-align:left">Менеджер</th>
      ${ropCol}
      <th>Лиды</th><th>Сделки</th><th>Выручка</th>
-     <th>Конверсия</th><th>Ср. чек</th><th>Доля</th>`;
+     <th>Конверсия</th><th class="ft-tooltip" data-tip="Конверсия первого касания из AmoCRM">1-е касание ✦</th><th>Ср. чек</th><th>Доля</th>`;
 
   let tbody='';
   withDeals.forEach((m,i)=>{
@@ -1554,6 +1834,7 @@ function renderManagers(){
       <td style="font-weight:700">${m.deals}</td>
       <td style="color:${cfg.color};font-weight:700">${fmtM(m.budget)}</td>
       <td class="${convCls(m.conv)}" style="font-weight:700">${m.conv}%</td>
+      <td class="ft-conv-cell">${renderFtCell(m.name)}</td>
       <td style="font-weight:600">${fmt(m.avgCheck)} ₸</td>
       <td><div class="mgr-bar-cell">
         <div class="mb16"><div class="mb16-f" style="width:${Math.round(m.budget/maxB*100)}%;background:${cfg.color};height:100%;border-radius:2px"></div></div>
@@ -1562,12 +1843,12 @@ function renderManagers(){
     </tr>`;
   });
   if(withoutDeals.length){
-    const colspan = isCol ? 9 : 8;
+    const colspan = isCol ? 10 : 9;
     tbody+=`<tr><td colspan="${colspan}" style="text-align:center;color:var(--muted);font-size:11px;padding:10px;border-top:2px solid var(--line2);letter-spacing:1px">— Без сделок в периоде —</td></tr>`;
     withoutDeals.forEach(m=>{
       const ropGroup = isCol ? (MGR_TO_ROP[m.name]||'—') : '';
       const ropCell = isCol ? `<td style="font-size:11px">${ropGroup}</td>` : '';
-      tbody+=`<tr style="opacity:.4"><td style="text-align:center">—</td><td>${m.name}</td>${ropCell}<td>${fmt(m.leads)}</td><td>0</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>`;
+      tbody+=`<tr style="opacity:.4"><td style="text-align:center">—</td><td>${m.name}</td>${ropCell}<td>${fmt(m.leads)}</td><td>0</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>`;
     });
   }
   document.getElementById('mgr-tbody').innerHTML=tbody;
@@ -1578,7 +1859,7 @@ function renderManagers(){
   const totBudget = withDeals.reduce((s,m)=>s+m.budget,0);
   const totConv   = totLeads>0 ? (totDeals/totLeads*100).toFixed(1) : 0;
   const totAvg    = totDeals>0 ? Math.round(totBudget/totDeals) : 0;
-  const tfootCols = isCol ? 9 : 8;
+  const tfootCols = isCol ? 10 : 9;
   document.getElementById('mgr-tfoot').innerHTML = `<tr>
     <td colspan="2" style="text-align:left">ИТОГО (${withDeals.length} чел.)</td>
     ${isCol?'<td></td>':''}
@@ -1586,6 +1867,7 @@ function renderManagers(){
     <td>${fmt(totDeals)}</td>
     <td style="color:${cfg.color}">${fmtM(totBudget)}</td>
     <td>${totConv}%</td>
+    <td>${renderFtTotal()}</td>
     <td>${fmt(totAvg)} ₸</td>
     <td>100%</td>
   </tr>`;
