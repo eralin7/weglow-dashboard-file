@@ -183,7 +183,8 @@ body{font-family:"DM Sans",sans-serif;background:var(--bg);color:var(--ink);min-
 
 <script>
 
-const ANTHROPIC_KEY = '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';
+const ANTHROPIC_KEY = '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';
+// После деплоя Cloudflare Worker — вставьте URL сюда:
 const SUPABASE_URL = 'https://bdyakgmeibpdkisbiykt.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkeWFrZ21laWJwZGtpc2JpeWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTQzOTMsImV4cCI6MjA4Nzc5MDM5M30.nA187grJR6XFQRmTP6WOM-6-1dZK1EzYNNP2JH9aAMg';
 const SB_H = {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY};
@@ -455,7 +456,6 @@ async function runAnalysis(){
     btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;margin:0"></div> AI думает...';
 
     // Call Claude API
-    // Use Anthropic API with browser-direct header
     const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -466,13 +466,13 @@ async function runAnalysis(){
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
+        max_tokens: 1500,
         messages: [{role:'user', content: prompt}]
       })
     });
     if(!aiRes.ok){
       const err = await aiRes.json().catch(()=>({error:{message:aiRes.statusText}}));
-      throw new Error(err?.error?.message || `HTTP ${aiRes.status}`);
+      throw new Error(err?.error?.message || 'HTTP '+aiRes.status);
     }
     const aiData = await aiRes.json();
     const aiText = aiData.content?.find(b=>b.type==='text')?.text || 'Нет ответа';
