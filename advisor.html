@@ -466,7 +466,23 @@ async function runAnalysis(){
       throw new Error(err?.error?.message || 'HTTP '+aiRes.status);
     }
     const aiData = await aiRes.json();
-    const aiText = aiData.text || 'Нет ответа';
+    // Handle multiple possible response formats:
+    // 1. Worker returns { text: "..." }
+    // 2. Worker proxies raw Anthropic response: { content: [{ type: "text", text: "..." }] }
+    // 3. Worker returns { result: "..." } or { response: "..." } or { message: "..." }
+    let aiText =
+      aiData.text ||
+      aiData.result ||
+      aiData.response ||
+      aiData.message ||
+      (Array.isArray(aiData.content) && aiData.content.find(b => b.type === 'text')?.text) ||
+      (typeof aiData.content === 'string' && aiData.content) ||
+      null;
+
+    if (!aiText) {
+      console.error('Unexpected worker response format:', JSON.stringify(aiData).slice(0, 500));
+      throw new Error('Неожиданный формат ответа от сервера. Проверьте консоль.');
+    }
 
     // Render AI response
     document.querySelector('.ai-body').innerHTML = `<div class="ai-content" id="ai-body-wrap">${aiText}</div>`;
