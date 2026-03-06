@@ -104,10 +104,56 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 .toast.ok{background:#16a34a;}
 .toast.err{background:var(--red);}
 
-@media(max-width:700px){
-  .plan-grid{grid-template-columns:1fr;}
-  .content{padding:20px 16px;}
-  .history-card{padding:20px 16px;}
+/* ── МОБИЛЬНАЯ АДАПТАЦИЯ DIRECTOR ── */
+@media(max-width:768px){
+  /* Топбар */
+  .topbar { padding: 10px 12px; height: auto; flex-wrap: wrap; gap: 6px; }
+  .top-logo { font-size: 16px; }
+  .top-links { gap: 8px; }
+  .top-link { font-size: 12px; }
+
+  /* Контент */
+  .content { padding: 14px 12px; }
+
+  /* Заголовок */
+  .page-title { font-size: 18px; }
+  .page-sub { font-size: 12px; }
+
+  /* Контролы */
+  .controls { flex-direction: column; align-items: stretch; gap: 8px; }
+  .period-tabs { overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap; gap: 4px; }
+  .period-tabs::-webkit-scrollbar { display: none; }
+  .ptab { flex-shrink: 0; }
+  .analyze-btn, .gen-btn { width: 100% !important; justify-content: center; }
+
+  /* KPI */
+  .kpi-grid { grid-template-columns: 1fr 1fr !important; gap: 8px; }
+  .kpi-card { padding: 12px 10px; }
+  .kc-val { font-size: 18px !important; }
+  .kc-lbl { font-size: 9px; }
+
+  /* Планы */
+  .plan-grid { grid-template-columns: 1fr !important; gap: 10px; }
+  .history-card { padding: 16px 14px; }
+
+  /* Таблицы РОП */
+  .rop-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .rop-table { min-width: 480px; font-size: 12px; }
+  .rop-table th, .rop-table td { padding: 8px 10px; }
+
+  /* Результат AI */
+  .result-card { padding: 14px; }
+  .result-section { padding: 12px; }
+
+  /* Пароль */
+  .pwd-box { width: 90vw; padding: 28px 20px; }
+}
+
+@media(max-width:480px){
+  .kpi-grid { grid-template-columns: 1fr 1fr !important; }
+  .kc-val { font-size: 15px !important; }
+  .content { padding: 10px; }
+  .top-links { display: none; }
 }
 
 /* ── ROP STATS ── */
@@ -681,23 +727,37 @@ async function loadRopStats() {
     const pctCls = p => p>=80?'pct-g':p>=50?'pct-y':'pct-r';
     const barClr  = p => p>=80?'#16a34a':p>=50?'#ca8a04':'#dc2626';
 
+    // ─── Plan-to-today coefficient ────────────────────────────
+    // How many days have passed in the period (including today), vs total days
+    const today = new Date(); today.setHours(0,0,0,0);
+    const periodStart = new Date(fromD); periodStart.setHours(0,0,0,0);
+    const periodEnd   = new Date(toD);   periodEnd.setHours(0,0,0,0);
+    const totalDays   = Math.round((periodEnd - periodStart) / 86400000) + 1;
+    const passedDays  = today < periodStart ? 0
+                      : today > periodEnd   ? totalDays
+                      : Math.round((today - periodStart) / 86400000) + 1;
+    // planToday(fullPlan) = fullPlan / totalDays * passedDays
+    const planToday = fullPlan => totalDays > 0 ? Math.round(fullPlan / totalDays * passedDays) : 0;
+
     // ─── Build HTML ───────────────────────────────────────────
-    let html = `<div style="font-size:12px;color:var(--muted);margin-bottom:16px">Период: <strong style="color:var(--ink)">${range.label}</strong></div>`;
+    let html = `<div style="font-size:12px;color:var(--muted);margin-bottom:16px">Период: <strong style="color:var(--ink)">${range.label}</strong> · <span style="color:var(--muted)">${passedDays} из ${totalDays} дн.</span></div>`;
 
     for (const rop of ropNames) {
       const mgrs = ropGroups[rop] || [];
       let ropPlan=0, ropBudget=0, ropLeads=0, ropDeals=0;
 
       const mgrRows = mgrs.map(mgr => {
-        const plan   = mgrPlan[mgr] || 0;
-        const fact   = mgrFact[mgr] || {budget:0,leads:0,deals:0};
+        const plan    = mgrPlan[mgr] || 0;
+        const fact    = mgrFact[mgr] || {budget:0,leads:0,deals:0};
+        const planTod = planToday(plan);
+        const gap     = fact.budget - planTod;
         ropPlan   += plan;
         ropBudget += fact.budget;
         ropLeads  += fact.leads;
         ropDeals  += fact.deals;
         const pct  = plan>0 ? Math.round(fact.budget/plan*100) : 0;
         const conv = fact.leads>0 ? (fact.deals/fact.leads*100).toFixed(1) : '0';
-        return {mgr, plan, fact, pct, conv};
+        return {mgr, plan, planTod, gap, fact, pct, conv};
       });
 
       const ropPct = ropPlan>0 ? Math.round(ropBudget/ropPlan*100) : 0;
@@ -726,9 +786,16 @@ async function loadRopStats() {
               <div style="font-size:16px;font-weight:700;color:var(--ink)">${fmt(ropBudget)} ₸</div>
             </div>
             <div style="text-align:center">
-              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">План</div>
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">План мес.</div>
               <div style="font-size:16px;font-weight:700;color:var(--muted)">${fmt(ropPlan)} ₸</div>
             </div>
+            <div style="text-align:center">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">План до сег.</div>
+              <div style="font-size:16px;font-weight:700;color:var(--ink)">${fmt(planToday(ropPlan))} ₸</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Выполнение</div>
+              ${(()=>{ const g=ropBudget-planToday(ropPlan); return `<div style="font-size:16px;font-weight:700;color:${g>=0?'#16a34a':'#dc2626'}">${g>=0?'+':''}${fmt(g)} ₸</div>`; })()}</div>
             <div style="text-align:center;min-width:70px">
               <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">% плана</div>
               <div style="font-size:18px;font-weight:800" class="${pctCls(ropPct)}">${ropPct}%</div>
@@ -744,11 +811,13 @@ async function loadRopStats() {
             <th>Сделки</th>
             <th>Конверсия</th>
             <th>Факт ₸</th>
-            <th>План ₸</th>
+            <th>План мес. ₸</th>
+            <th>План до сег. ₸</th>
+            <th>Выполнение</th>
             <th>%</th>
           </tr></thead>
           <tbody>
-            ${mgrRows.map(({mgr,plan,fact,pct,conv})=>`
+            ${mgrRows.map(({mgr,plan,planTod,gap,fact,pct,conv})=>`
             <tr>
               <td><div class="rop-name">${mgr}</div></td>
               <td>${fact.leads.toLocaleString('ru')}</td>
@@ -756,6 +825,8 @@ async function loadRopStats() {
               <td>${conv}%</td>
               <td style="font-weight:600">${fmt(fact.budget)} ₸</td>
               <td style="color:var(--muted)">${fmt(plan)} ₸</td>
+              <td style="color:var(--slate)">${fmt(planTod)} ₸</td>
+              <td style="font-weight:700;color:${gap>=0?'#16a34a':'#dc2626'}">${gap>=0?'+':''}${fmt(gap)} ₸</td>
               <td>
                 <span class="${pctCls(pct)}">${pct}%</span>
                 <div class="rop-bar"><div class="rop-fill" style="width:${Math.min(100,pct)}%;background:${barClr(pct)}"></div></div>

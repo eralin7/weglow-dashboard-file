@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WeGlow — Аналитика чатов</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0f1623;--ink2:#1e2840;--slate:#4a5568;--muted:#8896ae;
+  --line:#e8ecf4;--line2:#f1f4f9;--bg:#f7f8fc;--white:#fff;
+  --acc:#6366f1;--acc-l:#eef2ff;
+  --green:#16a34a;--green-l:#dcfce7;
+  --red:#dc2626;--red-l:#fde8e8;
+  --yellow:#ca8a04;--yellow-l:#fefce8;
+  --shadow:0 1px 3px rgba(15,22,35,.06),0 4px 16px rgba(15,22,35,.08);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:"DM Sans",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;}
+
+/* SIDEBAR */
+.sidebar{width:220px;flex-shrink:0;background:var(--ink2);display:flex;flex-direction:column;padding:0 0 24px;position:fixed;top:0;left:0;bottom:0;z-index:100;overflow-y:auto;}
+.sb-logo{padding:28px 24px 20px;border-bottom:1px solid rgba(255,255,255,.07);}
+.sb-logo h1{font-family:"Playfair Display",serif;font-size:22px;font-weight:700;color:#fff;line-height:1;}
+.sb-logo .tagline{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:2px;text-transform:uppercase;margin-top:5px;}
+.sb-nav{padding:16px 12px;flex:1;}
+.sb-section{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.25);padding:0 12px 8px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;color:rgba(255,255,255,.5);font-size:13px;font-weight:500;cursor:pointer;transition:all .18s;margin-bottom:2px;border:none;background:none;width:100%;text-align:left;text-decoration:none;}
+.nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.8);}
+.nav-item.active{background:rgba(255,255,255,.1);color:#fff;}
+.nav-item .icon{font-size:16px;width:20px;text-align:center;}
+
+/* MAIN */
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column;min-height:100vh;}
+.topbar{background:var(--white);border-bottom:1px solid var(--line);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:50;}
+.topbar-title{font-size:15px;font-weight:600;color:var(--ink);}
+
+/* CONTENT */
+.content{padding:28px 32px;max-width:1200px;}
+.page-hdr{margin-bottom:24px;}
+.page-title{font-size:22px;font-weight:700;display:flex;align-items:center;gap:10px;}
+.page-sub{font-size:13px;color:var(--muted);margin-top:4px;}
+
+/* SETTINGS CARD */
+.settings-card{background:var(--white);border:1.5px solid var(--line);border-radius:14px;padding:20px 24px;margin-bottom:24px;}
+.settings-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px;}
+.settings-grid{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;}
+.field-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
+.inp{width:100%;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;font-family:inherit;background:var(--white);color:var(--ink);outline:none;transition:border-color .15s;}
+.inp:focus{border-color:var(--acc);}
+.inp-pw{-webkit-text-security:disc;text-security:disc;}
+.run-btn{padding:10px 22px;background:var(--acc);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:8px;white-space:nowrap;transition:opacity .15s;height:40px;}
+.run-btn:hover{opacity:.88;}
+.run-btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* STATS ROW */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:24px;}
+.stat-card{background:var(--white);border:1.5px solid var(--line);border-radius:12px;padding:14px 16px;}
+.stat-lbl{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.stat-val{font-size:22px;font-weight:700;line-height:1.2;}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+
+/* MANAGERS GRID */
+.section-title{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;}
+.managers-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-bottom:28px;}
+.mgr-card{background:var(--white);border:1.5px solid var(--line);border-radius:14px;overflow:hidden;}
+.mgr-head{padding:14px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line2);}
+.mgr-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;flex-shrink:0;}
+.mgr-name{font-size:14px;font-weight:700;}
+.mgr-chats{font-size:11px;color:var(--muted);}
+.mgr-score{margin-left:auto;text-align:right;}
+.mgr-score-val{font-size:20px;font-weight:700;}
+.mgr-score-lbl{font-size:10px;color:var(--muted);}
+.mgr-body{padding:14px 18px;}
+.mgr-row{display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid var(--line2);}
+.mgr-row:last-child{border:none;}
+.mgr-row-lbl{color:var(--muted);}
+.mgr-row-val{font-weight:600;}
+.mgr-ai{padding:0 18px 14px;}
+.mgr-ai-title{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.mgr-ai-text{font-size:12px;color:var(--slate);line-height:1.6;background:var(--line2);border-radius:8px;padding:10px 12px;}
+.mgr-ai-loading{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;padding:10px 12px;background:var(--line2);border-radius:8px;}
+
+/* OBJECTIONS */
+.obj-section{background:var(--white);border:1.5px solid var(--line);border-radius:14px;padding:20px 24px;margin-bottom:24px;}
+.obj-list{display:flex;flex-direction:column;gap:8px;}
+.obj-item{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--line2);border-radius:10px;}
+.obj-rank{font-size:11px;font-weight:700;color:var(--muted);width:20px;}
+.obj-text{font-size:13px;font-weight:500;flex:1;}
+.obj-count{font-size:12px;font-weight:700;color:var(--acc);background:var(--acc-l);padding:3px 10px;border-radius:6px;}
+.obj-bar-wrap{flex:1;max-width:120px;}
+.obj-bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;}
+.obj-bar-fill{height:100%;background:var(--acc);border-radius:3px;}
+
+/* AI SUMMARY */
+.ai-section{background:var(--white);border:1.5px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:24px;}
+.ai-header{background:linear-gradient(135deg,#1e2840 0%,#2d3a5c 100%);padding:16px 22px;display:flex;align-items:center;gap:12px;}
+.ai-icon{font-size:22px;}
+.ai-title{font-size:15px;font-weight:700;color:#fff;}
+.ai-sub{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px;}
+.ai-body{padding:22px;}
+.ai-content{font-size:14px;line-height:1.7;color:var(--ink);}
+.ai-content h3{font-size:15px;font-weight:700;margin:20px 0 10px;color:var(--ink);display:flex;align-items:center;gap:7px;}
+.ai-content h3:first-child{margin-top:0;}
+.ai-content p{margin-bottom:10px;color:var(--slate);}
+.ai-content ul{margin:8px 0 12px;padding-left:0;list-style:none;}
+.ai-content ul li{padding:6px 10px 6px 14px;margin-bottom:4px;border-radius:7px;background:var(--line2);font-size:13px;border-left:3px solid var(--line);}
+.ai-content ul li.ok{background:var(--green-l);border-left-color:var(--green);}
+.ai-content ul li.warn{background:var(--yellow-l);border-left-color:var(--yellow);}
+.ai-content ul li.bad{background:var(--red-l);border-left-color:var(--red);}
+.ai-content ul li.action{background:var(--acc-l);border-left-color:var(--acc);}
+
+/* SPINNER */
+.spinner{width:20px;height:20px;border:2.5px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-block{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px;gap:16px;}
+.loading-txt{font-size:13px;color:var(--muted);}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:56px 24px;}
+.empty-icon{font-size:48px;margin-bottom:16px;}
+.empty-title{font-size:17px;font-weight:700;margin-bottom:8px;}
+.empty-sub{font-size:13px;color:var(--muted);max-width:400px;margin:0 auto;}
+
+/* PASSWORD */
+.pw-screen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;}
+.pw-box{background:var(--white);border:1.5px solid var(--line);border-radius:16px;padding:40px 36px;width:100%;max-width:380px;text-align:center;box-shadow:var(--shadow);}
+.pw-logo{font-family:"Playfair Display",serif;font-size:28px;font-weight:700;color:var(--ink2);margin-bottom:4px;}
+.pw-sub{font-size:13px;color:var(--muted);margin-bottom:28px;}
+.pw-label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;text-align:left;margin-bottom:6px;}
+.pw-input{width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;font-family:inherit;outline:none;color:var(--ink);transition:border-color .15s;}
+.pw-input:focus{border-color:var(--acc);}
+.pw-btn{margin-top:14px;width:100%;padding:12px;background:var(--acc);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .15s;}
+.pw-btn:hover{opacity:.88;}
+.pw-error{margin-top:10px;font-size:13px;color:var(--red);min-height:18px;}
+
+/* SCORE COLORS */
+.score-hi{color:var(--green);}
+.score-mid{color:var(--yellow);}
+.score-lo{color:var(--red);}
+
+/* ── МОБИЛЬНАЯ АДАПТАЦИЯ CHAT ── */
+@media(max-width:900px){
+  /* Сайдбар */
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform .28s cubic-bezier(.4,0,.2,1);
+    z-index: 300;
+    width: 240px;
+  }
+  .sidebar.open { transform: translateX(0); box-shadow: 6px 0 32px rgba(0,0,0,.5); }
+  .main { margin-left: 0; width: 100%; }
+
+  /* Моб кнопка меню */
+  .mob-btn {
+    display: flex !important;
+    position: fixed; top: 10px; left: 10px; z-index: 200;
+    width: 40px; height: 40px; border-radius: 10px;
+    background: var(--ink2); border: 1px solid rgba(255,255,255,.15);
+    color: #fff; font-size: 18px; cursor: pointer;
+    align-items: center; justify-content: center;
+  }
+  .mob-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.5); z-index: 250;
+  }
+  .mob-overlay.open { display: block; }
+
+  /* Топбар */
+  .topbar { padding: 0 12px 0 58px; height: 52px; position: sticky; top: 0; z-index: 50; }
+
+  /* Настройки */
+  .settings-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .run-btn { grid-column: 1 / -1; justify-content: center; width: 100%; }
+
+  /* Контент */
+  .content { padding: 12px 10px; }
+
+  /* Карточки менеджеров */
+  .managers-grid { grid-template-columns: 1fr !important; gap: 10px; }
+  .mgr-card { padding: 14px 12px; }
+
+  /* Таблицы */
+  .tbl-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { min-width: 480px; font-size: 12px; }
+
+  /* Статистика */
+  .stats-grid { grid-template-columns: 1fr 1fr !important; gap: 8px; }
+  .stat-card { padding: 12px 10px; }
+
+  /* AI блок */
+  .ai-result { padding: 14px; }
+}
+
+@media(max-width:480px){
+  .settings-grid { grid-template-columns: 1fr !important; }
+  .stats-grid { grid-template-columns: 1fr 1fr !important; }
+  .content { padding: 10px 8px; }
+  .topbar { padding: 0 8px 0 52px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ПАРОЛЬ -->
+<div class="pw-screen" id="pw-screen">
+  <div class="pw-box">
+    <div class="pw-logo">WeGlow</div>
+    <div class="pw-sub">Аналитика чатов — введите пароль</div>
+    <label class="pw-label">Пароль</label>
+    <input class="pw-input" type="password" id="pw-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')checkPw()">
+    <button class="pw-btn" onclick="checkPw()">Войти</button>
+    <div class="pw-error" id="pw-error"></div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-logo">
+    <h1>WeGlow</h1>
+    <div class="tagline">Analytics</div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-section">Основное</div>
+    <a href="dashboard.html" class="nav-item"><span class="icon">📊</span> Дашборд</a>
+    <a href="director.html" class="nav-item"><span class="icon">👔</span> Директор</a>
+    <a href="advisor.html" class="nav-item"><span class="icon">🤖</span> AI Советник</a>
+    <a href="chat.html" class="nav-item active"><span class="icon">💬</span> Аналитика чатов</a>
+  </nav>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-title">💬 Аналитика чатов менеджеров</div>
+  </header>
+
+  <div class="content">
+    <div class="page-hdr">
+      <div class="page-title">💬 Аналитика чатов</div>
+      <div class="page-sub">AI анализирует переписки менеджеров с клиентами из AmoCRM</div>
+    </div>
+
+    <!-- НАСТРОЙКИ AmoCRM -->
+    <div class="settings-card">
+      <div class="settings-title">⚙️ Подключение к AmoCRM</div>
+      <div class="settings-grid">
+        <div>
+          <div class="field-label">Поддомен AmoCRM</div>
+          <input class="inp" id="amo-domain" placeholder="yourcompany" value="">
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">.amocrm.ru</div>
+        </div>
+        <div>
+          <div class="field-label">Access Token</div>
+          <input class="inp" id="amo-token" type="password" placeholder="Вставьте токен">
+        </div>
+        <div>
+          <div class="field-label">Кол-во чатов на менеджера</div>
+          <select class="inp" id="chat-limit">
+            <option value="5">5 последних</option>
+            <option value="10" selected>10 последних</option>
+            <option value="20">20 последних</option>
+            <option value="50">50 последних</option>
+          </select>
+        </div>
+        <div>
+          <button class="run-btn" id="run-btn" onclick="runAnalysis()">
+            <span>⚡</span> Запустить анализ
+          </button>
+        </div>
+      </div>
+      <div style="margin-top:12px;padding:10px 14px;background:var(--acc-l);border-radius:8px;font-size:12px;color:var(--acc);">
+        💡 <strong>Как получить токен:</strong> AmoCRM → Настройки → Интеграции → Создать интеграцию → скопируйте Access Token
+      </div>
+    </div>
+
+    <!-- КОНТЕНТ (скрыт до запуска) -->
+    <div id="main-content" style="display:none">
+
+      <!-- ОБЩАЯ СТАТИСТИКА -->
+      <div class="section-title">📈 Общая статистика</div>
+      <div class="stats-row" id="stats-row"></div>
+
+      <!-- МЕНЕДЖЕРЫ -->
+      <div class="section-title">👥 По менеджерам</div>
+      <div class="managers-grid" id="managers-grid"></div>
+
+      <!-- ЧАСТЫЕ ВОЗРАЖЕНИЯ -->
+      <div class="obj-section">
+        <div class="settings-title">🚧 Частые возражения клиентов</div>
+        <div class="obj-list" id="obj-list"></div>
+      </div>
+
+      <!-- ОБЩИЙ AI АНАЛИЗ -->
+      <div class="ai-section">
+        <div class="ai-header">
+          <div class="ai-icon">🤖</div>
+          <div>
+            <div class="ai-title">Общий анализ команды</div>
+            <div class="ai-sub">AI — выводы по всем менеджерам и рекомендации руководителю</div>
+          </div>
+        </div>
+        <div class="ai-body" id="ai-body">
+          <div class="loading-block">
+            <div class="spinner"></div>
+            <div class="loading-txt">AI анализирует переписки...</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ПУСТОЕ СОСТОЯНИЕ -->
+    <div id="empty-state">
+      <div class="empty-state">
+        <div class="empty-icon">💬</div>
+        <div class="empty-title">Подключите AmoCRM</div>
+        <div class="empty-sub">Введите поддомен и токен AmoCRM, нажмите «Запустить анализ» — AI изучит переписки всех менеджеров и покажет детальную аналитику</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─── ПАРОЛЬ ───────────────────────────────────────────────────────────
+const CORRECT_PW = 'weglow6977';
+function checkPw(){
+  const val = document.getElementById('pw-input').value;
+  if(val === CORRECT_PW){
+    document.getElementById('pw-screen').style.display = 'none';
+  } else {
+    document.getElementById('pw-error').textContent = '⚠ Неверный пароль';
+    document.getElementById('pw-input').focus();
+  }
+}
+
+// ─── КОНФИГ ──────────────────────────────────────────────────────────
+const WORKER_URL = 'https://purple-moon-c773.eralin097.workers.dev/';
+const AVATAR_COLORS = ['#6366f1','#0a7c5c','#b45309','#dc2626','#0891b2','#7c3aed','#c2410c','#0f766e'];
+
+// ─── ВСПОМОГАТЕЛЬНЫЕ ─────────────────────────────────────────────────
+function fmt(n){ return (n||0).toLocaleString('ru-RU'); }
+
+async function amoFetch(domain, token, path){
+  const url = `https://cors-proxy.weglow.workers.dev/?url=${encodeURIComponent(`https://${domain}.amocrm.ru${path}`)}`;
+  const r = await fetch(url, { headers:{ 'Authorization':'Bearer '+token } });
+  if(!r.ok) throw new Error(`AmoCRM API error: ${r.status}`);
+  return r.json();
+}
+
+// Прямой запрос через Cloudflare Worker (он поддерживает CORS)
+async function amoReq(domain, token, path){
+  const target = `https://${domain}.amocrm.ru${path}`;
+  const r = await fetch(WORKER_URL, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ amo_proxy: true, url: target, token: token })
+  });
+  if(!r.ok) throw new Error('Ошибка запроса к AmoCRM');
+  const d = await r.json();
+  if(d.error) throw new Error(d.error);
+  return d;
+}
+
+function scoreColor(s){
+  if(s>=80) return 'score-hi';
+  if(s>=60) return 'score-mid';
+  return 'score-lo';
+}
+
+// ─── ОСНОВНОЙ АНАЛИЗ ─────────────────────────────────────────────────
+async function runAnalysis(){
+  const domain = document.getElementById('amo-domain').value.trim();
+  const token  = document.getElementById('amo-token').value.trim();
+  const limit  = parseInt(document.getElementById('chat-limit').value);
+
+  if(!domain || !token){
+    alert('Заполните поддомен и токен AmoCRM');
+    return;
+  }
+
+  const btn = document.getElementById('run-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px"></div> Загрузка...';
+
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('main-content').style.display = 'none';
+
+  try {
+    // 1. Получаем менеджеров
+    btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px"></div> Загружаю менеджеров...';
+    const usersData = await amoReq(domain, token, '/api/v4/users?limit=50');
+    const users = usersData?._embedded?.users || [];
+
+    if(!users.length) throw new Error('Не удалось получить список менеджеров. Проверьте токен.');
+
+    // 2. Получаем сделки по каждому менеджеру
+    btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px"></div> Загружаю сделки...';
+    const leadsData = await amoReq(domain, token, `/api/v4/leads?limit=250&with=contacts`);
+    const leads = leadsData?._embedded?.leads || [];
+
+    // 3. Получаем заметки/переписки
+    btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px"></div> Загружаю переписки...';
+    const notesData = await amoReq(domain, token, `/api/v4/leads/notes?limit=250&note_type=common`);
+    const notes = notesData?._embedded?.notes || [];
+
+    // 4. Группируем по менеджерам
+    const mgrMap = {};
+    for(const u of users){
+      mgrMap[u.id] = { id:u.id, name:u.name, leads:[], notes:[], chats:[] };
+    }
+    for(const l of leads){
+      const rid = l.responsible_user_id;
+      if(mgrMap[rid]) mgrMap[rid].leads.push(l);
+    }
+    for(const n of notes){
+      // Найдём менеджера через сделку
+      const lead = leads.find(l => l.id === n.entity_id);
+      if(lead && mgrMap[lead.responsible_user_id]){
+        mgrMap[lead.responsible_user_id].notes.push(n);
+      }
+    }
+
+    // Берём только менеджеров у которых есть сделки
+    const activeManagers = Object.values(mgrMap).filter(m => m.leads.length > 0);
+    if(!activeManagers.length) throw new Error('Нет сделок за выбранный период');
+
+    // 5. AI анализ каждого менеджера
+    btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px"></div> AI анализирует...';
+
+    const mgrAnalyses = [];
+    for(let i=0; i<activeManagers.length; i++){
+      const mgr = activeManagers[i];
+      btn.innerHTML = `<div class="spinner" style="width:16px;height:16px;border-width:2px"></div> AI: ${mgr.name} (${i+1}/${activeManagers.length})...`;
+      const analysis = await analyzeMgr(mgr, limit);
+      mgr.analysis = analysis;
+      mgrAnalyses.push({ name: mgr.name, ...analysis });
+    }
+
+    // 6. Рендерим всё
+    renderStats(activeManagers);
+    renderManagers(activeManagers);
+    renderObjections(mgrAnalyses);
+    await renderTeamSummary(activeManagers, mgrAnalyses);
+
+    document.getElementById('main-content').style.display = '';
+
+  } catch(e) {
+    document.getElementById('empty-state').style.display = '';
+    document.getElementById('empty-state').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">⚠️</div>
+        <div class="empty-title">Ошибка подключения</div>
+        <div class="empty-sub" style="color:var(--red)">${e.message}</div>
+        <div class="empty-sub" style="margin-top:12px">Проверьте поддомен и токен AmoCRM. Убедитесь что токен имеет права на чтение сделок и пользователей.</div>
+      </div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span>🔄</span> Обновить';
+  }
+}
+
+// ─── AI АНАЛИЗ МЕНЕДЖЕРА ─────────────────────────────────────────────
+async function analyzeMgr(mgr, limit){
+  const recentNotes = mgr.notes.slice(-limit);
+  const notesText = recentNotes.map(n => `- ${n.params?.text || n.note || ''}`.slice(0,300)).join('\n');
+  const closedLeads = mgr.leads.filter(l => l.status_id === 142).length;
+  const lostLeads   = mgr.leads.filter(l => l.status_id === 143).length;
+  const totalLeads  = mgr.leads.length;
+  const conv = totalLeads > 0 ? Math.round(closedLeads/totalLeads*100) : 0;
+
+  const prompt = `Ты — эксперт по продажам WeGlow (БАДы: Коллаген, Ummi, Кофе).
+Проанализируй работу менеджера по переписке с клиентами.
+
+Менеджер: ${mgr.name}
+Всего сделок: ${totalLeads}, закрыто: ${closedLeads}, проиграно: ${lostLeads}, конверсия: ${conv}%
+
+Последние ${recentNotes.length} заметок/сообщений:
+${notesText || 'Нет данных о переписке'}
+
+Верни ТОЛЬКО JSON (без markdown, без блоков \`\`\`) в таком формате:
+{
+  "score": 75,
+  "topics": ["тема1","тема2","тема3"],
+  "objections": ["возражение1","возражение2"],
+  "strengths": ["сильная сторона 1"],
+  "weaknesses": ["слабость 1"],
+  "recommendation": "Короткая конкретная рекомендация 1-2 предложения"
+}
+
+score — оценка качества работы от 0 до 100.
+topics — о чём чаще всего переписывается с клиентами (3-5 тем).
+objections — какие возражения озвучивают клиенты.`;
+
+  try {
+    const r = await fetch(WORKER_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ prompt })
+    });
+    const d = await r.json();
+    const text = d.text || '';
+    const clean = text.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(clean);
+    parsed.conv = conv;
+    parsed.totalLeads = totalLeads;
+    parsed.closedLeads = closedLeads;
+    parsed.lostLeads = lostLeads;
+    return parsed;
+  } catch(e) {
+    return { score:0, topics:[], objections:[], strengths:[], weaknesses:[], recommendation:'Не удалось получить анализ', conv, totalLeads, closedLeads, lostLeads };
+  }
+}
+
+// ─── РЕНДЕР СТАТИСТИКИ ───────────────────────────────────────────────
+function renderStats(managers){
+  const totalLeads   = managers.reduce((s,m) => s + (m.analysis?.totalLeads||0), 0);
+  const totalClosed  = managers.reduce((s,m) => s + (m.analysis?.closedLeads||0), 0);
+  const avgScore     = Math.round(managers.reduce((s,m) => s + (m.analysis?.score||0), 0) / managers.length);
+  const avgConv      = managers.length ? Math.round(managers.reduce((s,m)=>s+(m.analysis?.conv||0),0)/managers.length) : 0;
+
+  const allObj = managers.flatMap(m => m.analysis?.objections||[]);
+  const topObj = allObj.length;
+
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-card"><div class="stat-lbl">Менеджеров</div><div class="stat-val">${managers.length}</div><div class="stat-sub">активных</div></div>
+    <div class="stat-card"><div class="stat-lbl">Всего сделок</div><div class="stat-val">${fmt(totalLeads)}</div><div class="stat-sub">загружено</div></div>
+    <div class="stat-card"><div class="stat-lbl">Закрыто</div><div class="stat-val">${fmt(totalClosed)}</div><div class="stat-sub">выиграно</div></div>
+    <div class="stat-card"><div class="stat-lbl">Ср. конверсия</div><div class="stat-val">${avgConv}%</div><div class="stat-sub">по команде</div></div>
+    <div class="stat-card"><div class="stat-lbl">Ср. оценка AI</div><div class="stat-val class="${scoreColor(avgScore)}">${avgScore}/100</div><div class="stat-sub">качество работы</div></div>
+    <div class="stat-card"><div class="stat-lbl">Возражений найдено</div><div class="stat-val">${topObj}</div><div class="stat-sub">уникальных</div></div>
+  `;
+}
+
+function renderManagers(managers){
+  const sorted = [...managers].sort((a,b) => (b.analysis?.score||0) - (a.analysis?.score||0));
+  document.getElementById('managers-grid').innerHTML = sorted.map((m,i) => {
+    const a = m.analysis || {};
+    const sc = a.score || 0;
+    const color = AVATAR_COLORS[i % AVATAR_COLORS.length];
+    const initials = m.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const topics = (a.topics||[]).join(', ') || '—';
+    return `
+    <div class="mgr-card">
+      <div class="mgr-head">
+        <div class="mgr-avatar" style="background:${color}">${initials}</div>
+        <div>
+          <div class="mgr-name">${m.name}</div>
+          <div class="mgr-chats">${a.totalLeads||0} сделок · ${(a.topics||[]).length} тем</div>
+        </div>
+        <div class="mgr-score">
+          <div class="mgr-score-val ${scoreColor(sc)}">${sc}</div>
+          <div class="mgr-score-lbl">/ 100</div>
+        </div>
+      </div>
+      <div class="mgr-body">
+        <div class="mgr-row"><span class="mgr-row-lbl">Конверсия</span><span class="mgr-row-val" style="color:${a.conv>=12?'var(--green)':'var(--red)'}">${a.conv||0}%</span></div>
+        <div class="mgr-row"><span class="mgr-row-lbl">Закрыто / Проиграно</span><span class="mgr-row-val">${a.closedLeads||0} / ${a.lostLeads||0}</span></div>
+        <div class="mgr-row"><span class="mgr-row-lbl">Темы переписок</span><span class="mgr-row-val" style="font-size:11px;text-align:right;max-width:160px">${topics}</span></div>
+        <div class="mgr-row"><span class="mgr-row-lbl">Возражения клиентов</span><span class="mgr-row-val" style="font-size:11px;text-align:right;max-width:160px">${(a.objections||[]).join(', ')||'—'}</span></div>
+      </div>
+      <div class="mgr-ai">
+        <div class="mgr-ai-title">💡 Рекомендация AI</div>
+        <div class="mgr-ai-text">${a.recommendation||'—'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderObjections(analyses){
+  const objCount = {};
+  for(const a of analyses){
+    for(const obj of (a.objections||[])){
+      const key = obj.toLowerCase().trim();
+      objCount[key] = (objCount[key]||0) + 1;
+    }
+  }
+  const sorted = Object.entries(objCount).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const max = sorted[0]?.[1] || 1;
+
+  if(!sorted.length){
+    document.getElementById('obj-list').innerHTML = '<div style="font-size:13px;color:var(--muted);padding:12px">Возражения не обнаружены</div>';
+    return;
+  }
+
+  document.getElementById('obj-list').innerHTML = sorted.map(([obj,cnt],i) => `
+    <div class="obj-item">
+      <span class="obj-rank">#${i+1}</span>
+      <span class="obj-text">${obj.charAt(0).toUpperCase()+obj.slice(1)}</span>
+      <div class="obj-bar-wrap">
+        <div class="obj-bar"><div class="obj-bar-fill" style="width:${Math.round(cnt/max*100)}%"></div></div>
+      </div>
+      <span class="obj-count">${cnt} раз</span>
+    </div>`).join('');
+}
+
+async function renderTeamSummary(managers, analyses){
+  const aiBody = document.getElementById('ai-body');
+  aiBody.innerHTML = `<div class="loading-block"><div class="spinner"></div><div class="loading-txt">AI формирует общий анализ команды...</div></div>`;
+
+  const summary = managers.map(m => {
+    const a = m.analysis||{};
+    return `${m.name}: оценка ${a.score||0}/100, конверсия ${a.conv||0}%, темы: ${(a.topics||[]).join(', ')}, возражения: ${(a.objections||[]).join(', ')}`;
+  }).join('\n');
+
+  const topObj = (() => {
+    const c = {};
+    for(const a of analyses) for(const o of (a.objections||[])) c[o]=(c[o]||0)+1;
+    return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([o,n])=>`${o} (${n}х)`).join(', ');
+  })();
+
+  const prompt = `Ты — директор по продажам WeGlow (БАДы). Проанализируй работу всей команды менеджеров.
+
+Данные по менеджерам:
+${summary}
+
+Топ возражений клиентов: ${topObj||'нет данных'}
+
+Дай анализ в СТРОГО таком формате (только HTML-теги, без markdown):
+
+<h3>🎯 Общее состояние команды</h3>
+<p>2-3 предложения об общей картине</p>
+
+<h3>⭐ Лучшие менеджеры</h3>
+<ul>
+<li class="ok">Имя: конкретно почему лучший, цифры</li>
+</ul>
+
+<h3>⚠️ Требуют внимания</h3>
+<ul>
+<li class="bad">Имя: конкретная проблема и что делать</li>
+</ul>
+
+<h3>🚧 Главные возражения клиентов</h3>
+<p>Анализ топ возражений и как с ними работать</p>
+
+<h3>📋 План действий для руководителя</h3>
+<ul>
+<li class="action">Конкретное действие с именем менеджера и сроком</li>
+</ul>`;
+
+  try {
+    const r = await fetch(WORKER_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt}) });
+    const d = await r.json();
+    const text = d.text || 'Не удалось получить анализ';
+    aiBody.innerHTML = `<div class="ai-content">${text}</div>`;
+  } catch(e) {
+    aiBody.innerHTML = `<div style="color:var(--red);padding:16px">⚠ Ошибка: ${e.message}</div>`;
+  }
+}
+</script>
+</body>
+</html>

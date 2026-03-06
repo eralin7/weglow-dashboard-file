@@ -101,40 +101,67 @@ body{font-family:"DM Sans",sans-serif;background:var(--bg);color:var(--ink);min-
 .ptab{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--line);background:var(--white);color:var(--muted);font-family:inherit;transition:all .15s;}
 .ptab.active{background:var(--acc-l);color:var(--acc);border-color:var(--acc-l);}
 
-/* PASSWORD SCREEN */
-.pw-screen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;}
-.pw-box{background:var(--white);border:1.5px solid var(--line);border-radius:16px;padding:40px 36px;width:100%;max-width:380px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.08);}
-.pw-logo{font-family:"Playfair Display",serif;font-size:28px;font-weight:700;color:var(--ink2);margin-bottom:4px;}
-.pw-sub{font-size:13px;color:var(--muted);margin-bottom:28px;}
-.pw-label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;text-align:left;margin-bottom:6px;}
-.pw-input{width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;font-family:inherit;outline:none;color:var(--ink);transition:border-color .15s;}
-.pw-input:focus{border-color:var(--acc);}
-.pw-btn{margin-top:14px;width:100%;padding:12px;background:var(--acc);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .15s;}
-.pw-btn:hover{opacity:.88;}
-.pw-error{margin-top:10px;font-size:13px;color:var(--red);min-height:18px;}
+/* ── МОБИЛЬНАЯ АДАПТАЦИЯ ADVISOR ── */
+@media(max-width:768px){
+  /* Топбар */
+  .topbar { padding: 0 12px; height: auto; min-height: 52px; flex-wrap: wrap; gap: 6px; padding: 10px 12px; }
+  .top-links { gap: 8px; }
+  .top-link { font-size: 12px; }
+  .top-logo { font-size: 16px; }
 
-@media(max-width:700px){
-  .prod-strip{grid-template-columns:1fr;}
-  .kpi-grid{grid-template-columns:1fr 1fr;}
-  .content{padding:16px;}
-  .controls{flex-direction:column;align-items:flex-start;}
-  .analyze-btn{margin-left:0;width:100%;justify-content:center;}
+  /* Контент */
+  .content { padding: 14px 12px; }
+
+  /* Заголовок */
+  .page-hdr { margin-bottom: 16px; }
+  .page-title { font-size: 18px; }
+  .page-sub { font-size: 12px; }
+
+  /* Контролы периода */
+  .controls { flex-direction: column; align-items: stretch; gap: 8px; }
+  .period-tabs { display: flex; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 4px; }
+  .period-tabs::-webkit-scrollbar { display: none; }
+  .ptab { flex-shrink: 0; white-space: nowrap; }
+  .analyze-btn { width: 100%; justify-content: center; margin-left: 0 !important; }
+
+  /* KPI карточки */
+  .kpi-grid { grid-template-columns: 1fr 1fr !important; gap: 8px; }
+  .kpi-card { padding: 12px 10px; }
+  .kc-val { font-size: 18px !important; }
+  .kc-lbl { font-size: 9px; }
+
+  /* Полосы продуктов */
+  .prod-strip { grid-template-columns: 1fr !important; gap: 8px; }
+
+  /* AI результат */
+  .result-card { padding: 14px; }
+  .result-section { padding: 12px; }
+
+  /* Таблицы */
+  .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { min-width: 480px; font-size: 12px; }
+
+  /* Пароль оверлей */
+  .pwd-box { width: 90vw; padding: 28px 20px; }
+}
+
+@media(max-width:480px){
+  .kpi-grid { grid-template-columns: 1fr 1fr !important; }
+  .kc-val { font-size: 15px !important; }
+  .content { padding: 10px; }
+  .top-links { display: none; }
+  .topbar::after {
+    content: '← Дашборд';
+    color: rgba(255,255,255,.6);
+    font-size: 11px;
+    width: 100%;
+    padding-top: 0;
+  }
 }
 
 </style>
 </head>
 <body>
-
-<div class="pw-screen" id="pw-screen">
-  <div class="pw-box">
-    <div class="pw-logo">WeGlow</div>
-    <div class="pw-sub">AI Советник — введите пароль для доступа</div>
-    <label class="pw-label">Пароль</label>
-    <input class="pw-input" type="password" id="pw-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')checkPw()">
-    <button class="pw-btn" onclick="checkPw()">Войти</button>
-    <div class="pw-error" id="pw-error"></div>
-  </div>
-</div>
 
 <div class="topbar">
   <div style="display:flex;align-items:center;gap:6px">
@@ -205,19 +232,6 @@ body{font-family:"DM Sans",sans-serif;background:var(--bg);color:var(--ink);min-
 </div>
 
 <script>
-
-const CORRECT_PW = 'weglow6977';
-
-function checkPw(){
-  const val = document.getElementById('pw-input').value;
-  if(val === CORRECT_PW){
-    document.getElementById('pw-screen').style.display = 'none';
-  } else {
-    document.getElementById('pw-error').textContent = '⚠ Неверный пароль';
-    document.getElementById('pw-input').focus();
-  }
-}
-
 
 const ANTHROPIC_KEY = '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';
 // После деплоя Cloudflare Worker — вставьте URL сюда:

@@ -386,45 +386,146 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
 .roi-lbl { font-size:11px; color:var(--muted); }
 .roi-val { font-size:13px; font-weight:700; }
 
+/* ═══════════════════════════════════════════
+   МОБИЛЬНАЯ АДАПТАЦИЯ — DASHBOARD
+═══════════════════════════════════════════ */
 @media (max-width: 768px) {
+
+  /* ── Сайдбар: выезжает поверх контента ── */
   .mob-menu-btn { display:flex !important; }
-  .sidebar { transform:translateX(-100%); z-index:200; }
-  .sidebar.open { transform:translateX(0); box-shadow:4px 0 24px rgba(0,0,0,.3); }
-  .main { margin-left:0 !important; }
-  .topbar { padding:0 12px 0 56px; height:50px; position:sticky; top:0; z-index:50; }
-  .topbar-title { font-size:13px; }
-  #global-filters, #mgr-filters, #ad-filters { display:none !important; }
-  .page { padding:12px; padding-top:16px; }
-  .kpi-grid { grid-template-columns:repeat(2,1fr) !important; gap:8px; }
-  .kpi-card { padding:12px 14px; }
-  .kc-val { font-size:20px !important; }
-  .charts-row { grid-template-columns:1fr !important; }
-  .prod-stats { grid-template-columns:1fr !important; }
-  .mgr-charts-3 { grid-template-columns:1fr !important; }
-  .dt-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
-  table.dt { min-width:600px; }
-  .card { padding:12px; }
-  .card-pad { padding:14px; }
-  .sb-progress { display:none; }
-  .view-hdr h2 { font-size:20px; }
-  .view-hdr p  { font-size:12px; }
-  .charts-row .card { min-width:0; }
-  .sec-label { font-size:9px; }
-  /* Horizontal scroll for pills */
-  #global-filters.pills-scroll,
-  .topbar-filters { flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
-  .pill { flex-shrink:0; }
-  /* Heatmap scroll */
-  #heatmap-wrap { overflow-x:auto; }
+  .sidebar {
+    transform: translateX(-100%);
+    z-index: 300;
+    width: 260px;
+    position: fixed;
+    transition: transform .28s cubic-bezier(.4,0,.2,1);
+  }
+  .sidebar.open { transform: translateX(0); box-shadow: 6px 0 32px rgba(0,0,0,.5); }
+  .sidebar-overlay { z-index: 250; }
+  .main { margin-left: 0 !important; width: 100%; }
+
+  /* ── Топбар ── */
+  .topbar {
+    padding: 0 10px 0 58px;
+    height: 52px;
+    position: sticky; top: 0; z-index: 50;
+    flex-wrap: wrap;
+    gap: 0;
+  }
+  .topbar-left { flex: 1; min-width: 0; }
+  .topbar-title { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Фильтры — горизонтальный скролл ── */
+  .topbar-filters {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    gap: 4px;
+    padding-bottom: 0;
+    max-width: 100%;
+  }
+  .topbar-filters::-webkit-scrollbar { display: none; }
+  #global-filters, #mgr-filters, #ad-filters {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  #global-filters::-webkit-scrollbar,
+  #mgr-filters::-webkit-scrollbar,
+  #ad-filters::-webkit-scrollbar { display: none; }
+  .pill { flex-shrink: 0 !important; }
+  .tb-label { display: none; }
+  .pill-sep { display: none; }
+  .custom-wrap { gap: 4px; }
+  .date-in { width: 100px; font-size: 11px; }
+
+  /* ── Страница ── */
+  .page { padding: 12px 10px; padding-top: 14px; }
+
+  /* ── KPI сетка — 2 колонки ── */
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px;
+  }
+  .kpi-card { padding: 12px 10px; }
+  .kpi-card:hover { transform: none; }
+  .kc-val { font-size: 19px !important; }
+  .kc-lbl { font-size: 9px; letter-spacing: 0.8px; }
+  .kc-sub { font-size: 10px; }
+  .kpi-spark canvas { height: 24px !important; }
+  .plan-bar-wrap { margin: 5px 0 2px; }
+
+  /* ── Графики — в столбик ── */
+  .charts-row {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+  .charts-row .card { min-width: 0; }
+  .prod-stats { grid-template-columns: 1fr !important; }
+  .mgr-charts-3 { grid-template-columns: 1fr !important; }
+
+  /* ── Таблицы — горизонтальный скролл ── */
+  .dt-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -10px;
+    padding: 0 10px;
+  }
+  table.dt { min-width: 560px; font-size: 12px; }
+  table.dt th { padding: 8px 10px; font-size: 9px; }
+  table.dt td { padding: 8px 10px; }
+
+  /* ── Карточки ── */
+  .card { padding: 12px 12px; }
+  .card-pad { padding: 12px; }
+  .card-title { font-size: 13px; }
+
+  /* ── Заголовки секций ── */
+  .view-hdr { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .view-hdr h2 { font-size: 20px; }
+  .view-hdr p  { font-size: 12px; }
+  .sec-label   { font-size: 9px; }
+
+  /* ── Скрываем лишнее ── */
+  .sb-progress { display: none; }
+
+  /* ── Heatmap скролл ── */
+  #heatmap-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* ── Модальное окно менеджера ── */
+  .mgr-modal { padding: 16px; width: 96vw; max-height: 92vh; }
+  .mgr-modal-hdr h3 { font-size: 15px; }
+
+  /* ── Секция продуктов ── */
+  .prod-row-grid { grid-template-columns: 1fr !important; }
+
+  /* ── Метрические табы ── */
+  .metric-tabs { flex-wrap: wrap; gap: 4px; }
+
+  /* ── Mob кнопка меню ── */
+  .mob-menu-btn {
+    top: 8px; left: 8px;
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    font-size: 17px;
+  }
 }
+
+/* ── Маленькие телефоны (≤ 480px) ── */
 @media (max-width: 480px) {
-  .kpi-grid { grid-template-columns:1fr 1fr !important; }
-  .kc-val { font-size:17px !important; }
-  .kc-lbl { font-size:9px; }
-}
-@media (max-width:480px) {
-  .kpi-grid { grid-template-columns:1fr 1fr !important; }
-  .kc-val { font-size:18px !important; }
+  .kpi-grid { grid-template-columns: 1fr 1fr !important; }
+  .kc-val { font-size: 16px !important; }
+  .kc-lbl { font-size: 8.5px; }
+  .kc-badge { font-size: 9px; padding: 2px 6px; }
+  .kpi-growth { font-size: 9px; padding: 2px 5px; }
+
+  .topbar { padding: 0 8px 0 52px; height: 48px; }
+  .topbar-title { font-size: 12px; }
+  .page { padding: 8px; }
+  .card { padding: 10px; }
+  .view-hdr h2 { font-size: 17px; }
 }
 
 
