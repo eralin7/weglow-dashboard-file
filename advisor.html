@@ -4,487 +4,289 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>WeGlow — AI Советник</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{
-  --ink:#0f1623;--ink2:#1e2840;--slate:#4a5568;--muted:#8896ae;
-  --line:#e8ecf4;--line2:#f1f4f9;--bg:#f7f8fc;--white:#fff;
-  --acc:#6366f1;--acc-l:#eef2ff;
-  --green:#16a34a;--green-l:#dcfce7;
-  --red:#dc2626;--red-l:#fde8e8;
-  --yellow:#ca8a04;--yellow-l:#fefce8;
-  --col:#1a56db;--ummi:#0a7c5c;--cof:#b45309;
-}
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{--ink:#0f1623;--ink2:#1e2840;--muted:#8896ae;--line:#e8ecf4;--line2:#f1f4f9;--bg:#f7f8fc;--white:#fff;--acc:#6366f1;--acc-l:#eef2ff;--green:#16a34a;--green-l:#dcfce7;--red:#dc2626;--red-l:#fde8e8;--yellow:#ca8a04;--yellow-l:#fefce8;}
+*{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:"DM Sans",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
-
 .topbar{background:var(--ink2);color:#fff;padding:0 28px;height:52px;display:flex;align-items:center;justify-content:space-between;}
-.top-logo{font-family:"Playfair Display",serif;font-size:18px;font-weight:700;}
-.top-sub{font-size:11px;color:rgba(255,255,255,.45);letter-spacing:1.5px;text-transform:uppercase;margin-left:8px;}
-.top-links{display:flex;align-items:center;gap:14px;}
-.top-link{color:rgba(255,255,255,.7);text-decoration:none;font-size:13px;font-weight:500;}
+.top-logo{font-family:serif;font-size:18px;font-weight:700;}
+.top-link{color:rgba(255,255,255,.65);text-decoration:none;font-size:13px;}
 .top-link:hover{color:#fff;}
-
-.content{max-width:1000px;margin:0 auto;padding:32px 24px;}
-
-/* HEADER */
-.page-hdr{margin-bottom:28px;}
-.page-title{font-size:24px;font-weight:700;display:flex;align-items:center;gap:10px;}
-.page-sub{font-size:13px;color:var(--muted);margin-top:5px;}
+.wrap{max-width:760px;margin:0 auto;padding:36px 24px;}
+.hdr{margin-bottom:28px;}
+.hdr h1{font-size:22px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.hdr p{font-size:13px;color:var(--muted);margin-top:5px;}
 
 /* CONTROLS */
-.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:28px;padding:16px 20px;background:var(--white);border:1px solid var(--line);border-radius:12px;}
-.ctrl-label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-right:4px;}
-.sel{padding:8px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;font-family:inherit;background:var(--white);color:var(--ink);outline:none;cursor:pointer;}
+.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:28px;}
+.sel{padding:9px 14px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;font-family:inherit;background:var(--white);color:var(--ink);outline:none;cursor:pointer;}
 .sel:focus{border-color:var(--acc);}
-.analyze-btn{margin-left:auto;padding:10px 24px;background:var(--acc);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:8px;transition:opacity .15s;}
-.analyze-btn:hover{opacity:.88;}
-.analyze-btn:disabled{opacity:.5;cursor:not-allowed;}
+.btn{padding:10px 28px;background:var(--acc);color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:8px;}
+.btn:hover{opacity:.88;}
+.btn:disabled{opacity:.45;cursor:not-allowed;}
 
-/* KPI GRID */
-.kpi-section{margin-bottom:28px;}
-.section-title{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;}
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;}
-.kpi-card{background:var(--white);border:1.5px solid var(--line);border-radius:12px;padding:14px 16px;}
-.kpi-lbl{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
-.kpi-val{font-size:20px;font-weight:700;margin-bottom:2px;line-height:1.2;}
-.kpi-sub{font-size:11px;color:var(--muted);}
-.kpi-badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;margin-top:5px;}
-.bg-g{background:var(--green-l);color:var(--green);}
-.bg-r{background:var(--red-l);color:var(--red);}
-.bg-y{background:var(--yellow-l);color:var(--yellow);}
+/* RESULT */
+.result{background:var(--white);border:1.5px solid var(--line);border-radius:14px;overflow:hidden;}
+.result-hdr{background:linear-gradient(135deg,#1e2840,#2d3a5c);padding:14px 22px;display:flex;align-items:center;gap:10px;}
+.result-hdr-title{font-size:14px;font-weight:700;color:#fff;}
+.result-hdr-sub{font-size:11px;color:rgba(255,255,255,.45);margin-top:2px;}
+.result-body{padding:24px;}
 
-/* PRODUCT STRIP */
-.prod-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px;}
-.prod-card{background:var(--white);border:1.5px solid var(--line);border-radius:12px;padding:14px 16px;}
-.prod-head{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
-.prod-dot{width:9px;height:9px;border-radius:50%;}
-.prod-name{font-size:13px;font-weight:700;}
-.prod-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid var(--line2);}
-.prod-row:last-child{border:none;}
-.prod-row-lbl{color:var(--muted);}
-.prod-row-val{font-weight:600;}
+/* EMPTY */
+.empty{text-align:center;padding:52px 24px;color:var(--muted);}
+.empty-icon{font-size:44px;margin-bottom:14px;}
+.empty-title{font-size:16px;font-weight:600;color:var(--ink);margin-bottom:6px;}
 
-/* AI ANALYSIS */
-.ai-section{background:var(--white);border:1.5px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:24px;}
-.ai-header{background:linear-gradient(135deg,#1e2840 0%,#2d3a5c 100%);padding:16px 22px;display:flex;align-items:center;gap:12px;}
-.ai-icon{font-size:22px;}
-.ai-title{font-size:15px;font-weight:700;color:#fff;}
-.ai-sub{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px;}
-.ai-body{padding:22px;}
-.ai-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px;gap:16px;}
-.spinner{width:36px;height:36px;border:3px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite;}
+/* LOADING */
+.loading{display:flex;align-items:center;justify-content:center;gap:14px;padding:48px;}
+.spinner{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
 @keyframes spin{to{transform:rotate(360deg);}}
-.ai-loading-txt{font-size:13px;color:var(--muted);}
+.loading-txt{font-size:13px;color:var(--muted);}
 
 /* AI CONTENT */
-.ai-content{font-size:14px;line-height:1.7;color:var(--ink);}
-.ai-content h3{font-size:15px;font-weight:700;margin:20px 0 10px;color:var(--ink);display:flex;align-items:center;gap:7px;}
-.ai-content h3:first-child{margin-top:0;}
-.ai-content p{margin-bottom:10px;color:var(--slate);}
-.ai-content ul{margin:8px 0 12px 0;padding-left:0;list-style:none;}
-.ai-content ul li{padding:6px 10px 6px 14px;margin-bottom:4px;border-radius:7px;background:var(--line2);font-size:13px;position:relative;border-left:3px solid var(--line);}
-.ai-content ul li.ok{background:var(--green-l);border-left-color:var(--green);}
-.ai-content ul li.warn{background:var(--yellow-l);border-left-color:var(--yellow);}
-.ai-content ul li.bad{background:var(--red-l);border-left-color:var(--red);}
-.ai-content ul li.action{background:var(--acc-l);border-left-color:var(--acc);}
-
-/* EMPTY STATE */
-.empty-state{text-align:center;padding:56px 24px;}
-.empty-icon{font-size:48px;margin-bottom:16px;}
-.empty-title{font-size:17px;font-weight:700;margin-bottom:8px;}
-.empty-sub{font-size:13px;color:var(--muted);max-width:360px;margin:0 auto;}
-
-/* PERIOD TABS */
-.period-tabs{display:flex;gap:6px;}
-.ptab{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--line);background:var(--white);color:var(--muted);font-family:inherit;transition:all .15s;}
-.ptab.active{background:var(--acc-l);color:var(--acc);border-color:var(--acc-l);}
-
-@media(max-width:700px){
-  .prod-strip{grid-template-columns:1fr;}
-  .kpi-grid{grid-template-columns:1fr 1fr;}
-  .content{padding:16px;}
-  .controls{flex-direction:column;align-items:flex-start;}
-  .analyze-btn{margin-left:0;width:100%;justify-content:center;}
-}
-
+.ai{font-size:14px;line-height:1.75;color:var(--ink);}
+.ai h3{font-size:15px;font-weight:700;margin:22px 0 10px;display:flex;align-items:center;gap:7px;}
+.ai h3:first-child{margin-top:0;}
+.ai p{color:#4a5568;margin-bottom:10px;}
+.ai ul{list-style:none;margin:6px 0 14px;}
+.ai ul li{padding:7px 12px 7px 14px;margin-bottom:5px;border-radius:8px;font-size:13px;border-left:3px solid var(--line);background:var(--line2);}
+.ai ul li.ok{background:var(--green-l);border-color:var(--green);}
+.ai ul li.warn{background:var(--yellow-l);border-color:var(--yellow);}
+.ai ul li.bad{background:var(--red-l);border-color:var(--red);}
+.ai ul li.action{background:var(--acc-l);border-color:var(--acc);}
 </style>
 </head>
 <body>
 
 <div class="topbar">
-  <div style="display:flex;align-items:center;gap:6px">
-    <span class="top-logo">WeGlow</span>
-    <span class="top-sub">AI Советник</span>
-  </div>
-  <div class="top-links">
+  <span class="top-logo">WeGlow</span>
+  <div style="display:flex;gap:18px">
     <a href="dashboard.html" class="top-link">&#8592; Дашборд</a>
     <a href="director.html" class="top-link">Директор</a>
   </div>
 </div>
 
-<div class="content">
-
-  <div class="page-hdr">
-    <div class="page-title">🤖 AI Советник</div>
-    <div class="page-sub">Анализирует ваши данные и даёт конкретный план действий</div>
+<div class="wrap">
+  <div class="hdr">
+    <h1>🤖 AI Советник</h1>
+    <p>Анализирует ваши данные и даёт конкретный план действий</p>
   </div>
 
   <div class="controls">
-    <span class="ctrl-label">Период:</span>
-    <div class="period-tabs">
-      <button class="ptab active" onclick="setPeriod('cur',this)">Текущий месяц</button>
-      <button class="ptab" onclick="setPeriod('prev',this)">Прошлый месяц</button>
-      <button class="ptab" onclick="setPeriod('both',this)">Сравнение</button>
-    </div>
-    <span class="ctrl-label" style="margin-left:12px">Продукт:</span>
+    <select class="sel" id="period-sel">
+      <option value="cur">Текущий месяц</option>
+      <option value="prev">Прошлый месяц</option>
+      <option value="both">Оба месяца</option>
+    </select>
     <select class="sel" id="prod-sel">
       <option value="all">Все продукты</option>
       <option value="col">Коллаген</option>
       <option value="ummi">Ummi</option>
       <option value="coffee">Кофе</option>
     </select>
-    <button class="analyze-btn" id="analyze-btn" onclick="runAnalysis()">
-      <span>&#9889;</span> Анализировать
-    </button>
-  </div>
-  <!-- KPI STRIP -->
-  <div class="kpi-section" id="kpi-section" style="display:none">
-    <div class="section-title">&#128200; Ключевые показатели</div>
-    <div class="kpi-grid" id="kpi-grid"></div>
+    <button class="btn" id="btn" onclick="run()">&#9889; Анализировать</button>
   </div>
 
-  <!-- PRODUCT CARDS -->
-  <div id="prod-section" style="display:none">
-    <div class="section-title" style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:14px">&#128230; По продуктам</div>
-    <div class="prod-strip" id="prod-strip"></div>
-  </div>
-
-  <!-- AI BLOCK -->
-  <div class="ai-section" id="ai-section">
-    <div class="ai-header">
-      <div class="ai-icon">🤖</div>
+  <div class="result">
+    <div class="result-hdr">
       <div>
-        <div class="ai-title">Анализ бизнес-процессов</div>
-        <div class="ai-sub">Claude AI — читает ваши данные и даёт рекомендации</div>
+        <div class="result-hdr-title">🤖 Анализ бизнес-процессов</div>
+        <div class="result-hdr-sub">Claude AI — читает ваши данные и даёт рекомендации</div>
       </div>
     </div>
-    <div class="ai-body">
-      <div class="empty-state">
+    <div class="result-body" id="body">
+      <div class="empty">
         <div class="empty-icon">📊</div>
         <div class="empty-title">Готов к анализу</div>
-        <div class="empty-sub">Выберите период и нажмите «Анализировать» — AI изучит ваши данные и скажет что делать</div>
+        <p>Выберите период и нажмите «Анализировать»</p>
       </div>
     </div>
   </div>
-
 </div>
 
 <script>
-
 const ANTHROPIC_KEY = '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';
-// После деплоя Cloudflare Worker — вставьте URL сюда:
-const SUPABASE_URL = 'https://bdyakgmeibpdkisbiykt.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkeWFrZ21laWJwZGtpc2JpeWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTQzOTMsImV4cCI6MjA4Nzc5MDM5M30.nA187grJR6XFQRmTP6WOM-6-1dZK1EzYNNP2JH9aAMg';
+const SUPABASE_URL  = 'https://bdyakgmeibpdkisbiykt.supabase.co';
+const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkeWFrZ21laWJwZGtpc2JpeWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTQzOTMsImV4cCI6MjA4Nzc5MDM5M30.nA187grJR6XFQRmTP6WOM-6-1dZK1EzYNNP2JH9aAMg';
 const SB_H = {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY};
 const PROD_CFG = {
-  col:   {name:'Коллаген', color:'#1a56db', raw:'Коллаген'},
-  ummi:  {name:'Ummi',     color:'#0a7c5c', raw:'Ummi'},
-  coffee:{name:'Кофе',     color:'#b45309', raw:'Кофе'},
+  col:   {name:'Коллаген',color:'#1a56db',raw:'Коллаген'},
+  ummi:  {name:'Ummi',    color:'#0a7c5c',raw:'Ummi'},
+  coffee:{name:'Кофе',    color:'#b45309',raw:'Кофе'},
 };
-const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const MN = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 
-let activePeriod = 'cur';
-
-function setPeriod(p, el){
-  activePeriod = p;
-  document.querySelectorAll('.ptab').forEach(b=>b.classList.remove('active'));
-  el.classList.add('active');
-}
-
-function fmt(n){ return (Math.round(n||0)).toLocaleString('ru-RU'); }
-function fmtM(n){ if(!n&&n!==0)return '—'; const v=Math.round(n); if(Math.abs(v)>=1e6)return (v/1e6).toFixed(1)+' М ₸'; if(Math.abs(v)>=1e3)return Math.round(v/1e3)+' К ₸'; return v+' ₸'; }
-
-async function sbGet(url){
-  const r = await fetch(url, {headers:SB_H});
-  if(!r.ok) throw new Error(r.status);
-  return r.json();
-}
+function fmt(n){return (Math.round(n||0)).toLocaleString('ru-RU');}
+function fmtM(n){if(!n&&n!==0)return'—';const v=Math.round(n);if(Math.abs(v)>=1e6)return(v/1e6).toFixed(1)+' М ₸';if(Math.abs(v)>=1e3)return Math.round(v/1e3)+'К ₸';return v+' ₸';}
+async function sbGet(url){const r=await fetch(url,{headers:SB_H});if(!r.ok)throw new Error(r.status);return r.json();}
 
 function getMonthKey(offset=0){
-  const now = new Date();
-  const d = new Date(now.getFullYear(), now.getMonth()+offset, 1);
+  const d=new Date(); d.setDate(1); d.setMonth(d.getMonth()+offset);
   return `${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
 }
-
 function getDates(mk){
-  const [mm,yy] = mk.split('.');
-  const now = new Date();
-  const curMK = getMonthKey(0);
-  const last = mk===curMK ? now.getDate() : new Date(+yy,+mm,0).getDate();
-  const dates = [];
-  for(let d=1;d<=last;d++){
-    dates.push(`${String(d).padStart(2,'0')}.${mm}.${yy}`);
-  }
+  const [mm,yy]=mk.split('.');
+  const now=new Date(); const curMK=getMonthKey(0);
+  const last=mk===curMK?now.getDate():new Date(+yy,+mm,0).getDate();
+  const dates=[];
+  for(let d=1;d<=last;d++) dates.push(`${String(d).padStart(2,'0')}.${mm}.${yy}`);
   return dates;
 }
+function totalDaysInMonth(mk){const[mm,yy]=mk.split('.');return new Date(+yy,+mm,0).getDate();}
 
-function totalDaysInMonth(mk){
-  const [mm,yy] = mk.split('.');
-  return new Date(+yy,+mm,0).getDate();
-}
-
-function aggregateMK(raw, ad, plans, mk){
-  const dates = new Set(getDates(mk));
-  const now = new Date();
-  const curMK = getMonthKey(0);
-  const isCurrent = mk === curMK;
-  const passedDays = isCurrent ? now.getDate() : totalDaysInMonth(mk);
-  const totalDays  = totalDaysInMonth(mk);
-
-  const byProd = {};
+function aggregateMK(raw,ad,plans,mk){
+  const dates=new Set(getDates(mk));
+  const now=new Date(); const curMK=getMonthKey(0);
+  const isCur=mk===curMK;
+  const passedDays=isCur?now.getDate():totalDaysInMonth(mk);
+  const totalDays=totalDaysInMonth(mk);
   let tL=0,tD=0,tB=0,tA=0,tPlan=0;
-
-  for(const [pk, cfg] of Object.entries(PROD_CFG)){
-    const r = raw[cfg.raw] || {};
-    const a = ad[cfg.raw]  || {};
-    let l=0,d=0,b=0,ad2=0;
-    for(const [dt,v] of Object.entries(r)){ if(dates.has(dt)){l+=v[0]||0;d+=v[1]||0;b+=v[2]||0;} }
-    for(const [dt,v] of Object.entries(a)){ if(dates.has(dt)) ad2+=v||0; }
-    const plan = plans[mk]?.[pk==='col'?'col':pk==='ummi'?'ummi':'coffee'] || 0;
-    const planToday = plan&&isCurrent ? Math.round(plan/totalDays*passedDays) : plan;
-    byProd[pk] = {
-      leads:l, deals:d, budget:Math.round(b), ad:Math.round(ad2), plan,
-      planToday, passedDays, totalDays,
-      conv: l>0?+(d/l*100).toFixed(1):0,
-      avgCheck: d>0?Math.round(b/d):0,
-      pct: plan>0?Math.round(b/plan*100):0,
-      execPct: planToday>0?Math.round(b/planToday*100):0,
-      drr: b>0?+(ad2/b*100).toFixed(1):0,
-      roi: ad2>0?Math.round((b-ad2)/ad2*100):null,
-      cpl: l>0?Math.round(ad2/l):0,
-      isCurrent,
-    };
-    tL+=l; tD+=d; tB+=Math.round(b); tA+=Math.round(ad2); tPlan+=plan;
+  const byProd={};
+  for(const[pk,cfg]of Object.entries(PROD_CFG)){
+    const r=raw[cfg.raw]||{},a=ad[cfg.raw]||{};
+    let l=0,d=0,b=0,a2=0;
+    for(const[dt,v]of Object.entries(r)){if(dates.has(dt)){l+=v[0]||0;d+=v[1]||0;b+=v[2]||0;}}
+    for(const[dt,v]of Object.entries(a)){if(dates.has(dt))a2+=v||0;}
+    const plan=plans[mk]?.[pk]||0;
+    const planToday=plan&&isCur?Math.round(plan/totalDays*passedDays):plan;
+    byProd[pk]={leads:l,deals:d,budget:Math.round(b),ad:Math.round(a2),plan,planToday,
+      conv:l>0?+(d/l*100).toFixed(1):0,avgCheck:d>0?Math.round(b/d):0,
+      pct:plan>0?Math.round(b/plan*100):0,
+      execPct:planToday>0?Math.round(b/planToday*100):0,
+      drr:b>0?+(a2/b*100).toFixed(1):0,
+      roi:a2>0?Math.round((b-a2)/a2*100):null,
+      cpl:l>0?Math.round(a2/l):0};
+    tL+=l;tD+=d;tB+=Math.round(b);tA+=Math.round(a2);tPlan+=plan;
   }
-
-  const tPlanToday = isCurrent ? Math.round(tPlan/totalDays*passedDays) : tPlan;
-  byProd.total = {
-    leads:tL, deals:tD, budget:tB, ad:tA, plan:tPlan,
-    planToday:tPlanToday, passedDays, totalDays,
-    conv: tL>0?+(tD/tL*100).toFixed(1):0,
-    avgCheck: tD>0?Math.round(tB/tD):0,
-    pct: tPlan>0?Math.round(tB/tPlan*100):0,
-    execPct: tPlanToday>0?Math.round(tB/tPlanToday*100):0,
-    drr: tB>0?+(tA/tB*100).toFixed(1):0,
-    roi: tA>0?Math.round((tB-tA)/tA*100):null,
-    cpl: tL>0?Math.round(tA/tL):0,
-    isCurrent,
-  };
-
+  const tPT=isCur?Math.round(tPlan/totalDays*passedDays):tPlan;
+  byProd.total={leads:tL,deals:tD,budget:tB,ad:tA,plan:tPlan,planToday:tPT,
+    passedDays,totalDays,isCur,
+    conv:tL>0?+(tD/tL*100).toFixed(1):0,avgCheck:tD>0?Math.round(tB/tD):0,
+    pct:tPlan>0?Math.round(tB/tPlan*100):0,
+    execPct:tPT>0?Math.round(tB/tPT*100):0,
+    drr:tB>0?+(tA/tB*100).toFixed(1):0,
+    roi:tA>0?Math.round((tB-tA)/tA*100):null,
+    cpl:tL>0?Math.round(tA/tL):0};
   return byProd;
 }
 
-function renderKPI(agg, mk){
-  const t = agg.total;
-  const [mm,yy] = mk.split('.');
-  const label = `${MONTH_NAMES[+mm-1]} ${yy}`;
-  const cards = [
-    {l:'Выручка', v:fmtM(t.budget), sub:'факт', badge: t.isCurrent?(t.execPct>=100?`✓ ${t.execPct}% цели`:`${t.execPct}% цели`):(`${t.pct}% плана`), bc:t.execPct>=100?'bg-g':t.execPct>=80?'bg-y':'bg-r'},
-    {l:'План мес.', v:fmtM(t.plan), sub:label, badge:null},
-    {l:'План до сег.', v:t.isCurrent?fmtM(t.planToday):'—', sub:t.isCurrent?`${t.passedDays} из ${t.totalDays} дн.`:'весь месяц', badge:null},
-    {l:'Лиды', v:fmt(t.leads), sub:'входящие', badge:null},
-    {l:'Сделки', v:fmt(t.deals), sub:'выиграно', badge:null},
-    {l:'Конверсия', v:t.conv+'%', sub:'план 12%', badge:t.conv>=12?'✓ Норма':'⚠ Ниже нормы', bc:t.conv>=12?'bg-g':'bg-r'},
-    {l:'Ср. чек', v:fmt(t.avgCheck)+' ₸', sub:'план 80К', badge:t.avgCheck>=80000?'✓ Норма':'⚠ Ниже', bc:t.avgCheck>=80000?'bg-g':'bg-y'},
-    {l:'Реклама', v:fmtM(t.ad), sub:`ДРР ${t.drr}%`, badge:`ДРР ${t.drr}%`, bc:+t.drr<=15?'bg-g':+t.drr<=25?'bg-y':'bg-r'},
-    {l:'ROI рекламы', v:t.roi!=null?t.roi+'%':'—', sub:'(выр−расх)/расх', badge:t.roi>=100?'Отлично':t.roi>=0?'Норма':'Убыток', bc:t.roi>=100?'bg-g':t.roi>=0?'bg-y':'bg-r'},
-    {l:'Ст-ть лида', v:t.cpl?fmt(t.cpl)+' ₸':'—', sub:'реклама/лиды', badge:null},
-  ];
-  document.getElementById('kpi-grid').innerHTML = cards.map(k=>`
-    <div class="kpi-card">
-      <div class="kpi-lbl">${k.l}</div>
-      <div class="kpi-val">${k.v}</div>
-      <div class="kpi-sub">${k.sub}</div>
-      ${k.badge?`<span class="kpi-badge ${k.bc}">${k.badge}</span>`:''}
-    </div>`).join('');
-  document.getElementById('kpi-section').style.display = '';
-}
+function buildPrompt(curAgg,prevAgg,curMK,prevMK,prodFilter){
+  const[cmm,cyy]=curMK.split('.');
+  const[pmm,pyy]=prevMK.split('.');
+  const curLbl=`${MN[+cmm-1]} ${cyy}`, prevLbl=`${MN[+pmm-1]} ${pyy}`;
+  const prodName=prodFilter==='all'?'все продукты':PROD_CFG[prodFilter].name;
 
-function renderProds(agg){
-  const keys = Object.keys(PROD_CFG);
-  document.getElementById('prod-strip').innerHTML = keys.map(k=>{
-    const d = agg[k]; const cfg = PROD_CFG[k];
-    return `<div class="prod-card">
-      <div class="prod-head">
-        <div class="prod-dot" style="background:${cfg.color}"></div>
-        <div class="prod-name">${cfg.name}</div>
-      </div>
-      <div class="prod-row"><span class="prod-row-lbl">Выручка</span><span class="prod-row-val" style="color:${cfg.color}">${fmtM(d.budget)}</span></div>
-      <div class="prod-row"><span class="prod-row-lbl">Выполнение</span><span class="prod-row-val" style="color:${d.execPct>=100?'#16a34a':d.execPct>=80?'#ca8a04':'#dc2626'}">${d.execPct}%</span></div>
-      <div class="prod-row"><span class="prod-row-lbl">Лиды / Сделки</span><span class="prod-row-val">${fmt(d.leads)} / ${fmt(d.deals)}</span></div>
-      <div class="prod-row"><span class="prod-row-lbl">Конверсия</span><span class="prod-row-val" style="color:${d.conv>=12?'#16a34a':'#dc2626'}">${d.conv}%</span></div>
-      <div class="prod-row"><span class="prod-row-lbl">Ср. чек</span><span class="prod-row-val">${fmt(d.avgCheck)} ₸</span></div>
-      <div class="prod-row"><span class="prod-row-lbl">Реклама</span><span class="prod-row-val">${fmtM(d.ad)}</span></div>
-      <div class="prod-row"><span class="prod-row-lbl">ДРР</span><span class="prod-row-val" style="color:${+d.drr<=15?'#16a34a':+d.drr<=25?'#ca8a04':'#dc2626'}">${d.drr}%</span></div>
-      <div class="prod-row"><span class="prod-row-lbl">ROI</span><span class="prod-row-val">${d.roi!=null?d.roi+'%':'—'}</span></div>
-    </div>`;
-  }).join('');
-  document.getElementById('prod-section').style.display = '';
-}
-
-function showLoading(){
-  document.getElementById('ai-body-wrap')?.remove();
-  const body = document.querySelector('.ai-body');
-  body.innerHTML = `<div class="ai-loading">
-    <div class="spinner"></div>
-    <div class="ai-loading-txt">AI анализирует данные...</div>
-  </div>`;
-}
-
-function buildPrompt(curAgg, prevAgg, curMK, prevMK, prodFilter){
-  const [cmm,cyy] = curMK.split('.');
-  const [pmm,pyy] = prevMK.split('.');
-  const curLabel  = `${MONTH_NAMES[+cmm-1]} ${cyy}`;
-  const prevLabel = `${MONTH_NAMES[+pmm-1]} ${pyy}`;
-  const prodName  = prodFilter==='all' ? 'все продукты' : PROD_CFG[prodFilter].name;
-
-  const serProd = (agg, mk) => {
-    const keys = prodFilter==='all' ? Object.keys(PROD_CFG) : [prodFilter];
-    const [mm,yy] = mk.split('.');
-    const label   = `${MONTH_NAMES[+mm-1]} ${yy}`;
-    let txt = `\n=== ${label} ===\n`;
+  const ser=(agg,mk)=>{
+    const[mm,yy]=mk.split('.');
+    const lbl=`${MN[+mm-1]} ${yy}`;
+    const keys=prodFilter==='all'?Object.keys(PROD_CFG):[prodFilter];
+    let t=`\n=== ${lbl} ===\n`;
     if(prodFilter==='all'){
-      const t = agg.total;
-      txt += `ИТОГО: выручка ${fmtM(t.budget)}, план ${fmtM(t.plan)}, план до сег. ${fmtM(t.planToday)}, выполнение ${t.execPct}%\n`;
-      txt += `лиды ${t.leads}, сделки ${t.deals}, конверсия ${t.conv}%, ср.чек ${fmt(t.avgCheck)} ₸\n`;
-      txt += `реклама ${fmtM(t.ad)}, ДРР ${t.drr}%, ROI ${t.roi!=null?t.roi+'%':'нет данных'}, ст-ть лида ${t.cpl?fmt(t.cpl)+' ₸':'—'}\n\n`;
+      const x=agg.total;
+      t+=`ИТОГО: выручка ${fmtM(x.budget)}, план ${fmtM(x.plan)}, план до сег. ${fmtM(x.planToday)}, выполнение ${x.execPct}%\n`;
+      t+=`лиды ${x.leads}, сделки ${x.deals}, конв. ${x.conv}%, ср.чек ${fmt(x.avgCheck)} ₸, реклама ${fmtM(x.ad)}, ДРР ${x.drr}%, ROI ${x.roi!=null?x.roi+'%':'—'}, CPL ${x.cpl?fmt(x.cpl)+' ₸':'—'}\n`;
     }
     for(const k of keys){
-      const d = agg[k]; const name = PROD_CFG[k].name;
-      txt += `${name}: выручка ${fmtM(d.budget)}, план ${fmtM(d.plan)}, план до сег. ${fmtM(d.planToday)}, выполнение ${d.execPct}%\n`;
-      txt += `  лиды ${d.leads}, сделки ${d.deals}, конв. ${d.conv}%, ср.чек ${fmt(d.avgCheck)} ₸\n`;
-      txt += `  реклама ${fmtM(d.ad)}, ДРР ${d.drr}%, ROI ${d.roi!=null?d.roi+'%':'—'}, CPL ${d.cpl?fmt(d.cpl)+' ₸':'—'}\n`;
+      const d=agg[k];
+      t+=`${PROD_CFG[k].name}: выручка ${fmtM(d.budget)}, план ${fmtM(d.plan)}, до сег. ${fmtM(d.planToday)}, вып. ${d.execPct}%, лиды ${d.leads}, сделки ${d.deals}, конв. ${d.conv}%, ср.чек ${fmt(d.avgCheck)} ₸, реклама ${fmtM(d.ad)}, ДРР ${d.drr}%, ROI ${d.roi!=null?d.roi+'%':'—'}, CPL ${d.cpl?fmt(d.cpl)+' ₸':'—'}\n`;
     }
-    return txt;
+    return t;
   };
 
-  let dataBlock = serProd(curAgg, curMK);
-  if(prevAgg) dataBlock += serProd(prevAgg, prevMK);
+  let data=ser(curAgg,curMK);
+  if(prevAgg) data+=ser(prevAgg,prevMK);
 
   return `Ты — опытный бизнес-аналитик компании WeGlow (продажа БАДов: Коллаген, Ummi, Кофе). Анализируй данные и давай КОНКРЕТНЫЕ рекомендации.
 
-ДАННЫЕ (${prodName}):
-${dataBlock}
+ДАННЫЕ (${prodName}):${data}
+Сегодня: ${new Date().toLocaleDateString('ru-RU')}, прошло ${curAgg.total.passedDays} из ${curAgg.total.totalDays} дней ${curLbl}.
+Нормы: конверсия ≥12%, ДРР ≤15% отлично / ≤25% норма, ср.чек ≥80К ₸.
 
-Контекст:
-- Сегодня ${new Date().toLocaleDateString('ru-RU')}
-- Текущий период: ${curLabel}, прошло ${curAgg.total.passedDays} из ${curAgg.total.totalDays} дней
-- Нормы: конверсия ≥12%, ДРР ≤15% отлично / ≤25% норма, ср.чек ≥80К ₸
-
-Дай анализ в СТРОГО таком формате (используй именно эти заголовки и именно HTML-теги ul/li):
+Дай анализ строго в этом формате (только HTML-теги, без markdown):
 
 <h3>🎯 Текущая ситуация</h3>
-<p>1-2 предложения: как дела в целом, выполняем ли план</p>
+<p>1-2 предложения: как дела в целом</p>
 
-<h3>✅ Что работает хорошо</h3>
+<h3>✅ Что работает</h3>
 <ul>
-<li class="ok">конкретный факт с цифрами</li>
+<li class="ok">факт с цифрами</li>
 </ul>
 
 <h3>⚠️ Проблемные зоны</h3>
 <ul>
-<li class="bad">конкретная проблема с цифрами и объяснением почему это плохо</li>
+<li class="bad">проблема с цифрами</li>
 <li class="warn">менее критичная зона</li>
 </ul>
 
 <h3>💡 Нужно ли больше рекламы?</h3>
-<p>Конкретный ответ: да/нет/зависит — с обоснованием через ДРР, ROI, CPL. Какой бюджет рекомендуешь и почему.</p>
+<p>Конкретный ответ с обоснованием через ДРР, ROI, CPL.</p>
 
 <h3>🔧 Где теряются деньги</h3>
 <ul>
-<li class="bad">конкретное место потери + примерный объём потерь в ₸</li>
+<li class="bad">место потери + сумма в ₸</li>
 </ul>
 
-<h3>📋 План действий на ближайшие 7 дней</h3>
+<h3>📋 План на 7 дней</h3>
 <ul>
-<li class="action">День 1-2: конкретное действие с ответственным и метрикой успеха</li>
+<li class="action">День 1-2: конкретное действие</li>
 <li class="action">День 3-4: следующий шаг</li>
-<li class="action">День 5-7: завершающие действия</li>
+<li class="action">День 5-7: итог</li>
 </ul>
 
 <h3>📈 Прогноз на конец месяца</h3>
-<p>При текущей динамике: ожидаемая выручка, % от плана, что нужно изменить чтобы выполнить план.</p>
+<p>Ожидаемая выручка и % от плана при текущей динамике.</p>
 
-ВАЖНО: только HTML без markdown, без \`\`\`, только конкретные цифры из данных, никаких общих фраз.`;
+Только конкретные цифры, никаких общих фраз.`;
 }
 
-async function runAnalysis(){
-  const btn = document.getElementById('analyze-btn');
-  const prodFilter = document.getElementById('prod-sel').value;
-  btn.disabled = true;
-  btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;margin:0"></div> Загрузка данных...';
+async function run(){
+  const btn=document.getElementById('btn');
+  const body=document.getElementById('body');
+  const period=document.getElementById('period-sel').value;
+  const prod=document.getElementById('prod-sel').value;
 
-  try {
-    // Load data
-    const [dataRows, planRows] = await Promise.all([
+  btn.disabled=true;
+  btn.innerHTML='<div class="spinner" style="width:16px;height:16px;border-width:2px"></div> Загрузка...';
+  body.innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-txt">Загружаю данные из Supabase...</div></div>';
+
+  try{
+    const[dataRows,planRows]=await Promise.all([
       sbGet(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data`),
       sbGet(`${SUPABASE_URL}/rest/v1/weglow_plans?select=month,col,ummi,coffee`),
     ]);
-    const raw  = dataRows[0]?.data?.RAW      || {};
-    const ad   = dataRows[0]?.data?.AD_SPEND || {};
-    const plans = {};
-    for(const r of planRows) plans[r.month] = {col:r.col||0, ummi:r.ummi||0, coffee:r.coffee||0};
+    const raw=dataRows[0]?.data?.RAW||{};
+    const ad=dataRows[0]?.data?.AD_SPEND||{};
+    const plans={};
+    for(const r of planRows) plans[r.month]={col:r.col||0,ummi:r.ummi||0,coffee:r.coffee||0};
 
-    const curMK  = getMonthKey(0);
-    const prevMK = getMonthKey(-1);
+    const curMK=getMonthKey(0), prevMK=getMonthKey(-1);
+    const curAgg=aggregateMK(raw,ad,plans,curMK);
+    const prevAgg=aggregateMK(raw,ad,plans,prevMK);
+    const usePrev=period==='prev'||period==='both';
+    const prompt=buildPrompt(curAgg,usePrev?prevAgg:null,curMK,prevMK,prod);
 
-    const curAgg  = aggregateMK(raw, ad, plans, curMK);
-    const prevAgg = aggregateMK(raw, ad, plans, prevMK);
+    body.innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-txt">AI анализирует данные...</div></div>';
+    btn.innerHTML='<div class="spinner" style="width:16px;height:16px;border-width:2px"></div> AI думает...';
 
-    // Render KPI
-    renderKPI(curAgg, curMK);
-    renderProds(curAgg);
-
-    // Build prompt
-    const usePrev = activePeriod === 'prev' || activePeriod === 'both';
-    const prompt  = buildPrompt(curAgg, usePrev ? prevAgg : null, curMK, prevMK, prodFilter);
-
-    // Show loading in AI block
-    showLoading();
-    btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;margin:0"></div> AI думает...';
-
-    // Call Claude API
-    const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1500,
-        messages: [{role:'user', content: prompt}]
-      })
+    const aiRes=await fetch('https://purple-moon-c773.eralin097.workers.dev/',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({prompt})
     });
     if(!aiRes.ok){
-      const err = await aiRes.json().catch(()=>({error:{message:aiRes.statusText}}));
-      throw new Error(err?.error?.message || 'HTTP '+aiRes.status);
+      const err=await aiRes.json().catch(()=>({error:{message:aiRes.statusText}}));
+      throw new Error(err?.error?.message||'HTTP '+aiRes.status);
     }
-    const aiData = await aiRes.json();
-    const aiText = aiData.content?.find(b=>b.type==='text')?.text || 'Нет ответа';
+    const aiData=await aiRes.json();
+    const aiText=aiData.text||'Нет ответа';
+    body.innerHTML=`<div class="ai">${aiText}</div>`;
 
-    // Render AI response
-    document.querySelector('.ai-body').innerHTML = `<div class="ai-content" id="ai-body-wrap">${aiText}</div>`;
-
-  } catch(e) {
-    document.querySelector('.ai-body').innerHTML = `<div style="color:#dc2626;padding:24px">⚠ Ошибка: ${e.message}</div>`;
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '<span>&#9889;</span> Анализировать снова';
+  }catch(e){
+    body.innerHTML=`<div style="color:#dc2626;padding:16px">⚠ Ошибка: ${e.message}</div>`;
+  }finally{
+    btn.disabled=false;
+    btn.innerHTML='&#9889; Анализировать снова';
   }
 }
 </script>
