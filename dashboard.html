@@ -72,18 +72,63 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
   letter-spacing:.5px;
 }
 .sb-date strong { display:block; font-size:13px; color:rgba(255,255,255,.7); font-weight:500; margin-bottom:2px; }
-.sb-nav { padding:16px 12px; flex:1; }
-.sb-section { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,.25); padding:0 12px 8px; }
+.sb-nav { padding:14px 10px; flex:1; }
+.sb-section { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,.25); padding:0 8px 10px; }
+.dock-wrap {
+  display:flex; flex-direction:column; gap:3px;
+  background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:14px; padding:6px;
+}
 .nav-item {
   display:flex; align-items:center; gap:10px;
-  padding:10px 12px; border-radius:9px;
-  color:rgba(255,255,255,.5); font-size:13px; font-weight:500;
-  cursor:pointer; transition:all .18s; margin-bottom:2px;
-  border:none; background:none; width:100%; text-align:left;
+  padding:9px 11px; border-radius:10px;
+  color:rgba(255,255,255,.45); font-size:13px; font-weight:500;
+  cursor:pointer; border:none; background:transparent;
+  width:100%; text-align:left; text-decoration:none;
+  position:relative;
+  transition: transform .22s cubic-bezier(.34,1.56,.64,1), background .18s, color .18s, box-shadow .18s;
+  transform-origin:left center;
 }
-.nav-item:hover { background:rgba(255,255,255,.06); color:rgba(255,255,255,.8); }
-.nav-item.active { background:rgba(255,255,255,.1); color:#fff; }
-.nav-item .icon { font-size:16px; width:20px; text-align:center; }
+.nav-item:hover {
+  background:rgba(255,255,255,.08); color:#fff;
+  transform:scale(1.055) translateX(4px);
+  box-shadow:0 4px 18px rgba(0,0,0,.3);
+}
+.nav-item:active { transform:scale(.97) translateX(2px); }
+.nav-item.active {
+  background:linear-gradient(135deg,rgba(99,102,241,.3),rgba(99,102,241,.12));
+  color:#fff; border:1px solid rgba(99,102,241,.28);
+  box-shadow:0 0 0 1px rgba(99,102,241,.15),inset 0 1px 0 rgba(255,255,255,.06);
+}
+.nav-item.active::before {
+  content:''; position:absolute; left:0; top:20%; bottom:20%;
+  width:3px; background:linear-gradient(180deg,#818cf8,#6366f1);
+  border-radius:0 3px 3px 0;
+}
+.nav-item .icon {
+  font-size:16px; width:26px; height:26px;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; border-radius:7px; background:rgba(255,255,255,.05);
+  transition:transform .22s cubic-bezier(.34,1.56,.64,1), background .18s;
+}
+.nav-item:hover .icon { transform:scale(1.22) rotate(-6deg); background:rgba(255,255,255,.1); }
+.nav-item.active .icon { background:rgba(99,102,241,.25); transform:scale(1.08); }
+.nav-item .nav-label { flex:1; white-space:nowrap; }
+.nav-item::after {
+  content:attr(data-tip); position:absolute;
+  left:calc(100% + 10px); top:50%;
+  transform:translateY(-50%) scale(.85);
+  background:rgba(15,22,35,.96); color:#fff;
+  font-size:11px; font-weight:600; padding:5px 11px;
+  border-radius:8px; white-space:nowrap;
+  opacity:0; pointer-events:none;
+  transition:opacity .15s,transform .15s;
+  border:1px solid rgba(255,255,255,.09);
+  box-shadow:0 4px 14px rgba(0,0,0,.4); z-index:200;
+}
+.nav-item:hover::after { opacity:1; transform:translateY(-50%) scale(1); }
+.dock-divider { height:1px; background:rgba(255,255,255,.07); margin:3px 6px; }
 .sb-progress {
   margin:0 12px;
   background:rgba(255,255,255,.04);
@@ -154,24 +199,45 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
 /* ─── KPI GRID ───────────────────────────────────────── */
 .kpi-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:12px; margin-bottom:24px; }
 .kpi-card {
-  background:var(--white); border-radius:var(--r);
-  box-shadow:var(--shadow); padding:18px 20px;
-  position:relative; overflow:hidden; transition:box-shadow .2s;
-  border:1px solid var(--line);
+  position:relative; padding:18px 16px; border-radius:var(--r);
+  background:#ffffff; border:1px solid var(--line);
+  overflow:hidden; cursor:default;
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1), box-shadow .3s;
 }
-.kpi-card:hover { box-shadow:var(--shadow2); }
+.kpi-card:hover { transform:translateY(-5px) scale(1.02); }
+.kpi-card::before {
+  content:''; position:absolute; inset:0; border-radius:var(--r);
+  background:
+    linear-gradient(to right,  rgba(255,204,112,.18) 0%, transparent 35%),
+    linear-gradient(to left,   rgba(65,88,208,.15)  0%, transparent 35%),
+    linear-gradient(to bottom, rgba(200,80,192,.10) 0%, transparent 40%);
+  opacity:0; transition:opacity .35s; pointer-events:none; z-index:0;
+}
+.kpi-card:hover::before { opacity:1; }
 .kpi-card::after {
-  content:''; position:absolute; bottom:0; left:0; right:0; height:3px;
-  background:var(--kc, var(--acc));
+  content:''; position:absolute; inset:-1px;
+  border-radius:calc(var(--r) + 1px);
+  box-shadow:
+    0 0 16px rgba(255,204,112,.45),
+    0 0 32px rgba(200,80,192,.3),
+    0 0 48px rgba(65,88,208,.2);
+  opacity:0; transition:opacity .35s; pointer-events:none; z-index:0;
 }
+.kpi-card:hover::after { opacity:1; }
+.kpi-card .glow-border {
+  position:absolute; inset:0; border-radius:var(--r);
+  border:1.5px solid transparent;
+  background:linear-gradient(white,white) padding-box,
+    linear-gradient(135deg,rgba(255,204,112,.8),rgba(200,80,192,.6),rgba(65,88,208,.5)) border-box;
+  opacity:0; transition:opacity .35s; pointer-events:none; z-index:1;
+}
+.kpi-card:hover .glow-border { opacity:1; }
+.kpi-card > *:not(.glow-border) { position:relative; z-index:2; }
 .kc-lbl { font-size:10px; font-weight:600; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
-.kc-val { font-family:'Playfair Display',serif; font-size:24px; font-weight:700; color:var(--ink); line-height:1; margin-bottom:6px; letter-spacing:-.3px; }
+.kc-val { font-family:'Playfair Display',serif; font-size:24px; font-weight:700; color:var(--ink); line-height:1; margin-bottom:6px; letter-spacing:-.3px; transition:text-shadow .3s; }
+.kpi-card:hover .kc-val { text-shadow:0 0 14px var(--kc,rgba(255,204,112,.6)); }
 .kc-sub { font-size:11px; color:var(--muted); }
-.kc-badge {
-  display:inline-flex; align-items:center; gap:4px;
-  padding:3px 9px; border-radius:20px; font-size:10px; font-weight:700;
-  margin-top:8px;
-}
+.kc-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:10px; font-weight:700; margin-top:8px; }
 .bg-g { background:var(--green-l); color:var(--green); }
 .bg-r { background:var(--red-l);   color:var(--red);   }
 .bg-y { background:var(--gold-l);  color:var(--gold);  }
@@ -421,30 +487,36 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
   </div>
   <nav class="sb-nav">
     <div class="sb-section">Навигация</div>
-    <button class="nav-item active" onclick="switchView('main',this)">
-      <span class="icon">◈</span> Дашборд
-    </button>
-    <button class="nav-item" onclick="switchView('managers',this)">
-      <span class="icon">◎</span> Менеджеры
-    </button>
-    <button class="nav-item" onclick="switchView('adspend',this)">
-      <span class="icon">◇</span> Реклама
-    </button>
-    <a onclick="switchView('products',this)" class="nav-item" id="nav-products" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:rgba(255,255,255,.55);cursor:pointer;padding:6px 8px;border-radius:8px;transition:all .15s;">
-      <span class="icon">📦</span> <span style="font-size:13px;">Товары</span>
-    </a>
-    <a href="ad.html" class="nav-item" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:rgba(255,255,255,.55);margin-top:4px;border-top:1px solid rgba(255,255,255,.07);padding-top:8px;">
-      <span class="icon">✏️</span> <span style="font-size:13px;">Кабинет рекламы</span>
-    </a>
-    <a href="rop.html" class="nav-item" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:rgba(255,255,255,.55);">
-      <span class="icon">👥</span> <span style="font-size:13px;">Кабинет РОП</span>
-    </a>
-    <a href="director.html" class="nav-item" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:rgba(255,255,255,.55);">
-      <span class="icon">👔</span> <span style="font-size:13px;">Кабинет директора</span>
-    </a>
-    <a href="advisor.html" class="nav-item" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:rgba(255,255,255,.55);">
-      <span class="icon">🤖</span> <span style="font-size:13px;">AI Советник</span>
-    </a>
+    <div class="dock-wrap">
+      <button class="nav-item active" onclick="switchView('main',this)" data-tip="Дашборд">
+        <span class="icon">◈</span><span class="nav-label">Дашборд</span>
+      </button>
+      <button class="nav-item" onclick="switchView('managers',this)" data-tip="Менеджеры">
+        <span class="icon">◎</span><span class="nav-label">Менеджеры</span>
+      </button>
+      <button class="nav-item" onclick="switchView('adspend',this)" data-tip="Реклама">
+        <span class="icon">◇</span><span class="nav-label">Реклама</span>
+      </button>
+      <a onclick="switchView('products',this)" class="nav-item" id="nav-products" data-tip="Товары">
+        <span class="icon">📦</span><span class="nav-label">Товары</span>
+      </a>
+      <div class="dock-divider"></div>
+      <a href="ad.html" class="nav-item" data-tip="Кабинет рекламы">
+        <span class="icon">✏️</span><span class="nav-label">Кабинет рекламы</span>
+      </a>
+      <a href="rop.html" class="nav-item" data-tip="Кабинет РОП">
+        <span class="icon">👥</span><span class="nav-label">Кабинет РОП</span>
+      </a>
+      <a href="director.html" class="nav-item" data-tip="Кабинет директора">
+        <span class="icon">👔</span><span class="nav-label">Кабинет директора</span>
+      </a>
+      <a href="advisor.html" class="nav-item" data-tip="AI Советник">
+        <span class="icon">🤖</span><span class="nav-label">AI Советник</span>
+      </a>
+      <a href="chat.html" class="nav-item" data-tip="Аналитика чатов">
+        <span class="icon">💬</span><span class="nav-label">Аналитика чатов</span>
+      </a>
+    </div>
   </nav>
   <div class="sb-progress">
     <div class="sp-label" id="sb-month-label">—</div>
@@ -1091,6 +1163,7 @@ function renderKPI(d){
   ];
   document.getElementById('kpi-grid').innerHTML=kpis.map((k,i)=>`
     <div class="kpi-card" style="--kc:${k.c}" data-kpi="${i}">
+      <div class="glow-border"></div>
       <div class="kc-lbl">${k.l}</div>
       <div class="kc-val" style="color:${k.c}">${k.v}</div>
       <div class="kc-sub">${k.s||''}</div>
