@@ -1124,8 +1124,7 @@ function renderPlanTable(stats){
       <td style="color:var(--slate);font-weight:600">${d.isCurrentMonth ? fmt(d.planToday) : '—'}</td>
       <td style="color:${cfg.color};font-weight:700">${fmt(d.monthBudget)}</td>
       <td><div class="bar-wrap">
-        ${(()=>{ const gap=d.monthBudget-(d.planToday||0); const show=d.isCurrentMonth&&d.plan; return show ? `<span style="font-weight:700;font-size:13px;min-width:36px;text-align:right;color:${gap>=0?'#16a34a':'#dc2626'}">${gap>=0?'+':''}${fmt(gap)}</span>` : `<span class="${pct>=80?'txt-g':pct>=50?'txt-y':'txt-r'}" style="font-weight:700;font-size:13px;min-width:36px;text-align:right">${pct}%</span>`; })()}
-        <div class="bar-track"><div class="bar-fill" style="width:${Math.min(pct,100)}%;background:${cfg.color}"></div></div>
+        ${(()=>{ const gap=d.monthBudget-(d.planToday||0); const execPct=d.planToday>0?Math.round(d.monthBudget/d.planToday*100):0; const show=d.isCurrentMonth&&d.plan; return show ? `<span style="font-weight:700;font-size:13px;min-width:36px;text-align:right;color:${execPct>=100?'#16a34a':execPct>=80?'#ca8a04':'#dc2626'}">${execPct}%</span>` : `<span class="${pct>=80?'txt-g':pct>=50?'txt-y':'txt-r'}" style="font-weight:700;font-size:13px;min-width:36px;text-align:right">${pct}%</span>`; })()}
       </div></td>
       ${remainCell}
       <td>${fmt(d.leads)}</td><td>${fmt(d.deals)}</td>
@@ -1149,8 +1148,8 @@ function renderPlanTable(stats){
       <td><strong>${fmt(a.plan)}</strong></td>
       <td style="color:var(--slate);font-weight:600">${a.isCurrentMonth ? fmt(a.planToday) : '—'}</td>
       <td style="color:#6366f1;font-weight:700"><strong>${fmt(a.monthBudget)}</strong></td>
-      <td><div class="bar-wrap">${(()=>{ const gap=a.monthBudget-(a.planToday||0); return a.isCurrentMonth&&a.plan ? `<span style="font-weight:700;font-size:13px;color:${gap>=0?'#16a34a':'#dc2626'};min-width:36px;text-align:right">${gap>=0?'+':''}${fmt(gap)}</span>` : `<span style="font-weight:700;font-size:13px;color:${pct>=80?'#16a34a':'#ca8a04'};min-width:36px;text-align:right">${pct}%</span>`; })()}
-        <div class="bar-track"><div class="bar-fill" style="width:${Math.min(pct,100)}%;background:#6366f1"></div></div></div></td>
+      <td><div class="bar-wrap">${(()=>{ const execPctA=a.planToday>0?Math.round(a.monthBudget/a.planToday*100):0; return a.isCurrentMonth&&a.plan ? `<span style="font-weight:700;font-size:13px;color:${execPctA>=100?'#16a34a':execPctA>=80?'#ca8a04':'#dc2626'};min-width:36px;text-align:right">${execPctA}%</span>` : `<span style="font-weight:700;font-size:13px;color:${pct>=80?'#16a34a':'#ca8a04'};min-width:36px;text-align:right">${pct}%</span>`; })()}
+      </div></td>
       ${remainCell}
       <td><strong>${fmt(a.leads)}</strong></td><td><strong>${fmt(a.deals)}</strong></td>
       <td class="${convCls(a.conv)}" style="font-weight:700"><strong>${a.conv}%</strong></td>
