@@ -825,6 +825,11 @@ function aggregate(pk,from,to){
   const remain=plan?Math.max(0,plan-monthBudget):0;
   const perDay=daysLeftMonth>0?Math.round(remain/daysLeftMonth):0;
 
+  // Plan-to-today: plan * passedDays / totalDaysInMonth
+  const totalDaysM2 = _lastDay(now.getFullYear(), now.getMonth()+1);
+  const passedDays  = mk===curMK ? now.getDate() : (mk < curMK ? totalDaysM2 : 0);
+  const planToday   = plan && mk===curMK ? Math.round(plan / totalDaysM2 * passedDays) : plan;
+
   // ad spend for period
   const adData=AD_SPEND[PROD_CFG[pk].rawKey]||{};
   const fD=parseDate(from),tD=parseDate(to);
@@ -843,6 +848,7 @@ function aggregate(pk,from,to){
 
   return{leads,deals,budget,daily:dl,plan:Math.round(plan),monthKey:mk,
     monthBudget:Math.round(monthBudget),remain:Math.round(remain),perDay,daysLeft:daysLeftMonth,
+    planToday:Math.round(planToday),
     isCurrentMonth:mk===curMK,
     adTotal,monthAdTotal,monthLeads,cplMonth,rpl,
     conv:leads?+(deals/leads*100).toFixed(1):0,avgCheck:deals?Math.round(budget/deals):0};
@@ -868,8 +874,9 @@ function aggregateAll(from,to){
     leads:dates.map((_,i)=>Object.values(parts).reduce((a,p)=>a+p.daily.leads[i],0)),
     deals:dates.map((_,i)=>Object.values(parts).reduce((a,p)=>a+p.daily.deals[i],0)),
     budget:dates.map((_,i)=>Object.values(parts).reduce((a,p)=>a+p.daily.budget[i],0))};
+  const planTodayAll = Object.values(parts).reduce((s,p)=>s+(p.planToday||0),0);
   return{leads,deals,budget,plan,adTotal,daily:dl,parts,
-    monthBudget,remain,perDay,daysLeft,isCurrentMonth,monthAdTotal,monthLeads,cplMonth,rpl,
+    monthBudget,remain,perDay,daysLeft,isCurrentMonth,planToday:planTodayAll,monthAdTotal,monthLeads,cplMonth,rpl,
     conv:leads?+(deals/leads*100).toFixed(1):0,avgCheck:deals?Math.round(budget/deals):0};
 }
 
@@ -1114,9 +1121,10 @@ function renderPlanTable(stats){
     return`<tr>
       <td><div class="prod-name"><div class="prod-dot" style="background:${cfg.color}"></div>${cfg.name}</div></td>
       <td>${fmt(d.plan)}</td>
+      <td style="color:var(--slate);font-weight:600">${d.isCurrentMonth ? fmt(d.planToday) : '—'}</td>
       <td style="color:${cfg.color};font-weight:700">${fmt(d.monthBudget)}</td>
       <td><div class="bar-wrap">
-        <span class="${pct>=80?'txt-g':pct>=50?'txt-y':'txt-r'}" style="font-weight:700;font-size:13px;min-width:36px;text-align:right">${pct}%</span>
+        ${(()=>{ const gap=d.monthBudget-(d.planToday||0); const show=d.isCurrentMonth&&d.plan; return show ? `<span style="font-weight:700;font-size:13px;min-width:36px;text-align:right;color:${gap>=0?'#16a34a':'#dc2626'}">${gap>=0?'+':''}${fmt(gap)}</span>` : `<span class="${pct>=80?'txt-g':pct>=50?'txt-y':'txt-r'}" style="font-weight:700;font-size:13px;min-width:36px;text-align:right">${pct}%</span>`; })()}
         <div class="bar-track"><div class="bar-fill" style="width:${Math.min(pct,100)}%;background:${cfg.color}"></div></div>
       </div></td>
       ${remainCell}
@@ -1139,8 +1147,9 @@ function renderPlanTable(stats){
     rows += `<tr class="tr-sum">
       <td><div class="prod-name"><div class="prod-dot" style="background:#6366f1"></div><strong>ИТОГО</strong></div></td>
       <td><strong>${fmt(a.plan)}</strong></td>
+      <td style="color:var(--slate);font-weight:600">${a.isCurrentMonth ? fmt(a.planToday) : '—'}</td>
       <td style="color:#6366f1;font-weight:700"><strong>${fmt(a.monthBudget)}</strong></td>
-      <td><div class="bar-wrap"><span style="font-weight:700;font-size:13px;color:${pct>=80?'#16a34a':'#ca8a04'};min-width:36px;text-align:right">${pct}%</span>
+      <td><div class="bar-wrap">${(()=>{ const gap=a.monthBudget-(a.planToday||0); return a.isCurrentMonth&&a.plan ? `<span style="font-weight:700;font-size:13px;color:${gap>=0?'#16a34a':'#dc2626'};min-width:36px;text-align:right">${gap>=0?'+':''}${fmt(gap)}</span>` : `<span style="font-weight:700;font-size:13px;color:${pct>=80?'#16a34a':'#ca8a04'};min-width:36px;text-align:right">${pct}%</span>`; })()}
         <div class="bar-track"><div class="bar-fill" style="width:${Math.min(pct,100)}%;background:#6366f1"></div></div></div></td>
       ${remainCell}
       <td><strong>${fmt(a.leads)}</strong></td><td><strong>${fmt(a.deals)}</strong></td>
@@ -1155,6 +1164,7 @@ function renderPlanTable(stats){
     <table class="dt"><thead><tr>
       <th>Продукт</th>
       <th>План мес. ₸</th>
+      <th>План до сег. ₸</th>
       <th>Факт мес. ₸</th>
       <th>Выполнение</th>
       <th style="color:${isCur?'#ca8a04':'var(--muted)'}">Остаток</th>
