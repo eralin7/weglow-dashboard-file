@@ -57,21 +57,330 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
   padding: 28px 24px 24px;
   border-bottom:1px solid rgba(255,255,255,.07);
 }
-.sb-logo h1 {
-  font-family:'Playfair Display',serif;
-  font-size:22px; font-weight:700;
-  letter-spacing:.5px;
-  color:#fff;
-  line-height:1;
+
+@keyframes neon-all-w {
+  0%      { color:#4a9eff; text-shadow:0 0 6px #4a9eff,0 0 14px #2979e8; }
+  28%     { color:#4a9eff; text-shadow:0 0 6px #4a9eff,0 0 14px #2979e8; }
+  33%     { color:#ffaa00; text-shadow:0 0 6px #ffaa00,0 0 14px #ff7700; }
+  61%     { color:#ffaa00; text-shadow:0 0 6px #ffaa00,0 0 14px #ff7700; }
+  66%     { color:#ff00bb; text-shadow:0 0 6px #ff00bb,0 0 14px #cc0088; }
+  94%     { color:#ff00bb; text-shadow:0 0 6px #ff00bb,0 0 14px #cc0088; }
+  100%    { color:#4a9eff; text-shadow:0 0 6px #4a9eff,0 0 14px #2979e8; }
 }
-.sb-logo .tagline { font-size:10px; color:rgba(255,255,255,.35); letter-spacing:2px; text-transform:uppercase; margin-top:5px; }
+
+.logo-neon {
+  background: none !important;
+  -webkit-text-fill-color: initial !important;
+  animation: logo-float 4s ease-in-out infinite;
+  display: inline-block;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  transform: translateZ(0);
+  will-change: transform;
+}
+.ln-w, .ln-e, .ln-gl, .ln-ow {
+  animation: neon-all-w 8s ease-in-out infinite;
+}
+.ln-e  { animation-delay: .08s; }
+.ln-gl { animation-delay: .16s; }
+.ln-ow { animation-delay: .24s; }
+@keyframes logo-shine {
+  0%   { background-position: 0% 0%; filter: drop-shadow(0 0 8px rgba(74,158,255,.45)) drop-shadow(0 1px 2px rgba(0,0,0,.6)); }
+  50%  { background-position: 0% 100%; filter: drop-shadow(0 0 18px rgba(100,180,255,.9)) drop-shadow(0 0 8px rgba(74,158,255,.6)) drop-shadow(0 1px 2px rgba(0,0,0,.6)); }
+  100% { background-position: 0% 0%; filter: drop-shadow(0 0 8px rgba(74,158,255,.45)) drop-shadow(0 1px 2px rgba(0,0,0,.6)); }
+}
+@keyframes logo-float {
+  0%,100% { transform: translateY(0px); }
+  50%      { transform: translateY(-3px); }
+}
+.sb-logo h1 {
+  font-family:'DM Sans',sans-serif;
+  font-size:45px; font-weight:800;
+  letter-spacing:-0.5px;
+  line-height:1;
+  background: linear-gradient(
+    180deg,
+    #ffffff        0%,
+    #d0e8ff       18%,
+    #7bbfff       32%,
+    #4a9eff       44%,
+    #2979e8       54%,
+    #1a5fcc       64%,
+    #3a8fff       74%,
+    #a0d0ff       84%,
+    #e8f4ff       92%,
+    #ffffff       100%
+  );
+  background-size: 100% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+  animation: logo-shine 3.5s ease-in-out infinite, logo-float 4s ease-in-out infinite;
+  cursor: default;
+  display: inline-block;
+}
+.sb-logo h1:hover {
+  animation: logo-shine .6s ease-in-out, logo-float 4s ease-in-out infinite;
+}
+.sb-logo h1 .we { font-weight:800; }
+.sb-logo h1 .glow-g {
+  background: linear-gradient(
+    180deg,
+    #ffffff        0%,
+    #b8d8ff       15%,
+    #5aaeff       30%,
+    #2572e8       46%,
+    #1a5fcc       58%,
+    #3a8fff       70%,
+    #a8d4ff       85%,
+    #ffffff       100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.sb-logo .tagline {
+  font-size: 9px;
+  color: rgba(180,210,255,.45);
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  margin-top: 6px;
+  font-weight: 500;
+}
 .sb-date {
-  padding: 16px 24px;
+  padding: 12px 14px 14px;
   border-bottom:1px solid rgba(255,255,255,.07);
   font-size:11px; color:rgba(255,255,255,.4);
   letter-spacing:.5px;
 }
-.sb-date strong { display:block; font-size:13px; color:rgba(255,255,255,.7); font-weight:500; margin-bottom:2px; }
+.sb-date strong {
+  display:block; font-size:15px;
+  color:#fff; font-weight:600;
+  margin-bottom:3px;
+  letter-spacing:-.2px;
+  font-family:-apple-system,'SF Pro Display','DM Sans',sans-serif;
+}
+
+/* ── WEATHER WIDGET — iOS style ── */
+.weather-row {
+  display:flex; align-items:center; gap:10px;
+  margin-top:10px;
+  background: rgba(255,255,255,.07);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+.weather-icon-wrap {
+  width:40px; height:40px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+}
+.weather-info { flex:1; min-width:0; }
+.weather-temp {
+  font-size:22px; font-weight:300;
+  color:#fff; line-height:1;
+  font-family:-apple-system,'SF Pro Display','DM Sans',sans-serif;
+  letter-spacing:-.5px;
+}
+.weather-desc {
+  font-size:11px; color:rgba(255,255,255,.5);
+  margin-top:3px; white-space:nowrap;
+  font-family:-apple-system,'SF Pro Text','DM Sans',sans-serif;
+  letter-spacing:.1px;
+}
+.weather-city {
+  font-size:9px; color:rgba(255,255,255,.25);
+  letter-spacing:1.8px; text-transform:uppercase;
+  margin-top:3px;
+  font-family:-apple-system,'SF Pro Text','DM Sans',sans-serif;
+}
+
+/* ─── Анимированные иконки погоды ─── */
+/* Солнце */
+@keyframes spin-slow { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+@keyframes pulse-sun { 0%,100%{opacity:.7;transform:scale(1)} 50%{opacity:1;transform:scale(1.08)} }
+.wi-sun {
+  width:32px; height:32px; position:relative;
+  display:flex; align-items:center; justify-content:center;
+}
+.wi-sun .sun-core {
+  width:14px; height:14px; border-radius:50%;
+  background:radial-gradient(circle,#ffe566,#ffb800);
+  box-shadow:0 0 8px 3px rgba(255,200,0,.5);
+  animation: pulse-sun 2.5s ease-in-out infinite;
+  flex-shrink:0;
+}
+.wi-sun .sun-rays {
+  position:absolute; inset:0;
+  animation: spin-slow 10s linear infinite;
+}
+.wi-sun .sun-rays::before,.wi-sun .sun-rays::after {
+  content:''; position:absolute;
+  background:rgba(255,210,0,.7); border-radius:2px;
+}
+.wi-sun .sun-rays::before { width:2px; height:7px; top:0; left:calc(50% - 1px); box-shadow:0 25px 0 rgba(255,210,0,.7); }
+.wi-sun .sun-rays::after  { width:7px; height:2px; left:0; top:calc(50% - 1px); box-shadow:25px 0 0 rgba(255,210,0,.7); }
+
+/* Облако */
+@keyframes float-cloud { 0%,100%{transform:translateX(0)} 50%{transform:translateX(3px)} }
+.wi-cloud {
+  width:32px; height:32px; position:relative;
+  display:flex; align-items:center; justify-content:center;
+}
+.wi-cloud .cloud-body {
+  width:26px; height:14px; background:rgba(200,220,255,.85);
+  border-radius:8px; position:relative;
+  animation: float-cloud 3s ease-in-out infinite;
+  box-shadow:0 2px 8px rgba(100,150,255,.25);
+}
+.wi-cloud .cloud-body::before {
+  content:''; position:absolute;
+  width:13px; height:13px; border-radius:50%;
+  background:rgba(200,220,255,.85);
+  top:-7px; left:6px;
+  box-shadow:8px 0 0 rgba(200,220,255,.85);
+}
+
+/* Снег */
+@keyframes snowfall {
+  0%  { transform:translateY(-6px) translateX(0px);  opacity:0; }
+  20% { opacity:1; }
+  80% { opacity:.8; }
+  100%{ transform:translateY(14px) translateX(-3px); opacity:0; }
+}
+.wi-snow {
+  width:32px; height:32px; position:relative; overflow:hidden;
+}
+.wi-snow .snow-cloud {
+  width:22px; height:10px; background:rgba(200,220,255,.75);
+  border-radius:6px; position:absolute; top:4px; left:5px;
+}
+.wi-snow .snow-cloud::before {
+  content:''; position:absolute;
+  width:10px; height:10px; border-radius:50%;
+  background:rgba(200,220,255,.75);
+  top:-5px; left:3px; box-shadow:7px 0 0 rgba(200,220,255,.75);
+}
+.wi-snow .flake {
+  position:absolute; width:3px; height:3px; border-radius:50%;
+  background:#b8d8ff;
+  animation: snowfall 1.8s ease-in infinite;
+}
+.wi-snow .flake:nth-child(2){ left:8px;  animation-delay:.3s;  animation-duration:2.1s; }
+.wi-snow .flake:nth-child(3){ left:14px; animation-delay:.7s;  animation-duration:1.6s; }
+.wi-snow .flake:nth-child(4){ left:20px; animation-delay:1.1s; animation-duration:2.3s; }
+.wi-snow .flake:nth-child(5){ left:5px;  animation-delay:1.5s; animation-duration:1.9s; }
+
+/* Гроза */
+@keyframes lightning { 0%,90%,100%{opacity:0} 92%,96%{opacity:1} 94%,98%{opacity:.3} }
+@keyframes rain-drop {
+  0%  { transform:translateY(-4px); opacity:0; }
+  15% { opacity:1; }
+  100%{ transform:translateY(18px); opacity:0; }
+}
+.wi-storm {
+  width:32px; height:32px; position:relative; overflow:hidden;
+}
+.wi-storm .storm-cloud {
+  width:24px; height:11px; background:rgba(140,140,170,.85);
+  border-radius:6px; position:absolute; top:2px; left:4px;
+}
+.wi-storm .storm-cloud::before {
+  content:''; position:absolute;
+  width:12px; height:11px; border-radius:50%;
+  background:rgba(140,140,170,.85);
+  top:-5px; left:3px; box-shadow:8px 0 0 rgba(140,140,170,.85);
+}
+.wi-storm .bolt {
+  position:absolute; top:12px; left:13px;
+  width:0; height:0;
+  border-left:4px solid transparent;
+  border-right:2px solid transparent;
+  border-top:8px solid #ffe44d;
+  filter:drop-shadow(0 0 4px #ffe44d);
+  animation: lightning 2.5s ease-in-out infinite;
+}
+.wi-storm .bolt::after {
+  content:''; position:absolute; top:5px; left:-3px;
+  width:0; height:0;
+  border-left:3px solid transparent;
+  border-right:4px solid transparent;
+  border-top:7px solid #ffe44d;
+}
+.wi-storm .rdrop {
+  position:absolute; width:1.5px; height:6px;
+  background:linear-gradient(rgba(150,180,255,.8),transparent);
+  border-radius:1px;
+  animation: rain-drop 1.2s linear infinite;
+}
+.wi-storm .rdrop:nth-child(3){ left:6px;  animation-delay:.2s; }
+.wi-storm .rdrop:nth-child(4){ left:11px; animation-delay:.6s; }
+.wi-storm .rdrop:nth-child(5){ left:20px; animation-delay:.1s; }
+.wi-storm .rdrop:nth-child(6){ left:25px; animation-delay:.8s; }
+
+/* Дождь */
+@keyframes rain-fall {
+  0%  { transform:translateY(-4px) rotate(10deg); opacity:0; }
+  20% { opacity:.8; }
+  100%{ transform:translateY(18px) rotate(10deg); opacity:0; }
+}
+.wi-rain {
+  width:32px; height:32px; position:relative; overflow:hidden;
+}
+.wi-rain .rain-cloud {
+  width:24px; height:11px; background:rgba(150,170,210,.8);
+  border-radius:6px; position:absolute; top:3px; left:4px;
+}
+.wi-rain .rain-cloud::before {
+  content:''; position:absolute;
+  width:12px; height:11px; border-radius:50%;
+  background:rgba(150,170,210,.8);
+  top:-5px; left:3px; box-shadow:8px 0 0 rgba(150,170,210,.8);
+}
+.wi-rain .rdrop {
+  position:absolute; width:1.5px; height:7px;
+  background:linear-gradient(rgba(120,160,255,.9),transparent);
+  border-radius:1px;
+  animation: rain-fall 1s linear infinite;
+}
+.wi-rain .rdrop:nth-child(2){ left:5px;  animation-delay:.1s; }
+.wi-rain .rdrop:nth-child(3){ left:10px; animation-delay:.4s; }
+.wi-rain .rdrop:nth-child(4){ left:16px; animation-delay:.15s;}
+.wi-rain .rdrop:nth-child(5){ left:22px; animation-delay:.55s;}
+.wi-rain .rdrop:nth-child(6){ left:27px; animation-delay:.3s; }
+
+/* Частично облачно */
+.wi-partly {
+  width:32px; height:32px; position:relative;
+  display:flex; align-items:center; justify-content:center;
+}
+.wi-partly .p-sun {
+  position:absolute; top:2px; left:2px;
+  width:16px; height:16px;
+}
+.wi-partly .p-sun-core {
+  width:10px; height:10px; border-radius:50%;
+  background:radial-gradient(#ffe566,#ffb800);
+  box-shadow:0 0 5px 2px rgba(255,180,0,.4);
+  animation: pulse-sun 2.5s ease-in-out infinite;
+  position:absolute; top:3px; left:3px;
+}
+.wi-partly .p-cloud {
+  position:absolute; bottom:2px; right:0;
+  width:22px; height:12px; background:rgba(220,230,255,.9);
+  border-radius:7px;
+  animation: float-cloud 3.5s ease-in-out infinite;
+}
+.wi-partly .p-cloud::before {
+  content:''; position:absolute;
+  width:10px; height:10px; border-radius:50%;
+  background:rgba(220,230,255,.9);
+  top:-5px; left:3px; box-shadow:7px 0 0 rgba(220,230,255,.9);
+}
 .sb-nav { padding:14px 10px; flex:1; }
 .sb-section { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,.25); padding:0 8px 10px; }
 .dock-wrap {
@@ -633,16 +942,34 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
 <!-- ═══ SIDEBAR ═══════════════════════════════════════════════ -->
 <aside class="sidebar">
   <div class="sb-logo">
-    <h1>WeGlow</h1>
-    <div class="tagline">Sales Intelligence</div>
+    <h1 class="logo-neon"><span class="ln-w">w</span><span class="ln-e">e</span><span class="ln-gl">gl</span><span class="ln-ow">ow</span></h1>
   </div>
   <div style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.07)">
 
     <div id="data-badge" style="margin-top:8px;font-size:10px;color:rgba(255,255,255,.3);padding:0 10px"></div>
   </div>
   <div class="sb-date">
-    <strong id="sb-today"></strong>
-    <span id="sb-weekday"></span>
+    <div class="weather-row" id="weather-row">
+      <div class="weather-icon-wrap" id="weather-icon">
+        <div style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;opacity:.3">
+          <div style="width:20px;height:10px;background:rgba(200,220,255,.6);border-radius:6px"></div>
+        </div>
+      </div>
+      <div class="weather-info">
+        <div style="display:flex;align-items:baseline;gap:6px">
+          <div class="weather-temp" id="weather-temp">—</div>
+          <div class="weather-desc" id="weather-desc" style="margin-top:0"></div>
+        </div>
+        <div style="margin-top:5px;display:flex;align-items:center;gap:4px">
+          <strong id="sb-today" style="font-size:11px;font-weight:600;color:rgba(255,255,255,.7);letter-spacing:-.1px"></strong>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;margin-top:2px">
+          <span id="sb-weekday" style="font-size:10px;color:rgba(255,255,255,.3);letter-spacing:.2px"></span>
+          <span style="color:rgba(255,255,255,.15);font-size:9px">·</span>
+          <span id="sb-clock" style="font-size:10px;font-weight:500;color:rgba(255,255,255,.45);letter-spacing:.3px;font-variant-numeric:tabular-nums"></span>
+        </div>
+      </div>
+    </div>
   </div>
   <nav class="sb-nav">
     <div class="sb-section">Навигация</div>
@@ -2072,6 +2399,54 @@ function renderSidebarKPI(now, dayOfMonth, totalDays){
 })();
 
 // ═══════════════════ INIT DYNAMIC UI ═════════════════════════════
+// ══════════════════ ПОГОДА (Алматы) ══════════════════════════
+function getWeatherIcon(code) {
+  // WMO weather codes → иконка
+  if (code === 0) return `<div class="wi-sun"><div class="sun-core"></div><div class="sun-rays"></div></div>`;
+  if (code <= 2)  return `<div class="wi-partly"><div class="p-sun"><div class="p-sun-core"></div></div><div class="p-cloud"></div></div>`;
+  if (code === 3)  return `<div class="wi-cloud"><div class="cloud-body"></div></div>`;
+  if (code <= 48)  return `<div class="wi-cloud"><div class="cloud-body"></div></div>`;
+  if (code <= 57)  return `<div class="wi-rain"><div class="rain-cloud"></div><div class="rdrop"></div><div class="rdrop"></div><div class="rdrop"></div><div class="rdrop"></div><div class="rdrop"></div></div>`;
+  if (code <= 67)  return `<div class="wi-rain"><div class="rain-cloud"></div><div class="rdrop"></div><div class="rdrop"></div><div class="rdrop"></div><div class="rdrop"></div><div class="rdrop"></div></div>`;
+  if (code <= 77)  return `<div class="wi-snow"><div class="snow-cloud"></div><div class="flake"></div><div class="flake"></div><div class="flake"></div><div class="flake"></div><div class="flake"></div></div>`;
+  if (code <= 82)  return `<div class="wi-rain"><div class="rain-cloud"></div><div class="rdrop"></div><div class="rdrop"></div><div class="rdrop"></div><div class="rdrop"></div><div class="rdrop"></div></div>`;
+  if (code <= 86)  return `<div class="wi-snow"><div class="snow-cloud"></div><div class="flake"></div><div class="flake"></div><div class="flake"></div><div class="flake"></div><div class="flake"></div></div>`;
+  if (code <= 99)  return `<div class="wi-storm"><div class="storm-cloud"></div><div class="bolt"></div><div class="rdrop"></div><div class="rdrop"></div><div class="rdrop"></div><div class="rdrop"></div></div>`;
+  return `<div class="wi-cloud"><div class="cloud-body"></div></div>`;
+}
+
+function getWeatherDesc(code) {
+  if (code === 0)        return 'Ясно';
+  if (code <= 2)         return 'Малооблачно';
+  if (code === 3)        return 'Пасмурно';
+  if (code <= 48)        return 'Туман';
+  if (code <= 57)        return 'Морось';
+  if (code <= 67)        return 'Дождь';
+  if (code <= 77)        return 'Снег';
+  if (code <= 82)        return 'Ливень';
+  if (code <= 86)        return 'Снегопад';
+  if (code <= 99)        return 'Гроза';
+  return 'Облачно';
+}
+
+async function loadWeather() {
+  try {
+    // Open-Meteo — бесплатно, без ключа, Алматы
+    const url = 'https://api.open-meteo.com/v1/forecast?latitude=43.2567&longitude=76.9286&current=temperature_2m,weathercode&timezone=Asia%2FAlmaty';
+    const r = await fetch(url);
+    const d = await r.json();
+    const temp = Math.round(d.current.temperature_2m);
+    const code = d.current.weathercode;
+
+    document.getElementById('weather-icon').innerHTML = getWeatherIcon(code);
+    document.getElementById('weather-temp').textContent = `${temp > 0 ? '+' : ''}${temp}°C`;
+    document.getElementById('weather-desc').textContent = getWeatherDesc(code);
+    document.getElementById('weather-row').style.display = 'flex';
+  } catch(e) {
+    // Тихо провалить — погода не критична
+  }
+}
+
 function initDynamicUI() {
   const now = _now();
   // Sidebar date
@@ -2079,7 +2454,21 @@ function initDynamicUI() {
     `${now.getDate()} ${MONTH_NAMES_GEN[now.getMonth()]} ${now.getFullYear()}`;
   const DAYS = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
   const wdEl = document.getElementById('sb-weekday');
-  if(wdEl) wdEl.textContent = `UTC+5 · ${DAYS[now.getDay()]}`;
+  if(wdEl) wdEl.textContent = DAYS[now.getDay()];
+  loadWeather();
+
+  // Живые часы UTC+5
+  function updateClock() {
+    const now = new Date();
+    const utc5 = new Date(now.getTime() + (5 * 60 + now.getTimezoneOffset()) * 60000);
+    const h = String(utc5.getHours()).padStart(2,'0');
+    const m = String(utc5.getMinutes()).padStart(2,'0');
+    const s = String(utc5.getSeconds()).padStart(2,'0');
+    const el = document.getElementById('sb-clock');
+    if (el) el.textContent = `${h}:${m}:${s}`;
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
 
   // Sidebar month label + progress bar
   document.getElementById('sb-month-label').textContent = `${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}`;
