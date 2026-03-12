@@ -758,6 +758,7 @@ async function loadRopStats() {
         prodPlanMap.coffee += p.coffee || 0;
       }
     }
+    const colProdPlan = prodPlanMap.col;
 
     // ─── Build HTML ───────────────────────────────────────────
     let html = `<div style="font-size:12px;color:var(--muted);margin-bottom:16px">Период: <strong style="color:var(--ink)">${range.label}</strong> · <span style="color:var(--muted)">${passedDays} из ${totalDays} дн.</span></div>`;
