@@ -1232,14 +1232,8 @@ const PROD_CFG = {
 };
 
 // ═══ ROP GROUPS (Коллаген only) ═══════════════════════════════════
-const ROP_GROUPS = {
-  'all':          { label: 'Все группы',    color: '#6366f1' },
-  'РОП Айдана':   { label: 'РОП Айдана',   color: '#1a56db' },
-  'РОП Нурдаулет':{ label: 'РОП Нурдаулет',color: '#0a7c5c' },
-  'РОП Аслиддин': { label: 'РОП Аслиддин', color: '#b45309' },
-};
-// Manager → ROP group mapping (from CRM data)
-const MGR_TO_ROP = {
+// Manager → ROP group mapping (from CRM data, synced from Supabase)
+let MGR_TO_ROP = {
   'Пин 7 Рахима':        'РОП Айдана',
   'Пин 3 Ерсин':         'РОП Айдана',
   'РОП Айдана':          'РОП Айдана',
@@ -1266,6 +1260,21 @@ const MGR_TO_ROP = {
   'Пин 34 Карина':       'РОП Аслиддин',
   'Пин 32 Айжан':        'РОП Аслиддин',
 };
+let ROP_GROUPS = {
+  'all':          { label: 'Все группы',    color: '#6366f1' },
+  'РОП Айдана':   { label: 'РОП Айдана',   color: '#1a56db' },
+  'РОП Нурдаулет':{ label: 'РОП Нурдаулет',color: '#0a7c5c' },
+  'РОП Аслиддин': { label: 'РОП Аслиддин', color: '#b45309' },
+};
+const ROP_COLORS = {'РОП Айдана':'#1a56db','РОП Нурдаулет':'#0a7c5c','РОП Аслиддин':'#b45309'};
+function rebuildRopGroups() {
+  // Rebuild ROP_GROUPS from MGR_TO_ROP data
+  const ropSet = new Set(Object.values(MGR_TO_ROP));
+  ROP_GROUPS = { 'all': { label: 'Все группы', color: '#6366f1' } };
+  for (const rop of [...ropSet].sort()) {
+    ROP_GROUPS[rop] = { label: rop, color: ROP_COLORS[rop] || '#6366f1' };
+  }
+}
 let activeMgrRop = 'all';
 // ═══════════════════ DYNAMIC DATES ═══════════════════════════════
 const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
@@ -2316,6 +2325,12 @@ async function loadFromSupabase() {
       if (d.PLANS)       PLANS       = d.PLANS;
       if (d.CROSS_SALES) CROSS_SALES = d.CROSS_SALES;
       if (d.PRODUCTS)    PRODUCTS    = d.PRODUCTS;
+      if (d.MGR_TO_ROP && Object.keys(d.MGR_TO_ROP).length > 0) {
+        MGR_TO_ROP = d.MGR_TO_ROP;
+        rebuildRopGroups();
+        // Re-render ROP pills if Коллаген is active in managers view
+        if (activeMgrProd === 'Коллаген') renderRopPills();
+      }
       // Update badge
       const badge = document.getElementById('data-badge');
       if (badge && rows[0].updated_at) {
