@@ -746,8 +746,77 @@ async function loadRopStats() {
     // planToday(fullPlan) = fullPlan / totalDays * passedDays
     const planToday = fullPlan => totalDays > 0 ? Math.round(fullPlan / totalDays * passedDays) : 0;
 
+    // ─── Product-level plans for the period months ────────────
+    const prodPlanMap = { col:0, ummi:0, coffee:0 };
+    for (const mo of months) {
+      const [yy,mm] = mo.split('-');
+      const planKey = `${mm}.${yy}`;
+      const p = plans[planKey];
+      if (p) {
+        prodPlanMap.col    += p.col    || 0;
+        prodPlanMap.ummi   += p.ummi   || 0;
+        prodPlanMap.coffee += p.coffee || 0;
+      }
+    }
+
     // ─── Build HTML ───────────────────────────────────────────
     let html = `<div style="font-size:12px;color:var(--muted);margin-bottom:16px">Период: <strong style="color:var(--ink)">${range.label}</strong> · <span style="color:var(--muted)">${passedDays} из ${totalDays} дн.</span></div>`;
+
+    // ─── Коллаген overall plan banner ───
+    if (colProdPlan > 0) {
+      // Compute total Коллаген fact for the period
+      let colTotBudget=0, colTotLeads=0, colTotDeals=0;
+      for (const rop of ropNames) {
+        for (const mgr of (ropGroups[rop]||[])) {
+          const f = mgrFact[mgr] || {budget:0,leads:0,deals:0};
+          colTotBudget += f.budget;
+          colTotLeads  += f.leads;
+          colTotDeals  += f.deals;
+        }
+      }
+      const colPct = colProdPlan>0 ? Math.round(colTotBudget/colProdPlan*100) : 0;
+      const colConv = colTotLeads>0 ? (colTotDeals/colTotLeads*100).toFixed(1) : '0';
+      html += `
+      <div style="margin-bottom:20px;border:1px solid var(--line);border-radius:12px;overflow:hidden;border-left:4px solid #1a56db">
+        <div style="background:#eff6ff;padding:14px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div style="font-weight:700;font-size:15px;color:#1a56db;flex:1">Коллаген — общий</div>
+          <div style="display:flex;gap:16px;flex-wrap:wrap">
+            <div style="text-align:center">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Лиды</div>
+              <div style="font-size:16px;font-weight:700;color:var(--ink)">${colTotLeads.toLocaleString('ru')}</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Сделки</div>
+              <div style="font-size:16px;font-weight:700;color:var(--ink)">${colTotDeals.toLocaleString('ru')}</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Конверсия</div>
+              <div style="font-size:16px;font-weight:700;color:var(--ink)">${colConv}%</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Факт</div>
+              <div style="font-size:16px;font-weight:700;color:#1a56db">${fmt(colTotBudget)} ₸</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">План мес.</div>
+              <div style="font-size:16px;font-weight:700;color:#1a56db">${fmt(colProdPlan)} ₸</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">План до сег.</div>
+              <div style="font-size:16px;font-weight:700;color:var(--ink)">${fmt(planToday(colProdPlan))} ₸</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Выполнение</div>
+              ${(()=>{ const gc=colTotBudget-planToday(colProdPlan); return `<div style="font-size:16px;font-weight:700;color:${gc>=0?'#16a34a':'#dc2626'}">${gc>=0?'+':''}${fmt(gc)} ₸</div>`; })()}</div>
+            <div style="text-align:center;min-width:70px">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">% плана</div>
+              <div style="font-size:18px;font-weight:800" class="${pctCls(colPct)}">${colPct}%</div>
+              <div class="rop-bar" style="margin-top:4px"><div class="rop-fill" style="width:${Math.min(100,colPct)}%;background:${barClr(colPct)}"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }
 
     for (const rop of ropNames) {
       const mgrs = ropGroups[rop] || [];
@@ -846,19 +915,22 @@ async function loadRopStats() {
 
     wrap.innerHTML = html;
 
-    // ─── Ummi & Кофе managers (no ROP groups, show by product) ───
+    // ─── Ummi & Кофе managers (use product plan from weglow_plans) ───
     const EXTRA_PRODUCTS = [
-      { key: 'Ummi', label: 'Ummi', color: '#0a7c5c', bg: '#ecfdf5' },
-      { key: 'Кофе', label: 'Кофе', color: '#b45309', bg: '#fffbeb' },
+      { key: 'Ummi', label: 'Ummi', color: '#0a7c5c', bg: '#ecfdf5', planKey: 'ummi' },
+      { key: 'Кофе', label: 'Кофе', color: '#b45309', bg: '#fffbeb', planKey: 'coffee' },
     ];
 
     for (const ep of EXTRA_PRODUCTS) {
       const mgrList = managersData[ep.key] || [];
       if (!mgrList.length) continue;
 
+      // Product-level plan for the period
+      const productPlan = prodPlanMap[ep.planKey] || 0;
+
       // Compute fact per manager for period
       const rows = [];
-      let totPlan=0, totBudget=0, totLeads=0, totDeals=0;
+      let totBudget=0, totLeads=0, totDeals=0;
       for (const mgr of mgrList) {
         const fact = { leads:0, deals:0, budget:0 };
         if (mgr.daily && Object.keys(mgr.daily).length > 0) {
@@ -872,7 +944,6 @@ async function loadRopStats() {
             }
           }
         } else {
-          // Fallback proportional
           const rawData = dataRows[0]?.data?.RAW || {};
           const prodDates = rawData[ep.key] || {};
           const ptF={leads:0,deals:0,budget:0}, atF={leads:0,deals:0,budget:0};
@@ -890,21 +961,22 @@ async function loadRopStats() {
           fact.budget = Math.round(sB2*ptF.budget);
         }
 
+        // Individual plan from weglow_mgr_plans, or 0
         const plan    = mgrPlan[mgr.name] || 0;
         const planTod = planToday(plan);
         const gap     = fact.budget - planTod;
         const pct     = plan>0 ? Math.round(fact.budget/plan*100) : 0;
         const conv    = fact.leads>0 ? (fact.deals/fact.leads*100).toFixed(1) : '0';
-        totPlan   += plan;
         totBudget += fact.budget;
         totLeads  += fact.leads;
         totDeals  += fact.deals;
         rows.push({mgr:mgr.name, plan, planTod, gap, fact, pct, conv});
       }
 
-      // Sort by budget desc
       rows.sort((a,b) => b.fact.budget - a.fact.budget);
 
+      // Use product plan for overall stats
+      const totPlan = productPlan;
       const totPct  = totPlan>0 ? Math.round(totBudget/totPlan*100) : 0;
       const totConv = totLeads>0 ? (totDeals/totLeads*100).toFixed(1) : '0';
 
@@ -931,7 +1003,7 @@ async function loadRopStats() {
             </div>
             <div style="text-align:center">
               <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">План мес.</div>
-              <div style="font-size:16px;font-weight:700;color:var(--muted)">${fmt(totPlan)} ₸</div>
+              <div style="font-size:16px;font-weight:700;color:${ep.color}">${fmt(totPlan)} ₸</div>
             </div>
             <div style="text-align:center">
               <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">План до сег.</div>
