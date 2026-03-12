@@ -269,7 +269,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
     <!-- ROP PLAN/FACT -->
     <div class="history-card" style="margin-top:24px">
       <div class="history-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-        <span>👥 РОП — план / факт</span>
+        <span>👥 Менеджеры — план / факт</span>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <select class="month-sel" id="rop-period-type" onchange="onRopPeriodChange()" style="font-size:12px;padding:5px 10px">
             <option value="month">Месяц</option>
@@ -365,7 +365,12 @@ async function loadPlans(){
       for(const opt of monthOpts){
         ropSel.appendChild(opt.cloneNode(true));
       }
-      if(ropSel.options.length) { ropSel.value = ropSel.options[0].value; loadRopStats(); }
+      // Default to current month
+      const nowR = new Date();
+      const curMKR = `${String(nowR.getMonth()+1).padStart(2,'0')}.${nowR.getFullYear()}`;
+      const hasCur = [...ropSel.options].some(o => o.value === curMKR);
+      ropSel.value = hasCur ? curMKR : (ropSel.options[0]?.value || '');
+      if(ropSel.options.length) loadRopStats();
     }
   } catch(e){
     setBadge('Ошибка','err');
@@ -840,6 +845,142 @@ async function loadRopStats() {
     }
 
     wrap.innerHTML = html;
+
+    // ─── Ummi & Кофе managers (no ROP groups, show by product) ───
+    const EXTRA_PRODUCTS = [
+      { key: 'Ummi', label: 'Ummi', color: '#0a7c5c', bg: '#ecfdf5' },
+      { key: 'Кофе', label: 'Кофе', color: '#b45309', bg: '#fffbeb' },
+    ];
+
+    for (const ep of EXTRA_PRODUCTS) {
+      const mgrList = managersData[ep.key] || [];
+      if (!mgrList.length) continue;
+
+      // Compute fact per manager for period
+      const rows = [];
+      let totPlan=0, totBudget=0, totLeads=0, totDeals=0;
+      for (const mgr of mgrList) {
+        const fact = { leads:0, deals:0, budget:0 };
+        if (mgr.daily && Object.keys(mgr.daily).length > 0) {
+          for (const [dateStr, vals] of Object.entries(mgr.daily)) {
+            const [dd2,dmo2,dy2] = dateStr.split('.').map(Number);
+            const d2 = new Date(dy2, dmo2-1, dd2);
+            if (d2 >= fromD && d2 <= toD) {
+              fact.leads  += vals[0]||0;
+              fact.deals  += vals[1]||0;
+              fact.budget += vals[2]||0;
+            }
+          }
+        } else {
+          // Fallback proportional
+          const rawData = dataRows[0]?.data?.RAW || {};
+          const prodDates = rawData[ep.key] || {};
+          const ptF={leads:0,deals:0,budget:0}, atF={leads:0,deals:0,budget:0};
+          for (const [ds2, vl2] of Object.entries(prodDates)) {
+            const [dd3,dmo3,dy3] = ds2.split('.').map(Number);
+            const d3 = new Date(dy3,dmo3-1,dd3);
+            atF.leads+=vl2[0]||0; atF.deals+=vl2[1]||0; atF.budget+=vl2[2]||0;
+            if (d3>=fromD && d3<=toD) { ptF.leads+=vl2[0]||0; ptF.deals+=vl2[1]||0; ptF.budget+=vl2[2]||0; }
+          }
+          const sL2=atF.leads>0?(mgr.leads||0)/atF.leads:0;
+          const sD2=atF.deals>0?(mgr.deals||0)/atF.deals:0;
+          const sB2=atF.budget>0?(mgr.budget||0)/atF.budget:0;
+          fact.leads  = Math.round(sL2*ptF.leads);
+          fact.deals  = Math.round(sD2*ptF.deals);
+          fact.budget = Math.round(sB2*ptF.budget);
+        }
+
+        const plan    = mgrPlan[mgr.name] || 0;
+        const planTod = planToday(plan);
+        const gap     = fact.budget - planTod;
+        const pct     = plan>0 ? Math.round(fact.budget/plan*100) : 0;
+        const conv    = fact.leads>0 ? (fact.deals/fact.leads*100).toFixed(1) : '0';
+        totPlan   += plan;
+        totBudget += fact.budget;
+        totLeads  += fact.leads;
+        totDeals  += fact.deals;
+        rows.push({mgr:mgr.name, plan, planTod, gap, fact, pct, conv});
+      }
+
+      // Sort by budget desc
+      rows.sort((a,b) => b.fact.budget - a.fact.budget);
+
+      const totPct  = totPlan>0 ? Math.round(totBudget/totPlan*100) : 0;
+      const totConv = totLeads>0 ? (totDeals/totLeads*100).toFixed(1) : '0';
+
+      wrap.innerHTML += `
+      <div style="margin-bottom:24px;border:1px solid var(--line);border-radius:12px;overflow:hidden;border-left:4px solid ${ep.color}">
+        <div style="background:${ep.bg};padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div style="font-weight:700;font-size:15px;color:${ep.color};flex:1">${ep.label}</div>
+          <div style="display:flex;gap:16px;flex-wrap:wrap">
+            <div style="text-align:center">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Лиды</div>
+              <div style="font-size:16px;font-weight:700;color:var(--ink)">${totLeads.toLocaleString('ru')}</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Сделки</div>
+              <div style="font-size:16px;font-weight:700;color:var(--ink)">${totDeals.toLocaleString('ru')}</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Конверсия</div>
+              <div style="font-size:16px;font-weight:700;color:var(--ink)">${totConv}%</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Факт</div>
+              <div style="font-size:16px;font-weight:700;color:${ep.color}">${fmt(totBudget)} ₸</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">План мес.</div>
+              <div style="font-size:16px;font-weight:700;color:var(--muted)">${fmt(totPlan)} ₸</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">План до сег.</div>
+              <div style="font-size:16px;font-weight:700;color:var(--ink)">${fmt(planToday(totPlan))} ₸</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Выполнение</div>
+              ${(()=>{ const g2=totBudget-planToday(totPlan); return `<div style="font-size:16px;font-weight:700;color:${g2>=0?'#16a34a':'#dc2626'}">${g2>=0?'+':''}${fmt(g2)} ₸</div>`; })()}</div>
+            <div style="text-align:center;min-width:70px">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">% плана</div>
+              <div style="font-size:18px;font-weight:800" class="${pctCls(totPct)}">${totPct}%</div>
+              <div class="rop-bar" style="margin-top:4px"><div class="rop-fill" style="width:${Math.min(100,totPct)}%;background:${barClr(totPct)}"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="rop-table-wrap">
+        <table class="rop-table" style="margin:0">
+          <thead><tr>
+            <th>Менеджер</th>
+            <th>Лиды</th>
+            <th>Сделки</th>
+            <th>Конверсия</th>
+            <th>Факт ₸</th>
+            <th>План мес. ₸</th>
+            <th>План до сег. ₸</th>
+            <th>Выполнение</th>
+            <th>%</th>
+          </tr></thead>
+          <tbody>
+            ${rows.map(({mgr,plan,planTod,gap,fact,pct,conv})=>`
+            <tr>
+              <td><div class="rop-name">${mgr}</div></td>
+              <td>${fact.leads.toLocaleString('ru')}</td>
+              <td>${fact.deals.toLocaleString('ru')}</td>
+              <td>${conv}%</td>
+              <td style="font-weight:600">${fmt(fact.budget)} ₸</td>
+              <td style="color:var(--muted)">${fmt(plan)} ₸</td>
+              <td style="color:var(--slate)">${fmt(planTod)} ₸</td>
+              <td style="font-weight:700;color:${gap>=0?'#16a34a':'#dc2626'}">${gap>=0?'+':''}${fmt(gap)} ₸</td>
+              <td>
+                <span class="${pctCls(pct)}">${pct}%</span>
+                <div class="rop-bar"><div class="rop-fill" style="width:${Math.min(100,pct)}%;background:${barClr(pct)}"></div></div>
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+        </div>
+      </div>`;
+    }
 
   } catch(e) {
     wrap.innerHTML = `<div style="color:#dc2626;padding:16px">⚠ Ошибка: ${e.message}</div>`;
