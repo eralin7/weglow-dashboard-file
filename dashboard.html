@@ -1275,6 +1275,44 @@ function rebuildRopGroups() {
     ROP_GROUPS[rop] = { label: rop, color: ROP_COLORS[rop] || '#6366f1' };
   }
 }
+
+// ── Fuzzy lookup: match CRM manager name to MGR_TO_ROP key ──
+// CRM names may have full names (e.g. "пин 20 Жазира Ибраева")
+// while ROP cabinet stores shorter versions (e.g. "пин 20 Жазира")
+const _ropCache = {};
+function getRop(mgrName) {
+  if (_ropCache[mgrName] !== undefined) return _ropCache[mgrName];
+  // 1. Exact match
+  if (MGR_TO_ROP[mgrName]) { _ropCache[mgrName] = MGR_TO_ROP[mgrName]; return _ropCache[mgrName]; }
+  // 2. Case-insensitive exact
+  const lower = mgrName.toLowerCase();
+  for (const [k,v] of Object.entries(MGR_TO_ROP)) {
+    if (k.toLowerCase() === lower) { _ropCache[mgrName] = v; return v; }
+  }
+  // 3. Starts-with match (CRM name starts with ROP key or vice versa)
+  for (const [k,v] of Object.entries(MGR_TO_ROP)) {
+    const kl = k.toLowerCase();
+    if (lower.startsWith(kl) || kl.startsWith(lower)) { _ropCache[mgrName] = v; return v; }
+  }
+  // 4. Pin-number match: extract "пин N" or "Пин N" and match
+  const pinMatch = lower.match(/^п[иі]н\s*(\d+)/i);
+  if (pinMatch) {
+    const pinNum = pinMatch[1];
+    for (const [k,v] of Object.entries(MGR_TO_ROP)) {
+      const km = k.toLowerCase().match(/^п[иі]н\s*(\d+)/i);
+      if (km && km[1] === pinNum) { _ropCache[mgrName] = v; return v; }
+    }
+  }
+  // 5. РОП name exact
+  if (lower.startsWith('роп ')) {
+    for (const [k,v] of Object.entries(MGR_TO_ROP)) {
+      if (k.toLowerCase().startsWith('роп ') && lower.includes(k.toLowerCase().replace('роп ','').trim())) { _ropCache[mgrName] = v; return v; }
+    }
+  }
+  _ropCache[mgrName] = '';
+  return '';
+}
+function clearRopCache() { Object.keys(_ropCache).forEach(k => delete _ropCache[k]); }
 let activeMgrRop = 'all';
 // ═══════════════════ DYNAMIC DATES ═══════════════════════════════
 const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
@@ -2155,7 +2193,7 @@ function renderManagers(){
 
   // Filter by ROP group
   if(isCol && activeMgrRop!=='all'){
-    mgrs = mgrs.filter(m=>(MGR_TO_ROP[m.name]||'') === activeMgrRop);
+    mgrs = mgrs.filter(m=>getRop(m.name) === activeMgrRop);
   }
 
   // Group label in subtitle
@@ -2179,7 +2217,7 @@ function renderManagers(){
 
   let tbody='';
   withDeals.forEach((m,i)=>{
-    const ropGroup = isCol ? (MGR_TO_ROP[m.name]||'—') : '';
+    const ropGroup = isCol ? (getRop(m.name)||'—') : '';
     const ropColors={'РОП Айдана':'#1a56db','РОП Нурдаулет':'#0a7c5c','РОП Аслиддин':'#b45309'};
     const ropCellColor = ropColors[ropGroup]||'var(--muted)';
     const ropCell = isCol ? `<td style="font-size:11px;font-weight:600;color:${ropCellColor};white-space:nowrap">${ropGroup}</td>` : '';
@@ -2203,7 +2241,7 @@ function renderManagers(){
     const colspan = isCol ? 10 : 9;
     tbody+=`<tr><td colspan="${colspan}" style="text-align:center;color:var(--muted);font-size:11px;padding:10px;border-top:2px solid var(--line2);letter-spacing:1px">— Без сделок в периоде —</td></tr>`;
     withoutDeals.forEach(m=>{
-      const ropGroup = isCol ? (MGR_TO_ROP[m.name]||'—') : '';
+      const ropGroup = isCol ? (getRop(m.name)||'—') : '';
       const ropCell = isCol ? `<td style="font-size:11px">${ropGroup}</td>` : '';
       tbody+=`<tr style="opacity:.4"><td style="text-align:center">—</td><td>${m.name}</td>${ropCell}<td>${fmt(m.leads)}</td><td>0</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>`;
     });
@@ -2327,6 +2365,7 @@ async function loadFromSupabase() {
       if (d.PRODUCTS)    PRODUCTS    = d.PRODUCTS;
       if (d.MGR_TO_ROP && Object.keys(d.MGR_TO_ROP).length > 0) {
         MGR_TO_ROP = d.MGR_TO_ROP;
+        clearRopCache();
         rebuildRopGroups();
         // Re-render ROP pills if Коллаген is active in managers view
         if (activeMgrProd === 'Коллаген') renderRopPills();
