@@ -2093,6 +2093,10 @@ function aggregateManagersByPeriod(prodKey, from, to) {
   const allMgrs = (MANAGERS[prodKey] || []);
   const dates = new Set(getDatesInRange(from, to));
 
+  if (!allMgrs.length) {
+    console.warn('[MGR] No managers for', prodKey, '| available keys:', Object.keys(MANAGERS), '| MANAGERS sample:', JSON.stringify(Object.keys(MANAGERS).map(k=>[k, (MANAGERS[k]||[]).length])));
+  }
+
   return allMgrs.map(m => {
     // If manager has per-date breakdown — use it directly (accurate)
     if (m.daily && Object.keys(m.daily).length > 0) {
@@ -2134,7 +2138,9 @@ function aggregateManagersByPeriod(prodKey, from, to) {
 
 function renderManagers(){
   const{from,to}=activeMgrPeriod;
+  console.log('[renderManagers]', activeMgrProd, from, to, '| MANAGERS keys:', Object.keys(MANAGERS), '| count:', (MANAGERS[activeMgrProd]||[]).length);
   let mgrs = aggregateManagersByPeriod(activeMgrProd, from, to);
+  console.log('[renderManagers] result:', mgrs.length, 'managers with data');
   const cfg=Object.values(PROD_CFG).find(c=>c.mgrKey===activeMgrProd)||{color:'#6366f1'};
   const isCol = activeMgrProd==='Коллаген';
 
