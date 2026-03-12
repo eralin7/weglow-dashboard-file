@@ -629,7 +629,9 @@ function getRopDateRange() {
   // month mode
   const month = document.getElementById('rop-month-sel').value;
   if (!month) return null;
-  const [y, m] = month.split('-').map(Number);
+  // month format is MM.YYYY (from main selector)
+  const parts = month.includes('-') ? month.split('-') : month.split('.').reverse();
+  const [y, m] = parts.map(Number);
   const lastDay = new Date(y, m, 0).getDate();
   const pad = n => String(n).padStart(2,'0');
   return {
