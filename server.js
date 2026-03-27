@@ -67,13 +67,33 @@ async function findOrderField(acc) {
   } catch(e) { console.error(`[${acc.name}] findOrderField:`, e.message); return null; }
 }
 
+const ROP_NAME_MAP = {
+  'роп айдана':'РОП Айдана','айдана роп':'РОП Айдана',
+  'роп аслиддин':'РОП Аслиддин','роп нурдаулет':'РОП Нурдаулет',
+  'диас роп':'РОП Диас','роп диас':'РОП Диас',
+};
+function normalizeRopName(g) {
+  const l = g.toLowerCase().trim();
+  if (ROP_NAME_MAP[l]) return ROP_NAME_MAP[l];
+  for (const [k,v] of Object.entries(ROP_NAME_MAP)) { if (l.includes(k)||k.includes(l)) return v; }
+  return null;
+}
+
 async function loadUsers(acc) {
   const map = {};
+  const userGroups = {};
   try {
-    const d = await amoGet(acc.domain, acc.token, '/api/v4/users?limit=250');
-    for (const u of (d?._embedded?.users || [])) map[u.id] = u.name;
-    console.log(`[${acc.name}] ${Object.keys(map).length} users loaded`);
+    const d = await amoGet(acc.domain, acc.token, '/api/v4/users?with=group&limit=250');
+    for (const u of (d?._embedded?.users || [])) {
+      map[u.id] = u.name;
+      for (const g of (u?._embedded?.groups || [])) {
+        const rop = normalizeRopName(g.name || '');
+        if (rop) { userGroups[u.id] = rop; break; }
+      }
+    }
+    console.log(`[${acc.name}] ${Object.keys(map).length} users, ${Object.keys(userGroups).length} with ROP`);
   } catch(e) { console.error(`[${acc.name}] users:`, e.message); }
+  acc._userGroups = userGroups;
   return map;
 }
 
@@ -194,11 +214,23 @@ async function syncAll() {
     }
   }
 
-  // Preserve AD_SPEND from ad.html
-  let AD_SPEND = {};
-  try { const r = await sbGet('weglow_data?id=eq.1&select=data'); if (r[0]?.data?.AD_SPEND) AD_SPEND = r[0].data.AD_SPEND; } catch(e) {}
+  // Build MGR_TO_ROP from AmoCRM user groups
+  const MGR_TO_ROP = {};
+  for (const acc of ACCOUNTS) {
+    const ug = acc._userGroups || {};
+    const umap = userCache[acc.name] || {};
+    for (const [uid, ropName] of Object.entries(ug)) {
+      const mgrName = umap[uid];
+      if (mgrName && ropName) MGR_TO_ROP[mgrName] = ropName;
+    }
+  }
+  console.log(`[MGR_TO_ROP] ${Object.keys(MGR_TO_ROP).length} managers mapped to ROPs`);
 
-  await sbSave({ RAW, MANAGERS, AD_SPEND, updatedAt: new Date().toISOString() });
+  // Preserve AD_SPEND, ROP_PLANS from previous data
+  let AD_SPEND = {}, ROP_PLANS = {};
+  try { const r = await sbGet('weglow_data?id=eq.1&select=data'); if (r[0]?.data?.AD_SPEND) AD_SPEND = r[0].data.AD_SPEND; if (r[0]?.data?.ROP_PLANS) ROP_PLANS = r[0].data.ROP_PLANS; } catch(e) {}
+
+  await sbSave({ RAW, MANAGERS, AD_SPEND, ROP_PLANS, MGR_TO_ROP, updatedAt: new Date().toISOString() });
 
   const elapsed = ((Date.now()-t0)/1000).toFixed(1);
   lastSync = new Date().toISOString();
