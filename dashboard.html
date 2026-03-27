@@ -1042,13 +1042,16 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
     </div>
     <!-- Managers filters (hidden by default) -->
     <div id="mgr-filters" style="display:none;align-items:center;gap:6px;flex-wrap:wrap">
-      <span class="tb-label">Отдел:</span>
-      <button class="pill active" onclick="setMgrProd('Коллаген',this)">Коллаген</button>
-      <button class="pill" onclick="setMgrProd('Ummi',this)">Ummi</button>
+      <span class="tb-label">Группа:</span>
+      <button class="pill rop-pill active" onclick="setMgrRop('all',this)">Все</button>
+      <button class="pill rop-pill" onclick="setMgrRop('РОП Айдана',this)">Айдана</button>
+      <button class="pill rop-pill" onclick="setMgrRop('РОП Аслиддин',this)">Аслиддин</button>
+      <button class="pill rop-pill" onclick="setMgrRop('РОП Нурдаулет',this)">Нурдаулет</button>
+      <button class="pill rop-pill" onclick="setMgrRop('РОП Диас',this)">Диас</button>
+      <div class="pill-sep" id="prod-sub-sep" style="display:none"></div>
+      <span class="tb-label" id="prod-sub-label" style="display:none">Продукт:</span>
+      <div id="prod-sub-pills" style="display:contents"></div>
       <div class="pill-sep"></div>
-      <span class="tb-label" id="rop-filter-label" style="display:none">Группа:</span>
-      <div id="rop-group-pills" style="display:contents"></div>
-      <div class="pill-sep" id="rop-sep" style="display:none"></div>
       <span class="tb-label">Период:</span>
       <button class="pill period-pill" onclick="setMgrPreset('today',this)">Сегодня</button>
       <button class="pill period-pill" onclick="setMgrPreset('yesterday',this)">Вчера</button>
@@ -1222,13 +1225,14 @@ let AD_SPEND = AD_SPEND_STATIC; // Always start fresh, Supabase overwrites below
 let CROSS_SALES = (_loaded && _loaded.CROSS_SALES) ? _loaded.CROSS_SALES : {};
 let PRODUCTS    = (_loaded && _loaded.PRODUCTS)    ? _loaded.PRODUCTS    : {};
 let PLANS = _loaded && _loaded.PLANS ? _loaded.PLANS : {'col':{'03.2026':86000000,'02.2026':60000000,'01.2026':60000000,'12.2025':60000000,'11.2025':60000000,'10.2025':60000000},'ummi':{'03.2026':25000000,'02.2026':30000000,'01.2026':30000000,'12.2025':30000000,'11.2025':30000000}};
+let ROP_PLANS = (_loaded && _loaded.ROP_PLANS) ? _loaded.ROP_PLANS : {};
 
 const PROD_CFG = {
   col:    {name:'Коллаген', color:'#1a56db', rawKey:'Коллаген', mgrKey:'Коллаген'},
   ummi:   {name:'Ummi',     color:'#0a7c5c', rawKey:'Ummi',     mgrKey:'Ummi'},
 };
 
-// ═══ ROP GROUPS (Коллаген only) ═══════════════════════════════════
+// ═══ ROP GROUPS (all products) ════════════════════════════════════
 // Manager → ROP group mapping (from CRM data, synced from Supabase)
 let MGR_TO_ROP = {
   'Пин 7 Рахима':        'РОП Айдана',
@@ -1258,16 +1262,23 @@ let MGR_TO_ROP = {
   'Пин 32 Айжан':        'РОП Аслиддин',
 };
 let ROP_GROUPS = {
-  'all':          { label: 'Все группы',    color: '#6366f1' },
-  'РОП Айдана':   { label: 'РОП Айдана',   color: '#1a56db' },
-  'РОП Нурдаулет':{ label: 'РОП Нурдаулет',color: '#0a7c5c' },
-  'РОП Аслиддин': { label: 'РОП Аслиддин', color: '#b45309' },
+  'all':            { label: 'Все',            color: '#6366f1' },
+  'РОП Айдана':     { label: 'РОП Айдана',    color: '#1a56db' },
+  'РОП Аслиддин':   { label: 'РОП Аслиддин',  color: '#b45309' },
+  'РОП Нурдаулет':  { label: 'РОП Нурдаулет', color: '#0a7c5c' },
+  'РОП Диас':       { label: 'РОП Диас',      color: '#e11d48' },
 };
-const ROP_COLORS = {'РОП Айдана':'#1a56db','РОП Нурдаулет':'#0a7c5c','РОП Аслиддин':'#b45309'};
+const ROP_COLORS = {'РОП Айдана':'#1a56db','РОП Аслиддин':'#b45309','РОП Нурдаулет':'#0a7c5c','РОП Диас':'#e11d48'};
+const ROP_CRM_MAP = {
+  'РОП Айдана':    ['Коллаген', 'Ummi'],
+  'РОП Аслиддин':  ['Коллаген'],
+  'РОП Нурдаулет': ['Коллаген'],
+  'РОП Диас':      ['Ummi'],
+};
 function rebuildRopGroups() {
   // Rebuild ROP_GROUPS from MGR_TO_ROP data
   const ropSet = new Set(Object.values(MGR_TO_ROP));
-  ROP_GROUPS = { 'all': { label: 'Все группы', color: '#6366f1' } };
+  ROP_GROUPS = { 'all': { label: 'Все', color: '#6366f1' } };
   for (const rop of [...ropSet].sort()) {
     ROP_GROUPS[rop] = { label: rop, color: ROP_COLORS[rop] || '#6366f1' };
   }
@@ -1311,6 +1322,7 @@ function getRop(mgrName) {
 }
 function clearRopCache() { Object.keys(_ropCache).forEach(k => delete _ropCache[k]); }
 let activeMgrRop = 'all';
+let activeMgrProdSub = 'all';
 // ═══════════════════ DYNAMIC DATES ═══════════════════════════════
 const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 const MONTH_NAMES_GEN = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
@@ -1377,7 +1389,7 @@ const _defaultPreset = PRESETS[_defaultKey] || {from:'01.02.2026',to:'28.02.2026
 // ═══════════════════ STATE ════════════════════════════════════════
 let activeProd='all', activeMetric='budget', activeView='main';
 let activePeriod={..._defaultPreset, preset:_defaultKey};
-let activeMgrProd='Коллаген', activeMgrPeriod={..._defaultPreset, preset:_defaultKey};
+let activeMgrPeriod={..._defaultPreset, preset:_defaultKey};
 let activeAdPeriod={..._defaultPreset, preset:_defaultKey};
 let chartLine=null, chartDonut=null, mgrCharts={}, adCharts={};
 
@@ -1571,29 +1583,31 @@ function setMetric(m,el){
   markActive('[onclick^="setMetric"]',el);
   renderLine(lastStats);
 }
-function setMgrProd(p,el){
-  activeMgrProd=p;
-  activeMgrRop='all';
-  markActive('[onclick^="setMgrProd"]',el);
-  // Show/hide ROP group filter only for Коллаген
-  const isCol = p==='Коллаген';
-  document.getElementById('rop-filter-label').style.display = isCol?'':'none';
-  document.getElementById('rop-sep').style.display = isCol?'':'none';
-  if(isCol) renderRopPills();
-  else document.getElementById('rop-group-pills').innerHTML='';
+function setMgrRop(rop, el) {
+  activeMgrRop = rop;
+  activeMgrProdSub = 'all';
+  document.querySelectorAll('#mgr-filters .rop-pill').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
+
+  const crms = ROP_CRM_MAP[rop] || [];
+  const isMultiCrm = rop !== 'all' && crms.length > 1;
+  document.getElementById('prod-sub-sep').style.display = isMultiCrm ? '' : 'none';
+  document.getElementById('prod-sub-label').style.display = isMultiCrm ? '' : 'none';
+  const subContainer = document.getElementById('prod-sub-pills');
+  if(isMultiCrm) {
+    let html = '<button class="pill active" onclick="setMgrProdSub(\'all\',this)">Все</button>';
+    crms.forEach(c => { html += `<button class="pill" onclick="setMgrProdSub('${c}',this)">${c}</button>`; });
+    subContainer.innerHTML = html;
+  } else {
+    subContainer.innerHTML = '';
+  }
   renderManagers();
 }
-function renderRopPills(){
-  const container = document.getElementById('rop-group-pills');
-  container.innerHTML = Object.entries(ROP_GROUPS).map(([key,cfg])=>
-    `<button class="pill rop-pill ${key===activeMgrRop?'active':''}"
-      style="${key===activeMgrRop?`background:${cfg.color};border-color:${cfg.color};color:#fff`:''}"
-      onclick="setMgrRop('${key}',this)">${cfg.label}</button>`
-  ).join('');
-}
-function setMgrRop(rop, el){
-  activeMgrRop = rop;
-  renderRopPills();
+
+function setMgrProdSub(prod, el) {
+  activeMgrProdSub = prod;
+  document.querySelectorAll('#prod-sub-pills .pill').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
   renderManagers();
 }
 
@@ -1776,6 +1790,47 @@ function renderPlanTable(stats){
       <td style="color:${a.cplMonth?a.cplMonth<=3000?'#16a34a':a.cplMonth<=6000?'#ca8a04':'#c0392b':'var(--muted)'};font-weight:700"><strong>${a.cplMonth?fmt(a.cplMonth)+' ₸':'—'}</strong></td>
       <td style="color:#6366f1;font-weight:700"><strong>${a.rpl?fmt(a.rpl)+' ₸':'—'}</strong></td>
     </tr>`;
+  }
+
+  // ── ROP plan execution section ──
+  if (ROP_PLANS && Object.keys(ROP_PLANS).length > 0) {
+    const _planFrom = activePeriod.from;
+    const _planTo = activePeriod.to;
+    const mk = getMonthKey(parseDate(_planFrom));
+    rows += '<tr><td colspan="100%" style="padding:12px 8px 6px;border-top:2px solid var(--line);font-weight:700;font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Выполнение по группам</td></tr>';
+
+    for (const [ropName, ropCfg] of Object.entries(ROP_GROUPS)) {
+      if (ropName === 'all') continue;
+      const ropPlan = (ROP_PLANS[ropName] && ROP_PLANS[ropName][mk]) || 0;
+
+      // Aggregate data for this ROP
+      const crmKeys = ROP_CRM_MAP[ropName] || [];
+      let ropLeads=0, ropDeals=0, ropBudget=0;
+      crmKeys.forEach(crm => {
+        const mgrs = aggregateManagersByPeriod(crm, _planFrom, _planTo);
+        mgrs.filter(m => getRop(m.name) === ropName).forEach(m => {
+          ropLeads += m.leads||0;
+          ropDeals += m.deals||0;
+          ropBudget += m.budget||0;
+        });
+      });
+
+      const conv = ropLeads > 0 ? (ropDeals/ropLeads*100).toFixed(1) : '0.0';
+      const avgCheck = ropDeals > 0 ? Math.round(ropBudget/ropDeals) : 0;
+      const pct = ropPlan > 0 ? Math.round(ropBudget / ropPlan * 100) : 0;
+      const pctColor = pct >= 100 ? '#16a34a' : pct >= 80 ? '#ca8a04' : '#dc2626';
+
+      rows += `<tr>
+        <td><div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;border-radius:50%;background:${ropCfg.color}"></div><span style="font-weight:600;font-size:12px">${ropName}</span></div></td>
+        <td style="font-size:12px">${ropPlan ? fmtM(ropPlan) : '\u2014'}</td>
+        <td style="font-size:12px">${fmtM(ropBudget)}</td>
+        <td><div style="display:flex;align-items:center;gap:6px"><div style="width:60px;height:6px;border-radius:3px;background:var(--line)"><div style="width:${Math.min(pct,100)}%;height:100%;border-radius:3px;background:${pctColor}"></div></div><span style="font-size:11px;font-weight:700;color:${pctColor}">${pct}%</span></div></td>
+        <td style="font-size:12px">${ropLeads}</td>
+        <td style="font-size:12px">${ropDeals}</td>
+        <td style="font-size:12px">${conv}%</td>
+        <td style="font-size:12px">${fmtM(avgCheck)}</td>
+      </tr>`;
+    }
   }
 
   const isCur = (stats.parts ? Object.values(stats.parts)[0] : stats).isCurrentMonth;
@@ -2133,6 +2188,30 @@ function renderFtTotal() {
 }
 
 // ═══════════════════ MANAGERS ═════════════════════════════════════
+function aggregateManagersByRop(ropKey, prodFilter, from, to) {
+  let crmKeys;
+  if (ropKey === 'all') {
+    crmKeys = ['Коллаген', 'Ummi'];
+  } else if (prodFilter !== 'all') {
+    crmKeys = [prodFilter];
+  } else {
+    crmKeys = ROP_CRM_MAP[ropKey] || ['Коллаген'];
+  }
+
+  let allMgrs = [];
+  crmKeys.forEach(crm => {
+    const mgrs = aggregateManagersByPeriod(crm, from, to);
+    mgrs.forEach(m => { m._crm = crm; });
+    if (ropKey !== 'all') {
+      allMgrs.push(...mgrs.filter(m => getRop(m.name) === ropKey));
+    } else {
+      allMgrs.push(...mgrs);
+    }
+  });
+
+  return allMgrs.sort((a, b) => b.budget - a.budget);
+}
+
 function aggregateManagersByPeriod(prodKey, from, to) {
   const allMgrs = (MANAGERS[prodKey] || []);
   const dates = new Set(getDatesInRange(from, to));
@@ -2182,46 +2261,36 @@ function aggregateManagersByPeriod(prodKey, from, to) {
 
 function renderManagers(){
   const{from,to}=activeMgrPeriod;
-  console.log('[renderManagers]', activeMgrProd, from, to, '| MANAGERS keys:', Object.keys(MANAGERS), '| count:', (MANAGERS[activeMgrProd]||[]).length);
-  let mgrs = aggregateManagersByPeriod(activeMgrProd, from, to);
-  console.log('[renderManagers] result:', mgrs.length, 'managers with data');
-  const cfg=Object.values(PROD_CFG).find(c=>c.mgrKey===activeMgrProd)||{color:'#6366f1'};
-  const isCol = activeMgrProd==='Коллаген';
+  let mgrs = aggregateManagersByRop(activeMgrRop, activeMgrProdSub, from, to);
+  console.log('[renderManagers] rop:', activeMgrRop, 'prodSub:', activeMgrProdSub, 'result:', mgrs.length, 'managers');
 
-  // Filter by ROP group
-  if(isCol && activeMgrRop!=='all'){
-    mgrs = mgrs.filter(m=>getRop(m.name) === activeMgrRop);
-  }
+  const ropLabel = activeMgrRop !== 'all' ? ROP_GROUPS[activeMgrRop]?.label || activeMgrRop : 'Все группы';
+  const prodLabel = activeMgrProdSub !== 'all' ? ' \u00b7 ' + activeMgrProdSub : '';
+  document.getElementById('mgr-sub').textContent=`${activeMgrPeriod.label} \u00b7 ${ropLabel}${prodLabel}`;
 
-  // Group label in subtitle
-  const ropLabel = isCol && activeMgrRop!=='all' ? ` · ${activeMgrRop}` : '';
-  document.getElementById('mgr-sub').textContent=`${activeMgrPeriod.label} · ${activeMgrProd}${ropLabel}`;
+  const cfg = activeMgrRop !== 'all' ? {color: ROP_GROUPS[activeMgrRop]?.color || '#6366f1'} : {color:'#6366f1'};
 
   const withDeals=mgrs.filter(m=>m.deals>0).sort((a,b)=>b.budget-a.budget);
   const withoutDeals=mgrs.filter(m=>m.deals===0);
   const maxB=Math.max(...withDeals.map(m=>m.budget),1);
   const ranks=['🥇','🥈','🥉'];
 
-  // Show ROP group column only for Коллаген
-  const ropCol = isCol
-    ? `<th style="color:var(--muted);font-size:11px">Группа</th>` : '';
+  // Always show ROP group column
   document.querySelector('#view-managers .dt thead tr').innerHTML =
     `<th style="width:40px;text-align:center">#</th>
      <th style="text-align:left">Менеджер</th>
-     ${ropCol}
+     <th style="color:var(--muted);font-size:11px">Группа</th>
      <th>Лиды</th><th>Сделки</th><th>Выручка</th>
      <th>Конверсия</th><th class="ft-tooltip" data-tip="Конверсия первого касания из AmoCRM">1-е касание ✦</th><th>Ср. чек</th><th>Доля</th>`;
 
   let tbody='';
   withDeals.forEach((m,i)=>{
-    const ropGroup = isCol ? (getRop(m.name)||'—') : '';
-    const ropColors={'РОП Айдана':'#1a56db','РОП Нурдаулет':'#0a7c5c','РОП Аслиддин':'#b45309'};
-    const ropCellColor = ropColors[ropGroup]||'var(--muted)';
-    const ropCell = isCol ? `<td style="font-size:11px;font-weight:600;color:${ropCellColor};white-space:nowrap">${ropGroup}</td>` : '';
-    tbody+=`<tr data-mgr="${m.name}" data-prod="${activeMgrProd}" style="cursor:pointer" title="Нажмите для детального просмотра">
+    const ropGroup = getRop(m.name) || '—';
+    const ropCellColor = ROP_COLORS[ropGroup]||'var(--muted)';
+    tbody+=`<tr data-mgr="${m.name}" data-prod="${m._crm}" style="cursor:pointer" title="Нажмите для детального просмотра">
       <td style="text-align:center;font-size:${i<3?'16':'13'}px">${i<3?ranks[i]:i+1}</td>
       <td style="font-weight:600">${m.name}</td>
-      ${ropCell}
+      <td style="font-size:11px;font-weight:600;color:${ropCellColor};white-space:nowrap">${ropGroup}</td>
       <td>${fmt(m.leads)}</td>
       <td style="font-weight:700">${m.deals}</td>
       <td style="color:${cfg.color};font-weight:700">${fmtM(m.budget)}</td>
@@ -2235,12 +2304,10 @@ function renderManagers(){
     </tr>`;
   });
   if(withoutDeals.length){
-    const colspan = isCol ? 10 : 9;
-    tbody+=`<tr><td colspan="${colspan}" style="text-align:center;color:var(--muted);font-size:11px;padding:10px;border-top:2px solid var(--line2);letter-spacing:1px">— Без сделок в периоде —</td></tr>`;
+    tbody+=`<tr><td colspan="10" style="text-align:center;color:var(--muted);font-size:11px;padding:10px;border-top:2px solid var(--line2);letter-spacing:1px">— Без сделок в периоде —</td></tr>`;
     withoutDeals.forEach(m=>{
-      const ropGroup = isCol ? (getRop(m.name)||'—') : '';
-      const ropCell = isCol ? `<td style="font-size:11px">${ropGroup}</td>` : '';
-      tbody+=`<tr style="opacity:.4"><td style="text-align:center">—</td><td>${m.name}</td>${ropCell}<td>${fmt(m.leads)}</td><td>0</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>`;
+      const ropGroup = getRop(m.name) || '—';
+      tbody+=`<tr style="opacity:.4"><td style="text-align:center">—</td><td>${m.name}</td><td style="font-size:11px">${ropGroup}</td><td>${fmt(m.leads)}</td><td>0</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>`;
     });
   }
   document.getElementById('mgr-tbody').innerHTML=tbody;
@@ -2251,10 +2318,9 @@ function renderManagers(){
   const totBudget = withDeals.reduce((s,m)=>s+m.budget,0);
   const totConv   = totLeads>0 ? (totDeals/totLeads*100).toFixed(1) : 0;
   const totAvg    = totDeals>0 ? Math.round(totBudget/totDeals) : 0;
-  const tfootCols = isCol ? 10 : 9;
   document.getElementById('mgr-tfoot').innerHTML = `<tr>
     <td colspan="2" style="text-align:left">ИТОГО (${withDeals.length} чел.)</td>
-    ${isCol?'<td></td>':''}
+    <td></td>
     <td>${fmt(totLeads)}</td>
     <td>${fmt(totDeals)}</td>
     <td style="color:${cfg.color}">${fmtM(totBudget)}</td>
@@ -2363,9 +2429,8 @@ async function loadFromSupabase() {
         MGR_TO_ROP = d.MGR_TO_ROP;
         clearRopCache();
         rebuildRopGroups();
-        // Re-render ROP pills if Коллаген is active in managers view
-        if (activeMgrProd === 'Коллаген') renderRopPills();
       }
+      if (d.ROP_PLANS) ROP_PLANS = d.ROP_PLANS;
       // Update badge
       const badge = document.getElementById('data-badge');
       if (badge && rows[0].updated_at) {
@@ -3180,17 +3245,23 @@ function renderFunnel() {
   const {from, to} = activeMgrPeriod;
   if (lbl) lbl.textContent = activeMgrPeriod.label || '';
 
-  // Aggregate across selected product
-  const prodKeys = activeMgrProd === 'all'
-    ? Object.keys(PROD_CFG)
-    : Object.keys(PROD_CFG).filter(k => PROD_CFG[k].mgrKey === activeMgrProd);
+  // Aggregate across selected ROP / product
+  let crmKeys;
+  if (activeMgrRop === 'all') {
+    crmKeys = ['Коллаген', 'Ummi'];
+  } else if (activeMgrProdSub !== 'all') {
+    crmKeys = [activeMgrProdSub];
+  } else {
+    crmKeys = ROP_CRM_MAP[activeMgrRop] || ['Коллаген'];
+  }
 
   let totalLeads=0, totalDeals=0;
   const dates = new Set(getDatesInRange(from, to));
 
-  prodKeys.forEach(k => {
-    const mgrs = MANAGERS[PROD_CFG[k].mgrKey] || [];
+  crmKeys.forEach(crm => {
+    const mgrs = MANAGERS[crm] || [];
     mgrs.forEach(m => {
+      if (activeMgrRop !== 'all' && getRop(m.name) !== activeMgrRop) return;
       Object.entries(m.daily||{}).forEach(([d,v]) => {
         if (dates.has(d)) { totalLeads+=v[0]||0; totalDeals+=v[1]||0; }
       });
@@ -3202,8 +3273,8 @@ function renderFunnel() {
     return;
   }
 
-  const color = activeMgrProd && activeMgrProd!=='all'
-    ? (Object.values(PROD_CFG).find(p=>p.mgrKey===activeMgrProd)||{color:'#6366f1'}).color
+  const color = activeMgrRop !== 'all'
+    ? (ROP_GROUPS[activeMgrRop]?.color || '#6366f1')
     : '#6366f1';
 
   // Build funnel steps with realistic drop-offs
