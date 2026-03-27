@@ -1352,13 +1352,9 @@ function buildPresets() {
   presets.yesterday = { from: yesterdayStr, to: yesterdayStr, label: `Вчера, ${yest.getDate()} ${MONTH_NAMES_GEN[yest.getMonth()]}` };
   presets.week = { from: week7Str, to: todayStr, label: '7 дней' };
 
-  // Last 4 months
-  let y = now.getFullYear(), m = now.getMonth() + 1;
-  for (let i = 0; i < 5; i++) {
-    const p = _makeMonthPreset(y, m);
-    presets[p.key] = p;
-    m--; if (m === 0) { m = 12; y--; }
-  }
+  // Current month only
+  const p = _makeMonthPreset(now.getFullYear(), now.getMonth() + 1);
+  presets[p.key] = p;
   return presets;
 }
 let PRESETS = buildPresets();
@@ -1366,27 +1362,8 @@ let PRESETS = buildPresets();
 // Current month key — default to most recent month that has actual data
 const _cm = _now();
 const _currentKey = `m_${_cm.getFullYear()}_${_cm.getMonth()+1}`;
-// Find last month with data
-function _lastMonthWithData() {
-  const monthKeys = Object.keys(PRESETS).filter(k => k.startsWith('m_'));
-  for (const key of monthKeys) {
-    const p = PRESETS[key];
-    // Check if any product has data in this month
-    for (const prodKey of ['Коллаген','Ummi']) {
-      const raw = RAW[prodKey] || {};
-      const dates = Object.keys(raw);
-      const [fy, fm] = key.replace('m_','').split('_').map(Number);
-      const hasData = dates.some(d => {
-        const [dd,mm,yy] = d.split('.').map(Number);
-        return yy === fy && mm === fm;
-      });
-      if (hasData) return key;
-    }
-  }
-  return monthKeys[0];
-}
-const _defaultKey = _lastMonthWithData() || _currentKey;
-const _defaultPreset = PRESETS[_defaultKey] || {from:'01.02.2026',to:'28.02.2026',label:'Февраль 2026'};
+const _defaultKey = _currentKey;
+const _defaultPreset = PRESETS[_defaultKey] || _makeMonthPreset(_cm.getFullYear(), _cm.getMonth()+1);
 
 // ═══════════════════ STATE ════════════════════════════════════════
 let activeProd='all', activeMetric='budget', activeView='main';
