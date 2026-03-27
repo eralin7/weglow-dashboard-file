@@ -471,7 +471,7 @@ async function analyzeMgr(mgr, limit){
   const totalLeads  = mgr.leads.length;
   const conv = totalLeads > 0 ? Math.round(closedLeads/totalLeads*100) : 0;
 
-  const prompt = `Ты — эксперт по продажам WeGlow (БАДы: Коллаген, Ummi, Кофе).
+  const prompt = `Ты — эксперт по продажам WeGlow (БАДы: Коллаген, Ummi).
 Проанализируй работу менеджера по переписке с клиентами.
 
 Менеджер: ${mgr.name}

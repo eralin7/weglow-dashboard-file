@@ -63,7 +63,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 .month-label{font-size:18px;font-weight:700;color:var(--ink);}
 
 /* Plan cards */
-.plan-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:24px;}
+.plan-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-bottom:24px;}
 .plan-card{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 1px 6px rgba(15,22,35,.04);transition:box-shadow .2s;}
 .plan-card:hover{box-shadow:0 4px 16px rgba(15,22,35,.08);}
 .pc-head{display:flex;align-items:center;gap:10px;margin-bottom:20px;}
@@ -239,17 +239,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
           </div>
           <div class="pc-current" id="cur-ummi">Текущий: —</div>
         </div>
-        <div class="plan-card">
-          <div class="pc-head">
-            <div class="pc-dot" style="background:#b45309"></div>
-            <div class="pc-name">Кофе</div>
-          </div>
-          <div class="pc-field">
-            <div class="pc-label">План ₸</div>
-            <input class="pc-inp" type="number" id="plan-coffee" placeholder="15 000 000" min="0" step="1000000">
-          </div>
-          <div class="pc-current" id="cur-coffee">Текущий: —</div>
-        </div>
       </div>
 
       <div class="save-wrap">
@@ -337,7 +326,7 @@ async function sbPost(url,body,method='POST'){ const r=await fetch(url,{method,h
 // ══════════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════════
-// plans format: { "MM.YYYY": {col, ummi, coffee} }
+// plans format: { "MM.YYYY": {col, ummi} }
 let plans = {};
 let selectedMonth = null;
 
@@ -350,9 +339,9 @@ function fmt(n){ return (n||0).toLocaleString('ru-RU'); }
 async function loadPlans(){
   setBadge('Загрузка...','load');
   try {
-    const rows = await sbGet(`${SUPABASE_URL}/rest/v1/weglow_plans?select=month,col,ummi,coffee&order=month.desc`);
+    const rows = await sbGet(`${SUPABASE_URL}/rest/v1/weglow_plans?select=month,col,ummi&order=month.desc`);
     plans = {};
-    for(const r of rows) plans[r.month] = {col:r.col||0, ummi:r.ummi||0, coffee:r.coffee||0};
+    for(const r of rows) plans[r.month] = {col:r.col||0, ummi:r.ummi||0};
     setBadge('Синхронизировано ✓','ok');
     buildMonthSelector();
     renderHistory();
@@ -377,10 +366,10 @@ async function loadPlans(){
     console.error(e);
     // Fallback to embedded plans if Supabase fails
     plans = {
-      '03.2026':{col:86000000,ummi:25000000,coffee:30000000},
-      '02.2026':{col:60000000,ummi:30000000,coffee:15000000},
-      '01.2026':{col:60000000,ummi:30000000,coffee:15000000},
-      '12.2025':{col:60000000,ummi:30000000,coffee:15000000},
+      '03.2026':{col:86000000,ummi:25000000},
+      '02.2026':{col:60000000,ummi:30000000},
+      '01.2026':{col:60000000,ummi:30000000},
+      '12.2025':{col:60000000,ummi:30000000},
     };
     buildMonthSelector();
     renderHistory();
@@ -443,7 +432,7 @@ function addNextMonth(){
   const d = new Date(+yy, +mm-1-1, 1); // one month before earliest
   const newMK = `${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
   if(!options.includes(newMK)){
-    plans[newMK] = {col:0,ummi:0,coffee:0};
+    plans[newMK] = {col:0,ummi:0};
     selectedMonth = newMK;
     buildMonthSelector();
     fillForm();
@@ -455,10 +444,9 @@ function addNextMonth(){
 // ══════════════════════════════════════════════
 function fillForm(){
   if(!selectedMonth) return;
-  const p = plans[selectedMonth] || {col:0,ummi:0,coffee:0};
+  const p = plans[selectedMonth] || {col:0,ummi:0};
   document.getElementById('plan-col').value    = p.col    || '';
   document.getElementById('plan-ummi').value   = p.ummi   || '';
-  document.getElementById('plan-coffee').value = p.coffee || '';
 
   const showCur = (id, val) => {
     document.getElementById(id).innerHTML = val
@@ -467,7 +455,6 @@ function fillForm(){
   };
   showCur('cur-col',    p.col);
   showCur('cur-ummi',   p.ummi);
-  showCur('cur-coffee', p.coffee);
 }
 
 // ══════════════════════════════════════════════
@@ -476,9 +463,8 @@ function fillForm(){
 async function savePlans(){
   const col    = parseInt(document.getElementById('plan-col').value)||0;
   const ummi   = parseInt(document.getElementById('plan-ummi').value)||0;
-  const coffee = parseInt(document.getElementById('plan-coffee').value)||0;
 
-  if(!col && !ummi && !coffee){ showStatus('Введите хотя бы один план', 'err'); return; }
+  if(!col && !ummi){ showStatus('Введите хотя бы один план', 'err'); return; }
 
   document.getElementById('save-btn').disabled = true;
   showStatus('Сохранение...', 'load');
@@ -486,9 +472,9 @@ async function savePlans(){
   try {
     // Save to weglow_plans table
     await sbPost(`${SUPABASE_URL}/rest/v1/weglow_plans`,
-      {month: selectedMonth, col, ummi, coffee});
+      {month: selectedMonth, col, ummi});
 
-    plans[selectedMonth] = {col, ummi, coffee};
+    plans[selectedMonth] = {col, ummi};
 
     // Sync plans into weglow_data so dashboard reads them
     await syncPlansToDashboard();
@@ -506,14 +492,13 @@ async function savePlans(){
 }
 
 async function syncPlansToDashboard(){
-  // Build PLANS in dashboard format: {col:{MM.YYYY:amount}, ummi:{...}, coffee:{...}}
-  const PLANS = {col:{}, ummi:{}, coffee:{}};
+  // Build PLANS in dashboard format: {col:{MM.YYYY:amount}, ummi:{...}}
+  const PLANS = {col:{}, ummi:{}};
   for(const [month, p] of Object.entries(plans)){
     const [mm,yy] = month.split('.');
     const key = `${mm}.${yy}`;
     if(p.col)    PLANS.col[key]    = p.col;
     if(p.ummi)   PLANS.ummi[key]   = p.ummi;
-    if(p.coffee) PLANS.coffee[key] = p.coffee;
   }
   // Get existing weglow_data and update PLANS
   let rows;
@@ -554,12 +539,11 @@ function renderHistory(){
     const label = `${MONTH_NAMES[+mm-1]} ${yy}`;
     const isCur = month===curMK;
     const isSel = month===selectedMonth;
-    const total = (p.col||0)+(p.ummi||0)+(p.coffee||0);
+    const total = (p.col||0)+(p.ummi||0);
     return `<tr class="${isCur?'cur-row':''}">
       <td style="font-weight:600">${label} ${isCur?'<span class="tag-cur">текущий</span>':''}</td>
       <td style="color:#1a56db;font-weight:600">${fmtM(p.col)}</td>
       <td style="color:#0a7c5c;font-weight:600">${fmtM(p.ummi)}</td>
-      <td style="color:#b45309;font-weight:600">${fmtM(p.coffee)}</td>
       <td style="font-weight:700">${fmtM(total)}</td>
       <td><button class="edit-btn" onclick="editMonth('${month}')">✏️ Изменить</button></td>
     </tr>`;
@@ -571,7 +555,6 @@ function renderHistory(){
         <th>Месяц</th>
         <th style="color:#1a56db">Коллаген</th>
         <th style="color:#0a7c5c">Ummi</th>
-        <th style="color:#b45309">Кофе</th>
         <th>Итого</th>
         <th></th>
       </tr></thead>
@@ -747,7 +730,7 @@ async function loadRopStats() {
     const planToday = fullPlan => totalDays > 0 ? Math.round(fullPlan / totalDays * passedDays) : 0;
 
     // ─── Product-level plans for the period months ────────────
-    const prodPlanMap = { col:0, ummi:0, coffee:0 };
+    const prodPlanMap = { col:0, ummi:0 };
     for (const mo of months) {
       const [yy,mm] = mo.split('-');
       const planKey = `${mm}.${yy}`;
@@ -755,7 +738,6 @@ async function loadRopStats() {
       if (p) {
         prodPlanMap.col    += p.col    || 0;
         prodPlanMap.ummi   += p.ummi   || 0;
-        prodPlanMap.coffee += p.coffee || 0;
       }
     }
     const colProdPlan = prodPlanMap.col;
@@ -916,10 +898,9 @@ async function loadRopStats() {
 
     wrap.innerHTML = html;
 
-    // ─── Ummi & Кофе managers (use product plan from weglow_plans) ───
+    // ─── Ummi managers (use product plan from weglow_plans) ───
     const EXTRA_PRODUCTS = [
       { key: 'Ummi', label: 'Ummi', color: '#0a7c5c', bg: '#ecfdf5', planKey: 'ummi' },
-      { key: 'Кофе', label: 'Кофе', color: '#b45309', bg: '#fffbeb', planKey: 'coffee' },
     ];
 
     for (const ep of EXTRA_PRODUCTS) {

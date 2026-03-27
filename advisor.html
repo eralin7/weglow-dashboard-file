@@ -56,7 +56,7 @@ body{font-family:"DM Sans",sans-serif;background:var(--bg);color:var(--ink);min-
 .bg-y{background:var(--yellow-l);color:var(--yellow);}
 
 /* PRODUCT STRIP */
-.prod-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px;}
+.prod-strip{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:28px;}
 .prod-card{background:var(--white);border:1.5px solid var(--line);border-radius:12px;padding:14px 16px;}
 .prod-head{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
 .prod-dot{width:9px;height:9px;border-radius:50%;}
@@ -193,7 +193,6 @@ body{font-family:"DM Sans",sans-serif;background:var(--bg);color:var(--ink);min-
       <option value="all">Все продукты</option>
       <option value="col">Коллаген</option>
       <option value="ummi">Ummi</option>
-      <option value="coffee">Кофе</option>
     </select>
     <button class="analyze-btn" id="analyze-btn" onclick="runAnalysis()">
       <span>&#9889;</span> Анализировать
@@ -241,7 +240,6 @@ const SB_H = {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY};
 const PROD_CFG = {
   col:   {name:'Коллаген', color:'#1a56db', raw:'Коллаген'},
   ummi:  {name:'Ummi',     color:'#0a7c5c', raw:'Ummi'},
-  coffee:{name:'Кофе',     color:'#b45309', raw:'Кофе'},
 };
 const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 
@@ -302,7 +300,7 @@ function aggregateMK(raw, ad, plans, mk){
     let l=0,d=0,b=0,ad2=0;
     for(const [dt,v] of Object.entries(r)){ if(dates.has(dt)){l+=v[0]||0;d+=v[1]||0;b+=v[2]||0;} }
     for(const [dt,v] of Object.entries(a)){ if(dates.has(dt)) ad2+=v||0; }
-    const plan = plans[mk]?.[pk==='col'?'col':pk==='ummi'?'ummi':'coffee'] || 0;
+    const plan = plans[mk]?.[pk==='col'?'col':'ummi'] || 0;
     const planToday = plan&&isCurrent ? Math.round(plan/totalDays*passedDays) : plan;
     byProd[pk] = {
       leads:l, deals:d, budget:Math.round(b), ad:Math.round(ad2), plan,
@@ -423,7 +421,7 @@ function buildPrompt(curAgg, prevAgg, curMK, prevMK, prodFilter){
   let dataBlock = serProd(curAgg, curMK);
   if(prevAgg) dataBlock += serProd(prevAgg, prevMK);
 
-  return `Ты — опытный бизнес-аналитик компании WeGlow (продажа БАДов: Коллаген, Ummi, Кофе). Анализируй данные и давай КОНКРЕТНЫЕ рекомендации.
+  return `Ты — опытный бизнес-аналитик компании WeGlow (продажа БАДов: Коллаген, Ummi). Анализируй данные и давай КОНКРЕТНЫЕ рекомендации.
 
 ДАННЫЕ (${prodName}):
 ${dataBlock}
@@ -480,12 +478,12 @@ async function runAnalysis(){
     // Load data
     const [dataRows, planRows] = await Promise.all([
       sbGet(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data`),
-      sbGet(`${SUPABASE_URL}/rest/v1/weglow_plans?select=month,col,ummi,coffee`),
+      sbGet(`${SUPABASE_URL}/rest/v1/weglow_plans?select=month,col,ummi`),
     ]);
     const raw  = dataRows[0]?.data?.RAW      || {};
     const ad   = dataRows[0]?.data?.AD_SPEND || {};
     const plans = {};
-    for(const r of planRows) plans[r.month] = {col:r.col||0, ummi:r.ummi||0, coffee:r.coffee||0};
+    for(const r of planRows) plans[r.month] = {col:r.col||0, ummi:r.ummi||0};
 
     const curMK  = getMonthKey(0);
     const prevMK = getMonthKey(-1);
