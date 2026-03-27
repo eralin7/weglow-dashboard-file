@@ -255,6 +255,70 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
       </div>
     </div>
 
+    <!-- ROP GROUP PLANS -->
+    <div class="section" style="margin-top:32px">
+      <div class="section-title">Планы по группам (РОП) на <span id="rop-plan-month-label">—</span></div>
+      <div class="plan-grid" style="grid-template-columns:repeat(2,1fr)">
+        <div class="plan-card">
+          <div class="pc-head">
+            <div class="pc-dot" style="background:#1a56db"></div>
+            <div class="pc-name">РОП Айдана</div>
+          </div>
+          <div class="pc-field">
+            <div class="pc-label">План ₸</div>
+            <input class="pc-inp" type="number" id="rop-plan-aidana" placeholder="30 000 000" min="0" step="1000000">
+          </div>
+          <div class="pc-current" id="cur-rop-aidana">Текущий: —</div>
+        </div>
+        <div class="plan-card">
+          <div class="pc-head">
+            <div class="pc-dot" style="background:#b45309"></div>
+            <div class="pc-name">РОП Аслиддин</div>
+          </div>
+          <div class="pc-field">
+            <div class="pc-label">План ₸</div>
+            <input class="pc-inp" type="number" id="rop-plan-asliddin" placeholder="20 000 000" min="0" step="1000000">
+          </div>
+          <div class="pc-current" id="cur-rop-asliddin">Текущий: —</div>
+        </div>
+        <div class="plan-card">
+          <div class="pc-head">
+            <div class="pc-dot" style="background:#0a7c5c"></div>
+            <div class="pc-name">РОП Нурдаулет</div>
+          </div>
+          <div class="pc-field">
+            <div class="pc-label">План ₸</div>
+            <input class="pc-inp" type="number" id="rop-plan-nurdaulet" placeholder="25 000 000" min="0" step="1000000">
+          </div>
+          <div class="pc-current" id="cur-rop-nurdaulet">Текущий: —</div>
+        </div>
+        <div class="plan-card">
+          <div class="pc-head">
+            <div class="pc-dot" style="background:#e11d48"></div>
+            <div class="pc-name">РОП Диас</div>
+          </div>
+          <div class="pc-field">
+            <div class="pc-label">План ₸</div>
+            <input class="pc-inp" type="number" id="rop-plan-dias" placeholder="22 000 000" min="0" step="1000000">
+          </div>
+          <div class="pc-current" id="cur-rop-dias">Текущий: —</div>
+        </div>
+      </div>
+
+      <div class="save-wrap">
+        <button class="save-btn" id="save-rop-btn" onclick="saveRopPlans()">Сохранить планы РОП</button>
+        <span class="save-status" id="save-rop-status"></span>
+      </div>
+    </div>
+
+    <!-- ROP PLANS HISTORY -->
+    <div class="history-card" style="margin-bottom:24px">
+      <div class="history-title">📋 Планы РОП по месяцам</div>
+      <div id="rop-plan-history-wrap">
+        <div style="color:var(--muted);padding:24px;text-align:center;">Загрузка...</div>
+      </div>
+    </div>
+
     <!-- ROP PLAN/FACT -->
     <div class="history-card" style="margin-top:24px">
       <div class="history-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
@@ -346,6 +410,7 @@ async function loadPlans(){
     buildMonthSelector();
     renderHistory();
     fillForm();
+    loadRopPlans();
     // Populate ROP month selector with same months
     const ropSel = document.getElementById('rop-month-sel');
     if(ropSel){
@@ -374,6 +439,7 @@ async function loadPlans(){
     buildMonthSelector();
     renderHistory();
     fillForm();
+    loadRopPlans();
   }
 }
 
@@ -414,6 +480,7 @@ function onMonthChange(){
   selectedMonth = document.getElementById('month-sel').value;
   updateMonthLabel();
   fillForm();
+  fillRopForm();
 }
 
 function updateMonthLabel(){
@@ -567,6 +634,7 @@ function editMonth(month){
   document.getElementById('month-sel').value = month;
   updateMonthLabel();
   fillForm();
+  fillRopForm();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -594,6 +662,167 @@ function toast(text, type='ok'){
 function init(){ loadPlans(); }
 if(sessionStorage.getItem('dir_auth')==='1') init();
 
+
+// ══════════════════════════════════════════════
+// ROP GROUP PLANS
+// ══════════════════════════════════════════════
+const ROP_DEFS = [
+  {name:'РОП Айдана',    inputId:'rop-plan-aidana',    curId:'cur-rop-aidana',    color:'#1a56db'},
+  {name:'РОП Аслиддин',  inputId:'rop-plan-asliddin',  curId:'cur-rop-asliddin',  color:'#b45309'},
+  {name:'РОП Нурдаулет',  inputId:'rop-plan-nurdaulet', curId:'cur-rop-nurdaulet', color:'#0a7c5c'},
+  {name:'РОП Диас',       inputId:'rop-plan-dias',      curId:'cur-rop-dias',      color:'#e11d48'},
+];
+
+let ropPlans = {}; // { 'РОП Айдана': {'03.2026': 30000000, ...}, ... }
+
+async function loadRopPlans(){
+  try {
+    const rows = await sbGet(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data`);
+    const data = rows && rows[0] ? rows[0].data : {};
+    ropPlans = data.ROP_PLANS || {};
+    fillRopForm();
+    renderRopPlanHistory();
+  } catch(e){
+    console.error('loadRopPlans error:', e);
+  }
+}
+
+function fillRopForm(){
+  if(!selectedMonth) return;
+  const lbl = document.getElementById('rop-plan-month-label');
+  if(lbl){
+    const [mm,yy] = selectedMonth.split('.');
+    lbl.textContent = `${MONTH_NAMES[+mm-1]} ${yy}`;
+  }
+  for(const rop of ROP_DEFS){
+    const val = (ropPlans[rop.name] && ropPlans[rop.name][selectedMonth]) || 0;
+    document.getElementById(rop.inputId).value = val || '';
+    const curEl = document.getElementById(rop.curId);
+    curEl.innerHTML = val
+      ? `Текущий: <strong>${fmtM(val)}</strong>`
+      : `<span style="color:var(--muted)">Не задан</span>`;
+  }
+}
+
+async function saveRopPlans(){
+  const vals = {};
+  let anySet = false;
+  for(const rop of ROP_DEFS){
+    const v = parseInt(document.getElementById(rop.inputId).value) || 0;
+    vals[rop.name] = v;
+    if(v) anySet = true;
+  }
+
+  if(!anySet){ showRopStatus('Введите хотя бы один план', 'err'); return; }
+
+  document.getElementById('save-rop-btn').disabled = true;
+  showRopStatus('Сохранение...', 'load');
+
+  try {
+    // Read current weglow_data
+    const rows = await sbGet(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data`);
+    let payload = rows && rows[0] ? rows[0].data : {};
+    if(!payload.ROP_PLANS) payload.ROP_PLANS = {};
+
+    // Update each ROP for the selected month
+    for(const rop of ROP_DEFS){
+      if(!payload.ROP_PLANS[rop.name]) payload.ROP_PLANS[rop.name] = {};
+      payload.ROP_PLANS[rop.name][selectedMonth] = vals[rop.name];
+    }
+
+    payload.updatedAt = new Date().toISOString();
+
+    // Save back
+    await sbPost(`${SUPABASE_URL}/rest/v1/weglow_data`,
+      {id:1, data:payload, updated_at:new Date().toISOString()});
+
+    // Update local state
+    ropPlans = payload.ROP_PLANS;
+    fillRopForm();
+    renderRopPlanHistory();
+
+    const [mm,yy] = selectedMonth.split('.');
+    toast(`✓ Планы РОП на ${MONTH_NAMES[+mm-1]} ${yy} сохранены`, 'ok');
+    showRopStatus('');
+  } catch(e){
+    showRopStatus('Ошибка: '+e.message, 'err');
+    toast('Ошибка сохранения РОП', 'err');
+  } finally {
+    document.getElementById('save-rop-btn').disabled = false;
+  }
+}
+
+function showRopStatus(text, type){
+  const el = document.getElementById('save-rop-status');
+  el.textContent = text;
+  el.className = 'save-status' + (type==='ok'?' save-ok':type==='err'?' save-err':'');
+}
+
+function renderRopPlanHistory(){
+  const wrap = document.getElementById('rop-plan-history-wrap');
+  const now = new Date();
+  const curMK = `${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
+
+  // Collect all months across all ROPs
+  const monthSet = new Set();
+  for(const rop of ROP_DEFS){
+    const rp = ropPlans[rop.name] || {};
+    Object.keys(rp).forEach(m => monthSet.add(m));
+  }
+
+  if(!monthSet.size){
+    wrap.innerHTML = '<div style="color:var(--muted);padding:24px;text-align:center">Нет данных</div>';
+    return;
+  }
+
+  const sorted = [...monthSet].sort((a,b)=>{
+    const [am,ay]=a.split('.'); const [bm,by]=b.split('.');
+    return (+by*12+ +bm)-(+ay*12+ +am);
+  });
+
+  const headerCols = ROP_DEFS.map(r =>
+    `<th style="color:${r.color}">${r.name.replace('РОП ','')}</th>`
+  ).join('');
+
+  const rows = sorted.map(month => {
+    const [mm,yy] = month.split('.');
+    const label = `${MONTH_NAMES[+mm-1]} ${yy}`;
+    const isCur = month === curMK;
+    const isSel = month === selectedMonth;
+    let total = 0;
+    const cells = ROP_DEFS.map(r => {
+      const v = (ropPlans[r.name] && ropPlans[r.name][month]) || 0;
+      total += v;
+      return `<td style="color:${r.color};font-weight:600">${fmtM(v)}</td>`;
+    }).join('');
+    return `<tr class="${isCur?'cur-row':''}">
+      <td style="font-weight:600">${label} ${isCur?'<span class="tag-cur">текущий</span>':''}</td>
+      ${cells}
+      <td style="font-weight:700">${fmtM(total)}</td>
+      <td><button class="edit-btn" onclick="editRopMonth('${month}')">✏️ Изменить</button></td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <table class="dt">
+      <thead><tr>
+        <th>Месяц</th>
+        ${headerCols}
+        <th>Итого</th>
+        <th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function editRopMonth(month){
+  selectedMonth = month;
+  document.getElementById('month-sel').value = month;
+  updateMonthLabel();
+  fillForm();
+  fillRopForm();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 
 // ═══════════════════ ROP PLAN / FACT ═══════════════════════════
 function onRopPeriodChange() {
