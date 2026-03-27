@@ -1794,45 +1794,114 @@ function renderPlanTable(stats){
     </tr>`;
   }
 
-  // ── ROP plan execution section ──
-  if (ROP_PLANS && Object.keys(ROP_PLANS).length > 0) {
+  // ── ROP plan execution section (same format as product rows) ──
+  {
     const _planFrom = activePeriod.from;
     const _planTo = activePeriod.to;
-    const mk = getMonthKey(parseDate(_planFrom));
-    rows += '<tr><td colspan="100%" style="padding:12px 8px 6px;border-top:2px solid var(--line);font-weight:700;font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Выполнение по группам</td></tr>';
+    const _fromD = parseDate(_planFrom);
+    const _mk = getMonthKey(_fromD);
+    const _now = new Date();
+    const _mEnd = new Date(_fromD.getFullYear(), _fromD.getMonth()+1, 0);
+    const _totalDays = _mEnd.getDate();
+    const _passedDays = _now.getMonth()===_fromD.getMonth()&&_now.getFullYear()===_fromD.getFullYear() ? _now.getDate() : _totalDays;
+    const _isCurMonth = _now.getMonth()===_fromD.getMonth()&&_now.getFullYear()===_fromD.getFullYear();
+    const _daysLeft = _isCurMonth ? _totalDays - _now.getDate() : 0;
+    const selectedProdName = activeProd==='all' ? null : (PROD_CFG[activeProd]?.rawKey||null);
+
+    rows += '<tr><td colspan="100%" style="padding:14px 8px 6px;border-top:2px solid var(--line);font-weight:700;font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Выполнение по группам</td></tr>';
+
+    let rTotPlan=0,rTotPlanTod=0,rTotBudget=0,rTotLeads=0,rTotDeals=0,rTotAd=0;
 
     for (const [ropName, ropCfg] of Object.entries(ROP_GROUPS)) {
       if (ropName === 'all') continue;
-      const ropPlan = (ROP_PLANS[ropName] && ROP_PLANS[ropName][mk]) || 0;
+      const ropCrms = ROP_CRM_MAP[ropName] || [];
+      if (selectedProdName && !ropCrms.includes(selectedProdName)) continue;
+      const crms = selectedProdName ? ropCrms.filter(c=>c===selectedProdName) : ropCrms;
 
-      // Aggregate data for this ROP
-      const crmKeys = ROP_CRM_MAP[ropName] || [];
-      let ropLeads=0, ropDeals=0, ropBudget=0;
-      crmKeys.forEach(crm => {
+      let ropLeads=0, ropDeals=0, ropBudget=0, ropMonthBudget=0;
+      crms.forEach(crm => {
         const mgrs = aggregateManagersByPeriod(crm, _planFrom, _planTo);
-        mgrs.filter(m => getRop(m.name) === ropName).forEach(m => {
-          ropLeads += m.leads||0;
-          ropDeals += m.deals||0;
-          ropBudget += m.budget||0;
+        mgrs.filter(m => getRop(m.name)===ropName).forEach(m => {
+          ropLeads+=m.leads||0; ropDeals+=m.deals||0; ropBudget+=m.budget||0;
         });
+        // Month budget (full month for forecast)
+        if(_isCurMonth){
+          const mFrom = `01.${String(_fromD.getMonth()+1).padStart(2,'0')}.${_fromD.getFullYear()}`;
+          const mTo = `${_totalDays}.${String(_fromD.getMonth()+1).padStart(2,'0')}.${_fromD.getFullYear()}`;
+          const mMgrs = aggregateManagersByPeriod(crm, mFrom, mTo);
+          mMgrs.filter(m=>getRop(m.name)===ropName).forEach(m=>{ropMonthBudget+=m.budget||0;});
+        }
       });
+      if(!_isCurMonth) ropMonthBudget = ropBudget;
 
-      const conv = ropLeads > 0 ? (ropDeals/ropLeads*100).toFixed(1) : '0.0';
-      const avgCheck = ropDeals > 0 ? Math.round(ropBudget/ropDeals) : 0;
-      const pct = ropPlan > 0 ? Math.round(ropBudget / ropPlan * 100) : 0;
-      const pctColor = pct >= 100 ? '#16a34a' : pct >= 80 ? '#ca8a04' : '#dc2626';
+      const plan = (ROP_PLANS[ropName]&&ROP_PLANS[ropName][_mk])||0;
+      const planTod = plan>0&&_isCurMonth ? Math.round(plan*_passedDays/_totalDays) : 0;
+      const pct = plan>0 ? Math.round(ropMonthBudget/plan*100) : 0;
+      const execPct = planTod>0 ? Math.round(ropMonthBudget/planTod*100) : 0;
+      const remain = plan>0 ? Math.max(0,plan-ropMonthBudget) : 0;
+      const perDay = _daysLeft>0&&remain>0 ? Math.round(remain/_daysLeft) : 0;
+      const forecast = _isCurMonth&&_passedDays>0&&plan>0 ? Math.round((ropMonthBudget/_passedDays)*_totalDays) : 0;
+      const conv = ropLeads>0?(ropDeals/ropLeads*100).toFixed(1):'0.0';
+
+      // Ad spend
+      let adSpend=0;
+      crms.forEach(crm=>{const ad=AD_SPEND[crm]||{};Object.entries(ad).forEach(([d,v])=>{try{const dd=parseDate(d);if(dd>=_fromD&&dd<=parseDate(_planTo))adSpend+=v;}catch(e){}});});
+      const cplM = ropLeads>0&&adSpend>0?Math.round(adSpend/ropLeads):0;
+      const rpl = ropLeads>0&&ropBudget>0?Math.round(ropBudget/ropLeads):0;
+
+      rTotPlan+=plan; rTotPlanTod+=planTod; rTotBudget+=ropMonthBudget; rTotLeads+=ropLeads; rTotDeals+=ropDeals; rTotAd+=adSpend;
+
+      const remainCell = _isCurMonth && plan
+        ? remain===0
+          ? `<td style="color:#16a34a;font-weight:700">✓</td><td style="color:#16a34a">—</td>`
+          : `<td style="color:#ca8a04;font-weight:700">${fmt(remain)}</td><td style="color:#6366f1;font-weight:700">${fmt(perDay)}</td>`
+        : `<td style="color:var(--muted)">—</td><td style="color:var(--muted)">—</td>`;
+
+      const fcPct = plan>0&&forecast>0?Math.round(forecast/plan*100):0;
+      const fcClr = fcPct>=100?'#16a34a':fcPct>=80?'#ca8a04':'#dc2626';
 
       rows += `<tr>
-        <td><div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;border-radius:50%;background:${ropCfg.color}"></div><span style="font-weight:600;font-size:12px">${ropName}</span></div></td>
-        <td style="font-size:12px">${ropPlan ? fmtM(ropPlan) : '\u2014'}</td>
-        <td style="font-size:12px">${fmtM(ropBudget)}</td>
-        <td><div style="display:flex;align-items:center;gap:6px"><div style="width:60px;height:6px;border-radius:3px;background:var(--line)"><div style="width:${Math.min(pct,100)}%;height:100%;border-radius:3px;background:${pctColor}"></div></div><span style="font-size:11px;font-weight:700;color:${pctColor}">${pct}%</span></div></td>
-        <td style="font-size:12px">${ropLeads}</td>
-        <td style="font-size:12px">${ropDeals}</td>
-        <td style="font-size:12px">${conv}%</td>
-        <td style="font-size:12px">${fmtM(avgCheck)}</td>
+        <td><div class="prod-name"><div class="prod-dot" style="background:${ropCfg.color}"></div>${ropName}</div></td>
+        <td>${fmt(plan)}</td>
+        <td style="color:var(--slate);font-weight:600">${_isCurMonth?fmt(planTod):'—'}</td>
+        <td style="color:${ropCfg.color};font-weight:700">${fmt(ropMonthBudget)}</td>
+        <td><div class="bar-wrap">${_isCurMonth&&plan?`<span style="font-weight:700;font-size:13px;min-width:36px;text-align:right;color:${execPct>=100?'#16a34a':execPct>=80?'#ca8a04':'#dc2626'}">${execPct}%</span>`:`<span style="font-weight:700;font-size:13px;min-width:36px;text-align:right;color:${pct>=80?'#16a34a':'#ca8a04'}">${pct}%</span>`}</div></td>
+        <td style="font-weight:700;color:${forecast?fcClr:'var(--muted)'}">${forecast?fmt(forecast):'—'}</td>
+        ${remainCell}
+        <td>${fmt(ropLeads)}</td><td>${fmt(ropDeals)}</td>
+        <td class="${convCls(parseFloat(conv))}" style="font-weight:700">${conv}%</td>
+        <td style="color:${cplM?cplM<=3000?'#16a34a':cplM<=6000?'#ca8a04':'#c0392b':'var(--muted)'};font-weight:700">${cplM?fmt(cplM)+' ₸':'—'}</td>
+        <td style="color:#6366f1;font-weight:700">${rpl?fmt(rpl)+' ₸':'—'}</td>
       </tr>`;
     }
+
+    // ROP totals row
+    const rTotConv = rTotLeads>0?(rTotDeals/rTotLeads*100).toFixed(1):'0.0';
+    const rTotCpl = rTotLeads>0&&rTotAd>0?Math.round(rTotAd/rTotLeads):0;
+    const rTotRpl = rTotLeads>0&&rTotBudget>0?Math.round(rTotBudget/rTotLeads):0;
+    const rTotPct = rTotPlanTod>0?Math.round(rTotBudget/rTotPlanTod*100):0;
+    const rTotRemain = rTotPlan>0?Math.max(0,rTotPlan-rTotBudget):0;
+    const rTotPerDay = _daysLeft>0&&rTotRemain>0?Math.round(rTotRemain/_daysLeft):0;
+    const rTotFc = _isCurMonth&&_passedDays>0&&rTotPlan>0?Math.round((rTotBudget/_passedDays)*_totalDays):0;
+    const rTotFcPct = rTotPlan>0&&rTotFc>0?Math.round(rTotFc/rTotPlan*100):0;
+    const rTotRemainCell = _isCurMonth&&rTotPlan
+      ? rTotRemain===0?`<td style="color:#16a34a;font-weight:700"><strong>✓</strong></td><td>—</td>`
+        :`<td style="color:#ca8a04;font-weight:700"><strong>${fmt(rTotRemain)}</strong></td><td style="color:#6366f1;font-weight:700"><strong>${fmt(rTotPerDay)}</strong></td>`
+      : `<td>—</td><td>—</td>`;
+
+    rows += `<tr class="tr-sum" style="border-top:1.5px solid var(--line)">
+      <td><div class="prod-name"><div class="prod-dot" style="background:#6366f1"></div><strong>ИТОГО РОП</strong></div></td>
+      <td><strong>${fmt(rTotPlan)}</strong></td>
+      <td style="color:var(--slate);font-weight:600">${_isCurMonth?fmt(rTotPlanTod):'—'}</td>
+      <td style="color:#6366f1;font-weight:700"><strong>${fmt(rTotBudget)}</strong></td>
+      <td><div class="bar-wrap">${_isCurMonth&&rTotPlan?`<span style="font-weight:700;font-size:13px;color:${rTotPct>=100?'#16a34a':rTotPct>=80?'#ca8a04':'#dc2626'};min-width:36px;text-align:right">${rTotPct}%</span>`:`<span style="font-weight:700;font-size:13px;min-width:36px;text-align:right">—</span>`}</div></td>
+      <td style="font-weight:700;color:${rTotFc?rTotFcPct>=100?'#16a34a':rTotFcPct>=80?'#ca8a04':'#dc2626':'var(--muted)'}"><strong>${rTotFc?fmt(rTotFc):'—'}</strong></td>
+      ${rTotRemainCell}
+      <td><strong>${fmt(rTotLeads)}</strong></td><td><strong>${fmt(rTotDeals)}</strong></td>
+      <td class="${convCls(parseFloat(rTotConv))}" style="font-weight:700"><strong>${rTotConv}%</strong></td>
+      <td style="color:${rTotCpl?rTotCpl<=3000?'#16a34a':rTotCpl<=6000?'#ca8a04':'#c0392b':'var(--muted)'};font-weight:700"><strong>${rTotCpl?fmt(rTotCpl)+' ₸':'—'}</strong></td>
+      <td style="color:#6366f1;font-weight:700"><strong>${rTotRpl?fmt(rTotRpl)+' ₸':'—'}</strong></td>
+    </tr>`;
   }
 
   const isCur = (stats.parts ? Object.values(stats.parts)[0] : stats).isCurrentMonth;
