@@ -1894,11 +1894,20 @@ function renderRopKPI(stats) {
   const curPassedDays = now.getDate();
   const daysLeft = curTotalDays - curPassedDays;
 
+  // Filter ROPs by selected product
+  const selectedProdName = activeProd === 'all' ? null : (PROD_CFG[activeProd]?.rawKey || null);
+
   let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;margin-bottom:24px">';
 
   for (const [ropName, ropCfg] of Object.entries(ROP_GROUPS)) {
     if (ropName === 'all') continue;
-    const crms = ROP_CRM_MAP[ropName] || [];
+    const ropCrms = ROP_CRM_MAP[ropName] || [];
+
+    // Skip ROPs that don't work in the selected product's CRM
+    if (selectedProdName && !ropCrms.includes(selectedProdName)) continue;
+
+    // Use only filtered CRMs (if product selected, only that CRM)
+    const crms = selectedProdName ? ropCrms.filter(c => c === selectedProdName) : ropCrms;
     let leads=0, deals=0, budget=0, mgrCount=0;
 
     crms.forEach(crm => {
