@@ -2567,19 +2567,8 @@ async function loadFromSupabase() {
       // Save to sessionStorage for next load (faster)
       sessionStorage.setItem('wg_data', JSON.stringify(d));
 
-      // Switch to current month (Almaty UTC+5)
+      // Rebuild presets but keep current filter selection
       PRESETS = buildPresets();
-      const _curNow = new Date();
-      const _cy = _curNow.getFullYear(), _cm = _curNow.getMonth()+1;
-      const _curKey = 'm_'+_cy+'_'+_cm;
-      if (PRESETS[_curKey]) {
-        activePeriod    = { ...PRESETS[_curKey], preset:_curKey };
-        activeMgrPeriod = { ...PRESETS[_curKey], preset:_curKey };
-        activeAdPeriod  = { ...PRESETS[_curKey], preset:_curKey };
-        document.querySelectorAll('.pill[data-preset]').forEach(p=>{
-          p.classList.toggle('active', p.dataset.preset===_curKey);
-        });
-      }
 
       // Re-render with fresh data
       render();
