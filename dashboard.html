@@ -506,52 +506,47 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
 .view-hdr p { font-size:13px; color:var(--muted); margin-top:4px; }
 
 /* ─── KPI GRID ───────────────────────────────────────── */
-.kpi-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:16px; }
+.kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px; }
 .kpi-card {
-  position:relative; padding:14px 16px; border-radius:var(--r);
+  position:relative; padding:16px 18px; border-radius:var(--r);
   background:#ffffff; border:1px solid var(--line);
   overflow:hidden; cursor:default;
   transition:transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s;
+  display:flex; flex-direction:column;
 }
-.kpi-card:hover { transform:translateY(-3px) scale(1.01); }
+.kpi-card:hover { transform:translateY(-3px); box-shadow:0 8px 24px rgba(15,22,35,.08); }
 .kpi-card::before {
   content:''; position:absolute; inset:0; border-radius:var(--r);
-  background:
-    linear-gradient(to right,  rgba(255,204,112,.18) 0%, transparent 35%),
-    linear-gradient(to left,   rgba(65,88,208,.15)  0%, transparent 35%),
-    linear-gradient(to bottom, rgba(200,80,192,.10) 0%, transparent 40%);
-  opacity:0; transition:opacity .35s; pointer-events:none; z-index:0;
+  background:linear-gradient(135deg, rgba(99,102,241,.06) 0%, transparent 60%);
+  opacity:0; transition:opacity .3s; pointer-events:none; z-index:0;
 }
 .kpi-card:hover::before { opacity:1; }
-.kpi-card::after {
-  content:''; position:absolute; inset:-1px;
-  border-radius:calc(var(--r) + 1px);
-  box-shadow:
-    0 0 16px rgba(255,204,112,.45),
-    0 0 32px rgba(200,80,192,.3),
-    0 0 48px rgba(65,88,208,.2);
-  opacity:0; transition:opacity .35s; pointer-events:none; z-index:0;
-}
-.kpi-card:hover::after { opacity:1; }
 .kpi-card .glow-border {
   position:absolute; inset:0; border-radius:var(--r);
   border:1.5px solid transparent;
   background:linear-gradient(white,white) padding-box,
-    linear-gradient(135deg,rgba(255,204,112,.8),rgba(200,80,192,.6),rgba(65,88,208,.5)) border-box;
-  opacity:0; transition:opacity .35s; pointer-events:none; z-index:1;
+    linear-gradient(135deg,rgba(99,102,241,.4),rgba(168,85,247,.3),rgba(59,130,246,.3)) border-box;
+  opacity:0; transition:opacity .3s; pointer-events:none; z-index:1;
 }
 .kpi-card:hover .glow-border { opacity:1; }
 .kpi-card > *:not(.glow-border) { position:relative; z-index:2; }
-.kc-lbl { font-size:9px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
-.kc-val { font-family:'Playfair Display',serif; font-size:22px; font-weight:700; color:var(--ink); line-height:1.1; margin-bottom:4px; letter-spacing:-.3px; transition:text-shadow .3s; }
-.kpi-card:hover .kc-val { text-shadow:0 0 14px var(--kc,rgba(255,204,112,.6)); }
+.kc-lbl { font-size:9px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+.kc-val { font-family:'Playfair Display',serif; font-size:24px; font-weight:700; color:var(--ink); line-height:1.1; margin-bottom:4px; letter-spacing:-.3px; transition:text-shadow .3s; }
+.kpi-card:hover .kc-val { text-shadow:0 0 12px var(--kc,rgba(99,102,241,.3)); }
 .kc-sub { font-size:10px; color:var(--muted); }
-.kc-badge { display:inline-flex; align-items:center; gap:3px; padding:2px 7px; border-radius:20px; font-size:9px; font-weight:700; margin-top:6px; }
+.kc-badge { display:inline-flex; align-items:center; gap:3px; padding:2px 8px; border-radius:20px; font-size:9px; font-weight:700; margin-top:6px; }
 .bg-g { background:var(--green-l); color:var(--green); }
 .bg-r { background:var(--red-l);   color:var(--red);   }
 .bg-y { background:var(--gold-l);  color:var(--gold);  }
+.kpi-spark { margin-top:auto; padding-top:8px; }
 
-.rop-grid { grid-template-columns: repeat(4, 1fr); }
+/* ─── ROP GRID ──────────────────────────────────────── */
+.rop-grid { grid-template-columns:repeat(4,1fr); }
+.rop-section-label {
+  font-size:9px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+  color:var(--muted); margin:4px 0 10px; display:flex; align-items:center; gap:10px;
+}
+.rop-section-label::after { content:''; flex:1; height:1px; background:var(--line); }
 
 /* ─── SECTION LABEL ──────────────────────────────────── */
 .sec-label {
@@ -702,31 +697,27 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
 ═══════════════════════════════════════════ */
 /* ── Большие экраны (≥ 1600px) ── */
 @media (min-width: 1600px) {
-  .kpi-grid { grid-template-columns: repeat(5, 1fr); gap: 14px; }
-  .kpi-card { padding: 18px 20px; }
-  .kc-val { font-size: 24px; }
-  .kc-lbl { font-size: 10px; }
+  .kpi-grid { grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .kpi-card { padding: 20px 22px; }
+  .kc-val { font-size: 26px; }
   .page { padding: 28px 36px; }
-}
-
-/* ── Средние экраны (1200-1599px) ── */
-@media (max-width: 1599px) {
-  .kpi-grid { grid-template-columns: repeat(5, 1fr); gap: 10px; }
 }
 
 /* ── Небольшие десктопы (1024-1199px) ── */
 @media (max-width: 1199px) {
-  .kpi-grid { grid-template-columns: repeat(4, 1fr) !important; gap: 10px; }
-  .kpi-card { padding: 12px 14px; }
-  .kc-val { font-size: 20px; }
+  .kpi-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 10px; }
+  .rop-grid { grid-template-columns: repeat(4, 1fr) !important; }
+  .kpi-card { padding: 14px 16px; }
+  .kc-val { font-size: 21px; }
   .charts-row { grid-template-columns: 1fr !important; }
 }
 
 /* ── Планшеты (769-1023px) ── */
 @media (max-width: 1023px) {
-  .kpi-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 8px; }
-  .kpi-card { padding: 12px 12px; }
-  .kc-val { font-size: 19px !important; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px; }
+  .rop-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .kpi-card { padding: 14px 14px; }
+  .kc-val { font-size: 20px !important; }
   .page { padding: 16px 14px; }
   .prod-stats { grid-template-columns: 1fr 1fr !important; }
 }
@@ -1965,7 +1956,7 @@ function renderRopKPI(stats) {
   // Filter ROPs by selected product
   const selectedProdName = activeProd === 'all' ? null : (PROD_CFG[activeProd]?.rawKey || null);
 
-  let html = '<div class="kpi-grid rop-grid">';
+  let html = '<div class="rop-section-label">Показатели по группам</div><div class="kpi-grid rop-grid">';
 
   for (const [ropName, ropCfg] of Object.entries(ROP_GROUPS)) {
     if (ropName === 'all') continue;
@@ -2018,21 +2009,25 @@ function renderRopKPI(stats) {
     const fmtK = n => n >= 1e6 ? (n/1e6).toFixed(1) + 'M' : n >= 1e3 ? Math.round(n/1e3) + 'K' : n.toString();
 
     html += `
-    <div class="kpi-card" style="--kc:${ropCfg.color}40;border-top:2px solid ${ropCfg.color}">
-      <div class="glow-border"></div>
+    <div class="kpi-card" style="--kc:${ropCfg.color}30;border-top:3px solid ${ropCfg.color}">
+      <div class="glow-border" style="background:linear-gradient(white,white) padding-box,linear-gradient(135deg,${ropCfg.color}66,${ropCfg.color}33) border-box"></div>
       <div class="kc-lbl" style="display:flex;justify-content:space-between;align-items:center">
         <span style="color:${ropCfg.color}">${ropName.replace('РОП ','')}</span>
-        <span style="font-size:8px;color:var(--muted);letter-spacing:0;text-transform:none;font-weight:400">${mgrCount} чел.</span>
+        <span style="font-size:8px;color:var(--muted);letter-spacing:0;text-transform:none;font-weight:500">${mgrCount} менедж.</span>
       </div>
       <div class="kc-val" style="color:${ropCfg.color}">${fmtK(budget)} ₸</div>
-      ${planPeriod > 0 ? `<div style="height:4px;border-radius:2px;background:var(--line);margin:6px 0 3px">
-        <div style="width:${Math.min(pct,100)}%;height:100%;border-radius:2px;background:${pctClr};transition:width .3s"></div>
+      <div class="kc-sub">${planPeriod>0?'план '+fmtK(planPeriod)+' ₸':'выручка за период'}</div>
+      ${planPeriod > 0 ? `<div style="height:5px;border-radius:3px;background:var(--line);margin:8px 0 4px">
+        <div style="width:${Math.min(pct,100)}%;height:100%;border-radius:3px;background:${pctClr};transition:width .3s"></div>
       </div>
-      <div class="kc-sub">${pct}%${stats.isCurrentMonth && forecast ? ' · ~'+fmtK(forecast) : ''}</div>` : `<div class="kc-sub">выручка</div>`}
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px 8px;font-size:9px;margin-top:8px;padding-top:6px;border-top:1px solid var(--line)">
-        <div><span style="color:var(--muted)">Лиды</span> <strong>${leads.toLocaleString('ru')}</strong></div>
-        <div><span style="color:var(--muted)">Сделки</span> <strong>${deals}</strong></div>
-        <div><span style="color:var(--muted)">Конв.</span> <strong style="color:${parseFloat(conv)>=12?'#16a34a':'#dc2626'}">${conv}%</strong></div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:4px">
+        <span style="font-weight:700;color:${pctClr}">${pct}% выполнено</span>
+        ${stats.isCurrentMonth && forecast ? `<span style="color:var(--muted)">прогноз ${fmtK(forecast)}</span>` : ''}
+      </div>` : ''}
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 10px;font-size:10px;margin-top:auto;padding-top:8px;border-top:1px solid var(--line)">
+        <div><div style="color:var(--muted);font-size:8px;text-transform:uppercase;letter-spacing:.5px">Лиды</div><div style="font-weight:700;font-size:14px">${leads.toLocaleString('ru')}</div></div>
+        <div><div style="color:var(--muted);font-size:8px;text-transform:uppercase;letter-spacing:.5px">Сделки</div><div style="font-weight:700;font-size:14px">${deals}</div></div>
+        <div><div style="color:var(--muted);font-size:8px;text-transform:uppercase;letter-spacing:.5px">Конверсия</div><div style="font-weight:700;font-size:14px;color:${parseFloat(conv)>=12?'#16a34a':'#dc2626'}">${conv}%</div></div>
       </div>
     </div>`;
   }
