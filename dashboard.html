@@ -551,6 +551,8 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
 .bg-r { background:var(--red-l);   color:var(--red);   }
 .bg-y { background:var(--gold-l);  color:var(--gold);  }
 
+.rop-grid { grid-template-columns: repeat(4, 1fr); }
+
 /* ─── SECTION LABEL ──────────────────────────────────── */
 .sec-label {
   font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
@@ -698,6 +700,38 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
 /* ═══════════════════════════════════════════
    МОБИЛЬНАЯ АДАПТАЦИЯ — DASHBOARD
 ═══════════════════════════════════════════ */
+/* ── Большие экраны (≥ 1600px) ── */
+@media (min-width: 1600px) {
+  .kpi-grid { grid-template-columns: repeat(5, 1fr); gap: 14px; }
+  .kpi-card { padding: 18px 20px; }
+  .kc-val { font-size: 24px; }
+  .kc-lbl { font-size: 10px; }
+  .page { padding: 28px 36px; }
+}
+
+/* ── Средние экраны (1200-1599px) ── */
+@media (max-width: 1599px) {
+  .kpi-grid { grid-template-columns: repeat(5, 1fr); gap: 10px; }
+}
+
+/* ── Небольшие десктопы (1024-1199px) ── */
+@media (max-width: 1199px) {
+  .kpi-grid { grid-template-columns: repeat(4, 1fr) !important; gap: 10px; }
+  .kpi-card { padding: 12px 14px; }
+  .kc-val { font-size: 20px; }
+  .charts-row { grid-template-columns: 1fr !important; }
+}
+
+/* ── Планшеты (769-1023px) ── */
+@media (max-width: 1023px) {
+  .kpi-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 8px; }
+  .kpi-card { padding: 12px 12px; }
+  .kc-val { font-size: 19px !important; }
+  .page { padding: 16px 14px; }
+  .prod-stats { grid-template-columns: 1fr 1fr !important; }
+}
+
+/* ── Мобильные (≤ 768px) ── */
 @media (max-width: 768px) {
 
   /* ── Сайдбар: выезжает поверх контента ── */
@@ -1094,8 +1128,8 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
       <div class="kpi-grid" id="kpi-grid"></div>
       <div id="rop-kpi-section"></div>
       <div class="sec-label mb20">Выполнение плана по группам</div>
-      <div class="card mb24">
-        <div id="plan-table"></div>
+      <div class="card mb24" style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+        <div id="plan-table" style="min-width:900px"></div>
       </div>
 
       <div class="charts-row">
@@ -1931,7 +1965,7 @@ function renderRopKPI(stats) {
   // Filter ROPs by selected product
   const selectedProdName = activeProd === 'all' ? null : (PROD_CFG[activeProd]?.rawKey || null);
 
-  let html = '<div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">';
+  let html = '<div class="kpi-grid rop-grid">';
 
   for (const [ropName, ropCfg] of Object.entries(ROP_GROUPS)) {
     if (ropName === 'all') continue;
