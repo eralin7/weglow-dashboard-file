@@ -464,10 +464,10 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
 /* ─── TOPBAR ─────────────────────────────────────────── */
 .topbar {
   background:var(--white); border-bottom:1px solid var(--line);
-  padding:0 32px;
+  padding:8px 32px;
   display:flex; align-items:center; justify-content:space-between;
-  height:60px; position:sticky; top:0; z-index:50;
-  box-shadow:0 1px 0 var(--line);
+  min-height:64px; position:sticky; top:0; z-index:50;
+  box-shadow:0 1px 0 var(--line); flex-wrap:wrap; gap:8px;
 }
 .topbar-title { font-size:15px; font-weight:600; color:var(--ink); }
 .topbar-filters { display:flex; align-items:center; gap:6px; }
@@ -506,9 +506,9 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
 .view-hdr p { font-size:13px; color:var(--muted); margin-top:4px; }
 
 /* ─── KPI GRID ───────────────────────────────────────── */
-.kpi-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:12px; margin-bottom:24px; }
+.kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:24px; }
 .kpi-card {
-  position:relative; padding:18px 16px; border-radius:var(--r);
+  position:relative; padding:22px 20px; border-radius:var(--r);
   background:#ffffff; border:1px solid var(--line);
   overflow:hidden; cursor:default;
   transition:transform .3s cubic-bezier(.34,1.56,.64,1), box-shadow .3s;
@@ -543,7 +543,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
 .kpi-card:hover .glow-border { opacity:1; }
 .kpi-card > *:not(.glow-border) { position:relative; z-index:2; }
 .kc-lbl { font-size:10px; font-weight:600; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
-.kc-val { font-family:'Playfair Display',serif; font-size:24px; font-weight:700; color:var(--ink); line-height:1; margin-bottom:6px; letter-spacing:-.3px; transition:text-shadow .3s; }
+.kc-val { font-family:'Playfair Display',serif; font-size:26px; font-weight:700; color:var(--ink); line-height:1.1; margin-bottom:8px; letter-spacing:-.3px; transition:text-shadow .3s; }
 .kpi-card:hover .kc-val { text-shadow:0 0 14px var(--kc,rgba(255,204,112,.6)); }
 .kc-sub { font-size:11px; color:var(--muted); }
 .kc-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:10px; font-weight:700; margin-top:8px; }
