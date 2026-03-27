@@ -1093,7 +1093,7 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
       </div>
       <div class="kpi-grid" id="kpi-grid"></div>
       <div id="rop-kpi-section"></div>
-      <div class="sec-label mb20">Выполнение плана</div>
+      <div class="sec-label mb20">Выполнение плана по группам</div>
       <div class="card mb24">
         <div id="plan-table"></div>
       </div>
@@ -1740,61 +1740,9 @@ function calcForecast(d) {
 
 // ═══════════════════ RENDER PLAN TABLE ════════════════════════════
 function renderPlanTable(stats){
-  const keys = activeProd==='all' ? ['col','ummi'] : [activeProd];
+  let rows = '';
 
-  let rows = keys.map(k=>{
-    const d = stats.parts ? stats.parts[k] : stats;
-    const cfg = PROD_CFG[k];
-    const pct = d.plan ? Math.round(d.monthBudget/d.plan*100) : 0;
-    const remainCell = d.isCurrentMonth && d.plan
-      ? d.remain===0
-        ? `<td style="color:#16a34a;font-weight:700">✓</td><td style="color:#16a34a">—</td>`
-        : `<td style="color:#ca8a04;font-weight:700">${fmt(d.remain)}</td>
-           <td style="color:#6366f1;font-weight:700">${fmt(d.perDay)}</td>`
-      : `<td style="color:var(--muted)">—</td><td style="color:var(--muted)">—</td>`;
-    return`<tr>
-      <td><div class="prod-name"><div class="prod-dot" style="background:${cfg.color}"></div>${cfg.name}</div></td>
-      <td>${fmt(d.plan)}</td>
-      <td style="color:var(--slate);font-weight:600">${d.isCurrentMonth ? fmt(d.planToday) : '—'}</td>
-      <td style="color:${cfg.color};font-weight:700">${fmt(d.monthBudget)}</td>
-      <td><div class="bar-wrap">
-        ${(()=>{ const gap=d.monthBudget-(d.planToday||0); const execPct=d.planToday>0?Math.round(d.monthBudget/d.planToday*100):0; const show=d.isCurrentMonth&&d.plan; return show ? `<span style="font-weight:700;font-size:13px;min-width:36px;text-align:right;color:${execPct>=100?'#16a34a':execPct>=80?'#ca8a04':'#dc2626'}">${execPct}%</span>` : `<span class="${pct>=80?'txt-g':pct>=50?'txt-y':'txt-r'}" style="font-weight:700;font-size:13px;min-width:36px;text-align:right">${pct}%</span>`; })()}
-      </div></td>
-      ${(()=>{ const fc=calcForecast(d); if(!fc.val) return '<td style="color:var(--muted)">—</td>'; const c=fc.pct>=100?'#16a34a':fc.pct>=80?'#ca8a04':'#dc2626'; return `<td style="font-weight:700;color:${c}">${fmt(fc.val)}</td>`; })()}
-      ${remainCell}
-      <td>${fmt(d.leads)}</td><td>${fmt(d.deals)}</td>
-      <td class="${convCls(d.conv)}" style="font-weight:700">${d.conv}%</td>
-      <td style="color:${d.cplMonth?d.cplMonth<=3000?'#16a34a':d.cplMonth<=6000?'#ca8a04':'#c0392b':'var(--muted)'};font-weight:700">${d.cplMonth?fmt(d.cplMonth)+' ₸':'—'}</td>
-      <td style="color:#6366f1;font-weight:700">${d.rpl?fmt(d.rpl)+' ₸':'—'}</td>
-    </tr>`;
-  }).join('');
-
-  if(activeProd==='all'){
-    const a = stats;
-    const pct = a.plan ? Math.round(a.monthBudget/a.plan*100) : 0;
-    const remainCell = a.isCurrentMonth && a.plan
-      ? a.remain===0
-        ? `<td style="color:#16a34a;font-weight:700"><strong>✓ Выполнен</strong></td><td>—</td>`
-        : `<td style="color:#ca8a04;font-weight:700"><strong>${fmt(a.remain)}</strong></td>
-           <td style="color:#6366f1;font-weight:700"><strong>${fmt(a.perDay)}</strong></td>`
-      : `<td>—</td><td>—</td>`;
-    rows += `<tr class="tr-sum">
-      <td><div class="prod-name"><div class="prod-dot" style="background:#6366f1"></div><strong>ИТОГО</strong></div></td>
-      <td><strong>${fmt(a.plan)}</strong></td>
-      <td style="color:var(--slate);font-weight:600">${a.isCurrentMonth ? fmt(a.planToday) : '—'}</td>
-      <td style="color:#6366f1;font-weight:700"><strong>${fmt(a.monthBudget)}</strong></td>
-      <td><div class="bar-wrap">${(()=>{ const execPctA=a.planToday>0?Math.round(a.monthBudget/a.planToday*100):0; return a.isCurrentMonth&&a.plan ? `<span style="font-weight:700;font-size:13px;color:${execPctA>=100?'#16a34a':execPctA>=80?'#ca8a04':'#dc2626'};min-width:36px;text-align:right">${execPctA}%</span>` : `<span style="font-weight:700;font-size:13px;color:${pct>=80?'#16a34a':'#ca8a04'};min-width:36px;text-align:right">${pct}%</span>`; })()}
-      </div></td>
-      ${(()=>{ const fc=calcForecast(a); if(!fc.val) return '<td>—</td>'; const c=fc.pct>=100?'#16a34a':fc.pct>=80?'#ca8a04':'#dc2626'; return `<td style="font-weight:700;color:${c}"><strong>${fmt(fc.val)}</strong></td>`; })()}
-      ${remainCell}
-      <td><strong>${fmt(a.leads)}</strong></td><td><strong>${fmt(a.deals)}</strong></td>
-      <td class="${convCls(a.conv)}" style="font-weight:700"><strong>${a.conv}%</strong></td>
-      <td style="color:${a.cplMonth?a.cplMonth<=3000?'#16a34a':a.cplMonth<=6000?'#ca8a04':'#c0392b':'var(--muted)'};font-weight:700"><strong>${a.cplMonth?fmt(a.cplMonth)+' ₸':'—'}</strong></td>
-      <td style="color:#6366f1;font-weight:700"><strong>${a.rpl?fmt(a.rpl)+' ₸':'—'}</strong></td>
-    </tr>`;
-  }
-
-  // ── ROP plan execution section (same format as product rows) ──
+  // ── ROP plan execution ──
   {
     const _planFrom = activePeriod.from;
     const _planTo = activePeriod.to;
@@ -1808,7 +1756,6 @@ function renderPlanTable(stats){
     const _daysLeft = _isCurMonth ? _totalDays - _now.getDate() : 0;
     const selectedProdName = activeProd==='all' ? null : (PROD_CFG[activeProd]?.rawKey||null);
 
-    rows += '<tr><td colspan="100%" style="padding:14px 8px 6px;border-top:2px solid var(--line);font-weight:700;font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Выполнение по группам</td></tr>';
 
     let rTotPlan=0,rTotPlanTod=0,rTotBudget=0,rTotLeads=0,rTotDeals=0,rTotAd=0;
 
@@ -1907,7 +1854,7 @@ function renderPlanTable(stats){
   const isCur = (stats.parts ? Object.values(stats.parts)[0] : stats).isCurrentMonth;
   document.getElementById('plan-table').innerHTML=`
     <table class="dt"><thead><tr>
-      <th>Продукт</th>
+      <th>Группа</th>
       <th>План мес. ₸</th>
       <th>План до сег. ₸</th>
       <th>Факт мес. ₸</th>
