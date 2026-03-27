@@ -311,6 +311,20 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
       </div>
     </div>
 
+    <!-- ROP PLAN / FACT -->
+    <div class="history-card" style="margin-bottom:24px">
+      <div class="history-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <span>📊 РОП — план / факт</span>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <select class="month-sel" id="rop-fact-month" onchange="loadRopFact()" style="font-size:12px;padding:5px 10px"></select>
+          <button onclick="loadRopFact()" style="padding:5px 14px;border-radius:7px;background:var(--acc-l);color:var(--acc);border:1px solid var(--acc-l);font-weight:600;cursor:pointer;font-size:12px">↺ Обновить</button>
+        </div>
+      </div>
+      <div id="rop-fact-wrap" style="margin-top:16px">
+        <div style="color:var(--muted);padding:24px;text-align:center;">Загрузка...</div>
+      </div>
+    </div>
+
     <!-- ROP PLANS HISTORY -->
     <div class="history-card" style="margin-bottom:24px">
       <div class="history-title">📋 Планы РОП по месяцам</div>
@@ -389,6 +403,8 @@ async function loadPlans(){
     renderHistory();
     fillForm();
     loadRopPlans();
+    initRopFactMonth();
+    loadRopFact();
   } catch(e){
     setBadge('Ошибка','err');
     console.error(e);
@@ -785,6 +801,182 @@ function editRopMonth(month){
   fillForm();
   fillRopForm();
   window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ═══════════════════ ROP PLAN / FACT ═══════════════════════════
+const ROP_FACT_DEFS = [
+  {name:'РОП Айдана',    color:'#1a56db', crms:['Коллаген','Ummi']},
+  {name:'РОП Аслиддин',  color:'#b45309', crms:['Коллаген']},
+  {name:'РОП Нурдаулет', color:'#0a7c5c', crms:['Коллаген']},
+  {name:'РОП Диас',      color:'#e11d48', crms:['Ummi']},
+];
+
+function initRopFactMonth(){
+  const sel = document.getElementById('rop-fact-month');
+  if(!sel) return;
+  sel.innerHTML = '';
+  const srcSel = document.getElementById('month-sel');
+  for(const opt of srcSel.options) sel.appendChild(opt.cloneNode(true));
+  const now = new Date();
+  const cur = `${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
+  const has = [...sel.options].some(o=>o.value===cur);
+  sel.value = has ? cur : (sel.options[0]?.value||'');
+}
+
+async function loadRopFact(){
+  const wrap = document.getElementById('rop-fact-wrap');
+  const sel = document.getElementById('rop-fact-month');
+  if(!wrap||!sel) return;
+  const mk = sel.value;
+  if(!mk){ wrap.innerHTML='<div style="color:var(--muted);padding:16px;text-align:center">Выберите месяц</div>'; return; }
+  wrap.innerHTML='<div style="color:var(--muted);padding:16px;text-align:center">Загрузка...</div>';
+
+  try {
+    // Load RAW + MANAGERS from Supabase
+    const r = await sbGet(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data`);
+    const d = r[0]?.data || {};
+    const RAW = d.RAW || {};
+    const MANAGERS = d.MANAGERS || {};
+    const MGR_TO_ROP = d.MGR_TO_ROP || {};
+
+    // Parse month
+    const [mm, yyyy] = mk.split('.');
+    const monthStart = new Date(parseInt(yyyy), parseInt(mm)-1, 1);
+    const monthEnd = new Date(parseInt(yyyy), parseInt(mm), 0);
+    const fmtD = d => `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+
+    // Fuzzy ROP lookup (simplified)
+    function getRopName(mgrName){
+      if(MGR_TO_ROP[mgrName]) return MGR_TO_ROP[mgrName];
+      const lower = mgrName.toLowerCase();
+      for(const [k,v] of Object.entries(MGR_TO_ROP)){
+        if(k.toLowerCase()===lower) return v;
+        if(lower.startsWith(k.toLowerCase()) || k.toLowerCase().startsWith(lower)) return v;
+      }
+      const pin = lower.match(/п[иі]н\s*(\d+)/i);
+      if(pin){
+        for(const [k,v] of Object.entries(MGR_TO_ROP)){
+          const km = k.toLowerCase().match(/п[иі]н\s*(\d+)/i);
+          if(km && km[1]===pin[1]) return v;
+        }
+      }
+      return '';
+    }
+
+    // Aggregate fact per ROP
+    const ropStats = {};
+    ROP_FACT_DEFS.forEach(rd=>{ ropStats[rd.name]={leads:0,deals:0,budget:0}; });
+
+    for(const rd of ROP_FACT_DEFS){
+      for(const crm of rd.crms){
+        const mgrs = MANAGERS[crm] || [];
+        for(const mgr of mgrs){
+          if(getRopName(mgr.name) !== rd.name) continue;
+          // Sum daily data for the month
+          if(mgr.daily){
+            for(const [dateStr, vals] of Object.entries(mgr.daily)){
+              const parts = dateStr.split('.');
+              const dd = new Date(parseInt(parts[2]),parseInt(parts[1])-1,parseInt(parts[0]));
+              if(dd>=monthStart && dd<=monthEnd){
+                ropStats[rd.name].leads  += vals[0]||0;
+                ropStats[rd.name].deals  += vals[1]||0;
+                ropStats[rd.name].budget += vals[2]||0;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Now for current month: calculate plan progress
+    const now = new Date();
+    const isCurrentMonth = now.getMonth()+1 === parseInt(mm) && now.getFullYear() === parseInt(yyyy);
+    const totalDays = monthEnd.getDate();
+    const passedDays = isCurrentMonth ? now.getDate() : totalDays;
+    const daysLeft = isCurrentMonth ? totalDays - now.getDate() : 0;
+
+    const pctCls = p => p>=100?'color:#16a34a;font-weight:700':p>=80?'color:#ca8a04;font-weight:700':'color:#dc2626;font-weight:700';
+    const barClr = p => p>=100?'#16a34a':p>=80?'#ca8a04':'#dc2626';
+    const monthLabel = MONTH_NAMES[parseInt(mm)-1] + ' ' + yyyy;
+
+    let html = `<div style="font-size:11px;color:var(--muted);margin-bottom:12px">${monthLabel} · ${passedDays}/${totalDays} дн.${daysLeft>0?' · ост. '+daysLeft+' дн.':''}</div>`;
+    html += `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr style="border-bottom:2px solid var(--line)">
+        <th style="text-align:left;padding:10px 8px;font-size:11px;color:var(--muted);font-weight:600">ГРУППА</th>
+        <th style="text-align:right;padding:10px 8px;font-size:11px;color:var(--muted);font-weight:600">ПЛАН</th>
+        <th style="text-align:right;padding:10px 8px;font-size:11px;color:var(--muted);font-weight:600">ПЛАН СЕГОДНЯ</th>
+        <th style="text-align:right;padding:10px 8px;font-size:11px;color:var(--muted);font-weight:600">ФАКТ</th>
+        <th style="text-align:center;padding:10px 8px;font-size:11px;color:var(--muted);font-weight:600">ВЫПОЛНЕНИЕ</th>
+        <th style="text-align:right;padding:10px 8px;font-size:11px;color:var(--muted);font-weight:600">РАЗНИЦА</th>
+        <th style="text-align:right;padding:10px 8px;font-size:11px;color:var(--muted);font-weight:600">ЛИДЫ</th>
+        <th style="text-align:right;padding:10px 8px;font-size:11px;color:var(--muted);font-weight:600">СДЕЛКИ</th>
+        <th style="text-align:right;padding:10px 8px;font-size:11px;color:var(--muted);font-weight:600">КОНВЕРСИЯ</th>
+        <th style="text-align:right;padding:10px 8px;font-size:11px;color:var(--muted);font-weight:600">СР.ЧЕК</th>
+      </tr></thead><tbody>`;
+
+    let totPlan=0,totPlanTod=0,totFact=0,totLeads=0,totDeals=0;
+    for(const rd of ROP_FACT_DEFS){
+      const plan = (ropPlans[rd.name] && ropPlans[rd.name][mk]) || 0;
+      const planTod = plan > 0 ? Math.round(plan * passedDays / totalDays) : 0;
+      const s = ropStats[rd.name];
+      const fact = s.budget;
+      const pct = planTod > 0 ? Math.round(fact/planTod*100) : (fact>0?999:0);
+      const gap = fact - planTod;
+      const conv = s.leads>0 ? (s.deals/s.leads*100).toFixed(1) : '0.0';
+      const avgCheck = s.deals>0 ? Math.round(s.budget/s.deals) : 0;
+
+      totPlan+=plan; totPlanTod+=planTod; totFact+=fact; totLeads+=s.leads; totDeals+=s.deals;
+
+      html += `<tr style="border-bottom:1px solid var(--line)">
+        <td style="padding:10px 8px"><div style="display:flex;align-items:center;gap:8px"><div style="width:10px;height:10px;border-radius:50%;background:${rd.color}"></div><span style="font-weight:600">${rd.name}</span></div></td>
+        <td style="text-align:right;padding:10px 8px">${plan?fmtM(plan):'—'}</td>
+        <td style="text-align:right;padding:10px 8px;color:var(--muted)">${planTod?fmtM(planTod):'—'}</td>
+        <td style="text-align:right;padding:10px 8px;font-weight:600">${fmtM(fact)}</td>
+        <td style="text-align:center;padding:10px 8px">
+          <div style="display:flex;align-items:center;justify-content:center;gap:6px">
+            <div style="width:60px;height:6px;border-radius:3px;background:var(--line)"><div style="width:${Math.min(pct,100)}%;height:100%;border-radius:3px;background:${barClr(pct)}"></div></div>
+            <span style="${pctCls(pct)};font-size:12px">${pct>900?'∞':pct}%</span>
+          </div>
+        </td>
+        <td style="text-align:right;padding:10px 8px;font-weight:700;color:${gap>=0?'#16a34a':'#dc2626'}">${gap>=0?'+':''}${fmt(gap)} ₸</td>
+        <td style="text-align:right;padding:10px 8px">${fmt(s.leads)}</td>
+        <td style="text-align:right;padding:10px 8px">${fmt(s.deals)}</td>
+        <td style="text-align:right;padding:10px 8px">${conv}%</td>
+        <td style="text-align:right;padding:10px 8px">${fmtM(avgCheck)}</td>
+      </tr>`;
+    }
+
+    // Totals row
+    const totPct = totPlanTod>0 ? Math.round(totFact/totPlanTod*100) : 0;
+    const totGap = totFact - totPlanTod;
+    const totConv = totLeads>0 ? (totDeals/totLeads*100).toFixed(1) : '0.0';
+    const totAvg = totDeals>0 ? Math.round(totFact/totDeals) : 0;
+
+    html += `<tr style="border-top:2px solid var(--ink);font-weight:700;background:var(--bg)">
+      <td style="padding:10px 8px">ИТОГО</td>
+      <td style="text-align:right;padding:10px 8px">${totPlan?fmtM(totPlan):'—'}</td>
+      <td style="text-align:right;padding:10px 8px;color:var(--muted)">${totPlanTod?fmtM(totPlanTod):'—'}</td>
+      <td style="text-align:right;padding:10px 8px">${fmtM(totFact)}</td>
+      <td style="text-align:center;padding:10px 8px">
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px">
+          <div style="width:60px;height:6px;border-radius:3px;background:var(--line)"><div style="width:${Math.min(totPct,100)}%;height:100%;border-radius:3px;background:${barClr(totPct)}"></div></div>
+          <span style="${pctCls(totPct)};font-size:12px">${totPct}%</span>
+        </div>
+      </td>
+      <td style="text-align:right;padding:10px 8px;color:${totGap>=0?'#16a34a':'#dc2626'}">${totGap>=0?'+':''}${fmt(totGap)} ₸</td>
+      <td style="text-align:right;padding:10px 8px">${fmt(totLeads)}</td>
+      <td style="text-align:right;padding:10px 8px">${fmt(totDeals)}</td>
+      <td style="text-align:right;padding:10px 8px">${totConv}%</td>
+      <td style="text-align:right;padding:10px 8px">${fmtM(totAvg)}</td>
+    </tr>`;
+
+    html += '</tbody></table></div>';
+    wrap.innerHTML = html;
+
+  } catch(e){
+    wrap.innerHTML = `<div style="color:#dc2626;padding:16px">⚠ Ошибка: ${e.message}</div>`;
+    console.error(e);
+  }
 }
 
 </script>
