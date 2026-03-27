@@ -144,6 +144,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
         <button class="rop-btn rop-s" onclick="selectRop('РОП Аслиддин')">
           <div class="dot"></div> РОП Аслиддин
         </button>
+        <button class="rop-btn" style="border-color:#e11d48;color:#e11d48" onclick="selectRop('РОП Диас')">
+          <div class="dot" style="background:#e11d48"></div> РОП Диас
+        </button>
       </div>
     </div>
     <div id="step-pw" style="display:none">
@@ -177,7 +180,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 
     <div class="tabs">
       <button class="tab active" onclick="switchTab('plans',this)">📊 Планы менеджеров</button>
-      <button class="tab" onclick="switchTab('managers',this)">👥 Менеджеры группы</button>
+      <button class="tab" onclick="switchTab('planfact',this)">📊 План / Факт</button>
       <button class="tab" onclick="switchTab('analytics',this)">🏆 Рейтинг</button>
     </div>
 
@@ -199,8 +202,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
       </div>
     </div>
 
-    <!-- MANAGERS TAB -->
-    
+    <!-- PLAN/FACT TAB -->
+    <div id="tab-planfact" style="display:none">
+      <div class="month-row">
+        <span style="font-size:13px;font-weight:600;color:var(--muted)">Месяц:</span>
+        <select class="month-sel" id="pf-month-sel" onchange="renderPlanFact()"></select>
+      </div>
+      <div class="card">
+        <div class="card-title">📊 План / Факт менеджеров</div>
+        <div id="planfact-wrap"><div class="empty">Загрузка...</div></div>
+      </div>
+    </div>
 
     <!-- ANALYTICS TAB -->
     <div id="tab-analytics" style="display:none">
@@ -216,40 +228,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
       <div class="card">
         <div class="card-title">📈 Выручка по менеджерам</div>
         <div style="padding:12px 16px 16px"><canvas id="analytics-chart" height="180"></canvas></div>
-      </div>
-    </div><div id="tab-managers" style="display:none">
-      <div class="card">
-        <div class="card-title">👥 Менеджеры в группе <span id="mgr-group-label" style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:8px;margin-left:4px"></span></div>
-        <div class="mgr-list" id="mgr-list"></div>
-        <div class="add-form">
-          <div style="flex:1;position:relative;min-width:200px">
-            <input class="add-inp" type="text" id="new-mgr-name" placeholder="Поиск менеджера..." autocomplete="off"
-                   oninput="filterDropdown(this.value)" onfocus="showDropdown()" style="width:100%">
-            <div id="mgr-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1.5px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);z-index:50;max-height:240px;overflow-y:auto;margin-top:4px;"></div>
-          </div>
-          <button class="add-btn" id="add-mgr-btn" onclick="addManager()">+ Добавить</button>
-        </div>
       </div>
     </div>
   </div>
 </div>
-
-    <!-- ANALYTICS TAB -->
-    <div id="tab-analytics" style="display:none">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-        <span style="font-size:12px;font-weight:600;color:var(--muted)">Период:</span>
-        <select id="analytics-month-sel" class="month-sel" onchange="renderAnalytics()"></select>
-      </div>
-      <div class="card" style="margin-bottom:16px">
-        <div class="card-title">🏆 Рейтинг менеджеров <span id="analytics-period-label" style="font-size:11px;font-weight:500;color:var(--muted);margin-left:8px"></span></div>
-        <div id="analytics-rating"></div>
-      </div>
-      <div id="analytics-kpi" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:16px"></div>
-      <div class="card">
-        <div class="card-title">📈 Выручка по менеджерам</div>
-        <div style="padding:12px 16px 16px"><canvas id="analytics-chart" height="180"></canvas></div>
-      </div>
-    </div>
 
 
 <div class="toast" id="toast"></div>
@@ -272,15 +254,9 @@ const ROP_COLORS = {
   'РОП Айдана':    '#1a56db',
   'РОП Нурдаулет': '#0a7c5c',
   'РОП Аслиддин':  '#b45309',
+  'РОП Диас':      '#e11d48',
 };
 const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
-
-// Default manager assignments (can be overridden from Supabase)
-const DEFAULT_GROUPS = {
-  'РОП Айдана':    ['Пин 7 Рахима','Пин 3 Ерсин','РОП Айдана'],
-  'РОП Нурдаулет': ['Пин 14 Шамид Халилли','пин 17 Таймир Туйгунов','пин 10 Айша','Пин 8 Асема','Пин 1 Раушан','Пин 6 Асем','Пин 5 Тахир','пин 16 Медина','пин 18 Наиль','РОП Нурдаулет'],
-  'РОП Аслиддин':  ['Пин 2 Санжар','Пин 4 Динара','пин 20 Жазира','пин 21 Жанар','пин 22 Асель','пин 23 Темирлан','пин 19 Сая','Пин 34 Карина','Пин 32 Айжан','РОП Аслиддин'],
-};
 
 // ══════════════════════════════════════════════
 // STATE
@@ -290,8 +266,7 @@ let ropColor = '#6366f1';
 let managers = [];       // list of manager names for this ROP
 let planData = {};       // { managerName: { 'MM.YYYY': plan } }
 let selectedPlanMonth = null;
-let allSiteMgrs = [];    // all managers from weglow_data (uploaded CSV)
-let allRopAssigned = {}; // { managerName: ropName } — already assigned to any group
+let _wgManagers = {};    // stored MANAGERS data from weglow_data
 
 // ══════════════════════════════════════════════
 // PASSWORD FLOW
@@ -354,40 +329,24 @@ function setBadge(t,type){
 async function loadAll(){
   setBadge('Загрузка...','load');
   try {
-    // 1. Load all managers from weglow_data (uploaded from CSV)
+    // 1. Load all data from weglow_data
     let wgRows = await sbGet('weglow_data?id=eq.1&select=data');
-    allSiteMgrs = [];
     if(wgRows && wgRows[0] && wgRows[0].data && wgRows[0].data.MANAGERS){
-      const MANAGERS = wgRows[0].data.MANAGERS;
-      _storeWgManagers(MANAGERS);
-      // Collect unique manager names across all products (mainly Коллаген for ROP)
-      const nameSet = new Set();
-      for(const [prod, list] of Object.entries(MANAGERS)){
-        if(Array.isArray(list)) list.forEach(m=>{ if(m.name) nameSet.add(m.name); });
-      }
-      allSiteMgrs = [...nameSet].sort();
+      _storeWgManagers(wgRows[0].data.MANAGERS);
     }
 
-    // 2. Load all assigned managers across ALL ROPs (for dedup display)
-    const allAssigned = await sbGet('weglow_rop_managers?select=rop,name');
-    allRopAssigned = {};
-    for(const r of allAssigned) allRopAssigned[r.name] = r.rop;
-
-    // 3. Load manager list for this ROP
-    let rows = await sbGet(`weglow_rop_managers?rop=eq.${encodeURIComponent(currentRop)}&select=name&order=name`);
-    if(rows.length){
-      managers = rows.map(r=>r.name);
-    } else {
-      managers = [...(DEFAULT_GROUPS[currentRop]||[])];
-      // Auto-save defaults to Supabase
-      if(managers.length){
-        const bulk = managers.map(name=>({rop:currentRop,name}));
-        await sbUpsert('weglow_rop_managers', bulk).catch(()=>{});
-        for(const name of managers) allRopAssigned[name]=currentRop;
-      }
+    // 2. Load MGR_TO_ROP from weglow_data
+    let MGR_TO_ROP = {};
+    if(wgRows && wgRows[0] && wgRows[0].data && wgRows[0].data.MGR_TO_ROP){
+      MGR_TO_ROP = wgRows[0].data.MGR_TO_ROP;
     }
+    // Get managers for current ROP from auto-detected groups
+    managers = Object.entries(MGR_TO_ROP)
+      .filter(([name, rop]) => rop === currentRop)
+      .map(([name]) => name)
+      .sort();
 
-    // 4. Load plans
+    // 3. Load plans
     const planRows = await sbGet(`weglow_mgr_plans?rop=eq.${encodeURIComponent(currentRop)}&select=manager,month,plan`);
     planData = {};
     for(const r of planRows){
@@ -396,13 +355,10 @@ async function loadAll(){
     }
     setBadge('Синхронизировано ✓','ok');
     buildMonthSelector();
-    renderMgrList();
     renderPlanTable();
   } catch(e){
     setBadge('Ошибка загрузки','err');
-    managers = [...(DEFAULT_GROUPS[currentRop]||[])];
     buildMonthSelector();
-    renderMgrList();
     renderPlanTable();
     console.error(e);
   }
@@ -416,10 +372,6 @@ function startApp(){
   document.getElementById('topbar').style.background = ropColor;
   document.getElementById('top-rop-label').textContent = currentRop;
   document.getElementById('app-title').textContent = `Кабинет ${currentRop}`;
-  document.getElementById('mgr-group-label').textContent = currentRop;
-  document.getElementById('mgr-group-label').style.background = ropColor+'22';
-  document.getElementById('mgr-group-label').style.color = ropColor;
-  document.getElementById('add-mgr-btn').style.background = ropColor;
   loadAll();
 }
 if(_savedRop && ROP_PASSWORDS[_savedRop]) startApp();
@@ -431,8 +383,9 @@ function switchTab(tab, el){
   document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('tab-plans').style.display     = tab==='plans'?'block':'none';
-  document.getElementById('tab-managers').style.display  = tab==='managers'?'block':'none';
+  document.getElementById('tab-planfact').style.display  = tab==='planfact'?'block':'none';
   document.getElementById('tab-analytics').style.display = tab==='analytics'?'block':'none';
+  if (tab === 'planfact') renderPlanFact();
   if (tab === 'analytics') renderAnalytics();
 }
 
@@ -454,6 +407,8 @@ function buildMonthSelector(){
   document.getElementById('plan-month-sel').innerHTML = opts;
   const asel = document.getElementById('analytics-month-sel');
   if (asel) asel.innerHTML = opts;
+  const pfsel = document.getElementById('pf-month-sel');
+  if (pfsel) pfsel.innerHTML = opts;
   selectedPlanMonth = curMK;
 }
 
@@ -547,124 +502,115 @@ async function syncMgrPlansToDashboard(){
 }
 
 // ══════════════════════════════════════════════
-// MANAGER LIST
+// PLAN / FACT
 // ══════════════════════════════════════════════
-function renderMgrList(){
-  const list = document.getElementById('mgr-list');
-  if(!managers.length){ list.innerHTML='<div class="empty">Нет менеджеров</div>'; return; }
-  list.innerHTML = managers.map(name=>`
-    <div class="mgr-item">
-      <div class="mgr-dot" style="background:${ropColor}"></div>
-      <div class="mgr-name">${name}</div>
-      <span class="mgr-rop-tag" style="background:${ropColor}18;color:${ropColor}">${currentRop}</span>
-      <button class="mgr-remove" onclick="removeManager('${name.replace(/'/g,"\\'")}')">×</button>
-    </div>`).join('');
-}
+function renderPlanFact(){
+  const mk = document.getElementById('pf-month-sel').value;
+  const wrap = document.getElementById('planfact-wrap');
+  if(!mk||!managers.length){ wrap.innerHTML='<div class="empty">Нет данных</div>'; return; }
 
-// ══════════════════════════════════════════════
-// DROPDOWN SEARCH
-// ══════════════════════════════════════════════
-function getAvailableMgrs(query=''){
-  // All site managers not yet in THIS group, sorted
-  return allSiteMgrs
-    .filter(name => !managers.includes(name))
-    .filter(name => !query || name.toLowerCase().includes(query.toLowerCase()))
-    .sort();
-}
+  const [mm,yyyy] = mk.split('.');
+  const monthStart = new Date(parseInt(yyyy), parseInt(mm)-1, 1);
+  const monthEnd = new Date(parseInt(yyyy), parseInt(mm), 0);
+  const now = new Date();
+  const isCurrentMonth = now.getMonth()+1===parseInt(mm) && now.getFullYear()===parseInt(yyyy);
+  const totalDays = monthEnd.getDate();
+  const passedDays = isCurrentMonth ? now.getDate() : totalDays;
 
-function showDropdown(){
-  renderDropdown(document.getElementById('new-mgr-name').value);
-  document.getElementById('mgr-dropdown').style.display='block';
-}
+  // Determine which CRMs this ROP covers
+  const ROP_CRM = {
+    'РОП Айдана': ['Коллаген','Ummi'],
+    'РОП Аслиддин': ['Коллаген'],
+    'РОП Нурдаулет': ['Коллаген'],
+    'РОП Диас': ['Ummi'],
+  };
+  const crms = ROP_CRM[currentRop] || ['Коллаген'];
 
-function filterDropdown(q){
-  renderDropdown(q);
-  document.getElementById('mgr-dropdown').style.display='block';
-}
+  const mgrList = managers.filter(m => !m.toLowerCase().startsWith('роп'));
+  let rows = [];
+  let totPlan=0, totFact=0, totLeads=0, totDeals=0;
 
-function renderDropdown(q=''){
-  const dd = document.getElementById('mgr-dropdown');
-  const available = getAvailableMgrs(q);
-  if(!available.length){
-    dd.innerHTML = `<div class="dd-empty">${allSiteMgrs.length===0?'Нет данных':'Все менеджеры уже добавлены'}</div>`;
-    return;
+  for(const name of mgrList){
+    const plan = (planData[name] && planData[name][mk]) || 0;
+    const planTod = plan > 0 ? Math.round(plan * passedDays / totalDays) : 0;
+    let leads=0, deals=0, budget=0;
+
+    // Sum across relevant CRMs
+    for(const crm of crms){
+      const mgrArr = _wgManagers[crm] || [];
+      const found = mgrArr.find(m => m.name === name);
+      if(found && found.daily){
+        for(const [ds, vals] of Object.entries(found.daily)){
+          const parts = ds.split('.');
+          const dd = new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0]));
+          if(dd >= monthStart && dd <= monthEnd){
+            leads += vals[0]||0;
+            deals += vals[1]||0;
+            budget += vals[2]||0;
+          }
+        }
+      }
+    }
+
+    const pct = planTod > 0 ? Math.round(budget / planTod * 100) : (budget > 0 ? 999 : 0);
+    const gap = budget - planTod;
+    const conv = leads > 0 ? (deals/leads*100).toFixed(1) : '0.0';
+    const avgCheck = deals > 0 ? Math.round(budget / deals) : 0;
+
+    totPlan += plan; totFact += budget; totLeads += leads; totDeals += deals;
+    rows.push({name, plan, planTod, budget, pct, gap, leads, deals, conv, avgCheck});
   }
-  dd.innerHTML = available.map(name=>{
-    const takenBy = allRopAssigned[name];
-    const inOtherRop = takenBy && takenBy !== currentRop;
-    const ropColors={'РОП Айдана':'#1a56db','РОП Нурдаулет':'#0a7c5c','РОП Аслиддин':'#b45309'};
-    const dotColor = ropColors[takenBy]||'#d1d5db';
-    return `<div class="dd-item" onclick="selectMgr('${name.replace(/'/g,"\\'")}')">
-      <div class="dd-dot" style="background:${dotColor}"></div>
-      <span>${name}</span>
-      ${inOtherRop?`<span class="dd-taken">${takenBy}</span>`:''}
-    </div>`;
-  }).join('');
-}
 
-function selectMgr(name){
-  document.getElementById('new-mgr-name').value = name;
-  document.getElementById('mgr-dropdown').style.display='none';
-}
+  rows.sort((a,b) => b.budget - a.budget);
 
-// Close dropdown on outside click
-document.addEventListener('click', e=>{
-  const wrap = document.querySelector('.add-form');
-  if(wrap && !wrap.contains(e.target)){
-    document.getElementById('mgr-dropdown').style.display='none';
-  }
-});
+  const pctCls = p => p>=100?'color:#16a34a;font-weight:700':p>=80?'color:#ca8a04;font-weight:700':'color:#dc2626;font-weight:700';
+  const barClr = p => p>=100?'#16a34a':p>=80?'#ca8a04':'#dc2626';
 
-// ══════════════════════════════════════════════
-// ADD / REMOVE MANAGER
-// ══════════════════════════════════════════════
-async function addManager(){
-  const inp = document.getElementById('new-mgr-name');
-  const name = inp.value.trim();
-  if(!name){ toast('Выберите менеджера из списка','err'); return; }
-  // Check it's a real manager from site data
-  if(allSiteMgrs.length && !allSiteMgrs.includes(name)){
-    toast('Менеджер не найден в данных сайта','err'); return;
-  }
-  if(managers.includes(name)){ toast('Уже в группе','err'); return; }
-  try {
-    await sbUpsert('weglow_rop_managers',{rop:currentRop,name});
-    managers.push(name);
-    allRopAssigned[name] = currentRop;
-    inp.value='';
-    document.getElementById('mgr-dropdown').style.display='none';
-    renderMgrList();
-    renderPlanTable();
-    toast(`${name} добавлен в группу`,'ok');
-    await syncRopGroupsToDashboard();
-  } catch(e){ toast('Ошибка: '+e.message,'err'); }
-}
+  let html = `<div style="font-size:11px;color:var(--muted);margin-bottom:8px">${passedDays}/${totalDays} дн.</div>
+  <table class="dt"><thead><tr>
+    <th>#</th><th>Менеджер</th><th>План</th><th>План сегодня</th><th>Факт</th><th>Выполнение</th><th>Разница</th><th>Лиды</th><th>Сделки</th><th>Конверсия</th><th>Ср.чек</th>
+  </tr></thead><tbody>`;
 
-async function removeManager(name){
-  if(!confirm(`Удалить ${name} из группы?`)) return;
-  try {
-    await sbDelete('weglow_rop_managers',`?rop=eq.${encodeURIComponent(currentRop)}&name=eq.${encodeURIComponent(name)}`);
-    managers = managers.filter(m=>m!==name);
-    delete allRopAssigned[name];
-    renderMgrList();
-    renderPlanTable();
-    toast(`${name} удалён из группы`,'ok');
-    await syncRopGroupsToDashboard();
-  } catch(e){ toast('Ошибка','err'); }
-}
+  rows.forEach((r, i) => {
+    html += `<tr>
+      <td>${i<3?['🥇','🥈','🥉'][i]:i+1}</td>
+      <td style="font-weight:600">${r.name}</td>
+      <td>${r.plan?fmtM(r.plan):'—'}</td>
+      <td style="color:var(--muted)">${r.planTod?fmtM(r.planTod):'—'}</td>
+      <td style="font-weight:700">${fmtM(r.budget)}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:4px">
+          <div style="width:50px;height:5px;border-radius:3px;background:var(--line)"><div style="width:${Math.min(r.pct,100)}%;height:100%;border-radius:3px;background:${barClr(r.pct)}"></div></div>
+          <span style="${pctCls(r.pct)};font-size:11px">${r.pct>900?'∞':r.pct}%</span>
+        </div>
+      </td>
+      <td style="font-weight:600;color:${r.gap>=0?'#16a34a':'#dc2626'}">${r.gap>=0?'+':''}${fmtM(r.gap)}</td>
+      <td>${r.leads}</td>
+      <td>${r.deals}</td>
+      <td>${r.conv}%</td>
+      <td>${fmtM(r.avgCheck)}</td>
+    </tr>`;
+  });
 
-async function syncRopGroupsToDashboard(){
-  try {
-    // Rebuild full MGR_TO_ROP from all rop managers
-    const allMgrs = await sbGet('weglow_rop_managers?select=rop,name');
-    const MGR_TO_ROP = {};
-    for(const r of allMgrs) MGR_TO_ROP[r.name]=r.rop;
-    let rows = await sbGet('weglow_data?id=eq.1&select=data');
-    let payload = rows&&rows[0]?rows[0].data:{};
-    payload.MGR_TO_ROP = MGR_TO_ROP;
-    payload.updatedAt = new Date().toISOString();
-    await sbUpsert('weglow_data',{id:1,data:payload,updated_at:new Date().toISOString()});
-  } catch(e){ console.error(e); }
+  // Totals
+  const totPlanTod = totPlan > 0 ? Math.round(totPlan * passedDays / totalDays) : 0;
+  const totPct = totPlanTod > 0 ? Math.round(totFact / totPlanTod * 100) : 0;
+  const totGap = totFact - totPlanTod;
+  const totConv = totLeads > 0 ? (totDeals/totLeads*100).toFixed(1) : '0.0';
+  const totAvg = totDeals > 0 ? Math.round(totFact / totDeals) : 0;
+
+  html += `<tr style="border-top:2px solid var(--ink);font-weight:700;background:var(--bg)">
+    <td></td><td>ИТОГО</td>
+    <td>${totPlan?fmtM(totPlan):'—'}</td>
+    <td style="color:var(--muted)">${totPlanTod?fmtM(totPlanTod):'—'}</td>
+    <td>${fmtM(totFact)}</td>
+    <td><div style="display:flex;align-items:center;gap:4px"><div style="width:50px;height:5px;border-radius:3px;background:var(--line)"><div style="width:${Math.min(totPct,100)}%;height:100%;border-radius:3px;background:${barClr(totPct)}"></div></div><span style="${pctCls(totPct)};font-size:11px">${totPct}%</span></div></td>
+    <td style="color:${totGap>=0?'#16a34a':'#dc2626'}">${totGap>=0?'+':''}${fmtM(totGap)}</td>
+    <td>${totLeads}</td><td>${totDeals}</td><td>${totConv}%</td><td>${fmtM(totAvg)}</td>
+  </tr>`;
+
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
 }
 
 // ══════════════════════════════════════════════
@@ -859,8 +805,8 @@ function renderAnalytics() {
   }
 }
 
-// Store MANAGERS data when loaded for analytics use
-function _storeWgManagers(mgrs) { window._wgManagers = mgrs; }
+// Store MANAGERS data when loaded for analytics and plan/fact use
+function _storeWgManagers(mgrs) { _wgManagers = mgrs; window._wgManagers = mgrs; }
 
 // fmt helper if not defined
 function fmt(n){ if(!n&&n!==0) return '—'; if(n>=1e6) return (n/1e6).toFixed(2)+' М'; if(n>=1e3) return (n/1e3).toFixed(0)+' К'; return n.toLocaleString('ru-RU'); }
