@@ -508,40 +508,32 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
 /* ─── KPI GRID ───────────────────────────────────────── */
 .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px; }
 .kpi-card {
-  position:relative; padding:16px 18px; border-radius:var(--r);
-  background:#ffffff; border:1px solid var(--line);
+  position:relative; padding:14px 16px; border-radius:14px;
+  background:rgba(255,255,255,0.85); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+  border:1px solid rgba(0,0,0,0.06);
+  box-shadow:0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
   overflow:hidden; cursor:default;
-  transition:transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s;
+  transition:transform .22s cubic-bezier(.34,1.56,.64,1), box-shadow .22s, border-color .22s;
   display:flex; flex-direction:column;
 }
-.kpi-card:hover { transform:translateY(-3px); box-shadow:0 8px 24px rgba(15,22,35,.08); }
-.kpi-card::before {
-  content:''; position:absolute; inset:0; border-radius:var(--r);
-  background:linear-gradient(135deg, rgba(99,102,241,.06) 0%, transparent 60%);
-  opacity:0; transition:opacity .3s; pointer-events:none; z-index:0;
-}
-.kpi-card:hover::before { opacity:1; }
-.kpi-card .glow-border {
-  position:absolute; inset:0; border-radius:var(--r);
-  border:1.5px solid transparent;
-  background:linear-gradient(white,white) padding-box,
-    linear-gradient(135deg,rgba(99,102,241,.4),rgba(168,85,247,.3),rgba(59,130,246,.3)) border-box;
-  opacity:0; transition:opacity .3s; pointer-events:none; z-index:1;
-}
-.kpi-card:hover .glow-border { opacity:1; }
-.kpi-card > *:not(.glow-border) { position:relative; z-index:2; }
-.kc-lbl { font-size:9px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
-.kc-val { font-family:'Playfair Display',serif; font-size:24px; font-weight:700; color:var(--ink); line-height:1.1; margin-bottom:4px; letter-spacing:-.3px; transition:text-shadow .3s; }
-.kpi-card:hover .kc-val { text-shadow:0 0 12px var(--kc,rgba(99,102,241,.3)); }
+.kpi-card:hover { transform:translateY(-2px); box-shadow:0 4px 16px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.04); border-color:rgba(0,0,0,0.09); }
+.kc-lbl { font-size:9px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+.kc-val { font-family:'Playfair Display',serif; font-size:22px; font-weight:700; color:var(--ink); line-height:1.1; margin-bottom:3px; letter-spacing:-.3px; transition:color .2s; }
 .kc-sub { font-size:10px; color:var(--muted); }
-.kc-badge { display:inline-flex; align-items:center; gap:3px; padding:2px 8px; border-radius:20px; font-size:9px; font-weight:700; margin-top:6px; }
+.kc-badge { display:inline-flex; align-items:center; gap:3px; padding:2px 8px; border-radius:20px; font-size:8px; font-weight:700; margin-top:5px; }
 .bg-g { background:var(--green-l); color:var(--green); }
 .bg-r { background:var(--red-l);   color:var(--red);   }
 .bg-y { background:var(--gold-l);  color:var(--gold);  }
-.kpi-spark { margin-top:auto; padding-top:8px; }
+.kpi-spark { margin-top:auto; padding-top:6px; }
 
 /* ─── ROP GRID ──────────────────────────────────────── */
 .rop-grid { grid-template-columns:repeat(4,1fr); }
+.rop-card-border { border-left:4px solid var(--rop-clr, #6366f1); }
+.rop-stats-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:3px 8px; font-size:10px; margin-top:auto; padding-top:6px; border-top:1px solid rgba(0,0,0,0.05); }
+.rop-stats-grid .rop-stat-lbl { color:var(--muted); font-size:8px; text-transform:uppercase; letter-spacing:.5px; line-height:1.4; }
+.rop-stats-grid .rop-stat-val { font-weight:700; font-size:13px; line-height:1.3; }
+.rop-progress { height:4px; border-radius:2px; background:var(--line); margin:6px 0 3px; overflow:hidden; }
+.rop-progress-fill { height:100%; border-radius:2px; transition:width .4s ease; }
 .rop-section-label {
   font-size:9px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
   color:var(--muted); margin:4px 0 10px; display:flex; align-items:center; gap:10px;
@@ -669,20 +661,19 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
 .sidebar-overlay.open { display:block; }
 
 /* ── SPARKLINES & GROWTH ─────────────────── */
-.kpi-spark { margin-top:8px; }
 .kpi-growth {
   display:inline-flex; align-items:center; gap:3px;
   font-size:10px; font-weight:700;
-  padding:2px 7px; border-radius:20px; margin-top:5px;
+  padding:2px 7px; border-radius:20px; margin-top:4px;
 }
 .kpi-growth.up   { background:var(--green-l); color:var(--green); }
 .kpi-growth.down { background:var(--red-l);   color:var(--red);   }
 .kpi-growth.flat { background:var(--line2);   color:var(--muted); }
 
 /* ── PLAN PROGRESS BAR ───────────────────── */
-.plan-bar-wrap { margin:8px 0 4px; }
-.plan-bar-track { height:5px; background:var(--line); border-radius:3px; overflow:hidden; }
-.plan-bar-fill  { height:100%; border-radius:3px; transition:width .6s ease; }
+.plan-bar-wrap { margin:6px 0 3px; }
+.plan-bar-track { height:4px; background:var(--line); border-radius:2px; overflow:hidden; }
+.plan-bar-fill  { height:100%; border-radius:2px; transition:width .6s ease; }
 .plan-forecast  { font-size:10px; margin-top:3px; font-weight:600; }
 
 /* ── ROI CARD EXTRAS ─────────────────────── */
@@ -698,26 +689,28 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
 /* ── Большие экраны (≥ 1600px) ── */
 @media (min-width: 1600px) {
   .kpi-grid { grid-template-columns: repeat(4, 1fr); gap: 14px; }
-  .kpi-card { padding: 20px 22px; }
-  .kc-val { font-size: 26px; }
+  .kpi-card { padding: 16px 18px; }
+  .kc-val { font-size: 24px; }
   .page { padding: 28px 36px; }
 }
+
+/* ── Десктопы (1200-1599px) — default: KPI 4 cols, ROP 4 cols ── */
 
 /* ── Небольшие десктопы (1024-1199px) ── */
 @media (max-width: 1199px) {
   .kpi-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 10px; }
-  .rop-grid { grid-template-columns: repeat(4, 1fr) !important; }
-  .kpi-card { padding: 14px 16px; }
-  .kc-val { font-size: 21px; }
+  .rop-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .kpi-card { padding: 12px 14px; }
+  .kc-val { font-size: 20px; }
   .charts-row { grid-template-columns: 1fr !important; }
 }
 
 /* ── Планшеты (769-1023px) ── */
 @media (max-width: 1023px) {
-  .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px; }
+  .kpi-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 10px; }
   .rop-grid { grid-template-columns: repeat(2, 1fr) !important; }
-  .kpi-card { padding: 14px 14px; }
-  .kc-val { font-size: 20px !important; }
+  .kpi-card { padding: 12px 12px; }
+  .kc-val { font-size: 19px !important; }
   .page { padding: 16px 14px; }
   .prod-stats { grid-template-columns: 1fr 1fr !important; }
 }
@@ -783,6 +776,7 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 8px;
   }
+  .rop-grid { grid-template-columns: 1fr !important; }
   .kpi-card { padding: 10px 10px; }
   .kpi-card:hover { transform: none; }
   .kc-val { font-size: 17px !important; }
@@ -790,6 +784,7 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
   .kc-sub { font-size: 9px; }
   .kpi-spark canvas { height: 20px !important; }
   .plan-bar-wrap { margin: 5px 0 2px; }
+  .rop-stats-grid .rop-stat-val { font-size: 12px; }
 
   /* ── Графики — в столбик ── */
   .charts-row {
@@ -849,7 +844,8 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
 
 /* ── Маленькие телефоны (≤ 480px) ── */
 @media (max-width: 480px) {
-  .kpi-grid { grid-template-columns: 1fr 1fr !important; gap: 6px !important; }
+  .kpi-grid { grid-template-columns: 1fr !important; gap: 6px !important; }
+  .rop-grid { grid-template-columns: 1fr !important; }
   .kc-val { font-size: 15px !important; }
   .kc-lbl { font-size: 8px; }
   .kc-badge { font-size: 9px; padding: 2px 6px; }
@@ -1711,7 +1707,6 @@ function renderKPI(d){
   ];
   document.getElementById('kpi-grid').innerHTML=kpis.map((k,i)=>`
     <div class="kpi-card" style="--kc:${k.c}" data-kpi="${i}">
-      <div class="glow-border"></div>
       <div class="kc-lbl">${k.l}</div>
       <div class="kc-val" style="color:${k.c}">${k.v}</div>
       <div class="kc-sub">${k.s||''}</div>
@@ -1722,7 +1717,7 @@ function renderKPI(d){
         <div class="plan-forecast" style="color:${k.c}">${k.planPct}% выполнено${k.forecast?` · прогноз: ${k.forecast}%`:''}${k.daysLeft?' · ост. '+k.daysLeft+' дн.':''}</div>
       </div>`:''}
       ${k.badge&&!k.planBar?`<div class="kc-badge ${k.bc}">${k.badge}</div>`:''}
-      <div class="kpi-spark"><canvas id="spark-${i}" style="width:100%;height:32px"></canvas></div>
+      <div class="kpi-spark"><canvas id="spark-${i}" style="width:100%;height:28px"></canvas></div>
     </div>`).join('');
   // Draw sparklines after DOM update
   setTimeout(()=>drawAllSparks(kpis, activeProd, activePeriod), 50);
@@ -2009,26 +2004,34 @@ function renderRopKPI(stats) {
     const fmtK = n => n >= 1e6 ? (n/1e6).toFixed(1) + 'M' : n >= 1e3 ? Math.round(n/1e3) + 'K' : n.toString();
 
     html += `
-    <div class="kpi-card" style="--kc:${ropCfg.color}30;border-top:3px solid ${ropCfg.color}">
-      <div class="glow-border" style="background:linear-gradient(white,white) padding-box,linear-gradient(135deg,${ropCfg.color}66,${ropCfg.color}33) border-box"></div>
+    <div class="kpi-card rop-card-border" style="--kc:${ropCfg.color}30;--rop-clr:${ropCfg.color};border-left:4px solid ${ropCfg.color}">
       <div class="kc-lbl" style="display:flex;justify-content:space-between;align-items:center">
-        <span style="color:${ropCfg.color}">${ropName.replace('РОП ','')}</span>
+        <span style="color:${ropCfg.color};font-weight:800">${ropName.replace('РОП ','')}</span>
         <span style="font-size:8px;color:var(--muted);letter-spacing:0;text-transform:none;font-weight:500">${mgrCount} менедж.</span>
       </div>
-      <div class="kc-val" style="color:${ropCfg.color}">${fmtK(budget)} ₸</div>
+      <div class="kc-val" style="font-size:20px;color:${ropCfg.color}">${fmtK(budget)} ₸</div>
       <div class="kc-sub">${planPeriod>0?'план '+fmtK(planPeriod)+' ₸':'выручка за период'}</div>
-      ${planPeriod > 0 ? `<div style="height:5px;border-radius:3px;background:var(--line);margin:8px 0 4px">
-        <div style="width:${Math.min(pct,100)}%;height:100%;border-radius:3px;background:${pctClr};transition:width .3s"></div>
+      ${planPeriod > 0 ? `<div class="rop-progress">
+        <div class="rop-progress-fill" style="width:${Math.min(pct,100)}%;background:${pctClr}"></div>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:4px">
-        <span style="font-weight:700;color:${pctClr}">${pct}% выполнено</span>
+      <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px">
+        <span style="font-weight:700;color:${pctClr}">${pct}%</span>
         ${stats.isCurrentMonth && forecast ? `<span style="color:var(--muted)">прогноз ${fmtK(forecast)}</span>` : ''}
       </div>` : ''}
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 10px;font-size:10px;margin-top:auto;padding-top:8px;border-top:1px solid var(--line)">
-        <div><div style="color:var(--muted);font-size:8px;text-transform:uppercase;letter-spacing:.5px">Лиды</div><div style="font-weight:700;font-size:14px">${leads.toLocaleString('ru')}</div></div>
-        <div><div style="color:var(--muted);font-size:8px;text-transform:uppercase;letter-spacing:.5px">Сделки</div><div style="font-weight:700;font-size:14px">${deals}</div></div>
-        <div><div style="color:var(--muted);font-size:8px;text-transform:uppercase;letter-spacing:.5px">Конверсия</div><div style="font-weight:700;font-size:14px;color:${parseFloat(conv)>=12?'#16a34a':'#dc2626'}">${conv}%</div></div>
+      <div class="rop-stats-grid">
+        <div><div class="rop-stat-lbl">Лиды</div><div class="rop-stat-val">${leads.toLocaleString('ru')}</div></div>
+        <div><div class="rop-stat-lbl">Сделки</div><div class="rop-stat-val">${deals}</div></div>
+        <div><div class="rop-stat-lbl">Конверсия</div><div class="rop-stat-val" style="color:${parseFloat(conv)>=12?'#16a34a':'#dc2626'}">${conv}%</div></div>
       </div>
+      <div class="rop-stats-grid" style="padding-top:4px;border-top:none;margin-top:4px">
+        <div><div class="rop-stat-lbl">Ср.чек</div><div class="rop-stat-val">${avgCheck?fmtK(avgCheck)+' ₸':'—'}</div></div>
+        <div><div class="rop-stat-lbl">CPL</div><div class="rop-stat-val" style="color:${cpl?cpl<=3000?'#16a34a':cpl<=6000?'#ca8a04':'#c0392b':'var(--muted)'}">${cpl?fmtK(cpl)+' ₸':'—'}</div></div>
+        <div><div class="rop-stat-lbl">ROI</div><div class="rop-stat-val" style="color:${roi?roi>=200?'#16a34a':roi>=100?'#ca8a04':'#c0392b':'var(--muted)'}">${roi?roi+'%':'—'}</div></div>
+      </div>
+      ${planPeriod > 0 ? `<div style="display:flex;justify-content:space-between;font-size:9px;margin-top:4px;padding-top:4px;border-top:1px solid rgba(0,0,0,0.04)">
+        <span style="color:var(--muted)">Ост. <strong style="color:${remain===0?'#16a34a':'#ca8a04'}">${remain===0?'✓':fmtK(remain)+' ₸'}</strong></span>
+        ${perDay>0?`<span style="color:var(--muted)">Нужно/день <strong style="color:#6366f1">${fmtK(perDay)} ₸</strong></span>`:''}
+      </div>` : ''}
     </div>`;
   }
 
