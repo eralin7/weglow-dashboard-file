@@ -2029,9 +2029,9 @@ function renderRopKPI(stats) {
 
     html += `
     <div class="kpi-card rop-card-border" style="--kc:${ropCfg.color}30;--rop-clr:${ropCfg.color};border-left:4px solid ${ropCfg.color}">
-      <div class="kc-lbl" style="display:flex;justify-content:space-between;align-items:center">
-        <span style="color:${ropCfg.color};font-weight:800">${ropName.replace('РОП ','')}</span>
-        <span style="font-size:8px;color:var(--muted);letter-spacing:0;text-transform:none;font-weight:500">${mgrCount} менедж.</span>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:${ropCfg.color};letter-spacing:-.2px">${ropName.replace('РОП ','')}</span>
+        <span style="font-size:9px;color:var(--muted);font-weight:500">${mgrCount} менедж.</span>
       </div>
       <div class="kc-val" style="font-size:20px;color:${ropCfg.color}">${fmtK(budget)} ₸</div>
       <div class="kc-sub">${planPeriod>0?'план '+fmtK(planPeriod)+' ₸':'выручка за период'}</div>
