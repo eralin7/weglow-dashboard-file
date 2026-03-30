@@ -159,10 +159,40 @@ body{font-family:"DM Sans",sans-serif;background:var(--bg);color:var(--ink);min-
   }
 }
 
+/* ── PASSWORD ── */
+#pw-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
+.pw-box{background:var(--white);border:1px solid var(--line);border-radius:20px;padding:44px 48px;max-width:400px;width:100%;box-shadow:0 4px 24px rgba(15,22,35,.08);}
+.pw-logo{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--ink);}
+.pw-logo-sub{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:32px;margin-top:2px;}
+.pw-title{font-size:17px;font-weight:600;margin-bottom:6px;}
+.pw-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
+.pw-inp{width:100%;padding:12px 16px;border:1.5px solid var(--line);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:15px;outline:none;transition:border-color .15s;background:var(--bg);}
+.pw-inp:focus{border-color:var(--acc);}
+.pw-btn{width:100%;padding:13px;background:var(--ink2);color:#fff;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;margin-top:12px;transition:opacity .15s;}
+.pw-btn:hover{opacity:.88;}
+.pw-err{color:var(--red);font-size:13px;margin-top:8px;display:none;}
+#app{display:none;}
+
 </style>
 </head>
 <body>
 
+<!-- PASSWORD -->
+<div id="pw-screen">
+  <div class="pw-box">
+    <div class="pw-logo">WeGlow</div>
+    <div class="pw-logo-sub">AI Advisor</div>
+    <div class="pw-title">AI Советник</div>
+    <div class="pw-sub">Анализ данных и план действий</div>
+    <input class="pw-inp" type="password" id="pw-input" placeholder="Пароль"
+           onkeydown="if(event.key==='Enter')checkPw()">
+    <button class="pw-btn" onclick="checkPw()">Войти</button>
+    <div class="pw-err" id="pw-err">Неверный пароль</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
 <div class="topbar">
   <div style="display:flex;align-items:center;gap:6px">
     <span class="top-logo">WeGlow</span>
@@ -526,6 +556,19 @@ async function runAnalysis(){
     btn.innerHTML = '<span>&#9889;</span> Анализировать снова';
   }
 }
+
+const ADVISOR_PASSWORD = 'weglow123';
+function checkPw(){
+  if(document.getElementById('pw-input').value === ADVISOR_PASSWORD){
+    document.getElementById('pw-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+  } else {
+    document.getElementById('pw-err').style.display='block';
+    document.getElementById('pw-input').value='';
+    document.getElementById('pw-input').focus();
+  }
+}
 </script>
+</div><!-- /app -->
 </body>
 </html>
