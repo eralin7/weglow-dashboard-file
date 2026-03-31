@@ -10,8 +10,8 @@
 html{font-size:16px;-webkit-font-smoothing:antialiased;}
 body{
   font-family:'DM Sans',sans-serif;
-  background:linear-gradient(160deg, #050816 0%, #0a1628 40%, #0d0f24 100%);
-  color:#fff;
+  background:linear-gradient(180deg, #87CEEB 0%, #c5e8f7 15%, #e8f4fd 35%, #ffffff 100%);
+  color:#1a1a2e;
   min-height:100vh;
   overflow:hidden;
   cursor:none;
@@ -19,30 +19,36 @@ body{
 body.cursor-visible{cursor:default;}
 
 /* ══════════════════════════════════════════════════════
-   ANIMATED PARTICLES / STARS
+   SKY & CLOUDS
    ══════════════════════════════════════════════════════ */
-#particles-canvas{
-  position:fixed;inset:0;z-index:0;pointer-events:none;
+.sky-bg{
+  position:fixed;top:0;left:0;right:0;height:120px;z-index:0;
+  pointer-events:none;
+  background:linear-gradient(180deg, #7ec8e3 0%, #b5dff5 40%, #dceefb 100%);
+  overflow:hidden;
 }
-
-/* ══════════════════════════════════════════════════════
-   CYBERPUNK GRID FLOOR (perspective)
-   ══════════════════════════════════════════════════════ */
-.cyber-grid{
-  position:fixed;bottom:0;left:0;right:0;height:60vh;z-index:0;pointer-events:none;
-  perspective:600px;overflow:hidden;
+.cloud{
+  position:absolute;
+  background:#fff;
+  border-radius:50%;
+  opacity:.7;
+  filter:blur(1px);
 }
-.cyber-grid-inner{
-  position:absolute;bottom:-20%;left:-10%;right:-10%;height:140%;
-  transform:rotateX(55deg);
-  background:
-    repeating-linear-gradient(90deg, rgba(99,102,241,0.06) 0, rgba(99,102,241,0.06) 1px, transparent 1px, transparent 80px),
-    repeating-linear-gradient(0deg, rgba(99,102,241,0.04) 0, rgba(99,102,241,0.04) 1px, transparent 1px, transparent 80px);
-  animation:gridScroll 8s linear infinite;
+.cloud::before,.cloud::after{
+  content:'';position:absolute;background:#fff;border-radius:50%;
 }
-@keyframes gridScroll{
-  0%{background-position:0 0;}
-  100%{background-position:0 80px;}
+.cloud-1{width:120px;height:36px;top:20px;left:5%;animation:cloudDrift 60s linear infinite;}
+.cloud-1::before{width:60px;height:40px;top:-18px;left:20px;}
+.cloud-1::after{width:80px;height:44px;top:-22px;left:50px;}
+.cloud-2{width:90px;height:28px;top:45px;left:35%;animation:cloudDrift 80s linear infinite;opacity:.5;}
+.cloud-2::before{width:50px;height:32px;top:-14px;left:15px;}
+.cloud-2::after{width:60px;height:36px;top:-16px;left:40px;}
+.cloud-3{width:100px;height:30px;top:15px;left:70%;animation:cloudDrift 70s linear infinite;opacity:.6;}
+.cloud-3::before{width:55px;height:35px;top:-16px;left:18px;}
+.cloud-3::after{width:70px;height:40px;top:-20px;left:45px;}
+@keyframes cloudDrift{
+  0%{transform:translateX(0);}
+  100%{transform:translateX(calc(100vw + 200px));}
 }
 
 /* ══════════════════════════════════════════════════════
@@ -56,231 +62,249 @@ body.cursor-visible{cursor:default;}
 .header{
   display:flex;align-items:center;justify-content:space-between;
   padding:0 40px;height:60px;flex-shrink:0;
-  background:linear-gradient(135deg, rgba(5,8,22,.95), rgba(10,22,40,.98));
-  border-bottom:1px solid rgba(99,102,241,0.15);
+  background:rgba(255,255,255,.92);
+  border-bottom:1px solid rgba(0,0,0,.06);
   backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  box-shadow:0 2px 12px rgba(0,0,0,.04);
 }
 .header-title{
   font-family:'Playfair Display',serif;font-size:22px;font-weight:800;
   letter-spacing:2px;text-transform:uppercase;
-  background:linear-gradient(135deg,#fff,rgba(200,200,255,.7));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  color:#1a1a2e;
 }
 .header-month{
   font-family:'Playfair Display',serif;font-size:18px;font-weight:600;
-  opacity:.7;letter-spacing:1px;
+  color:#6b7280;letter-spacing:1px;
 }
 .header-right{display:flex;align-items:center;gap:16px;}
 .header-clock{
   font-family:'DM Sans',sans-serif;font-size:26px;font-weight:700;
   font-variant-numeric:tabular-nums;letter-spacing:2px;
-  color:rgba(255,255,255,.9);
+  color:#1a1a2e;
 }
 .header-badge{
   font-size:11px;padding:5px 14px;border-radius:20px;
-  background:rgba(99,102,241,.12);
-  border:1px solid rgba(99,102,241,.2);
-  color:rgba(255,255,255,.5);font-weight:500;
+  background:rgba(16,185,129,.08);
+  border:1px solid rgba(16,185,129,.15);
+  color:#059669;font-weight:600;
 }
 
 /* ══════════════════════════════════════════════════════
-   3D RACE SECTION
+   3D RACE SECTION — THE TRACK
    ══════════════════════════════════════════════════════ */
 .race-section{
   flex:1;display:flex;flex-direction:column;justify-content:center;
-  padding:20px 40px 16px;gap:12px;min-height:0;
+  padding:10px 40px 10px;min-height:0;
   perspective:1200px;
 }
 
-/* ── INDIVIDUAL TRACK ── */
-.race-track{
-  display:grid;grid-template-columns:200px 1fr 190px;align-items:center;gap:16px;
-  padding:14px 24px;border-radius:16px;
+/* Grass above track */
+.grass-top{
+  height:24px;
+  border-radius:12px 12px 0 0;
+  background:linear-gradient(180deg, #4ade80, #22c55e);
   position:relative;
-  transform:perspective(800px) rotateX(1deg) rotateY(-0.5deg);
-  transform-style:preserve-3d;
-  background:linear-gradient(135deg, rgba(13,17,23,.85), rgba(15,20,35,.7));
-  border:1px solid rgba(99,102,241,0.08);
-  transition:all .4s cubic-bezier(.4,0,.2,1);
+  overflow:hidden;
+  box-shadow:inset 0 -2px 6px rgba(0,0,0,.15);
 }
-.race-track::before{
-  content:'';position:absolute;inset:0;border-radius:16px;z-index:-1;
-  background:linear-gradient(135deg, transparent, rgba(99,102,241,.03));
-  pointer-events:none;
-}
-.race-track.leader{
-  transform:perspective(800px) rotateX(1deg) rotateY(-0.5deg) scale(1.02);
-  background:linear-gradient(135deg, rgba(13,17,23,.9), rgba(20,25,45,.8));
-  border-color:rgba(255,255,255,.1);
-  box-shadow:
-    0 0 40px rgba(99,102,241,.06),
-    0 8px 32px rgba(0,0,0,.3);
+.grass-top::after{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(90deg,
+    rgba(0,0,0,.03) 0, rgba(0,0,0,.03) 2px,
+    transparent 2px, transparent 12px);
 }
 
-/* ── LEFT: ROP INFO ── */
-.track-info{display:flex;flex-direction:column;gap:6px;}
-.track-name-row{display:flex;align-items:center;gap:10px;}
-.track-position{
-  display:flex;align-items:center;justify-content:center;
-  width:32px;height:32px;border-radius:10px;font-size:14px;font-weight:800;
-  flex-shrink:0;
+/* Track container with 3D perspective */
+.track-container{
+  transform:perspective(1000px) rotateX(6deg);
+  transform-origin:center bottom;
+  position:relative;
 }
-.track-position.pos-1{
+
+/* Track kerbs (top) */
+.kerb-top{
+  height:10px;
+  background:repeating-linear-gradient(90deg,
+    #dc2626 0, #dc2626 20px,
+    #ffffff 20px, #ffffff 40px);
+  box-shadow:inset 0 2px 4px rgba(0,0,0,.15);
+}
+
+/* Track surface — asphalt */
+.track-asphalt{
+  background:linear-gradient(180deg, #3a3a3a 0%, #454545 50%, #3a3a3a 100%);
+  padding:4px 0;
+  position:relative;
+  box-shadow:inset 0 4px 12px rgba(0,0,0,.3), inset 0 -4px 12px rgba(0,0,0,.3);
+}
+/* Asphalt noise texture */
+.track-asphalt::before{
+  content:'';position:absolute;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  background-size:100px 100px;
+  pointer-events:none;
+  opacity:.5;
+}
+
+/* Kerb bottom */
+.kerb-bottom{
+  height:10px;
+  background:repeating-linear-gradient(90deg,
+    #dc2626 0, #dc2626 20px,
+    #ffffff 20px, #ffffff 40px);
+  box-shadow:inset 0 -2px 4px rgba(0,0,0,.15);
+}
+
+/* Grass below track */
+.grass-bottom{
+  height:20px;
+  border-radius:0 0 12px 12px;
+  background:linear-gradient(180deg, #22c55e, #16a34a);
+  position:relative;
+  overflow:hidden;
+  box-shadow:inset 0 2px 6px rgba(0,0,0,.15);
+}
+.grass-bottom::after{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(90deg,
+    rgba(0,0,0,.03) 0, rgba(0,0,0,.03) 2px,
+    transparent 2px, transparent 12px);
+}
+
+/* Individual lane */
+.race-lane{
+  display:grid;grid-template-columns:180px 1fr 180px;align-items:center;gap:0;
+  height:72px;
+  position:relative;
+  border-bottom:2px dashed rgba(255,255,255,.2);
+}
+.race-lane:last-child{border-bottom:none;}
+
+/* White lane markings on left/right edges */
+.race-lane::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:4px;
+  background:#fff;opacity:.15;
+}
+.race-lane::after{
+  content:'';position:absolute;right:0;top:0;bottom:0;width:4px;
+  background:#fff;opacity:.15;
+}
+
+/* ── LEFT: ROP INFO (on track) ── */
+.lane-info{
+  display:flex;align-items:center;gap:10px;
+  padding:0 16px;z-index:3;
+}
+.lane-position{
+  display:flex;align-items:center;justify-content:center;
+  width:32px;height:32px;border-radius:50%;font-size:14px;font-weight:800;
+  flex-shrink:0;
+  box-shadow:0 2px 8px rgba(0,0,0,.3);
+}
+.lane-position.pos-1{
   background:linear-gradient(135deg,#ffd700,#ffaa00);color:#1a1200;
-  box-shadow:0 0 12px rgba(255,215,0,.3);
   animation:medalPulse 3s ease-in-out infinite;
 }
-.track-position.pos-2{
-  background:linear-gradient(135deg,#c0c0c0,#a0a0a0);color:#222;
-  box-shadow:0 0 8px rgba(192,192,192,.2);
-}
-.track-position.pos-3{
-  background:linear-gradient(135deg,#cd7f32,#a0622e);color:#1a1200;
-  box-shadow:0 0 8px rgba(205,127,50,.2);
-}
-.track-position.pos-4{
-  background:rgba(255,255,255,.08);color:rgba(255,255,255,.4);
-}
+.lane-position.pos-2{background:linear-gradient(135deg,#e0e0e0,#c0c0c0);color:#333;}
+.lane-position.pos-3{background:linear-gradient(135deg,#cd7f32,#a0622e);color:#fff;}
+.lane-position.pos-4{background:rgba(255,255,255,.2);color:rgba(255,255,255,.7);}
 @keyframes medalPulse{
-  0%,100%{box-shadow:0 0 12px rgba(255,215,0,.3);}
-  50%{box-shadow:0 0 20px rgba(255,215,0,.5);}
+  0%,100%{box-shadow:0 0 8px rgba(255,215,0,.4);}
+  50%{box-shadow:0 0 20px rgba(255,215,0,.7);}
 }
-.track-rop{
-  font-family:'Playfair Display',serif;font-size:22px;font-weight:700;
-  letter-spacing:0.5px;
-  text-shadow:0 0 20px currentColor;
+.lane-name{
+  font-family:'Playfair Display',serif;font-size:18px;font-weight:700;
+  color:#fff;
+  text-shadow:0 1px 4px rgba(0,0,0,.6);
+  white-space:nowrap;
 }
-.track-meta{display:flex;align-items:center;gap:8px;margin-left:42px;}
-.track-badge{
-  font-size:10px;padding:3px 10px;border-radius:10px;
-  background:rgba(255,255,255,.06);color:rgba(255,255,255,.4);font-weight:600;
-  letter-spacing:0.5px;text-transform:uppercase;
-}
-
-/* ── CENTER: TRACK LANE (3D asphalt) ── */
-.track-lane{
-  position:relative;height:52px;border-radius:14px;overflow:visible;
-  background:linear-gradient(180deg, #0d1117 0%, #161b22 50%, #0d1117 100%);
-  border:1px solid rgba(255,255,255,.04);
-  box-shadow:inset 0 2px 6px rgba(0,0,0,.4), inset 0 -1px 4px rgba(0,0,0,.2);
-}
-/* Lane dashed center line */
-.track-lane::before{
-  content:'';position:absolute;top:50%;left:10px;right:10px;height:2px;
-  transform:translateY(-50%);
-  background:repeating-linear-gradient(90deg,
-    rgba(255,255,255,.12) 0, rgba(255,255,255,.12) 20px,
-    transparent 20px, transparent 40px);
-  border-radius:1px;
-}
-/* Neon side-glow (color set via JS inline style on data attribute) */
-.track-lane::after{
-  content:'';position:absolute;inset:0;border-radius:14px;pointer-events:none;
-  box-shadow:
-    inset 0 2px 8px var(--lane-color-glow, transparent),
-    inset 0 -2px 8px var(--lane-color-glow, transparent);
-  opacity:.35;
+.lane-mgr-count{
+  font-size:10px;color:rgba(255,255,255,.5);font-weight:500;
+  margin-left:42px;
+  text-shadow:0 1px 2px rgba(0,0,0,.5);
 }
 
-/* Progress bar fill */
-.track-progress{
-  position:absolute;left:0;top:0;height:100%;border-radius:14px;
-  transition:width 2s cubic-bezier(0.34,1.56,0.64,1);min-width:4px;
-  overflow:hidden;
-}
-.track-progress-inner{
-  width:100%;height:100%;border-radius:14px;opacity:.15;
-}
-.track-progress-glow{
-  position:absolute;top:0;right:0;width:60px;height:100%;
-  border-radius:0 14px 14px 0;
-  filter:blur(12px);opacity:.5;
-}
-
-/* Checkered finish line */
-.finish-line{
-  position:absolute;right:0;top:-1px;bottom:-1px;width:14px;z-index:1;
-  background:
-    repeating-conic-gradient(#fff 0% 25%, #333 0% 50%) 0 0 / 7px 7px;
-  border-radius:0 14px 14px 0;
-  opacity:.2;
-  animation:finishShimmer 3s ease-in-out infinite;
-}
-@keyframes finishShimmer{
-  0%,100%{opacity:.15;}
-  50%{opacity:.3;}
+/* ── CENTER: CAR AREA ── */
+.lane-track-area{
+  position:relative;height:100%;
+  z-index:2;
 }
 
 /* ── CAR ── */
 .car-wrap{
   position:absolute;top:50%;transform:translate(-50%,-50%);
-  transition:left 2s cubic-bezier(0.34,1.56,0.64,1);
+  transition:left 2s cubic-bezier(0.25, 1, 0.5, 1);
   z-index:3;
-  filter:drop-shadow(0 4px 8px rgba(0,0,0,.5));
+  filter:drop-shadow(0 3px 6px rgba(0,0,0,.5));
 }
-/* Exhaust trail */
+/* Dust/tire marks behind car */
 .car-wrap::before{
   content:'';position:absolute;right:100%;top:50%;transform:translateY(-50%);
-  width:30px;height:8px;
-  background:linear-gradient(90deg, transparent, rgba(255,120,50,.4), rgba(255,200,50,.15));
+  width:40px;height:10px;
+  background:linear-gradient(90deg, transparent, rgba(150,150,150,.3), rgba(200,200,200,.1));
   border-radius:4px;
   filter:blur(3px);
-  animation:exhaustFlicker .3s ease-in-out infinite alternate;
+  animation:dustFlicker .4s ease-in-out infinite alternate;
 }
 /* Speed lines */
 .car-wrap::after{
-  content:'';position:absolute;right:calc(100% + 8px);top:50%;transform:translateY(-50%);
-  width:40px;height:16px;
+  content:'';position:absolute;right:calc(100% + 6px);top:50%;transform:translateY(-50%);
+  width:35px;height:14px;
   background:
     linear-gradient(0deg,
-      transparent 0%, transparent 15%,
-      rgba(255,255,255,.08) 15%, rgba(255,255,255,.08) 20%,
-      transparent 20%, transparent 38%,
-      rgba(255,255,255,.12) 38%, rgba(255,255,255,.12) 42%,
-      transparent 42%, transparent 58%,
-      rgba(255,255,255,.12) 58%, rgba(255,255,255,.12) 62%,
-      transparent 62%, transparent 80%,
-      rgba(255,255,255,.08) 80%, rgba(255,255,255,.08) 85%,
-      transparent 85%);
-  opacity:.6;
+      transparent 0%, transparent 18%,
+      rgba(255,255,255,.15) 18%, rgba(255,255,255,.15) 22%,
+      transparent 22%, transparent 42%,
+      rgba(255,255,255,.2) 42%, rgba(255,255,255,.2) 46%,
+      transparent 46%, transparent 54%,
+      rgba(255,255,255,.2) 54%, rgba(255,255,255,.2) 58%,
+      transparent 58%, transparent 78%,
+      rgba(255,255,255,.15) 78%, rgba(255,255,255,.15) 82%,
+      transparent 82%);
+  opacity:.7;
 }
-@keyframes exhaustFlicker{
-  0%{width:25px;opacity:.6;}
-  100%{width:35px;opacity:.9;}
+@keyframes dustFlicker{
+  0%{width:30px;opacity:.5;}
+  100%{width:45px;opacity:.8;}
 }
-/* Car shadow */
+/* Car shadow on asphalt */
 .car-shadow{
-  position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);
-  width:36px;height:8px;background:rgba(0,0,0,.35);
-  border-radius:50%;filter:blur(4px);
+  position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);
+  width:50px;height:10px;background:rgba(0,0,0,.35);
+  border-radius:50%;filter:blur(5px);
 }
 
 .car-wrap.leader-car{
-  transform:translate(-50%,-50%) scale(1.15);
-  animation:leaderGlow 2s ease-in-out infinite;
+  transform:translate(-50%,-50%) scale(1.12);
 }
-.car-wrap.leader-car::before{
-  width:45px;height:12px;
-  background:linear-gradient(90deg, transparent, rgba(255,100,30,.5), rgba(255,200,50,.25));
+/* Leader crown */
+.leader-crown{
+  position:absolute;top:-18px;left:50%;transform:translateX(-50%);
+  font-size:16px;
+  filter:drop-shadow(0 1px 3px rgba(0,0,0,.4));
+  animation:crownBounce 2s ease-in-out infinite;
 }
-@keyframes leaderGlow{
-  0%,100%{filter:drop-shadow(0 0 8px currentColor) drop-shadow(0 4px 8px rgba(0,0,0,.5));}
-  50%{filter:drop-shadow(0 0 20px currentColor) drop-shadow(0 0 35px currentColor) drop-shadow(0 4px 8px rgba(0,0,0,.5));}
+@keyframes crownBounce{
+  0%,100%{transform:translateX(-50%) translateY(0);}
+  50%{transform:translateX(-50%) translateY(-3px);}
 }
+
 .car-wrap.finished{
-  filter:drop-shadow(0 0 14px #10b981) drop-shadow(0 0 28px #10b981) drop-shadow(0 4px 8px rgba(0,0,0,.5));
+  filter:drop-shadow(0 0 12px #10b981) drop-shadow(0 0 24px #10b981) drop-shadow(0 3px 6px rgba(0,0,0,.5));
 }
 
 /* Finished text flash */
 .plan-done-flash{
-  position:absolute;top:50%;right:20px;transform:translateY(-50%);
-  font-family:'DM Sans',sans-serif;font-size:11px;font-weight:800;
+  position:absolute;top:50%;right:60px;transform:translateY(-50%);
+  font-family:'DM Sans',sans-serif;font-size:12px;font-weight:800;
   letter-spacing:2px;text-transform:uppercase;
   color:#10b981;
-  text-shadow:0 0 10px #10b981, 0 0 20px #10b981;
+  text-shadow:0 0 8px #10b981, 0 0 16px rgba(16,185,129,.5);
   animation:flashIn .6s ease-out forwards;
   z-index:5;
   white-space:nowrap;
+  background:rgba(0,0,0,.4);
+  padding:4px 10px;border-radius:6px;
 }
 @keyframes flashIn{
   0%{opacity:0;transform:translateY(-50%) scale(1.5);}
@@ -288,27 +312,94 @@ body.cursor-visible{cursor:default;}
   100%{opacity:1;transform:translateY(-50%) scale(1);}
 }
 
-/* ── RIGHT: STATS PANEL ── */
-.track-stats{text-align:right;display:flex;flex-direction:column;gap:4px;align-items:flex-end;}
-.track-stats-top{display:flex;align-items:center;gap:12px;justify-content:flex-end;}
-.track-pct{
-  font-family:'DM Sans',sans-serif;font-size:34px;font-weight:800;
+/* ── FINISH LINE ── */
+.finish-line{
+  position:absolute;right:0;top:0;bottom:0;width:20px;z-index:1;
+  background:repeating-conic-gradient(#fff 0% 25%, #222 0% 50%) 0 0 / 10px 10px;
+  opacity:.7;
+}
+.finish-label{
+  position:absolute;right:4px;top:-22px;z-index:4;
+  font-size:10px;font-weight:800;color:#1a1a2e;
+  letter-spacing:1px;text-transform:uppercase;
+  text-shadow:0 1px 2px rgba(255,255,255,.5);
+}
+.finish-flag{
+  display:inline-block;
+  animation:flagWave 1.5s ease-in-out infinite;
+  transform-origin:bottom left;
+  font-size:16px;
+}
+@keyframes flagWave{
+  0%,100%{transform:rotate(-5deg);}
+  50%{transform:rotate(5deg);}
+}
+
+/* ── RIGHT: STATS (on track) ── */
+.lane-stats{
+  text-align:right;display:flex;flex-direction:column;gap:2px;
+  align-items:flex-end;padding-right:28px;z-index:3;
+}
+.lane-pct{
+  font-family:'DM Sans',sans-serif;font-size:28px;font-weight:800;
   font-variant-numeric:tabular-nums;line-height:1;
+  color:#fff;
+  text-shadow:0 2px 6px rgba(0,0,0,.5);
   letter-spacing:-0.5px;
 }
-/* Mini progress arc */
-.mini-arc{
-  width:38px;height:38px;flex-shrink:0;
+.lane-amounts{
+  font-size:11px;color:rgba(255,255,255,.6);font-weight:500;
+  text-shadow:0 1px 2px rgba(0,0,0,.5);
 }
-.mini-arc circle{transition:stroke-dashoffset 2s cubic-bezier(0.34,1.56,0.64,1);}
-.track-amounts{font-size:11px;color:rgba(255,255,255,.4);font-weight:500;letter-spacing:0.3px;}
-.track-deals-row{display:flex;gap:6px;justify-content:flex-end;margin-top:2px;}
-.track-deal-badge{
-  font-size:10px;padding:2px 8px;border-radius:8px;
-  background:rgba(255,255,255,.05);
-  color:rgba(255,255,255,.35);font-weight:600;
-  border:1px solid rgba(255,255,255,.04);
+.lane-deals-row{display:flex;gap:4px;justify-content:flex-end;margin-top:2px;}
+.lane-deal-badge{
+  font-size:9px;padding:2px 7px;border-radius:8px;
+  background:rgba(255,255,255,.15);
+  color:rgba(255,255,255,.7);font-weight:600;
+  border:1px solid rgba(255,255,255,.1);
 }
+
+/* ══════════════════════════════════════════════════════
+   SCOREBOARD (TV-style overlay)
+   ══════════════════════════════════════════════════════ */
+.scoreboard{
+  position:absolute;top:16px;right:16px;z-index:10;
+  background:rgba(255,255,255,.92);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-radius:12px;
+  padding:14px 18px;
+  box-shadow:0 4px 20px rgba(0,0,0,.1);
+  border:1px solid rgba(0,0,0,.05);
+  min-width:220px;
+}
+.scoreboard-title{
+  font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  color:#6b7280;margin-bottom:10px;
+  display:flex;align-items:center;gap:6px;
+}
+.scoreboard-live{
+  width:6px;height:6px;border-radius:50%;background:#ef4444;
+  animation:livePulse 1.5s ease-in-out infinite;
+}
+@keyframes livePulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.8);}}
+.sb-row{
+  display:flex;align-items:center;gap:10px;
+  padding:5px 0;
+  border-bottom:1px solid rgba(0,0,0,.04);
+}
+.sb-row:last-child{border-bottom:none;}
+.sb-pos{
+  width:20px;height:20px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:800;flex-shrink:0;
+}
+.sb-pos.p1{background:#ffd700;color:#1a1200;}
+.sb-pos.p2{background:#c0c0c0;color:#333;}
+.sb-pos.p3{background:#cd7f32;color:#fff;}
+.sb-pos.p4{background:#e5e7eb;color:#6b7280;}
+.sb-name{flex:1;font-size:12px;font-weight:600;color:#1a1a2e;}
+.sb-pct{font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;}
+.sb-detail{font-size:9px;color:#9ca3af;font-weight:500;}
 
 /* ══════════════════════════════════════════════════════
    CONFETTI / EXPLOSION
@@ -322,7 +413,6 @@ body.cursor-visible{cursor:default;}
   animation:confetti-fall 1.8s ease-out forwards;
   pointer-events:none;z-index:10;
 }
-/* Green neon explosion ring */
 @keyframes neonBurst{
   0%{transform:scale(0);opacity:1;}
   100%{transform:scale(3);opacity:0;}
@@ -335,110 +425,98 @@ body.cursor-visible{cursor:default;}
 }
 
 /* ══════════════════════════════════════════════════════
-   BOTTOM PANEL (glassmorphism cards)
+   BOTTOM PANEL (light cards)
    ══════════════════════════════════════════════════════ */
 .bottom-panel{
   display:grid;grid-template-columns:1fr 1fr;gap:20px;
-  padding:0 40px 24px;flex-shrink:0;
+  padding:8px 40px 20px;flex-shrink:0;
 }
 .panel-card{
-  background:rgba(13,17,23,.7);
-  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
-  border:1px solid rgba(99,102,241,0.1);
-  border-radius:18px;padding:20px 24px;
+  background:#fff;
+  border-radius:16px;padding:18px 22px;
   position:relative;overflow:hidden;
-}
-.panel-card::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg, transparent, rgba(99,102,241,.2), transparent);
+  box-shadow:0 2px 16px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.04);
+  border:1px solid rgba(0,0,0,.04);
 }
 .panel-title{
   font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
-  color:rgba(255,255,255,.3);margin-bottom:16px;
+  color:#6b7280;margin-bottom:14px;
   display:flex;align-items:center;gap:8px;
 }
 .panel-title-dot{
-  width:6px;height:6px;border-radius:50%;
+  width:7px;height:7px;border-radius:50%;
   background:#10b981;
   box-shadow:0 0 6px #10b981;
   animation:livePulse 2s ease-in-out infinite;
 }
-@keyframes livePulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+.panel-title-dot.red{background:#ef4444;box-shadow:0 0 6px #ef4444;}
 
 /* ── TOP-3 MANAGERS ── */
-.top3-list{display:flex;flex-direction:column;gap:10px;}
+.top3-list{display:flex;flex-direction:column;gap:8px;}
 .top3-item{
   display:flex;align-items:center;gap:14px;
-  padding:12px 16px;border-radius:14px;
-  background:rgba(255,255,255,.03);
-  border:1px solid rgba(255,255,255,.05);
+  padding:12px 16px;border-radius:12px;
+  background:#fafafa;
   transition:all .4s;
   position:relative;overflow:hidden;
 }
 .top3-item.gold{
-  background:linear-gradient(135deg, rgba(255,215,0,.05), rgba(255,170,0,.02));
-  border-color:rgba(255,215,0,.15);
-  box-shadow:0 0 24px rgba(255,215,0,.04);
-}
-.top3-item.gold::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg, transparent, rgba(255,215,0,.3), transparent);
+  background:linear-gradient(135deg, #fffbeb, #fef3c7);
+  border-left:4px solid #fbbf24;
 }
 .top3-item.silver{
-  background:rgba(192,192,192,.03);
-  border-color:rgba(192,192,192,.1);
+  background:linear-gradient(135deg, #f9fafb, #f3f4f6);
+  border-left:4px solid #c0c0c0;
 }
 .top3-item.bronze{
-  background:rgba(205,127,50,.03);
-  border-color:rgba(205,127,50,.08);
+  background:linear-gradient(135deg, #fdf8f0, #fde7cb);
+  border-left:4px solid #cd7f32;
 }
 .top3-medal{font-size:28px;flex-shrink:0;width:36px;text-align:center;}
 .top3-info{flex:1;min-width:0;}
-.top3-name{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.top3-sub{font-size:11px;color:rgba(255,255,255,.35);margin-top:3px;}
+.top3-name{font-size:15px;font-weight:600;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.top3-sub{font-size:11px;color:#9ca3af;margin-top:3px;}
 .top3-amount{
   font-family:'DM Sans',sans-serif;font-size:20px;font-weight:800;
   font-variant-numeric:tabular-nums;white-space:nowrap;
   letter-spacing:-0.3px;
 }
-.top3-amount.gold-text{color:#ffd700;text-shadow:0 0 12px rgba(255,215,0,.3);}
-.top3-amount.silver-text{color:#c0c0c0;}
-.top3-amount.bronze-text{color:#cd7f32;}
+.top3-amount.gold-text{color:#d97706;}
+.top3-amount.silver-text{color:#6b7280;}
+.top3-amount.bronze-text{color:#a0622e;}
 
 /* ── FEED ── */
-.feed-list{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow:hidden;}
+.feed-list{display:flex;flex-direction:column;gap:6px;max-height:180px;overflow:hidden;}
 .feed-item{
   display:flex;align-items:center;gap:12px;
-  padding:10px 14px;border-radius:12px;
-  background:rgba(255,255,255,.02);
-  border:1px solid rgba(255,255,255,.04);
+  padding:10px 14px;border-radius:10px;
+  background:#fafafa;
   font-size:13px;font-weight:500;
   animation:feedSlideIn .6s cubic-bezier(.4,0,.2,1);
   transition:all .3s;
 }
 .feed-item.highlight{
-  background:rgba(16,185,129,.06);
-  border-color:rgba(16,185,129,.15);
-  box-shadow:0 0 20px rgba(16,185,129,.05);
+  background:linear-gradient(135deg, #ecfdf5, #d1fae5);
+  border:1px solid rgba(16,185,129,.15);
 }
 @keyframes feedSlideIn{
   from{opacity:0;transform:translateX(-30px) scale(.95);}
   to{opacity:1;transform:translateX(0) scale(1);}
 }
-.feed-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:rgba(255,255,255,.6);}
+.feed-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#6b7280;}
 .feed-amount{
   font-family:'DM Sans',sans-serif;font-weight:700;font-size:14px;
-  font-variant-numeric:tabular-nums;white-space:nowrap;
+  font-variant-numeric:tabular-nums;white-space:nowrap;color:#1a1a2e;
 }
 .feed-tag{
   font-size:9px;font-weight:700;padding:3px 8px;border-radius:8px;
-  background:rgba(99,102,241,.1);
-  border:1px solid rgba(99,102,241,.15);
-  color:rgba(255,255,255,.4);white-space:nowrap;
+  background:rgba(99,102,241,.08);
+  border:1px solid rgba(99,102,241,.1);
+  color:#6366f1;white-space:nowrap;
   text-transform:uppercase;letter-spacing:0.5px;
 }
 .feed-empty{
-  text-align:center;padding:24px;color:rgba(255,255,255,.2);font-size:13px;
+  text-align:center;padding:24px;color:#9ca3af;font-size:13px;
 }
 
 /* ══════════════════════════════════════════════════════
@@ -446,15 +524,26 @@ body.cursor-visible{cursor:default;}
    ══════════════════════════════════════════════════════ */
 .loading-screen{
   position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(160deg, #050816, #0a1628);flex-direction:column;gap:20px;
+  background:linear-gradient(180deg, #e8f4fd, #ffffff);flex-direction:column;gap:20px;
 }
 .loading-spinner{
-  width:44px;height:44px;border:3px solid rgba(99,102,241,.15);
+  width:44px;height:44px;border:3px solid rgba(99,102,241,.12);
   border-top-color:rgba(99,102,241,.7);border-radius:50%;
   animation:spin .8s linear infinite;
 }
 @keyframes spin{to{transform:rotate(360deg)}}
-.loading-text{font-size:13px;color:rgba(255,255,255,.3);letter-spacing:1px;}
+.loading-text{font-size:13px;color:#9ca3af;letter-spacing:1px;}
+
+/* ══════════════════════════════════════════════════════
+   WHEEL SPIN
+   ══════════════════════════════════════════════════════ */
+@keyframes wheelSpin{
+  to{transform:rotate(360deg);}
+}
+.wheel-spin{
+  animation:wheelSpin .3s linear infinite;
+  transform-origin:center;
+}
 
 /* ══════════════════════════════════════════════════════
    RESPONSIVE
@@ -463,36 +552,38 @@ body.cursor-visible{cursor:default;}
   .header{padding:0 24px;height:54px;}
   .header-title{font-size:18px;}
   .header-clock{font-size:22px;}
-  .race-section{padding:16px 24px 12px;gap:10px;}
-  .race-track{grid-template-columns:170px 1fr 160px;padding:12px 18px;}
-  .track-rop{font-size:18px;}
-  .track-pct{font-size:28px;}
-  .bottom-panel{padding:0 24px 16px;gap:16px;}
+  .race-section{padding:8px 24px 8px;}
+  .race-lane{grid-template-columns:150px 1fr 150px;}
+  .lane-name{font-size:16px;}
+  .lane-pct{font-size:24px;}
+  .bottom-panel{padding:6px 24px 14px;gap:16px;}
 }
 @media(max-width:1024px){
-  .race-track{grid-template-columns:140px 1fr 130px;gap:12px;}
-  .track-rop{font-size:16px;}
-  .track-pct{font-size:22px;}
-  .track-lane{height:44px;}
+  .race-lane{grid-template-columns:130px 1fr 130px;}
+  .lane-name{font-size:14px;}
+  .lane-pct{font-size:20px;}
+  .race-lane{height:62px;}
   .bottom-panel{grid-template-columns:1fr;}
+  .scoreboard{display:none;}
 }
 @media(max-width:768px){
   .header{flex-wrap:wrap;height:auto;padding:12px 16px;gap:8px;}
-  .race-section{padding:12px 16px;gap:10px;}
-  .race-track{grid-template-columns:100px 1fr 100px;padding:10px 14px;}
-  .track-rop{font-size:14px;}
-  .track-pct{font-size:18px;}
+  .race-section{padding:8px 16px;}
+  .race-lane{grid-template-columns:100px 1fr 100px;}
+  .lane-name{font-size:13px;}
+  .lane-pct{font-size:16px;}
   .bottom-panel{padding:0 16px 12px;}
 }
 </style>
 </head>
 <body class="cursor-visible">
 
-<!-- PARTICLES -->
-<canvas id="particles-canvas"></canvas>
-
-<!-- CYBERPUNK GRID -->
-<div class="cyber-grid"><div class="cyber-grid-inner"></div></div>
+<!-- SKY & CLOUDS -->
+<div class="sky-bg">
+  <div class="cloud cloud-1"></div>
+  <div class="cloud cloud-2"></div>
+  <div class="cloud cloud-3"></div>
+</div>
 
 <!-- LOADING -->
 <div class="loading-screen" id="loading">
@@ -512,8 +603,23 @@ body.cursor-visible{cursor:default;}
     </div>
   </div>
 
-  <!-- RACE TRACKS -->
-  <div class="race-section" id="raceTracks"></div>
+  <!-- RACE TRACK -->
+  <div class="race-section" id="raceSection">
+    <!-- Scoreboard overlay -->
+    <div class="scoreboard" id="scoreboard"></div>
+
+    <!-- Track structure built by JS -->
+    <div class="grass-top"></div>
+    <div class="track-container">
+      <div class="kerb-top"></div>
+      <div class="track-asphalt" id="raceTracks">
+        <!-- Finish line label -->
+        <div class="finish-label">ФИНИШ <span class="finish-flag">&#127937;</span></div>
+      </div>
+      <div class="kerb-bottom"></div>
+    </div>
+    <div class="grass-bottom"></div>
+  </div>
 
   <!-- BOTTOM PANEL -->
   <div class="bottom-panel">
@@ -522,63 +628,13 @@ body.cursor-visible{cursor:default;}
       <div class="top3-list" id="top3List"></div>
     </div>
     <div class="panel-card">
-      <div class="panel-title"><span class="panel-title-dot"></span> Лента сделок</div>
+      <div class="panel-title"><span class="panel-title-dot red"></span> Live-лента сделок</div>
       <div class="feed-list" id="feedList"></div>
     </div>
   </div>
 </div>
 
 <script>
-// ══════════════════════════════════════════════════════
-//  PARTICLES ENGINE
-// ══════════════════════════════════════════════════════
-(function(){
-  const canvas = document.getElementById('particles-canvas');
-  const ctx = canvas.getContext('2d');
-  let particles = [];
-  const COUNT = 60;
-
-  function resize(){
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-  }
-  window.addEventListener('resize', resize);
-  resize();
-
-  function createParticle(){
-    return {
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * 0.3,
-      vy: (Math.random() - 0.5) * 0.3,
-      r: Math.random() * 1.5 + 0.3,
-      alpha: Math.random() * 0.4 + 0.1,
-      pulse: Math.random() * Math.PI * 2,
-    };
-  }
-  for(let i=0;i<COUNT;i++) particles.push(createParticle());
-
-  function animate(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    particles.forEach(p => {
-      p.x += p.vx;
-      p.y += p.vy;
-      p.pulse += 0.02;
-      const a = p.alpha * (0.5 + 0.5 * Math.sin(p.pulse));
-      if(p.x < 0) p.x = canvas.width;
-      if(p.x > canvas.width) p.x = 0;
-      if(p.y < 0) p.y = canvas.height;
-      if(p.y > canvas.height) p.y = 0;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(140,160,255,${a})`;
-      ctx.fill();
-    });
-    requestAnimationFrame(animate);
-  }
-  animate();
-})();
-
 // ═══════════════════ CONFIG ═══════════════════════════════════════
 const SUPABASE_URL = 'https://bdyakgmeibpdkisbiykt.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkeWFrZ21laWJwZGtpc2JpeWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTQzOTMsImV4cCI6MjA4Nzc5MDM5M30.nA187grJR6XFQRmTP6WOM-6-1dZK1EzYNNP2JH9aAMg';
@@ -655,50 +711,50 @@ function aggregateManagersByPeriod(prodKey, from, to) {
   }).filter(m => m.budget > 0 || m.leads > 0);
 }
 
-// ═══════════════════ SVG CAR (Top-down F1 style) ═══════════════════
+// ═══════════════════ SVG CAR (Side-view racing car) ═══════════════════
 function carSVG(color) {
-  // Darker shade for details
-  const dark = color;
-  return `<svg width="50" height="24" viewBox="0 0 50 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color:${color}">
-    <!-- Body -->
-    <path d="M8 6 L14 3 L34 2 L42 4 L46 7 L48 10 L48 14 L46 17 L42 20 L34 22 L14 21 L8 18 L4 14 L3 12 L4 10 Z" fill="${color}" opacity="0.9"/>
-    <!-- Cockpit -->
-    <ellipse cx="28" cy="12" rx="7" ry="4" fill="rgba(0,0,0,0.5)"/>
-    <ellipse cx="28" cy="12" rx="5" ry="2.5" fill="rgba(100,200,255,0.15)"/>
-    <!-- Front wing -->
-    <path d="M44 5 L50 4 L50 8 L46 7 Z" fill="${dark}" opacity="0.7"/>
-    <path d="M44 19 L50 20 L50 16 L46 17 Z" fill="${dark}" opacity="0.7"/>
-    <!-- Rear wing / spoiler -->
-    <rect x="3" y="3" width="3" height="18" rx="1.5" fill="${dark}" opacity="0.6"/>
-    <!-- Side pods -->
-    <path d="M16 4 L22 3 L22 6 L16 6 Z" fill="rgba(255,255,255,0.1)"/>
-    <path d="M16 20 L22 21 L22 18 L16 18 Z" fill="rgba(255,255,255,0.1)"/>
-    <!-- Wheels -->
-    <rect x="12" y="1" width="6" height="4" rx="1" fill="#222" stroke="${dark}" stroke-width="0.5"/>
-    <rect x="12" y="19" width="6" height="4" rx="1" fill="#222" stroke="${dark}" stroke-width="0.5"/>
-    <rect x="36" y="2" width="5" height="3.5" rx="1" fill="#222" stroke="${dark}" stroke-width="0.5"/>
-    <rect x="36" y="18.5" width="5" height="3.5" rx="1" fill="#222" stroke="${dark}" stroke-width="0.5"/>
-    <!-- Headlight glow -->
-    <circle cx="47" cy="10" r="1.5" fill="rgba(255,255,200,0.6)"/>
-    <circle cx="47" cy="14" r="1.5" fill="rgba(255,255,200,0.6)"/>
-    <!-- Body highlight -->
-    <path d="M14 6 L34 5 L38 7 L38 9 L14 9 Z" fill="rgba(255,255,255,0.12)"/>
-  </svg>`;
-}
-
-// ═══════════════════ MINI ARC SVG ═══════════════════════════════
-function miniArcSVG(pct, color) {
-  const r = 15;
-  const circ = 2 * Math.PI * r;
-  const offset = circ - (Math.min(pct, 100) / 100) * circ;
-  return `<svg class="mini-arc" viewBox="0 0 38 38">
-    <circle cx="19" cy="19" r="${r}" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="3"/>
-    <circle cx="19" cy="19" r="${r}" fill="none" stroke="${color}" stroke-width="3"
-      stroke-dasharray="${circ}" stroke-dashoffset="${offset}"
-      stroke-linecap="round"
-      transform="rotate(-90 19 19)"
-      style="transition:stroke-dashoffset 2s cubic-bezier(0.34,1.56,0.64,1)"/>
-    <text x="19" y="21" text-anchor="middle" font-size="8" font-weight="700" fill="rgba(255,255,255,.5)" font-family="DM Sans">${Math.round(pct)}%</text>
+  return `<svg width="60" height="28" viewBox="0 0 60 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Car body -->
+    <path d="M8 18 L10 12 L18 8 L26 6 L38 5 L48 6 L54 9 L57 13 L58 16 L58 20 L6 20 L6 18 Z" fill="${color}"/>
+    <!-- Windshield -->
+    <path d="M30 7 L38 6 L42 7 L42 12 L28 12 Z" fill="rgba(100,180,255,.35)" stroke="rgba(255,255,255,.2)" stroke-width=".5"/>
+    <!-- Roof line / spoiler -->
+    <path d="M10 12 L14 10 L26 8 L28 12" fill="${color}" opacity=".8"/>
+    <!-- Hood highlights -->
+    <path d="M42 8 L52 10 L56 14 L42 12 Z" fill="rgba(255,255,255,.15)"/>
+    <path d="M14 10 L26 8 L28 10 L14 12 Z" fill="rgba(255,255,255,.1)"/>
+    <!-- Spoiler (rear) -->
+    <rect x="4" y="10" width="3" height="2" rx="1" fill="${color}" opacity=".7"/>
+    <rect x="3" y="8" width="5" height="3" rx="1" fill="${color}" opacity=".5"/>
+    <!-- Headlight -->
+    <ellipse cx="56" cy="14" rx="2" ry="2" fill="rgba(255,255,200,.8)"/>
+    <ellipse cx="56" cy="14" rx="4" ry="3" fill="rgba(255,255,200,.15)"/>
+    <!-- Taillight -->
+    <rect x="5" y="15" width="3" height="3" rx="1" fill="#ff3333" opacity=".8"/>
+    <!-- Exhaust glow -->
+    <ellipse cx="4" cy="19" rx="3" ry="1.5" fill="rgba(255,100,50,.2)"/>
+    <!-- Undercarriage -->
+    <rect x="8" y="20" width="48" height="2" rx="1" fill="rgba(0,0,0,.3)"/>
+    <!-- Front wheel -->
+    <g transform="translate(46,20)">
+      <circle cx="0" cy="0" r="5" fill="#222"/>
+      <circle cx="0" cy="0" r="4" fill="#444" stroke="#333" stroke-width=".5"/>
+      <circle cx="0" cy="0" r="1.5" fill="#888" class="wheel-spin"/>
+      <line x1="-3" y1="0" x2="3" y2="0" stroke="#666" stroke-width=".5" class="wheel-spin"/>
+      <line x1="0" y1="-3" x2="0" y2="3" stroke="#666" stroke-width=".5" class="wheel-spin"/>
+    </g>
+    <!-- Rear wheel -->
+    <g transform="translate(16,20)">
+      <circle cx="0" cy="0" r="5" fill="#222"/>
+      <circle cx="0" cy="0" r="4" fill="#444" stroke="#333" stroke-width=".5"/>
+      <circle cx="0" cy="0" r="1.5" fill="#888" class="wheel-spin"/>
+      <line x1="-3" y1="0" x2="3" y2="0" stroke="#666" stroke-width=".5" class="wheel-spin"/>
+      <line x1="0" y1="-3" x2="0" y2="3" stroke="#666" stroke-width=".5" class="wheel-spin"/>
+    </g>
+    <!-- Door line -->
+    <line x1="26" y1="8" x2="26" y2="19" stroke="rgba(0,0,0,.15)" stroke-width=".5"/>
+    <!-- Side accent stripe -->
+    <path d="M12 16 L52 14 L52 16 L12 18 Z" fill="rgba(255,255,255,.08)"/>
   </svg>`;
 }
 
@@ -786,7 +842,7 @@ function calcFeed() {
 // ═══════════════════ CONFETTI + NEON BURST ═══════════════════════════
 function spawnConfetti(trackEl) {
   const colors = ['#10b981','#34d399','#6ee7b7','#fbbf24','#f59e0b','#fff','#a78bfa'];
-  const lane = trackEl.querySelector('.track-lane');
+  const lane = trackEl.querySelector('.lane-track-area');
   if (!lane) return;
   const rect = lane.getBoundingClientRect();
 
@@ -819,129 +875,144 @@ function renderRace() {
   const data = calcRopData();
   const container = document.getElementById('raceTracks');
 
-  let tracks = container.querySelectorAll('.race-track');
+  let lanes = container.querySelectorAll('.race-lane');
 
-  if (tracks.length !== data.length) {
-    container.innerHTML = data.map((r, i) => `
-      <div class="race-track ${i === 0 ? 'leader' : ''}" data-rop="${r.name}">
-        <div class="track-info">
-          <div class="track-name-row">
-            <div class="track-position pos-${i+1}">${i+1}</div>
-            <div class="track-rop" style="color:${r.color}">${r.name.replace('РОП ','')}</div>
-          </div>
-          <div class="track-meta">
-            <span class="track-badge">${r.mgrCount} менеджеров</span>
+  if (lanes.length !== data.length) {
+    // Keep the finish label
+    container.innerHTML = '<div class="finish-label">ФИНИШ <span class="finish-flag">&#127937;</span></div>' +
+      data.map((r, i) => `
+      <div class="race-lane" data-rop="${r.name}">
+        <div class="lane-info">
+          <div class="lane-position pos-${i+1}">${i+1}</div>
+          <div>
+            <div class="lane-name">${r.name.replace('РОП ','')}</div>
+            <div class="lane-mgr-count">${r.mgrCount} менеджеров</div>
           </div>
         </div>
-        <div class="track-lane" style="--lane-color-glow:${r.color}40">
-          <div class="track-progress" style="width:0%;position:absolute;">
-            <div class="track-progress-inner" style="background:${r.color}"></div>
-            <div class="track-progress-glow" style="background:${r.color}"></div>
-          </div>
+        <div class="lane-track-area">
           <div class="finish-line"></div>
           <div class="car-wrap ${i === 0 ? 'leader-car' : ''}" style="left:0%;color:${r.color}">
+            ${i === 0 ? '<div class="leader-crown">&#x1F451;</div>' : ''}
             <div class="car-shadow"></div>
             ${carSVG(r.color)}
           </div>
           ${r.pct >= 100 ? '<div class="plan-done-flash">ПЛАН ВЫПОЛНЕН!</div>' : ''}
         </div>
-        <div class="track-stats">
-          <div class="track-stats-top">
-            ${miniArcSVG(r.pct, r.color)}
-            <div class="track-pct" style="color:${r.color}">0%</div>
-          </div>
-          <div class="track-amounts">${fmtM(r.fact)} / ${fmtM(r.plan)}</div>
-          <div class="track-deals-row">
-            <span class="track-deal-badge">${r.leads} лидов</span>
-            <span class="track-deal-badge">${r.deals} сделок</span>
+        <div class="lane-stats">
+          <div class="lane-pct" style="color:${r.color}">0%</div>
+          <div class="lane-amounts">${fmtM(r.fact)} / ${fmtM(r.plan)}</div>
+          <div class="lane-deals-row">
+            <span class="lane-deal-badge">${r.leads} лидов</span>
+            <span class="lane-deal-badge">${r.deals} сделок</span>
           </div>
         </div>
       </div>
     `).join('');
-    tracks = container.querySelectorAll('.race-track');
+    lanes = container.querySelectorAll('.race-lane');
   }
+
+  // Update scoreboard
+  renderScoreboard(data);
 
   // Animate after brief delay
   requestAnimationFrame(() => {
     setTimeout(() => {
       data.forEach((r, i) => {
-        const track = tracks[i];
-        if (!track) return;
+        const lane = lanes[i];
+        if (!lane) return;
 
-        // Update classes
-        track.className = 'race-track' + (i === 0 ? ' leader' : '');
-        track.dataset.rop = r.name;
+        lane.dataset.rop = r.name;
 
         // Left info
-        const ropEl = track.querySelector('.track-rop');
-        ropEl.style.color = r.color;
-        ropEl.textContent = r.name.replace('РОП ','');
+        const nameEl = lane.querySelector('.lane-name');
+        nameEl.textContent = r.name.replace('РОП ','');
 
-        const posEl = track.querySelector('.track-position');
-        posEl.className = 'track-position pos-' + (i+1);
+        const posEl = lane.querySelector('.lane-position');
+        posEl.className = 'lane-position pos-' + (i+1);
         posEl.textContent = i+1;
 
-        track.querySelector('.track-badge').textContent = r.mgrCount + ' менеджеров';
-
-        // Lane glow color
-        track.querySelector('.track-lane').style.setProperty('--lane-color-glow', r.color + '40');
-
-        // Animate progress bar
-        const pctClamped = Math.min(r.pct, 100);
-        const progress = track.querySelector('.track-progress');
-        progress.style.width = pctClamped + '%';
-        progress.querySelector('.track-progress-inner').style.background = r.color;
-        progress.querySelector('.track-progress-glow').style.background = r.color;
+        lane.querySelector('.lane-mgr-count').textContent = r.mgrCount + ' менеджеров';
 
         // Animate car
-        const car = track.querySelector('.car-wrap');
-        car.style.left = pctClamped + '%';
+        const pctClamped = Math.min(r.pct, 100);
+        const car = lane.querySelector('.car-wrap');
+        const carLeft = Math.max(5, pctClamped * 0.92 + 3);
+        car.style.left = carLeft + '%';
         car.style.color = r.color;
-        car.className = 'car-wrap' + (i === 0 ? ' leader-car' : '') + (r.pct >= 100 ? ' finished' : '');
+
+        // Leader car styling
+        const isLeader = (i === 0);
+        let crownEl = car.querySelector('.leader-crown');
+        if (isLeader) {
+          car.classList.add('leader-car');
+          if (!crownEl) {
+            crownEl = document.createElement('div');
+            crownEl.className = 'leader-crown';
+            crownEl.innerHTML = '&#x1F451;';
+            car.prepend(crownEl);
+          }
+        } else {
+          car.classList.remove('leader-car');
+          if (crownEl) crownEl.remove();
+        }
+
+        if (r.pct >= 100) {
+          car.classList.add('finished');
+        } else {
+          car.classList.remove('finished');
+        }
 
         // Plan done flash
-        const lane = track.querySelector('.track-lane');
-        const existingFlash = lane.querySelector('.plan-done-flash');
+        const trackArea = lane.querySelector('.lane-track-area');
+        const existingFlash = trackArea.querySelector('.plan-done-flash');
         if (r.pct >= 100 && !existingFlash) {
           const flash = document.createElement('div');
           flash.className = 'plan-done-flash';
           flash.textContent = 'ПЛАН ВЫПОЛНЕН!';
-          lane.appendChild(flash);
+          trackArea.appendChild(flash);
         } else if (r.pct < 100 && existingFlash) {
           existingFlash.remove();
         }
 
         // Right stats
-        track.querySelector('.track-pct').textContent = r.pct.toFixed(1) + '%';
-        track.querySelector('.track-pct').style.color = r.color;
-        track.querySelector('.track-amounts').textContent = fmtM(r.fact) + ' / ' + fmtM(r.plan);
-
-        // Update mini arc
-        const statsTop = track.querySelector('.track-stats-top');
-        const oldArc = statsTop.querySelector('.mini-arc');
-        if (oldArc) {
-          const tmpDiv = document.createElement('div');
-          tmpDiv.innerHTML = miniArcSVG(r.pct, r.color);
-          oldArc.replaceWith(tmpDiv.firstElementChild);
-        }
+        lane.querySelector('.lane-pct').textContent = r.pct.toFixed(1) + '%';
+        lane.querySelector('.lane-pct').style.color = r.color;
+        lane.querySelector('.lane-amounts').textContent = fmtM(r.fact) + ' / ' + fmtM(r.plan);
 
         // Update deal badges
-        const dealRow = track.querySelector('.track-deals-row');
+        const dealRow = lane.querySelector('.lane-deals-row');
         if (dealRow) {
           dealRow.innerHTML = `
-            <span class="track-deal-badge">${r.leads} лидов</span>
-            <span class="track-deal-badge">${r.deals} сделок</span>
+            <span class="lane-deal-badge">${r.leads} лидов</span>
+            <span class="lane-deal-badge">${r.deals} сделок</span>
           `;
         }
 
         // Confetti on crossing 100%
         if (r.pct >= 100 && !prevFinished.has(r.name)) {
           prevFinished.add(r.name);
-          spawnConfetti(track);
+          spawnConfetti(lane);
         }
       });
     }, 50);
   });
+}
+
+function renderScoreboard(data) {
+  const sb = document.getElementById('scoreboard');
+  sb.innerHTML = `
+    <div class="scoreboard-title"><span class="scoreboard-live"></span> ТАБЛИЦА ЛИДЕРОВ</div>
+    ${data.map((r, i) => `
+      <div class="sb-row">
+        <div class="sb-pos p${i+1}">${i+1}</div>
+        <div class="sb-name" style="color:${r.color}">${r.name.replace('РОП ','')}</div>
+        <div>
+          <div class="sb-pct" style="color:${r.color}">${r.pct.toFixed(1)}%</div>
+          <div class="sb-detail">${fmtM(r.fact)}</div>
+        </div>
+      </div>
+    `).join('')}
+  `;
 }
 
 function renderTop3() {
@@ -985,7 +1056,7 @@ function renderFeed() {
     return `
       <div class="feed-item ${isHighlight ? 'highlight' : ''}" ${isNew ? '' : 'style="animation:none"'}>
         <div class="feed-name">${f.name}</div>
-        <div class="feed-amount" ${isHighlight ? 'style="color:#10b981"' : ''}>${fmtM(f.budget)}</div>
+        <div class="feed-amount" ${isHighlight ? 'style="color:#059669"' : ''}>${fmtM(f.budget)}</div>
         <div class="feed-tag">${f.crm}</div>
       </div>
     `;
