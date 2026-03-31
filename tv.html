@@ -118,27 +118,17 @@ body{
 .car-label{
   position:absolute;
   transform:translate(-50%,-100%);
-  background:rgba(255,255,255,.88);
-  backdrop-filter:blur(8px);
-  border-radius:8px;
-  padding:6px 12px;
-  box-shadow:0 2px 12px rgba(0,0,0,.15);
-  border:2px solid currentColor;
   white-space:nowrap;
   pointer-events:none;
   transition:opacity .3s;
   z-index:11;
 }
 .car-label-name{
-  font-family:'Playfair Display',serif;font-size:14px;font-weight:700;
+  font-family:'Playfair Display',serif;font-size:16px;font-weight:800;
+  text-shadow:0 1px 4px rgba(0,0,0,.4), 0 0 8px rgba(255,255,255,.8);
 }
-.car-label-pct{
-  font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;
-  text-align:center;
-}
-.car-label-detail{
-  font-size:10px;color:#6b7280;text-align:center;
-}
+.car-label-pct{ display:none; }
+.car-label-detail{ display:none; }
 
 /* Zoom hint */
 .zoom-hint{
