@@ -769,80 +769,72 @@ for (let row = 0; row < 8; row++) {
 
 // ═══════════════════ GLB CAR LOADER ═══════════════════════════════
 
-const gltfLoader = new GLTFLoader();
+const CAR_FILES = {
+  'РОП Айдана':    'assets/car1.glb',
+  'РОП Аслиддин':  'assets/car2.glb',
+  'РОП Нурдаулет': 'assets/car3.glb',
+  'РОП Диас':      'assets/car4.glb',
+};
 
-function loadCars() {
-  return new Promise((resolve, reject) => {
-    gltfLoader.load('assets/car-simple.glb', (gltf) => {
-      const carTemplate = gltf.scene;
+async function loadCars() {
+  const loader = new GLTFLoader();
+  const promises = Object.entries(CAR_FILES).map(([ropName, file]) => {
+    return new Promise((resolve) => {
+      loader.load(file, (gltf) => {
+        const car = gltf.scene;
 
-      // Normalize car size and orientation
-      const box = new THREE.Box3().setFromObject(carTemplate);
-      const size = new THREE.Vector3();
-      box.getSize(size);
-      console.log('Car model size:', size.x, size.y, size.z);
-
-      // Scale car to be about 3 units long
-      const targetLength = 3;
-      const scale = targetLength / Math.max(size.x, size.y, size.z);
-
-      const ropList = [
-        { name: 'РОП Айдана',    color: 0x1a56db },
-        { name: 'РОП Аслиддин',  color: 0xf59e0b },
-        { name: 'РОП Нурдаулет', color: 0x10b981 },
-        { name: 'РОП Диас',      color: 0xef4444 },
-      ];
-
-      ropList.forEach(({ name, color }) => {
-        const car = carTemplate.clone();
+        // Auto-scale to ~3 units long
+        const box = new THREE.Box3().setFromObject(car);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const scale = 3 / maxDim;
         car.scale.set(scale, scale, scale);
 
-        // Color the car body
+        // Center the car
+        box.setFromObject(car);
+        const center = new THREE.Vector3();
+        box.getCenter(center);
+        car.position.sub(center);
+
+        // Wrap in group for positioning
+        const group = new THREE.Group();
+        group.add(car);
+
+        // Tint the car to ROP color while KEEPING original textures
+        const color = new THREE.Color(ROP_COLORS[ropName]);
         car.traverse(child => {
           if (child.isMesh) {
-            child.material = new THREE.MeshStandardMaterial({
-              color: color,
-              metalness: 0.6,
-              roughness: 0.3
-            });
+            if (child.material) {
+              child.material = child.material.clone();
+              child.material.color.lerp(color, 0.5);
+              child.material.metalness = Math.max(child.material.metalness || 0, 0.3);
+            }
             child.castShadow = true;
+            child.receiveShadow = true;
           }
         });
 
-        // Center the model on its bounding box so rotation works correctly
-        const carBox = new THREE.Box3().setFromObject(car);
-        const center = new THREE.Vector3();
-        carBox.getCenter(center);
-        car.position.sub(center);
+        // Orient car to face right
+        group.rotation.y = Math.PI / 2;
 
-        // Wrap in a group for easier positioning
-        const wrapper = new THREE.Group();
-        wrapper.add(car);
+        scene.add(group);
+        ROP_CARS[ropName].mesh = group;
 
-        // Orient car to face right (+X direction)
-        wrapper.rotation.y = Math.PI / 2;
-
-        wrapper.position.set(startX, 0, lanePositions[0]);
-        wrapper.userData.ropName = name;
-        scene.add(wrapper);
-        ROP_CARS[name].mesh = wrapper;
+        // Update loading progress for this car
+        updateLoadProgress(ropName.replace('РОП ', '') + ' загружен');
+        resolve();
+      }, (progress) => {
+        // Optional progress tracking
+      }, (error) => {
+        console.warn('Failed to load', file, error);
+        updateLoadProgress('Ошибка: ' + file);
+        resolve(); // Don't block on failure
       });
-
-      resolve();
-    },
-    // Progress callback
-    (xhr) => {
-      if (xhr.total > 0) {
-        const pct = Math.round((xhr.loaded / xhr.total) * 100);
-        loadingText.textContent = 'Загрузка модели: ' + pct + '%';
-      }
-    },
-    // Error callback
-    (error) => {
-      console.error('Failed to load car model:', error);
-      reject(error);
     });
   });
+
+  await Promise.all(promises);
 }
 
 // ═══════════════════ VEGETATION ═══════════════════════════════════
@@ -1021,7 +1013,7 @@ scene.add(buildGrandstand(0, roadWidth/2 + 5));
 
 // ═══════════════════ LOADING PROGRESS ═══════════════════════════════
 let loadedCount = 0;
-const totalLoads = 2; // car GLB model + data
+const totalLoads = 5; // 4 car GLB models + data
 const loadingBar = document.getElementById('loadingBar');
 const loadingText = document.getElementById('loadingText');
 
@@ -1156,18 +1148,12 @@ async function init() {
   updateHeader();
   setInterval(updateHeader, 1000);
 
-  // Load car GLB model
-  try {
-    await loadCars();
-    updateLoadProgress('Машины загружены...');
-  } catch (e) {
-    console.error('Car model failed to load:', e);
-    updateLoadProgress('Ошибка загрузки модели...');
-  }
+  // Load all 4 car GLB models (each updates progress individually)
+  await loadCars();
 
   // Load data from Supabase
   const dataOk = await loadData();
-  updateLoadProgress('Данные загружены...');
+  updateLoadProgress('Данные загружены');
   dataReady = dataOk;
 
   // Create labels
