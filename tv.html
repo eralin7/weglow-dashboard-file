@@ -10,367 +10,80 @@
 html{font-size:16px;-webkit-font-smoothing:antialiased;}
 body{
   font-family:'DM Sans',sans-serif;
-  background:linear-gradient(180deg, #87CEEB 0%, #c5e8f7 15%, #e8f4fd 35%, #ffffff 100%);
+  background:#000;
   color:#1a1a2e;
   min-height:100vh;
   overflow:hidden;
-  cursor:none;
-}
-body.cursor-visible{cursor:default;}
-
-/* ══════════════════════════════════════════════════════
-   SKY & CLOUDS
-   ══════════════════════════════════════════════════════ */
-.sky-bg{
-  position:fixed;top:0;left:0;right:0;height:120px;z-index:0;
-  pointer-events:none;
-  background:linear-gradient(180deg, #7ec8e3 0%, #b5dff5 40%, #dceefb 100%);
-  overflow:hidden;
-}
-.cloud{
-  position:absolute;
-  background:#fff;
-  border-radius:50%;
-  opacity:.7;
-  filter:blur(1px);
-}
-.cloud::before,.cloud::after{
-  content:'';position:absolute;background:#fff;border-radius:50%;
-}
-.cloud-1{width:120px;height:36px;top:20px;left:5%;animation:cloudDrift 60s linear infinite;}
-.cloud-1::before{width:60px;height:40px;top:-18px;left:20px;}
-.cloud-1::after{width:80px;height:44px;top:-22px;left:50px;}
-.cloud-2{width:90px;height:28px;top:45px;left:35%;animation:cloudDrift 80s linear infinite;opacity:.5;}
-.cloud-2::before{width:50px;height:32px;top:-14px;left:15px;}
-.cloud-2::after{width:60px;height:36px;top:-16px;left:40px;}
-.cloud-3{width:100px;height:30px;top:15px;left:70%;animation:cloudDrift 70s linear infinite;opacity:.6;}
-.cloud-3::before{width:55px;height:35px;top:-16px;left:18px;}
-.cloud-3::after{width:70px;height:40px;top:-20px;left:45px;}
-@keyframes cloudDrift{
-  0%{transform:translateX(0);}
-  100%{transform:translateX(calc(100vw + 200px));}
 }
 
 /* ══════════════════════════════════════════════════════
    LAYOUT
    ══════════════════════════════════════════════════════ */
-.page{position:relative;z-index:1;display:flex;flex-direction:column;height:100vh;}
+.page{display:flex;flex-direction:column;height:100vh;}
 
 /* ══════════════════════════════════════════════════════
-   HEADER
+   3D SCENE CONTAINER (top 70%)
    ══════════════════════════════════════════════════════ */
-.header{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 40px;height:60px;flex-shrink:0;
-  background:rgba(255,255,255,.92);
-  border-bottom:1px solid rgba(0,0,0,.06);
-  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-  box-shadow:0 2px 12px rgba(0,0,0,.04);
+.scene-container{
+  position:relative;
+  flex:7;
+  min-height:0;
+  overflow:hidden;
 }
-.header-title{
-  font-family:'Playfair Display',serif;font-size:22px;font-weight:800;
+.scene-container canvas{
+  display:block;
+  width:100%!important;
+  height:100%!important;
+}
+
+/* ══════════════════════════════════════════════════════
+   HUD OVERLAY
+   ══════════════════════════════════════════════════════ */
+.hud{
+  position:absolute;inset:0;
+  pointer-events:none;
+  z-index:10;
+}
+.hud *{pointer-events:auto;}
+
+/* Title bar (top-left) */
+.hud-title-bar{
+  position:absolute;top:16px;left:16px;
+  display:flex;align-items:center;gap:16px;
+  background:rgba(255,255,255,.88);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-radius:12px;
+  padding:12px 20px;
+  box-shadow:0 4px 20px rgba(0,0,0,.1);
+  border:1px solid rgba(0,0,0,.05);
+}
+.hud-main-title{
+  font-family:'Playfair Display',serif;font-size:20px;font-weight:800;
   letter-spacing:2px;text-transform:uppercase;
   color:#1a1a2e;
 }
-.header-month{
-  font-family:'Playfair Display',serif;font-size:18px;font-weight:600;
-  color:#6b7280;letter-spacing:1px;
-}
-.header-right{display:flex;align-items:center;gap:16px;}
-.header-clock{
-  font-family:'DM Sans',sans-serif;font-size:26px;font-weight:700;
+.hud-clock{
+  font-family:'DM Sans',sans-serif;font-size:24px;font-weight:700;
   font-variant-numeric:tabular-nums;letter-spacing:2px;
   color:#1a1a2e;
 }
-.header-badge{
+.hud-badge{
   font-size:11px;padding:5px 14px;border-radius:20px;
   background:rgba(16,185,129,.08);
   border:1px solid rgba(16,185,129,.15);
   color:#059669;font-weight:600;
 }
 
-/* ══════════════════════════════════════════════════════
-   3D RACE SECTION — THE TRACK
-   ══════════════════════════════════════════════════════ */
-.race-section{
-  flex:1;display:flex;flex-direction:column;justify-content:center;
-  padding:10px 40px 10px;min-height:0;
-  perspective:1200px;
-}
-
-/* Grass above track */
-.grass-top{
-  height:24px;
-  border-radius:12px 12px 0 0;
-  background:linear-gradient(180deg, #4ade80, #22c55e);
-  position:relative;
-  overflow:hidden;
-  box-shadow:inset 0 -2px 6px rgba(0,0,0,.15);
-}
-.grass-top::after{
-  content:'';position:absolute;inset:0;
-  background:repeating-linear-gradient(90deg,
-    rgba(0,0,0,.03) 0, rgba(0,0,0,.03) 2px,
-    transparent 2px, transparent 12px);
-}
-
-/* Track container with 3D perspective */
-.track-container{
-  transform:perspective(1000px) rotateX(6deg);
-  transform-origin:center bottom;
-  position:relative;
-}
-
-/* Track kerbs (top) */
-.kerb-top{
-  height:10px;
-  background:repeating-linear-gradient(90deg,
-    #dc2626 0, #dc2626 20px,
-    #ffffff 20px, #ffffff 40px);
-  box-shadow:inset 0 2px 4px rgba(0,0,0,.15);
-}
-
-/* Track surface — asphalt */
-.track-asphalt{
-  background:linear-gradient(180deg, #3a3a3a 0%, #454545 50%, #3a3a3a 100%);
-  padding:4px 0;
-  position:relative;
-  box-shadow:inset 0 4px 12px rgba(0,0,0,.3), inset 0 -4px 12px rgba(0,0,0,.3);
-}
-/* Asphalt noise texture */
-.track-asphalt::before{
-  content:'';position:absolute;inset:0;
-  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-  background-size:100px 100px;
-  pointer-events:none;
-  opacity:.5;
-}
-
-/* Kerb bottom */
-.kerb-bottom{
-  height:10px;
-  background:repeating-linear-gradient(90deg,
-    #dc2626 0, #dc2626 20px,
-    #ffffff 20px, #ffffff 40px);
-  box-shadow:inset 0 -2px 4px rgba(0,0,0,.15);
-}
-
-/* Grass below track */
-.grass-bottom{
-  height:20px;
-  border-radius:0 0 12px 12px;
-  background:linear-gradient(180deg, #22c55e, #16a34a);
-  position:relative;
-  overflow:hidden;
-  box-shadow:inset 0 2px 6px rgba(0,0,0,.15);
-}
-.grass-bottom::after{
-  content:'';position:absolute;inset:0;
-  background:repeating-linear-gradient(90deg,
-    rgba(0,0,0,.03) 0, rgba(0,0,0,.03) 2px,
-    transparent 2px, transparent 12px);
-}
-
-/* Individual lane */
-.race-lane{
-  display:grid;grid-template-columns:180px 1fr 180px;align-items:center;gap:0;
-  height:72px;
-  position:relative;
-  border-bottom:2px dashed rgba(255,255,255,.2);
-}
-.race-lane:last-child{border-bottom:none;}
-
-/* White lane markings on left/right edges */
-.race-lane::before{
-  content:'';position:absolute;left:0;top:0;bottom:0;width:4px;
-  background:#fff;opacity:.15;
-}
-.race-lane::after{
-  content:'';position:absolute;right:0;top:0;bottom:0;width:4px;
-  background:#fff;opacity:.15;
-}
-
-/* ── LEFT: ROP INFO (on track) ── */
-.lane-info{
-  display:flex;align-items:center;gap:10px;
-  padding:0 16px;z-index:3;
-}
-.lane-position{
-  display:flex;align-items:center;justify-content:center;
-  width:32px;height:32px;border-radius:50%;font-size:14px;font-weight:800;
-  flex-shrink:0;
-  box-shadow:0 2px 8px rgba(0,0,0,.3);
-}
-.lane-position.pos-1{
-  background:linear-gradient(135deg,#ffd700,#ffaa00);color:#1a1200;
-  animation:medalPulse 3s ease-in-out infinite;
-}
-.lane-position.pos-2{background:linear-gradient(135deg,#e0e0e0,#c0c0c0);color:#333;}
-.lane-position.pos-3{background:linear-gradient(135deg,#cd7f32,#a0622e);color:#fff;}
-.lane-position.pos-4{background:rgba(255,255,255,.2);color:rgba(255,255,255,.7);}
-@keyframes medalPulse{
-  0%,100%{box-shadow:0 0 8px rgba(255,215,0,.4);}
-  50%{box-shadow:0 0 20px rgba(255,215,0,.7);}
-}
-.lane-name{
-  font-family:'Playfair Display',serif;font-size:18px;font-weight:700;
-  color:#fff;
-  text-shadow:0 1px 4px rgba(0,0,0,.6);
-  white-space:nowrap;
-}
-.lane-mgr-count{
-  font-size:10px;color:rgba(255,255,255,.5);font-weight:500;
-  margin-left:42px;
-  text-shadow:0 1px 2px rgba(0,0,0,.5);
-}
-
-/* ── CENTER: CAR AREA ── */
-.lane-track-area{
-  position:relative;height:100%;
-  z-index:2;
-}
-
-/* ── CAR ── */
-.car-wrap{
-  position:absolute;top:50%;transform:translate(-50%,-50%);
-  transition:left 2s cubic-bezier(0.25, 1, 0.5, 1);
-  z-index:3;
-  filter:drop-shadow(0 3px 6px rgba(0,0,0,.5));
-}
-/* Dust/tire marks behind car */
-.car-wrap::before{
-  content:'';position:absolute;right:100%;top:50%;transform:translateY(-50%);
-  width:40px;height:10px;
-  background:linear-gradient(90deg, transparent, rgba(150,150,150,.3), rgba(200,200,200,.1));
-  border-radius:4px;
-  filter:blur(3px);
-  animation:dustFlicker .4s ease-in-out infinite alternate;
-}
-/* Speed lines */
-.car-wrap::after{
-  content:'';position:absolute;right:calc(100% + 6px);top:50%;transform:translateY(-50%);
-  width:35px;height:14px;
-  background:
-    linear-gradient(0deg,
-      transparent 0%, transparent 18%,
-      rgba(255,255,255,.15) 18%, rgba(255,255,255,.15) 22%,
-      transparent 22%, transparent 42%,
-      rgba(255,255,255,.2) 42%, rgba(255,255,255,.2) 46%,
-      transparent 46%, transparent 54%,
-      rgba(255,255,255,.2) 54%, rgba(255,255,255,.2) 58%,
-      transparent 58%, transparent 78%,
-      rgba(255,255,255,.15) 78%, rgba(255,255,255,.15) 82%,
-      transparent 82%);
-  opacity:.7;
-}
-@keyframes dustFlicker{
-  0%{width:30px;opacity:.5;}
-  100%{width:45px;opacity:.8;}
-}
-/* Car shadow on asphalt */
-.car-shadow{
-  position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);
-  width:70px;height:10px;background:rgba(0,0,0,.35);
-  border-radius:50%;filter:blur(5px);
-}
-
-.car-wrap.leader-car{
-  transform:translate(-50%,-50%) scale(1.12);
-}
-/* Leader crown */
-.leader-crown{
-  position:absolute;top:-18px;left:50%;transform:translateX(-50%);
-  font-size:16px;
-  filter:drop-shadow(0 1px 3px rgba(0,0,0,.4));
-  animation:crownBounce 2s ease-in-out infinite;
-}
-@keyframes crownBounce{
-  0%,100%{transform:translateX(-50%) translateY(0);}
-  50%{transform:translateX(-50%) translateY(-3px);}
-}
-
-.car-wrap.finished{
-  filter:drop-shadow(0 0 12px #10b981) drop-shadow(0 0 24px #10b981) drop-shadow(0 3px 6px rgba(0,0,0,.5));
-}
-
-/* Finished text flash */
-.plan-done-flash{
-  position:absolute;top:50%;right:60px;transform:translateY(-50%);
-  font-family:'DM Sans',sans-serif;font-size:12px;font-weight:800;
-  letter-spacing:2px;text-transform:uppercase;
-  color:#10b981;
-  text-shadow:0 0 8px #10b981, 0 0 16px rgba(16,185,129,.5);
-  animation:flashIn .6s ease-out forwards;
-  z-index:5;
-  white-space:nowrap;
-  background:rgba(0,0,0,.4);
-  padding:4px 10px;border-radius:6px;
-}
-@keyframes flashIn{
-  0%{opacity:0;transform:translateY(-50%) scale(1.5);}
-  60%{opacity:1;transform:translateY(-50%) scale(0.95);}
-  100%{opacity:1;transform:translateY(-50%) scale(1);}
-}
-
-/* ── FINISH LINE ── */
-.finish-line{
-  position:absolute;right:0;top:0;bottom:0;width:20px;z-index:1;
-  background:repeating-conic-gradient(#fff 0% 25%, #222 0% 50%) 0 0 / 10px 10px;
-  opacity:.7;
-}
-.finish-label{
-  position:absolute;right:4px;top:-22px;z-index:4;
-  font-size:10px;font-weight:800;color:#1a1a2e;
-  letter-spacing:1px;text-transform:uppercase;
-  text-shadow:0 1px 2px rgba(255,255,255,.5);
-}
-.finish-flag{
-  display:inline-block;
-  animation:flagWave 1.5s ease-in-out infinite;
-  transform-origin:bottom left;
-  font-size:16px;
-}
-@keyframes flagWave{
-  0%,100%{transform:rotate(-5deg);}
-  50%{transform:rotate(5deg);}
-}
-
-/* ── RIGHT: STATS (on track) ── */
-.lane-stats{
-  text-align:right;display:flex;flex-direction:column;gap:2px;
-  align-items:flex-end;padding-right:28px;z-index:3;
-}
-.lane-pct{
-  font-family:'DM Sans',sans-serif;font-size:28px;font-weight:800;
-  font-variant-numeric:tabular-nums;line-height:1;
-  color:#fff;
-  text-shadow:0 2px 6px rgba(0,0,0,.5);
-  letter-spacing:-0.5px;
-}
-.lane-amounts{
-  font-size:11px;color:rgba(255,255,255,.6);font-weight:500;
-  text-shadow:0 1px 2px rgba(0,0,0,.5);
-}
-.lane-deals-row{display:flex;gap:4px;justify-content:flex-end;margin-top:2px;}
-.lane-deal-badge{
-  font-size:9px;padding:2px 7px;border-radius:8px;
-  background:rgba(255,255,255,.15);
-  color:rgba(255,255,255,.7);font-weight:600;
-  border:1px solid rgba(255,255,255,.1);
-}
-
-/* ══════════════════════════════════════════════════════
-   SCOREBOARD (TV-style overlay)
-   ══════════════════════════════════════════════════════ */
+/* Scoreboard (top-right) */
 .scoreboard{
-  position:absolute;top:16px;right:16px;z-index:10;
-  background:rgba(255,255,255,.92);
+  position:absolute;top:16px;right:16px;
+  background:rgba(255,255,255,.90);
   backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
   border-radius:12px;
   padding:14px 18px;
   box-shadow:0 4px 20px rgba(0,0,0,.1);
   border:1px solid rgba(0,0,0,.05);
-  min-width:220px;
+  min-width:260px;
 }
 .scoreboard-title{
   font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
@@ -384,64 +97,88 @@ body.cursor-visible{cursor:default;}
 @keyframes livePulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.8);}}
 .sb-row{
   display:flex;align-items:center;gap:10px;
-  padding:5px 0;
+  padding:6px 0;
   border-bottom:1px solid rgba(0,0,0,.04);
 }
 .sb-row:last-child{border-bottom:none;}
 .sb-pos{
-  width:20px;height:20px;border-radius:50%;
+  width:22px;height:22px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
-  font-size:10px;font-weight:800;flex-shrink:0;
+  font-size:11px;font-weight:800;flex-shrink:0;
 }
 .sb-pos.p1{background:#ffd700;color:#1a1200;}
 .sb-pos.p2{background:#c0c0c0;color:#333;}
 .sb-pos.p3{background:#cd7f32;color:#fff;}
 .sb-pos.p4{background:#e5e7eb;color:#6b7280;}
-.sb-name{flex:1;font-size:12px;font-weight:600;color:#1a1a2e;}
-.sb-pct{font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;}
+.sb-name{flex:1;font-size:13px;font-weight:600;color:#1a1a2e;}
+.sb-pct{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;}
 .sb-detail{font-size:9px;color:#9ca3af;font-weight:500;}
 
-/* ══════════════════════════════════════════════════════
-   CONFETTI / EXPLOSION
-   ══════════════════════════════════════════════════════ */
-@keyframes confetti-fall{
-  0%{transform:translateY(0) rotate(0deg) scale(1);opacity:1;}
-  100%{transform:translateY(80px) rotate(720deg) scale(0);opacity:0;}
+/* Car labels floating in 3D (rendered as HTML) */
+.car-label{
+  position:absolute;
+  transform:translate(-50%,-100%);
+  background:rgba(255,255,255,.88);
+  backdrop-filter:blur(8px);
+  border-radius:8px;
+  padding:6px 12px;
+  box-shadow:0 2px 12px rgba(0,0,0,.15);
+  border:2px solid currentColor;
+  white-space:nowrap;
+  pointer-events:none;
+  transition:opacity .3s;
+  z-index:11;
 }
-.confetti-particle{
-  position:absolute;border-radius:50%;
-  animation:confetti-fall 1.8s ease-out forwards;
-  pointer-events:none;z-index:10;
+.car-label-name{
+  font-family:'Playfair Display',serif;font-size:14px;font-weight:700;
 }
-@keyframes neonBurst{
-  0%{transform:scale(0);opacity:1;}
-  100%{transform:scale(3);opacity:0;}
+.car-label-pct{
+  font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;
+  text-align:center;
 }
-.neon-burst{
-  position:absolute;width:40px;height:40px;border-radius:50%;
-  border:2px solid #10b981;pointer-events:none;z-index:9;
-  animation:neonBurst .8s ease-out forwards;
-  box-shadow:0 0 20px #10b981;
+.car-label-detail{
+  font-size:10px;color:#6b7280;text-align:center;
 }
 
+/* Zoom hint */
+.zoom-hint{
+  position:absolute;bottom:16px;left:50%;transform:translateX(-50%);
+  background:rgba(0,0,0,.5);
+  color:#fff;
+  padding:8px 20px;
+  border-radius:20px;
+  font-size:12px;font-weight:500;
+  letter-spacing:0.5px;
+  transition:opacity 1s;
+}
+.zoom-hint.hidden{opacity:0;pointer-events:none;}
+
 /* ══════════════════════════════════════════════════════
-   BOTTOM PANEL (light cards)
+   BOTTOM PANEL (30%)
    ══════════════════════════════════════════════════════ */
 .bottom-panel{
+  flex:3;
   display:grid;grid-template-columns:1fr 1fr;gap:20px;
-  padding:8px 40px 20px;flex-shrink:0;
+  padding:12px 40px 20px;
+  background:linear-gradient(180deg, #f8fafc, #ffffff);
+  border-top:1px solid rgba(0,0,0,.06);
+  min-height:0;
+  overflow:hidden;
 }
 .panel-card{
   background:#fff;
-  border-radius:16px;padding:18px 22px;
+  border-radius:16px;padding:16px 20px;
   position:relative;overflow:hidden;
   box-shadow:0 2px 16px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.04);
   border:1px solid rgba(0,0,0,.04);
+  display:flex;flex-direction:column;
+  min-height:0;
 }
 .panel-title{
   font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
-  color:#6b7280;margin-bottom:14px;
+  color:#6b7280;margin-bottom:12px;
   display:flex;align-items:center;gap:8px;
+  flex-shrink:0;
 }
 .panel-title-dot{
   width:7px;height:7px;border-radius:50%;
@@ -452,10 +189,10 @@ body.cursor-visible{cursor:default;}
 .panel-title-dot.red{background:#ef4444;box-shadow:0 0 6px #ef4444;}
 
 /* ── TOP-3 MANAGERS ── */
-.top3-list{display:flex;flex-direction:column;gap:8px;}
+.top3-list{display:flex;flex-direction:column;gap:8px;overflow:hidden;flex:1;}
 .top3-item{
   display:flex;align-items:center;gap:14px;
-  padding:12px 16px;border-radius:12px;
+  padding:10px 14px;border-radius:12px;
   background:#fafafa;
   transition:all .4s;
   position:relative;overflow:hidden;
@@ -472,12 +209,12 @@ body.cursor-visible{cursor:default;}
   background:linear-gradient(135deg, #fdf8f0, #fde7cb);
   border-left:4px solid #cd7f32;
 }
-.top3-medal{font-size:28px;flex-shrink:0;width:36px;text-align:center;}
+.top3-medal{font-size:26px;flex-shrink:0;width:32px;text-align:center;}
 .top3-info{flex:1;min-width:0;}
-.top3-name{font-size:15px;font-weight:600;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.top3-sub{font-size:11px;color:#9ca3af;margin-top:3px;}
+.top3-name{font-size:14px;font-weight:600;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.top3-sub{font-size:11px;color:#9ca3af;margin-top:2px;}
 .top3-amount{
-  font-family:'DM Sans',sans-serif;font-size:20px;font-weight:800;
+  font-family:'DM Sans',sans-serif;font-size:18px;font-weight:800;
   font-variant-numeric:tabular-nums;white-space:nowrap;
   letter-spacing:-0.3px;
 }
@@ -486,10 +223,10 @@ body.cursor-visible{cursor:default;}
 .top3-amount.bronze-text{color:#a0622e;}
 
 /* ── FEED ── */
-.feed-list{display:flex;flex-direction:column;gap:6px;max-height:180px;overflow:hidden;}
+.feed-list{display:flex;flex-direction:column;gap:6px;overflow:hidden;flex:1;}
 .feed-item{
   display:flex;align-items:center;gap:12px;
-  padding:10px 14px;border-radius:10px;
+  padding:8px 12px;border-radius:10px;
   background:#fafafa;
   font-size:13px;font-weight:500;
   animation:feedSlideIn .6s cubic-bezier(.4,0,.2,1);
@@ -524,71 +261,46 @@ body.cursor-visible{cursor:default;}
    ══════════════════════════════════════════════════════ */
 .loading-screen{
   position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(180deg, #e8f4fd, #ffffff);flex-direction:column;gap:20px;
+  background:linear-gradient(180deg, #87CEEB 0%, #c5e8f7 40%, #ffffff 100%);
+  flex-direction:column;gap:20px;
+  transition:opacity .8s;
 }
-.loading-spinner{
-  width:44px;height:44px;border:3px solid rgba(99,102,241,.12);
-  border-top-color:rgba(99,102,241,.7);border-radius:50%;
-  animation:spin .8s linear infinite;
+.loading-screen.fade-out{opacity:0;pointer-events:none;}
+.loading-bar-container{
+  width:300px;height:6px;border-radius:3px;
+  background:rgba(0,0,0,.1);overflow:hidden;
 }
-@keyframes spin{to{transform:rotate(360deg)}}
-.loading-text{font-size:13px;color:#9ca3af;letter-spacing:1px;}
-
-/* ══════════════════════════════════════════════════════
-   3D CAR IMAGE
-   ══════════════════════════════════════════════════════ */
-.car-3d-img{
-  display:block;
-  width:80px;
-  height:40px;
-  object-fit:contain;
-  pointer-events:none;
-  image-rendering:auto;
+.loading-bar{
+  height:100%;width:0%;
+  background:linear-gradient(90deg, #6366f1, #10b981);
+  border-radius:3px;
+  transition:width .3s;
 }
-
-/* ══════════════════════════════════════════════════════
-   WHEEL SPIN
-   ══════════════════════════════════════════════════════ */
-@keyframes wheelSpin{
-  to{transform:rotate(360deg);}
-}
-.wheel-spin{
-  animation:wheelSpin .3s linear infinite;
-  transform-origin:center;
+.loading-text{font-size:13px;color:#6b7280;letter-spacing:1px;}
+.loading-title{
+  font-family:'Playfair Display',serif;font-size:28px;font-weight:800;
+  letter-spacing:3px;color:#1a1a2e;
 }
 
 /* ══════════════════════════════════════════════════════
    RESPONSIVE
    ══════════════════════════════════════════════════════ */
 @media(max-width:1400px){
-  .header{padding:0 24px;height:54px;}
-  .header-title{font-size:18px;}
-  .header-clock{font-size:22px;}
-  .race-section{padding:8px 24px 8px;}
-  .race-lane{grid-template-columns:150px 1fr 150px;}
-  .lane-name{font-size:16px;}
-  .lane-pct{font-size:24px;}
-  .bottom-panel{padding:6px 24px 14px;gap:16px;}
+  .bottom-panel{padding:10px 24px 14px;gap:16px;}
+  .hud-main-title{font-size:17px;}
+  .hud-clock{font-size:20px;}
 }
 @media(max-width:1024px){
-  .race-lane{grid-template-columns:130px 1fr 130px;}
-  .lane-name{font-size:14px;}
-  .lane-pct{font-size:20px;}
-  .race-lane{height:62px;}
   .bottom-panel{grid-template-columns:1fr;}
   .scoreboard{display:none;}
 }
 @media(max-width:768px){
-  .header{flex-wrap:wrap;height:auto;padding:12px 16px;gap:8px;}
-  .race-section{padding:8px 16px;}
-  .race-lane{grid-template-columns:100px 1fr 100px;}
-  .lane-name{font-size:13px;}
-  .lane-pct{font-size:16px;}
-  .bottom-panel{padding:0 16px 12px;}
+  .bottom-panel{padding:8px 16px 12px;}
+  .hud-title-bar{padding:8px 14px;}
+  .hud-main-title{font-size:14px;}
 }
 </style>
 
-<!-- Three.js importmap for 3D car rendering -->
 <script type="importmap">
 {
   "imports": {
@@ -598,49 +310,40 @@ body.cursor-visible{cursor:default;}
 }
 </script>
 </head>
-<body class="cursor-visible">
+<body>
 
-<!-- SKY & CLOUDS -->
-<div class="sky-bg">
-  <div class="cloud cloud-1"></div>
-  <div class="cloud cloud-2"></div>
-  <div class="cloud cloud-3"></div>
-</div>
-
-<!-- LOADING -->
+<!-- LOADING SCREEN -->
 <div class="loading-screen" id="loading">
-  <div class="loading-spinner"></div>
-  <div class="loading-text">Загрузка данных...</div>
+  <div class="loading-title">ГОНКА К ПЛАНУ</div>
+  <div class="loading-bar-container">
+    <div class="loading-bar" id="loadingBar"></div>
+  </div>
+  <div class="loading-text" id="loadingText">Загрузка 3D моделей...</div>
 </div>
 
 <!-- MAIN PAGE -->
 <div class="page" id="page" style="display:none;">
-  <!-- HEADER -->
-  <div class="header">
-    <div class="header-title">ГОНКА К ПЛАНУ</div>
-    <div class="header-month" id="headerMonth"></div>
-    <div class="header-right">
-      <div class="header-clock" id="headerClock"></div>
-      <div class="header-badge" id="headerBadge">Обновлено: --:--</div>
-    </div>
-  </div>
 
-  <!-- RACE TRACK -->
-  <div class="race-section" id="raceSection">
-    <!-- Scoreboard overlay -->
-    <div class="scoreboard" id="scoreboard"></div>
-
-    <!-- Track structure built by JS -->
-    <div class="grass-top"></div>
-    <div class="track-container">
-      <div class="kerb-top"></div>
-      <div class="track-asphalt" id="raceTracks">
-        <!-- Finish line label -->
-        <div class="finish-label">ФИНИШ <span class="finish-flag">&#127937;</span></div>
+  <!-- 3D SCENE -->
+  <div class="scene-container" id="sceneContainer">
+    <div class="hud">
+      <!-- Title bar top-left -->
+      <div class="hud-title-bar">
+        <div class="hud-main-title">ГОНКА К ПЛАНУ</div>
+        <div style="width:1px;height:24px;background:rgba(0,0,0,.1);"></div>
+        <div class="hud-clock" id="headerClock"></div>
+        <div class="hud-badge" id="headerBadge">Обновлено: --:--</div>
       </div>
-      <div class="kerb-bottom"></div>
+
+      <!-- Scoreboard top-right -->
+      <div class="scoreboard" id="scoreboard"></div>
+
+      <!-- Car labels (positioned by JS) -->
+      <div id="carLabelsContainer"></div>
+
+      <!-- Zoom hint -->
+      <div class="zoom-hint" id="zoomHint">Колёсико мыши — масштаб | Перетаскивание — поворот</div>
     </div>
-    <div class="grass-bottom"></div>
   </div>
 
   <!-- BOTTOM PANEL -->
@@ -656,198 +359,13 @@ body.cursor-visible{cursor:default;}
   </div>
 </div>
 
-<!-- 3D Car Pre-Renderer (ES module) -->
+<!-- 3D SCENE + DATA LOGIC -->
 <script type="module">
 import * as THREE from 'three';
-import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const CAR_RENDER_W = 240;
-const CAR_RENDER_H = 120;
-
-const ROP_CAR_COLORS = {
-  'РОП Айдана':    '#1a56db',
-  'РОП Аслиддин':  '#f59e0b',
-  'РОП Нурдаулет': '#10b981',
-  'РОП Диас':      '#ef4444',
-};
-
-function renderCarToCanvas(objData, textureImg) {
-  const scene = new THREE.Scene();
-  scene.background = null; // transparent
-
-  // Lights
-  const ambient = new THREE.AmbientLight(0xffffff, 0.6);
-  scene.add(ambient);
-  const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-  dirLight.position.set(3, 5, 4);
-  dirLight.castShadow = true;
-  scene.add(dirLight);
-  const fillLight = new THREE.DirectionalLight(0xffffff, 0.4);
-  fillLight.position.set(-3, 2, -2);
-  scene.add(fillLight);
-
-  // Apply texture to model
-  const texture = new THREE.Texture(textureImg);
-  texture.needsUpdate = true;
-  texture.flipY = false;
-  texture.colorSpace = THREE.SRGBColorSpace;
-
-  const model = objData.clone(true);
-  model.traverse((child) => {
-    if (child.isMesh) {
-      child.material = new THREE.MeshStandardMaterial({
-        map: texture,
-        metalness: 0.3,
-        roughness: 0.5,
-      });
-      child.castShadow = true;
-      child.receiveShadow = true;
-    }
-  });
-
-  scene.add(model);
-
-  // Compute bounding box to center and size the model
-  const box = new THREE.Box3().setFromObject(model);
-  const center = box.getCenter(new THREE.Vector3());
-  const size = box.getSize(new THREE.Vector3());
-  model.position.sub(center);
-
-  // Slight rotation for dynamic racing look
-  model.rotation.y = -Math.PI / 2 + 0.15; // side view, slightly angled
-  model.rotation.x = 0.05; // tiny tilt forward
-
-  // Camera — orthographic for consistent side view
-  const maxDim = Math.max(size.x, size.y, size.z);
-  const aspect = CAR_RENDER_W / CAR_RENDER_H;
-  const frustumH = maxDim * 0.6;
-  const frustumW = frustumH * aspect;
-  const camera = new THREE.OrthographicCamera(
-    -frustumW, frustumW, frustumH, -frustumH, 0.01, maxDim * 10
-  );
-  camera.position.set(0, maxDim * 0.15, maxDim * 2);
-  camera.lookAt(0, 0, 0);
-
-  // Shadow plane
-  const planeGeo = new THREE.PlaneGeometry(maxDim * 4, maxDim * 4);
-  const planeMat = new THREE.ShadowMaterial({ opacity: 0.35 });
-  const plane = new THREE.Mesh(planeGeo, planeMat);
-  plane.rotation.x = -Math.PI / 2;
-  plane.position.y = -size.y / 2;
-  plane.receiveShadow = true;
-  scene.add(plane);
-
-  // Renderer
-  const renderer = new THREE.WebGLRenderer({
-    alpha: true,
-    antialias: true,
-    preserveDrawingBuffer: true,
-  });
-  renderer.setSize(CAR_RENDER_W, CAR_RENDER_H);
-  renderer.setPixelRatio(1);
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-
-  renderer.render(scene, camera);
-
-  // Get the base (untinted) image data
-  const baseDataURL = renderer.domElement.toDataURL('image/png');
-
-  renderer.dispose();
-  return baseDataURL;
-}
-
-function tintImage(baseDataURL, hexColor) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const c = document.createElement('canvas');
-      c.width = CAR_RENDER_W;
-      c.height = CAR_RENDER_H;
-      const ctx = c.getContext('2d');
-
-      // Draw original car
-      ctx.drawImage(img, 0, 0);
-
-      // Apply color tint using 'multiply' blend mode
-      ctx.globalCompositeOperation = 'multiply';
-      ctx.fillStyle = hexColor;
-      ctx.fillRect(0, 0, c.width, c.height);
-
-      // Restore alpha from original (multiply kills transparency)
-      ctx.globalCompositeOperation = 'destination-in';
-      ctx.drawImage(img, 0, 0);
-
-      // Lighten to avoid too dark — overlay the original at 30% opacity
-      ctx.globalCompositeOperation = 'screen';
-      ctx.globalAlpha = 0.3;
-      ctx.drawImage(img, 0, 0);
-      ctx.globalAlpha = 1.0;
-
-      // Restore alpha again
-      ctx.globalCompositeOperation = 'destination-in';
-      ctx.drawImage(img, 0, 0);
-
-      resolve(c.toDataURL('image/png'));
-    };
-    img.src = baseDataURL;
-  });
-}
-
-async function init3DCars() {
-  try {
-    // Load texture
-    const textureImg = await new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = 'assets/car_texture.png';
-    });
-
-    // Load OBJ
-    const loader = new OBJLoader();
-    const objData = await new Promise((resolve, reject) => {
-      loader.load('assets/car.obj', resolve, undefined, reject);
-    });
-
-    // Render base car (untinted) to canvas
-    const baseDataURL = renderCarToCanvas(objData, textureImg);
-
-    // Create tinted versions for each ROP
-    const carImages = {};
-    for (const [ropName, color] of Object.entries(ROP_CAR_COLORS)) {
-      carImages[ropName] = await tintImage(baseDataURL, color);
-    }
-
-    // Store globally for the main script to use
-    window.__3dCarImages = carImages;
-    window.__3dCarBase = baseDataURL;
-    window.__3dCarsReady = true;
-
-    console.log('[3D Cars] Pre-rendered successfully');
-
-    // Re-render race lanes to swap SVG for 3D images
-    if (typeof renderRace === 'function') {
-      // Force full re-build of lanes
-      const container = document.getElementById('raceTracks');
-      if (container) {
-        const lanes = container.querySelectorAll('.race-lane');
-        lanes.forEach(l => l.remove());
-        renderRace();
-      }
-    }
-  } catch (err) {
-    console.warn('[3D Cars] Failed to load, using SVG fallback:', err);
-    window.__3dCarsReady = false;
-  }
-}
-
-init3DCars();
-</script>
-
-<script>
 // ═══════════════════ CONFIG ═══════════════════════════════════════
 const SUPABASE_URL = 'https://bdyakgmeibpdkisbiykt.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkeWFrZ21laWJwZGtpc2JpeWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTQzOTMsImV4cCI6MjA4Nzc5MDM5M30.nA187grJR6XFQRmTP6WOM-6-1dZK1EzYNNP2JH9aAMg';
@@ -866,7 +384,15 @@ const ROP_COLORS = {
 };
 const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 
-// ═══════════════════ DATA ═══════════════════════════════════════
+// ═══════════════════ 3D CAR CONFIG ═══════════════════════════════
+const ROP_CARS = {
+  'РОП Айдана':    { color: 0x1a56db, laneOffset: -3, mesh: null, targetPos: null, targetRot: 0, wheelMeshes: [] },
+  'РОП Аслиддин':  { color: 0xf59e0b, laneOffset: -1, mesh: null, targetPos: null, targetRot: 0, wheelMeshes: [] },
+  'РОП Нурдаулет': { color: 0x10b981, laneOffset: 1,  mesh: null, targetPos: null, targetRot: 0, wheelMeshes: [] },
+  'РОП Диас':      { color: 0xef4444, laneOffset: 3,  mesh: null, targetPos: null, targetRot: 0, wheelMeshes: [] },
+};
+
+// ═══════════════════ DATA STATE ═══════════════════════════════════
 let RAW = {}, MANAGERS = {}, ROP_PLANS = {}, MGR_TO_ROP = {};
 const _ropCache = {};
 let prevFeedKeys = new Set();
@@ -924,49 +450,6 @@ function aggregateManagersByPeriod(prodKey, from, to) {
   }).filter(m => m.budget > 0 || m.leads > 0);
 }
 
-// ═══════════════════ SVG CAR (Side-view racing car) ═══════════════════
-function carSVGFallback(color) {
-  return `<svg width="60" height="28" viewBox="0 0 60 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M8 18 L10 12 L18 8 L26 6 L38 5 L48 6 L54 9 L57 13 L58 16 L58 20 L6 20 L6 18 Z" fill="${color}"/>
-    <path d="M30 7 L38 6 L42 7 L42 12 L28 12 Z" fill="rgba(100,180,255,.35)" stroke="rgba(255,255,255,.2)" stroke-width=".5"/>
-    <path d="M10 12 L14 10 L26 8 L28 12" fill="${color}" opacity=".8"/>
-    <path d="M42 8 L52 10 L56 14 L42 12 Z" fill="rgba(255,255,255,.15)"/>
-    <path d="M14 10 L26 8 L28 10 L14 12 Z" fill="rgba(255,255,255,.1)"/>
-    <rect x="4" y="10" width="3" height="2" rx="1" fill="${color}" opacity=".7"/>
-    <rect x="3" y="8" width="5" height="3" rx="1" fill="${color}" opacity=".5"/>
-    <ellipse cx="56" cy="14" rx="2" ry="2" fill="rgba(255,255,200,.8)"/>
-    <ellipse cx="56" cy="14" rx="4" ry="3" fill="rgba(255,255,200,.15)"/>
-    <rect x="5" y="15" width="3" height="3" rx="1" fill="#ff3333" opacity=".8"/>
-    <ellipse cx="4" cy="19" rx="3" ry="1.5" fill="rgba(255,100,50,.2)"/>
-    <rect x="8" y="20" width="48" height="2" rx="1" fill="rgba(0,0,0,.3)"/>
-    <g transform="translate(46,20)">
-      <circle cx="0" cy="0" r="5" fill="#222"/>
-      <circle cx="0" cy="0" r="4" fill="#444" stroke="#333" stroke-width=".5"/>
-      <circle cx="0" cy="0" r="1.5" fill="#888" class="wheel-spin"/>
-      <line x1="-3" y1="0" x2="3" y2="0" stroke="#666" stroke-width=".5" class="wheel-spin"/>
-      <line x1="0" y1="-3" x2="0" y2="3" stroke="#666" stroke-width=".5" class="wheel-spin"/>
-    </g>
-    <g transform="translate(16,20)">
-      <circle cx="0" cy="0" r="5" fill="#222"/>
-      <circle cx="0" cy="0" r="4" fill="#444" stroke="#333" stroke-width=".5"/>
-      <circle cx="0" cy="0" r="1.5" fill="#888" class="wheel-spin"/>
-      <line x1="-3" y1="0" x2="3" y2="0" stroke="#666" stroke-width=".5" class="wheel-spin"/>
-      <line x1="0" y1="-3" x2="0" y2="3" stroke="#666" stroke-width=".5" class="wheel-spin"/>
-    </g>
-    <line x1="26" y1="8" x2="26" y2="19" stroke="rgba(0,0,0,.15)" stroke-width=".5"/>
-    <path d="M12 16 L52 14 L52 16 L12 18 Z" fill="rgba(255,255,255,.08)"/>
-  </svg>`;
-}
-
-function carSVG(color, ropName) {
-  // Use 3D pre-rendered car image if available
-  if (window.__3dCarsReady && window.__3dCarImages && ropName && window.__3dCarImages[ropName]) {
-    return `<img class="car-3d-img" src="${window.__3dCarImages[ropName]}" alt="car" draggable="false"/>`;
-  }
-  // Fallback to inline SVG
-  return carSVGFallback(color);
-}
-
 // ═══════════════════ RACE CALCULATION ═══════════════════════════════
 function calcRopData() {
   const now = new Date();
@@ -1001,12 +484,9 @@ function getTodayManagers() {
   const todayStr = fmtDate(now);
   const allMgrs = [];
   const allCrms = [...new Set(Object.values(ROP_CRM_MAP).flat())];
-
   allCrms.forEach(crm => {
     const mgrs = aggregateManagersByPeriod(crm, todayStr, todayStr);
-    mgrs.forEach(m => {
-      allMgrs.push({ ...m, crm });
-    });
+    mgrs.forEach(m => { allMgrs.push({ ...m, crm }); });
   });
   return allMgrs;
 }
@@ -1030,7 +510,6 @@ function calcFeed() {
   const todayStr = fmtDate(now);
   const allCrms = [...new Set(Object.values(ROP_CRM_MAP).flat())];
   const entries = [];
-
   allCrms.forEach(crm => {
     const mgrList = MANAGERS[crm] || [];
     mgrList.forEach(m => {
@@ -1043,170 +522,52 @@ function calcFeed() {
       }
     });
   });
-
   entries.sort((a,b) => b.budget - a.budget);
   return entries.slice(0, 7);
 }
 
-// ═══════════════════ CONFETTI + NEON BURST ═══════════════════════════
-function spawnConfetti(trackEl) {
-  const colors = ['#10b981','#34d399','#6ee7b7','#fbbf24','#f59e0b','#fff','#a78bfa'];
-  const lane = trackEl.querySelector('.lane-track-area');
-  if (!lane) return;
-  const rect = lane.getBoundingClientRect();
+// ═══════════════════ DATA LOADING ═══════════════════════════════════
+async function loadData() {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data,updated_at`, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+      }
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const rows = await res.json();
+    if (rows && rows[0] && rows[0].data) {
+      const d = rows[0].data;
+      if (d.RAW)        RAW = d.RAW;
+      if (d.MANAGERS)   MANAGERS = d.MANAGERS;
+      if (d.MGR_TO_ROP && Object.keys(d.MGR_TO_ROP).length > 0) {
+        MGR_TO_ROP = d.MGR_TO_ROP;
+        clearRopCache();
+      }
+      if (d.ROP_PLANS)  ROP_PLANS = d.ROP_PLANS;
 
-  // Neon burst ring
-  const burst = document.createElement('div');
-  burst.className = 'neon-burst';
-  burst.style.left = (rect.right - 20) + 'px';
-  burst.style.top = (rect.top + rect.height/2 - 20) + 'px';
-  document.body.appendChild(burst);
-  setTimeout(() => burst.remove(), 1000);
-
-  // Confetti particles
-  for (let i = 0; i < 25; i++) {
-    const p = document.createElement('div');
-    p.className = 'confetti-particle';
-    p.style.background = colors[Math.floor(Math.random()*colors.length)];
-    p.style.left = (rect.right - 60 + Math.random()*70) + 'px';
-    p.style.top = (rect.top - 10 + Math.random()*40) + 'px';
-    p.style.width = (3 + Math.random()*5) + 'px';
-    p.style.height = p.style.width;
-    p.style.animationDuration = (1.2 + Math.random()*1.5) + 's';
-    p.style.animationDelay = (Math.random()*0.4) + 's';
-    document.body.appendChild(p);
-    setTimeout(() => p.remove(), 3500);
+      if (rows[0].updated_at) {
+        const dt = new Date(rows[0].updated_at);
+        document.getElementById('headerBadge').textContent =
+          'Обновлено: ' + dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+      }
+    }
+    return true;
+  } catch(e) {
+    console.warn('Supabase load error:', e);
+    return false;
   }
 }
 
-// ═══════════════════ RENDER ═══════════════════════════════════════
-function renderRace() {
-  const data = calcRopData();
-  const container = document.getElementById('raceTracks');
-
-  let lanes = container.querySelectorAll('.race-lane');
-
-  if (lanes.length !== data.length) {
-    // Keep the finish label
-    container.innerHTML = '<div class="finish-label">ФИНИШ <span class="finish-flag">&#127937;</span></div>' +
-      data.map((r, i) => `
-      <div class="race-lane" data-rop="${r.name}">
-        <div class="lane-info">
-          <div class="lane-position pos-${i+1}">${i+1}</div>
-          <div>
-            <div class="lane-name">${r.name.replace('РОП ','')}</div>
-            <div class="lane-mgr-count">${r.mgrCount} менеджеров</div>
-          </div>
-        </div>
-        <div class="lane-track-area">
-          <div class="finish-line"></div>
-          <div class="car-wrap ${i === 0 ? 'leader-car' : ''}" style="left:0%;color:${r.color}">
-            ${i === 0 ? '<div class="leader-crown">&#x1F451;</div>' : ''}
-            <div class="car-shadow"></div>
-            ${carSVG(r.color, r.name)}
-          </div>
-          ${r.pct >= 100 ? '<div class="plan-done-flash">ПЛАН ВЫПОЛНЕН!</div>' : ''}
-        </div>
-        <div class="lane-stats">
-          <div class="lane-pct" style="color:${r.color}">0%</div>
-          <div class="lane-amounts">${fmtM(r.fact)} / ${fmtM(r.plan)}</div>
-          <div class="lane-deals-row">
-            <span class="lane-deal-badge">${r.leads} лидов</span>
-            <span class="lane-deal-badge">${r.deals} сделок</span>
-          </div>
-        </div>
-      </div>
-    `).join('');
-    lanes = container.querySelectorAll('.race-lane');
-  }
-
-  // Update scoreboard
-  renderScoreboard(data);
-
-  // Animate after brief delay
-  requestAnimationFrame(() => {
-    setTimeout(() => {
-      data.forEach((r, i) => {
-        const lane = lanes[i];
-        if (!lane) return;
-
-        lane.dataset.rop = r.name;
-
-        // Left info
-        const nameEl = lane.querySelector('.lane-name');
-        nameEl.textContent = r.name.replace('РОП ','');
-
-        const posEl = lane.querySelector('.lane-position');
-        posEl.className = 'lane-position pos-' + (i+1);
-        posEl.textContent = i+1;
-
-        lane.querySelector('.lane-mgr-count').textContent = r.mgrCount + ' менеджеров';
-
-        // Animate car
-        const pctClamped = Math.min(r.pct, 100);
-        const car = lane.querySelector('.car-wrap');
-        const carLeft = Math.max(5, pctClamped * 0.92 + 3);
-        car.style.left = carLeft + '%';
-        car.style.color = r.color;
-
-        // Leader car styling
-        const isLeader = (i === 0);
-        let crownEl = car.querySelector('.leader-crown');
-        if (isLeader) {
-          car.classList.add('leader-car');
-          if (!crownEl) {
-            crownEl = document.createElement('div');
-            crownEl.className = 'leader-crown';
-            crownEl.innerHTML = '&#x1F451;';
-            car.prepend(crownEl);
-          }
-        } else {
-          car.classList.remove('leader-car');
-          if (crownEl) crownEl.remove();
-        }
-
-        if (r.pct >= 100) {
-          car.classList.add('finished');
-        } else {
-          car.classList.remove('finished');
-        }
-
-        // Plan done flash
-        const trackArea = lane.querySelector('.lane-track-area');
-        const existingFlash = trackArea.querySelector('.plan-done-flash');
-        if (r.pct >= 100 && !existingFlash) {
-          const flash = document.createElement('div');
-          flash.className = 'plan-done-flash';
-          flash.textContent = 'ПЛАН ВЫПОЛНЕН!';
-          trackArea.appendChild(flash);
-        } else if (r.pct < 100 && existingFlash) {
-          existingFlash.remove();
-        }
-
-        // Right stats
-        lane.querySelector('.lane-pct').textContent = r.pct.toFixed(1) + '%';
-        lane.querySelector('.lane-pct').style.color = r.color;
-        lane.querySelector('.lane-amounts').textContent = fmtM(r.fact) + ' / ' + fmtM(r.plan);
-
-        // Update deal badges
-        const dealRow = lane.querySelector('.lane-deals-row');
-        if (dealRow) {
-          dealRow.innerHTML = `
-            <span class="lane-deal-badge">${r.leads} лидов</span>
-            <span class="lane-deal-badge">${r.deals} сделок</span>
-          `;
-        }
-
-        // Confetti on crossing 100%
-        if (r.pct >= 100 && !prevFinished.has(r.name)) {
-          prevFinished.add(r.name);
-          spawnConfetti(lane);
-        }
-      });
-    }, 50);
-  });
+// ═══════════════════ HEADER ═══════════════════════════════════════
+function updateHeader() {
+  const now = new Date();
+  document.getElementById('headerClock').textContent =
+    now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
+// ═══════════════════ RENDER HTML PANELS ═══════════════════════════
 function renderScoreboard(data) {
   const sb = document.getElementById('scoreboard');
   sb.innerHTML = `
@@ -1217,7 +578,7 @@ function renderScoreboard(data) {
         <div class="sb-name" style="color:${r.color}">${r.name.replace('РОП ','')}</div>
         <div>
           <div class="sb-pct" style="color:${r.color}">${r.pct.toFixed(1)}%</div>
-          <div class="sb-detail">${fmtM(r.fact)}</div>
+          <div class="sb-detail">${fmtM(r.fact)} / ${fmtM(r.plan)}</div>
         </div>
       </div>
     `).join('')}
@@ -1274,84 +635,360 @@ function renderFeed() {
   prevFeedKeys = newKeys;
 }
 
+// ═══════════════════ THREE.JS SCENE SETUP ═══════════════════════════
+const sceneContainer = document.getElementById('sceneContainer');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87CEEB);
+scene.fog = new THREE.Fog(0x87CEEB, 100, 300);
+
+const camera = new THREE.PerspectiveCamera(45, sceneContainer.clientWidth / sceneContainer.clientHeight, 0.1, 1000);
+camera.position.set(0, 25, 40);
+camera.lookAt(0, 0, 0);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+renderer.setSize(sceneContainer.clientWidth, sceneContainer.clientHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+sceneContainer.insertBefore(renderer.domElement, sceneContainer.firstChild);
+
+// Controls
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+controls.minDistance = 10;
+controls.maxDistance = 100;
+controls.maxPolarAngle = Math.PI / 2.2;
+controls.target.set(0, 0, 0);
+
+// Lighting
+const sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
+sunLight.position.set(50, 50, 25);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.set(2048, 2048);
+sunLight.shadow.camera.near = 0.5;
+sunLight.shadow.camera.far = 200;
+sunLight.shadow.camera.left = -50;
+sunLight.shadow.camera.right = 50;
+sunLight.shadow.camera.top = 50;
+sunLight.shadow.camera.bottom = -50;
+scene.add(sunLight);
+
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+scene.add(ambientLight);
+
+const hemisphereLight = new THREE.HemisphereLight(0x87CEEB, 0x44aa44, 0.4);
+scene.add(hemisphereLight);
+
+// Ground plane
+const groundGeo = new THREE.PlaneGeometry(500, 500);
+const groundMat = new THREE.MeshLambertMaterial({ color: 0x44aa44 });
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = -0.5;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// ═══════════════════ TRACK PATH ═══════════════════════════════════
+const TRACK_RX = 20;
+const TRACK_RZ = 15;
+
+function getTrackPosition(t, laneOffset) {
+  const angle = t * Math.PI * 2;
+  return new THREE.Vector3(
+    Math.sin(angle) * TRACK_RX,
+    0.5,
+    Math.cos(angle) * TRACK_RZ + laneOffset
+  );
+}
+
+function getTrackRotation(t) {
+  const angle = t * Math.PI * 2;
+  return Math.atan2(Math.cos(angle) * TRACK_RX, -Math.sin(angle) * TRACK_RZ);
+}
+
+// ═══════════════════ LOAD 3D MODELS ═══════════════════════════════
+const dracoLoader = new DRACOLoader();
+dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/');
+const gltfLoader = new GLTFLoader();
+gltfLoader.setDRACOLoader(dracoLoader);
+
+let loadedCount = 0;
+const totalLoads = 4; // track + chassis + wheels + data
+const loadingBar = document.getElementById('loadingBar');
+const loadingText = document.getElementById('loadingText');
+
+function updateLoadProgress(label) {
+  loadedCount++;
+  const pct = Math.round((loadedCount / totalLoads) * 100);
+  loadingBar.style.width = pct + '%';
+  loadingText.textContent = label;
+}
+
+let modelsReady = false;
+let dataReady = false;
+let wheelTemplate = null;
+
+// Load track
+const trackPromise = new Promise((resolve) => {
+  gltfLoader.load('assets/track-draco.glb', (gltf) => {
+    const track = gltf.scene;
+    track.traverse(child => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    scene.add(track);
+    updateLoadProgress('Трасса загружена...');
+    resolve();
+  }, undefined, (err) => {
+    console.warn('Track load error:', err);
+    updateLoadProgress('Трасса: ошибка загрузки');
+    resolve();
+  });
+});
+
+// Load chassis
+const chassisPromise = new Promise((resolve) => {
+  gltfLoader.load('assets/chassis-draco.glb', (gltf) => {
+    const carTemplate = gltf.scene;
+
+    for (const [ropName, config] of Object.entries(ROP_CARS)) {
+      const car = carTemplate.clone();
+      car.traverse(child => {
+        if (child.isMesh) {
+          child.material = child.material.clone();
+          child.material.color.set(config.color);
+          child.material.metalness = 0.4;
+          child.material.roughness = 0.3;
+          child.castShadow = true;
+        }
+      });
+      // Start at 0% position
+      const startPos = getTrackPosition(0, config.laneOffset);
+      car.position.copy(startPos);
+      car.rotation.y = getTrackRotation(0);
+      car.userData.ropName = ropName;
+      scene.add(car);
+      config.mesh = car;
+    }
+
+    updateLoadProgress('Машины загружены...');
+    resolve();
+  }, undefined, (err) => {
+    console.warn('Chassis load error:', err);
+    updateLoadProgress('Машины: ошибка загрузки');
+    resolve();
+  });
+});
+
+// Load wheels
+const wheelPromise = new Promise((resolve) => {
+  gltfLoader.load('assets/wheel-draco.glb', (gltf) => {
+    wheelTemplate = gltf.scene;
+
+    // Attach wheels after chassis is loaded
+    chassisPromise.then(() => {
+      const wheelPositions = [
+        { x: 0.7, y: -0.2, z: 0.6 },
+        { x: -0.7, y: -0.2, z: 0.6 },
+        { x: 0.7, y: -0.2, z: -0.6 },
+        { x: -0.7, y: -0.2, z: -0.6 },
+      ];
+      for (const config of Object.values(ROP_CARS)) {
+        if (!config.mesh) continue;
+        config.wheelMeshes = [];
+        wheelPositions.forEach(pos => {
+          const wheel = wheelTemplate.clone();
+          wheel.position.set(pos.x, pos.y, pos.z);
+          // Mirror left wheels
+          if (pos.x < 0) wheel.scale.x = -1;
+          config.mesh.add(wheel);
+          config.wheelMeshes.push(wheel);
+        });
+      }
+      updateLoadProgress('Колёса установлены...');
+      resolve();
+    });
+  }, undefined, (err) => {
+    console.warn('Wheel load error:', err);
+    updateLoadProgress('Колёса: ошибка загрузки');
+    resolve();
+  });
+});
+
+// ═══════════════════ CAR POSITION UPDATE ═══════════════════════════
+function updateCarPositions(ropData) {
+  for (const r of ropData) {
+    const config = ROP_CARS[r.name];
+    if (!config || !config.mesh) continue;
+    const t = Math.min(r.pct / 100, 1.5);
+    const pos = getTrackPosition(t, config.laneOffset);
+    config.targetPos = pos;
+    config.targetRot = getTrackRotation(t);
+    config.pct = r.pct;
+  }
+}
+
+// ═══════════════════ CAR LABELS (HTML over 3D) ═══════════════════
+const carLabelsContainer = document.getElementById('carLabelsContainer');
+let carLabelEls = {};
+
+function createCarLabels() {
+  carLabelsContainer.innerHTML = '';
+  carLabelEls = {};
+  for (const [ropName, config] of Object.entries(ROP_CARS)) {
+    const label = document.createElement('div');
+    label.className = 'car-label';
+    label.style.color = ROP_COLORS[ropName];
+    label.innerHTML = `
+      <div class="car-label-name" style="color:${ROP_COLORS[ropName]}">${ropName.replace('РОП ','')}</div>
+      <div class="car-label-pct" style="color:${ROP_COLORS[ropName]}">0%</div>
+      <div class="car-label-detail">-- / --</div>
+    `;
+    carLabelsContainer.appendChild(label);
+    carLabelEls[ropName] = label;
+  }
+}
+
+function updateCarLabels(ropData) {
+  for (const r of ropData) {
+    const el = carLabelEls[r.name];
+    if (!el) continue;
+    el.querySelector('.car-label-pct').textContent = r.pct.toFixed(1) + '%';
+    el.querySelector('.car-label-detail').textContent = fmtM(r.fact) + ' / ' + fmtM(r.plan);
+  }
+}
+
+function projectCarLabels() {
+  const rect = renderer.domElement.getBoundingClientRect();
+  for (const [ropName, config] of Object.entries(ROP_CARS)) {
+    if (!config.mesh || !carLabelEls[ropName]) continue;
+    const pos = config.mesh.position.clone();
+    pos.y += 2.5; // above car
+    pos.project(camera);
+
+    const x = (pos.x * 0.5 + 0.5) * rect.width;
+    const y = (-pos.y * 0.5 + 0.5) * rect.height;
+
+    const label = carLabelEls[ropName];
+    // Hide if behind camera
+    if (pos.z > 1) {
+      label.style.opacity = '0';
+    } else {
+      label.style.opacity = '1';
+      label.style.left = x + 'px';
+      label.style.top = y + 'px';
+    }
+  }
+}
+
+// ═══════════════════ WHEEL ROTATION ═══════════════════════════════
+let wheelRotation = 0;
+
+// ═══════════════════ ANIMATION LOOP ═══════════════════════════════
+function animate() {
+  requestAnimationFrame(animate);
+
+  // Smooth car movement
+  for (const config of Object.values(ROP_CARS)) {
+    if (config.mesh && config.targetPos) {
+      config.mesh.position.lerp(config.targetPos, 0.02);
+      config.mesh.rotation.y = THREE.MathUtils.lerp(
+        config.mesh.rotation.y,
+        config.targetRot,
+        0.02
+      );
+
+      // Spin wheels based on movement
+      if (config.wheelMeshes && config.wheelMeshes.length > 0) {
+        config.wheelMeshes.forEach(w => {
+          w.rotation.x += 0.05;
+        });
+      }
+    }
+  }
+
+  controls.update();
+  renderer.render(scene, camera);
+  projectCarLabels();
+}
+
+// ═══════════════════ RESIZE ═══════════════════════════════════════
+function onResize() {
+  const w = sceneContainer.clientWidth;
+  const h = sceneContainer.clientHeight;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+}
+window.addEventListener('resize', onResize);
+
+// ═══════════════════ RENDER ALL ═══════════════════════════════════
 function renderAll() {
-  renderRace();
+  const data = calcRopData();
+  updateCarPositions(data);
+  updateCarLabels(data);
+  renderScoreboard(data);
   renderTop3();
   renderFeed();
 }
 
-// ═══════════════════ HEADER ═══════════════════════════════════════
-function updateHeader() {
-  const now = new Date();
-  document.getElementById('headerMonth').textContent =
-    MONTH_NAMES[now.getMonth()].toUpperCase() + ' ' + now.getFullYear();
-  document.getElementById('headerClock').textContent =
-    now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-}
-
-// ═══════════════════ DATA LOADING ═══════════════════════════════════
-async function loadData() {
-  try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data,updated_at`, {
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-      }
-    });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const rows = await res.json();
-    if (rows && rows[0] && rows[0].data) {
-      const d = rows[0].data;
-      if (d.RAW)        RAW = d.RAW;
-      if (d.MANAGERS)   MANAGERS = d.MANAGERS;
-      if (d.MGR_TO_ROP && Object.keys(d.MGR_TO_ROP).length > 0) {
-        MGR_TO_ROP = d.MGR_TO_ROP;
-        clearRopCache();
-      }
-      if (d.ROP_PLANS)  ROP_PLANS = d.ROP_PLANS;
-
-      if (rows[0].updated_at) {
-        const dt = new Date(rows[0].updated_at);
-        document.getElementById('headerBadge').textContent =
-          'Обновлено: ' + dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-      }
-    }
-    return true;
-  } catch(e) {
-    console.warn('Supabase load error:', e);
-    return false;
-  }
-}
-
-// ═══════════════════ CURSOR AUTO-HIDE ═══════════════════════════════
-let cursorTimer;
-function resetCursor() {
-  document.body.classList.add('cursor-visible');
-  clearTimeout(cursorTimer);
-  cursorTimer = setTimeout(() => {
-    document.body.classList.remove('cursor-visible');
-  }, 3000);
-}
-document.addEventListener('mousemove', resetCursor);
-document.addEventListener('mousedown', resetCursor);
+// ═══════════════════ ZOOM HINT FADE ═══════════════════════════════
+setTimeout(() => {
+  document.getElementById('zoomHint').classList.add('hidden');
+}, 5000);
 
 // ═══════════════════ INIT ═══════════════════════════════════════
 async function init() {
   updateHeader();
   setInterval(updateHeader, 1000);
 
-  const ok = await loadData();
-  if (ok) {
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('page').style.display = 'flex';
+  // Load data in parallel with models
+  const dataPromise = loadData().then(ok => {
+    updateLoadProgress('Данные загружены...');
+    dataReady = ok;
+    return ok;
+  });
+
+  // Wait for all
+  await Promise.all([trackPromise, chassisPromise, wheelPromise, dataPromise]);
+
+  // Create labels
+  createCarLabels();
+
+  // Start animation loop
+  animate();
+
+  if (dataReady) {
     renderAll();
-  } else {
-    document.querySelector('.loading-text').textContent = 'Ошибка загрузки данных. Повтор...';
-    setTimeout(init, 5000);
-    return;
   }
 
-  // Auto-reload every 60s
+  // Fade out loading, show page
+  const loadingEl = document.getElementById('loading');
+  loadingEl.classList.add('fade-out');
+  document.getElementById('page').style.display = 'flex';
+  // Trigger resize after layout
+  requestAnimationFrame(() => {
+    onResize();
+    setTimeout(() => {
+      loadingEl.style.display = 'none';
+    }, 800);
+  });
+
+  // Handle data load failure
+  if (!dataReady) {
+    console.warn('Data failed to load, retrying in 5s...');
+    setTimeout(async () => {
+      const ok = await loadData();
+      if (ok) renderAll();
+    }, 5000);
+  }
+
+  // Auto-reload data every 60 seconds
   setInterval(async () => {
     await loadData();
     renderAll();
