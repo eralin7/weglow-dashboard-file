@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>WeGlow — Персонажи</title>
+<title>WeGlow — Персонажи (Habitica)</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -59,47 +59,60 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 .nav-item.active .icon{background:rgba(99,102,241,.25);}
 .dock-divider{height:1px;background:rgba(255,255,255,.06);margin:4px 8px;}
 
-/* ─── MAIN CONTENT ─── */
+/* ─── MAIN ─── */
 .main{margin-left:220px;flex:1;padding:28px 32px 40px;min-width:0;}
 
-/* ─── LOGIN SCREEN ─── */
-.login-screen{
-  display:flex;align-items:center;justify-content:center;min-height:80vh;
-}
-.login-card{
+/* ─── SETUP SCREEN ─── */
+.setup-screen{display:flex;align-items:center;justify-content:center;min-height:80vh;}
+.setup-card{
   background:var(--white);border-radius:20px;padding:48px;
-  box-shadow:var(--shadow2);max-width:440px;width:100%;text-align:center;
+  box-shadow:var(--shadow2);max-width:520px;width:100%;text-align:center;
 }
-.login-card h2{font-family:'Playfair Display',serif;font-size:28px;margin-bottom:8px;}
-.login-card p{color:var(--muted);font-size:13px;margin-bottom:28px;}
-.login-list{display:flex;flex-direction:column;gap:8px;}
-.login-btn{
-  padding:14px 20px;border-radius:12px;border:1.5px solid var(--line);
-  background:var(--white);cursor:pointer;font-size:14px;font-weight:600;
-  font-family:inherit;color:var(--ink);display:flex;align-items:center;gap:12px;
-  transition:all .2s;
+.setup-card h2{font-family:'Playfair Display',serif;font-size:26px;margin-bottom:8px;}
+.setup-card p{color:var(--muted);font-size:13px;margin-bottom:24px;line-height:1.6;}
+.setup-card a{color:var(--acc);}
+.setup-steps{text-align:left;margin-bottom:24px;}
+.setup-step{display:flex;gap:12px;margin-bottom:16px;align-items:flex-start;}
+.step-num{
+  width:28px;height:28px;border-radius:50%;background:var(--acc);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;
 }
-.login-btn:hover{border-color:var(--acc);background:var(--acc-l);transform:translateY(-2px);box-shadow:var(--shadow);}
-.login-btn .avatar-mini{
-  width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;
-  font-size:18px;color:#fff;font-weight:700;flex-shrink:0;
+.step-text{font-size:13px;color:var(--slate);line-height:1.6;}
+.step-text strong{color:var(--ink);}
+.mgr-select{
+  width:100%;padding:12px 16px;border-radius:12px;border:1.5px solid var(--line);
+  font-family:inherit;font-size:14px;margin-bottom:12px;background:var(--white);
+  appearance:none;cursor:pointer;
 }
+.mgr-select:focus{outline:none;border-color:var(--acc);}
+.input-row{display:flex;gap:10px;margin-bottom:12px;}
+.input-row input{
+  flex:1;padding:12px 16px;border-radius:12px;border:1.5px solid var(--line);
+  font-family:inherit;font-size:13px;
+}
+.input-row input:focus{outline:none;border-color:var(--acc);}
+.setup-btn{
+  width:100%;padding:14px;border-radius:12px;border:none;
+  background:var(--acc);color:#fff;font-family:inherit;font-size:14px;font-weight:700;
+  cursor:pointer;transition:all .2s;
+}
+.setup-btn:hover{background:#4f46e5;transform:translateY(-2px);}
+.setup-btn:disabled{background:#cbd5e1;cursor:not-allowed;transform:none;}
+.setup-error{color:var(--red);font-size:12px;margin-top:8px;display:none;}
 
 /* ─── PAGE HEADER ─── */
 .page-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px;}
 .page-hdr h2{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;}
-.hdr-stats{display:flex;align-items:center;gap:16px;}
-.coin-badge{
-  display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,#fef9c3,#fef08a);
-  padding:8px 16px;border-radius:12px;font-weight:700;font-size:15px;color:#92400e;
-  border:1px solid #fde047;box-shadow:0 2px 8px rgba(202,138,4,.15);
+.hdr-stats{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.stat-badge{
+  display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:12px;
+  font-weight:700;font-size:13px;border:1px solid;
 }
-.coin-badge .coin-icon{font-size:20px;}
-.level-badge{
-  display:flex;align-items:center;gap:6px;background:linear-gradient(135deg,var(--acc-l),#ddd6fe);
-  padding:8px 16px;border-radius:12px;font-weight:700;font-size:14px;color:#4338ca;
-  border:1px solid #c4b5fd;
-}
+.badge-gold{background:#fef9c3;color:#92400e;border-color:#fde047;}
+.badge-hp{background:#fde8e8;color:#c0392b;border-color:#fca5a5;}
+.badge-xp{background:var(--acc-l);color:#4338ca;border-color:#c4b5fd;}
+.badge-lvl{background:var(--green-l);color:var(--green);border-color:#86efac;}
+.badge-mp{background:#dbeafe;color:#1d4ed8;border-color:#93c5fd;}
 .logout-btn{
   padding:8px 16px;border-radius:10px;border:1px solid var(--line);
   background:var(--white);cursor:pointer;font-size:12px;font-weight:500;
@@ -111,16 +124,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 .tabs{display:flex;gap:4px;background:var(--white);border-radius:12px;padding:4px;box-shadow:var(--shadow);margin-bottom:24px;width:fit-content;}
 .tab-btn{
   padding:10px 20px;border-radius:10px;border:none;background:transparent;
-  font-family:inherit;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;
-  transition:all .2s;
+  font-family:inherit;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .2s;
 }
 .tab-btn.active{background:var(--acc);color:#fff;box-shadow:0 2px 8px rgba(99,102,241,.3);}
 .tab-btn:hover:not(.active){background:var(--bg);color:var(--ink);}
 .tab-pane{display:none;}
 .tab-pane.active{display:block;}
 
-/* ─── ALL CHARACTERS GRID ─── */
-.chars-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;}
+/* ─── ALL CHARACTERS ─── */
+.chars-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;}
 .char-card{
   background:var(--white);border-radius:16px;padding:20px;text-align:center;
   box-shadow:var(--shadow);transition:all .25s;position:relative;overflow:hidden;
@@ -132,128 +144,102 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
   font-size:10px;font-weight:700;color:var(--acc);background:var(--acc-l);
   padding:3px 10px;border-radius:20px;
 }
-.char-avatar{
-  width:80px;height:80px;border-radius:50%;margin:0 auto 12px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:36px;position:relative;
-  box-shadow:0 4px 16px rgba(0,0,0,.12);
+.char-avatar-wrap{
+  width:100px;height:100px;margin:0 auto 12px;position:relative;
+  border-radius:50%;overflow:hidden;background:#e5e7eb;
+  box-shadow:0 4px 16px rgba(0,0,0,.1);
 }
-.char-avatar .equip-hat{position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:28px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.2));}
-.char-avatar .equip-pet{position:absolute;bottom:-8px;right:-8px;font-size:22px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.2));}
-.char-avatar .equip-aura{
-  position:absolute;inset:-6px;border-radius:50%;pointer-events:none;
+.char-avatar-wrap img{
+  width:141px;height:147px;
+  object-fit:none;
+  object-position:-25px -24px;
+  image-rendering:pixelated;
 }
-.aura-fire{box-shadow:0 0 16px 4px rgba(239,68,68,.4),0 0 32px 8px rgba(239,68,68,.15);animation:aura-pulse 2s ease-in-out infinite;}
-.aura-ice{box-shadow:0 0 16px 4px rgba(59,130,246,.4),0 0 32px 8px rgba(59,130,246,.15);animation:aura-pulse 2s ease-in-out infinite;}
-.aura-gold{box-shadow:0 0 16px 4px rgba(234,179,8,.5),0 0 32px 8px rgba(234,179,8,.2);animation:aura-pulse 2s ease-in-out infinite;}
-.aura-emerald{box-shadow:0 0 16px 4px rgba(16,185,129,.4),0 0 32px 8px rgba(16,185,129,.15);animation:aura-pulse 2s ease-in-out infinite;}
-.aura-purple{box-shadow:0 0 16px 4px rgba(139,92,246,.4),0 0 32px 8px rgba(139,92,246,.15);animation:aura-pulse 2s ease-in-out infinite;}
-@keyframes aura-pulse{0%,100%{opacity:.7;transform:scale(1);}50%{opacity:1;transform:scale(1.05);}}
-
-.char-name{font-weight:700;font-size:14px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.char-rop{font-size:11px;color:var(--muted);margin-bottom:8px;}
+.char-name{font-weight:700;font-size:14px;margin-bottom:2px;}
+.char-class{font-size:11px;color:var(--muted);margin-bottom:4px;text-transform:capitalize;}
+.char-rop{font-size:11px;color:var(--acc);margin-bottom:8px;font-weight:600;}
 .char-level{
   display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;
-  color:#4338ca;background:#ede9fe;padding:3px 10px;border-radius:20px;margin-bottom:8px;
+  color:var(--green);background:var(--green-l);padding:3px 10px;border-radius:20px;margin-bottom:8px;
 }
-.xp-bar{height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden;margin-bottom:6px;}
-.xp-fill{height:100%;background:linear-gradient(90deg,var(--acc),#818cf8);border-radius:3px;transition:width .5s;}
-.char-coins{font-size:12px;color:#92400e;font-weight:600;display:flex;align-items:center;justify-content:center;gap:4px;}
+.char-bars{display:flex;flex-direction:column;gap:4px;margin-bottom:8px;}
+.bar-row{display:flex;align-items:center;gap:6px;}
+.bar-label{font-size:9px;font-weight:700;width:20px;text-align:right;text-transform:uppercase;}
+.bar-track{flex:1;height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:3px;transition:width .5s;}
+.bar-hp .bar-fill{background:linear-gradient(90deg,#ef4444,#f87171);}
+.bar-xp .bar-fill{background:linear-gradient(90deg,#eab308,#fbbf24);}
+.bar-mp .bar-fill{background:linear-gradient(90deg,#3b82f6,#60a5fa);}
+.bar-val{font-size:9px;color:var(--muted);width:50px;font-variant-numeric:tabular-nums;}
+.char-gold{font-size:12px;color:#92400e;font-weight:600;display:flex;align-items:center;justify-content:center;gap:4px;}
 
-/* ─── MY CHARACTER (PERSONAL CABINET) ─── */
-.my-char-section{display:grid;grid-template-columns:340px 1fr;gap:24px;align-items:start;}
-.my-char-card{
-  background:var(--white);border-radius:20px;padding:32px;text-align:center;
-  box-shadow:var(--shadow2);position:relative;
+/* ─── MY CHARACTER ─── */
+.my-section{display:grid;grid-template-columns:360px 1fr;gap:24px;align-items:start;}
+.my-card{background:var(--white);border-radius:20px;padding:32px;text-align:center;box-shadow:var(--shadow2);}
+.my-avatar-wrap{
+  width:141px;height:147px;margin:0 auto 16px;
+  image-rendering:pixelated;overflow:hidden;border-radius:16px;
+  background:#e5e7eb;box-shadow:0 6px 24px rgba(0,0,0,.12);
 }
-.my-avatar-big{
-  width:120px;height:120px;border-radius:50%;margin:0 auto 16px;
-  display:flex;align-items:center;justify-content:center;font-size:54px;
-  position:relative;box-shadow:0 6px 24px rgba(0,0,0,.15);
-}
-.my-avatar-big .equip-hat{position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:40px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));}
-.my-avatar-big .equip-pet{position:absolute;bottom:-12px;right:-12px;font-size:30px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));}
-.my-avatar-big .equip-aura{position:absolute;inset:-8px;border-radius:50%;pointer-events:none;}
-.my-name{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin-bottom:4px;}
-.my-rop{font-size:12px;color:var(--muted);margin-bottom:16px;}
+.my-avatar-wrap img{width:141px;height:147px;image-rendering:pixelated;}
+.my-name{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin-bottom:2px;}
+.my-class{font-size:12px;color:var(--muted);margin-bottom:4px;text-transform:capitalize;}
+.my-rop{font-size:12px;color:var(--acc);margin-bottom:16px;font-weight:600;}
 .my-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
-.my-stat{background:var(--bg);border-radius:12px;padding:12px;}
-.my-stat .val{font-size:20px;font-weight:800;color:var(--ink);}
+.my-stat{background:var(--bg);border-radius:12px;padding:12px;text-align:center;}
+.my-stat .val{font-size:20px;font-weight:800;}
 .my-stat .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
-.my-xp-section{margin-top:8px;}
-.my-xp-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:6px;}
-.my-xp-bar{height:10px;background:#e5e7eb;border-radius:5px;overflow:hidden;}
-.my-xp-fill{height:100%;background:linear-gradient(90deg,#6366f1,#a78bfa,#c084fc);border-radius:5px;transition:width .5s;}
+.my-bars{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;text-align:left;}
+.my-bar-row{display:flex;align-items:center;gap:8px;}
+.my-bar-label{font-size:11px;font-weight:700;width:24px;}
+.my-bar-track{flex:1;height:10px;background:#e5e7eb;border-radius:5px;overflow:hidden;}
+.my-bar-fill{height:100%;border-radius:5px;transition:width .5s;}
+.my-bar-val{font-size:11px;color:var(--muted);width:80px;text-align:right;font-variant-numeric:tabular-nums;}
+.my-equip{margin-top:16px;text-align:left;}
+.my-equip-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;}
+.equip-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.equip-slot{
+  background:var(--bg);border-radius:10px;padding:8px;text-align:center;
+  border:1.5px solid var(--line);
+}
+.equip-slot img{width:40px;height:40px;image-rendering:pixelated;}
+.equip-slot .eq-name{font-size:9px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
-/* ─── EQUIPPED ITEMS ─── */
-.equipped-section{margin-top:20px;}
-.equipped-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;}
-.equipped-slots{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
-.eq-slot{
-  background:var(--bg);border-radius:12px;padding:10px 6px;text-align:center;
-  border:1.5px dashed var(--line);min-height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  transition:all .2s;cursor:pointer;position:relative;
-}
-.eq-slot.filled{border-style:solid;border-color:var(--acc);background:var(--acc-l);}
-.eq-slot .eq-icon{font-size:22px;margin-bottom:4px;}
-.eq-slot .eq-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
-.eq-slot .eq-remove{
-  position:absolute;top:4px;right:4px;width:16px;height:16px;border-radius:50%;
-  background:var(--red);color:#fff;border:none;font-size:10px;cursor:pointer;
-  display:none;align-items:center;justify-content:center;line-height:1;
-}
-.eq-slot.filled:hover .eq-remove{display:flex;}
+/* ─── RIGHT PANEL ─── */
+.right-panel{display:flex;flex-direction:column;gap:20px;}
+.info-card{background:var(--white);border-radius:16px;padding:24px;box-shadow:var(--shadow);}
+.info-card h3{font-size:16px;font-weight:700;margin-bottom:16px;}
+.earn-table{width:100%;border-collapse:collapse;}
+.earn-table th{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);}
+.earn-table td{padding:10px 12px;font-size:13px;border-bottom:1px solid var(--line);}
+.earn-table tr:last-child td{border-bottom:none;}
+.earn-plus{color:var(--green);font-weight:700;}
 
-/* ─── SHOP ─── */
-.shop-section{background:var(--white);border-radius:20px;padding:28px;box-shadow:var(--shadow);}
-.shop-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:4px;}
-.shop-sub{font-size:12px;color:var(--muted);margin-bottom:20px;}
-.shop-cats{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap;}
-.shop-cat{
-  padding:7px 14px;border-radius:20px;border:1px solid var(--line);
-  background:var(--white);font-family:inherit;font-size:12px;font-weight:600;
-  color:var(--muted);cursor:pointer;transition:all .15s;
+/* ─── REWARD TASKS ─── */
+.tasks-section{background:var(--white);border-radius:16px;padding:24px;box-shadow:var(--shadow);}
+.tasks-section h3{font-size:16px;font-weight:700;margin-bottom:16px;}
+.task-list{display:flex;flex-direction:column;gap:8px;}
+.task-item{
+  display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;
+  background:var(--bg);transition:all .2s;
 }
-.shop-cat.active{background:var(--ink);color:#fff;border-color:var(--ink);}
-.shop-cat:hover:not(.active){border-color:var(--acc);color:var(--acc);}
-.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;}
-.shop-item{
-  background:var(--bg);border-radius:14px;padding:16px;text-align:center;
-  border:1.5px solid transparent;transition:all .2s;position:relative;
+.task-item:hover{transform:translateX(4px);box-shadow:var(--shadow);}
+.task-check{
+  width:28px;height:28px;border-radius:8px;border:2px solid var(--line);
+  background:var(--white);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:14px;color:transparent;transition:all .2s;flex-shrink:0;
 }
-.shop-item:hover{border-color:var(--acc);transform:translateY(-2px);box-shadow:var(--shadow);}
-.shop-item.owned{border-color:var(--green);background:var(--green-l);}
-.shop-item.equipped{border-color:var(--acc);background:var(--acc-l);}
-.shop-item .item-icon{font-size:36px;margin-bottom:8px;display:block;}
-.shop-item .item-name{font-size:13px;font-weight:700;margin-bottom:4px;}
-.shop-item .item-desc{font-size:10px;color:var(--muted);margin-bottom:10px;line-height:1.4;}
-.shop-item .item-price{
-  display:inline-flex;align-items:center;gap:4px;
-  font-size:13px;font-weight:700;color:#92400e;
-  background:#fef9c3;padding:5px 12px;border-radius:20px;
-}
-.shop-item .item-price.free{color:var(--green);background:var(--green-l);}
-.buy-btn{
-  margin-top:8px;padding:8px 16px;border-radius:10px;border:none;
-  background:var(--acc);color:#fff;font-family:inherit;font-size:12px;font-weight:700;
-  cursor:pointer;transition:all .2s;width:100%;
-}
-.buy-btn:hover{background:#4f46e5;transform:scale(1.03);}
-.buy-btn:disabled{background:#cbd5e1;cursor:not-allowed;transform:none;}
-.buy-btn.owned-btn{background:var(--green);cursor:default;}
-.buy-btn.equip-btn{background:#f59e0b;color:#fff;}
-.shop-item .item-badge{
-  position:absolute;top:8px;right:8px;font-size:9px;font-weight:700;
-  padding:2px 8px;border-radius:10px;
-}
-.badge-owned{background:var(--green-l);color:var(--green);}
-.badge-equipped{background:var(--acc-l);color:var(--acc);}
-.badge-new{background:#fef3c7;color:#d97706;}
+.task-check:hover{border-color:var(--green);color:var(--green);}
+.task-check.done{background:var(--green);border-color:var(--green);color:#fff;}
+.task-info{flex:1;min-width:0;}
+.task-title{font-size:13px;font-weight:600;}
+.task-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.task-reward{font-size:12px;font-weight:700;color:#92400e;white-space:nowrap;}
 
 /* ─── LEAD SHOP ─── */
 .lead-shop{
   background:linear-gradient(135deg,#fef9c3,#fde68a);border-radius:16px;
-  padding:24px;margin-top:20px;border:1px solid #fde047;
+  padding:24px;border:1px solid #fde047;
 }
 .lead-shop h3{font-size:16px;font-weight:700;color:#92400e;margin-bottom:6px;}
 .lead-shop p{font-size:12px;color:#a16207;margin-bottom:16px;}
@@ -263,29 +249,28 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
   border:1px solid rgba(202,138,4,.2);transition:all .2s;
 }
 .lead-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(202,138,4,.15);}
-.lead-card .lead-icon{font-size:32px;margin-bottom:8px;}
-.lead-card .lead-title{font-size:14px;font-weight:700;color:#92400e;margin-bottom:4px;}
-.lead-card .lead-desc{font-size:11px;color:#a16207;margin-bottom:10px;}
-.lead-card .lead-price{font-size:16px;font-weight:800;color:#92400e;margin-bottom:8px;}
-.lead-buy-btn{
+.lead-icon{font-size:32px;margin-bottom:8px;}
+.lead-title{font-size:14px;font-weight:700;color:#92400e;margin-bottom:4px;}
+.lead-desc{font-size:11px;color:#a16207;margin-bottom:10px;}
+.lead-price{font-size:16px;font-weight:800;color:#92400e;margin-bottom:8px;}
+.lead-buy{
   padding:10px 20px;border-radius:10px;border:none;
   background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;
   font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;
   transition:all .2s;width:100%;
 }
-.lead-buy-btn:hover{transform:scale(1.03);box-shadow:0 4px 12px rgba(217,119,6,.3);}
-.lead-buy-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+.lead-buy:hover{transform:scale(1.03);box-shadow:0 4px 12px rgba(217,119,6,.3);}
+.lead-buy:disabled{opacity:.5;cursor:not-allowed;transform:none;}
 
-/* ─── EARNINGS LOG ─── */
-.earnings-section{margin-top:24px;}
-.earnings-card{background:var(--white);border-radius:16px;padding:24px;box-shadow:var(--shadow);}
-.earnings-card h3{font-size:16px;font-weight:700;margin-bottom:16px;}
-.earnings-table{width:100%;border-collapse:collapse;}
-.earnings-table th{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);}
-.earnings-table td{padding:10px 12px;font-size:13px;border-bottom:1px solid var(--line);}
-.earnings-table tr:last-child td{border-bottom:none;}
-.earn-plus{color:var(--green);font-weight:700;}
-.earn-minus{color:var(--red);font-weight:700;}
+/* ─── PETS ─── */
+.pets-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;}
+.pet-item{
+  background:var(--bg);border-radius:10px;padding:8px;text-align:center;
+  border:1.5px solid var(--line);transition:all .2s;
+}
+.pet-item:hover{border-color:var(--acc);transform:scale(1.05);}
+.pet-item img{width:50px;height:50px;image-rendering:pixelated;}
+.pet-item .pet-name{font-size:8px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
 /* ─── TOAST ─── */
 .toast{
@@ -298,17 +283,21 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 .toast.success{background:#059669;}
 .toast.error{background:var(--red);}
 
-/* ─── RESPONSIVE ─── */
-@media(max-width:1100px){
-  .my-char-section{grid-template-columns:1fr;}
+/* ─── LOADING ─── */
+.loading{text-align:center;padding:60px 20px;color:var(--muted);}
+.loading .spinner{
+  width:40px;height:40px;border:3px solid var(--line);border-top-color:var(--acc);
+  border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;
 }
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:1100px){.my-section{grid-template-columns:1fr;}}
 @media(max-width:768px){
   .sidebar{transform:translateX(-100%);}
   .sidebar.open{transform:translateX(0);}
   .main{margin-left:0;padding:16px;}
   .chars-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));}
-  .shop-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));}
-  .my-avatar-big{width:90px;height:90px;font-size:40px;}
   .burger{display:flex !important;}
 }
 .burger{
@@ -327,111 +316,119 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 <aside class="sidebar">
   <div class="sb-logo">
     <h1>WeGlow</h1>
-    <div class="tagline">Sales Gamification</div>
+    <div class="tagline">Habitica RPG</div>
   </div>
   <nav class="sb-nav">
     <div class="sb-section">Навигация</div>
     <div class="dock-wrap">
-      <a href="dashboard.html" class="nav-item" data-tip="Дашборд">
-        <span class="icon">◈</span><span class="nav-label">Дашборд</span>
-      </a>
-      <a href="tv.html" class="nav-item" data-tip="Гонка к плану">
-        <span class="icon">🏎️</span><span class="nav-label">Гонка к плану</span>
-      </a>
-      <a href="game.html" class="nav-item active" data-tip="Персонажи">
-        <span class="icon">🎮</span><span class="nav-label">Персонажи</span>
-      </a>
+      <a href="dashboard.html" class="nav-item"><span class="icon">◈</span><span>Дашборд</span></a>
+      <a href="tv.html" class="nav-item"><span class="icon">🏎️</span><span>Гонка к плану</span></a>
+      <a href="game.html" class="nav-item active"><span class="icon">🎮</span><span>Персонажи</span></a>
       <div class="dock-divider"></div>
-      <a href="rop.html" class="nav-item" data-tip="Кабинет РОП">
-        <span class="icon">👥</span><span class="nav-label">Кабинет РОП</span>
-      </a>
-      <a href="director.html" class="nav-item" data-tip="Кабинет директора">
-        <span class="icon">👔</span><span class="nav-label">Кабинет директора</span>
-      </a>
+      <a href="rop.html" class="nav-item"><span class="icon">👥</span><span>Кабинет РОП</span></a>
+      <a href="director.html" class="nav-item"><span class="icon">👔</span><span>Кабинет директора</span></a>
     </div>
   </nav>
 </aside>
 
 <!-- ═══ MAIN ═══ -->
 <div class="main">
-  <!-- LOGIN SCREEN -->
-  <div id="login-screen" class="login-screen">
-    <div class="login-card">
-      <h2>Выберите персонажа</h2>
-      <p>Войдите как менеджер чтобы прокачивать своего героя</p>
-      <div class="login-list" id="login-list"></div>
+  <!-- SETUP SCREEN -->
+  <div id="setup-screen" class="setup-screen">
+    <div class="setup-card">
+      <h2>🎮 Привяжите Habitica</h2>
+      <p>Каждый менеджер прокачивает своего RPG-персонажа в <a href="https://habitica.com" target="_blank">Habitica</a>.<br>Монеты и XP начисляются автоматически за продажи!</p>
+
+      <div class="setup-steps">
+        <div class="setup-step">
+          <div class="step-num">1</div>
+          <div class="step-text">Зарегистрируйтесь на <a href="https://habitica.com" target="_blank"><strong>habitica.com</strong></a> (бесплатно)</div>
+        </div>
+        <div class="setup-step">
+          <div class="step-num">2</div>
+          <div class="step-text">Откройте <a href="https://habitica.com/user/settings/api" target="_blank"><strong>Настройки → API</strong></a> и скопируйте <strong>User ID</strong> и <strong>API Token</strong></div>
+        </div>
+        <div class="setup-step">
+          <div class="step-num">3</div>
+          <div class="step-text">Выберите своё имя и вставьте данные ниже</div>
+        </div>
+      </div>
+
+      <select class="mgr-select" id="setup-mgr">
+        <option value="">Выберите менеджера...</option>
+      </select>
+      <div class="input-row">
+        <input type="text" id="setup-uid" placeholder="User ID из Habitica">
+      </div>
+      <div class="input-row">
+        <input type="text" id="setup-token" placeholder="API Token из Habitica">
+      </div>
+      <button class="setup-btn" id="setup-btn" onclick="connectHabitica()">Подключить персонажа</button>
+      <div class="setup-error" id="setup-error"></div>
+
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--line)">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:8px">Уже подключены? Выберите себя:</p>
+        <div id="quick-login-list" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
     </div>
   </div>
 
-  <!-- GAME SCREEN (hidden until login) -->
+  <!-- GAME SCREEN -->
   <div id="game-screen" style="display:none">
     <div class="page-hdr">
       <h2 id="page-title">Персонажи</h2>
-      <div class="hdr-stats">
-        <div class="coin-badge"><span class="coin-icon">🪙</span><span id="my-coins">0</span></div>
-        <div class="level-badge">⚡ Уровень <span id="my-level">1</span></div>
-        <button class="logout-btn" onclick="logout()">Выйти</button>
-      </div>
+      <div class="hdr-stats" id="hdr-stats"></div>
     </div>
 
     <div class="tabs">
       <button class="tab-btn active" onclick="switchTab('all',this)">Все персонажи</button>
       <button class="tab-btn" onclick="switchTab('my',this)">Мой кабинет</button>
-      <button class="tab-btn" onclick="switchTab('shop',this)">Магазин</button>
+      <button class="tab-btn" onclick="switchTab('shop',this)">Награды</button>
     </div>
 
     <!-- TAB: All characters -->
     <div id="tab-all" class="tab-pane active">
-      <div class="chars-grid" id="chars-grid"></div>
+      <div class="chars-grid" id="chars-grid">
+        <div class="loading"><div class="spinner"></div>Загрузка персонажей...</div>
+      </div>
     </div>
 
     <!-- TAB: My character -->
     <div id="tab-my" class="tab-pane">
-      <div class="my-char-section">
-        <div>
-          <div class="my-char-card" id="my-char-card"></div>
-        </div>
-        <div>
-          <div class="earnings-section">
-            <div class="earnings-card">
-              <h3>Как заработать монеты</h3>
-              <table class="earnings-table">
-                <thead><tr><th>Действие</th><th>Награда</th></tr></thead>
-                <tbody>
-                  <tr><td>Новый лид (заявка)</td><td class="earn-plus">+5 🪙</td></tr>
-                  <tr><td>Закрытая сделка</td><td class="earn-plus">+50 🪙</td></tr>
-                  <tr><td>Каждые 100 000 ₸ выручки</td><td class="earn-plus">+100 🪙</td></tr>
-                  <tr><td>Топ-1 менеджер дня</td><td class="earn-plus">+200 🪙</td></tr>
-                  <tr><td>Конверсия > 30%</td><td class="earn-plus">+150 🪙</td></tr>
-                </tbody>
-              </table>
-            </div>
+      <div class="my-section">
+        <div><div class="my-card" id="my-card"></div></div>
+        <div class="right-panel">
+          <div class="info-card">
+            <h3>💰 Как заработать</h3>
+            <table class="earn-table">
+              <thead><tr><th>Действие</th><th>Награда</th></tr></thead>
+              <tbody>
+                <tr><td>Новый лид (заявка)</td><td class="earn-plus">+XP и золото в Habitica</td></tr>
+                <tr><td>Закрытая сделка</td><td class="earn-plus">+XP и золото (средняя задача)</td></tr>
+                <tr><td>Крупная сделка (500к+)</td><td class="earn-plus">+XP и золото (сложная задача)</td></tr>
+                <tr><td>Топ-1 менеджер дня</td><td class="earn-plus">+Бонусная задача</td></tr>
+              </tbody>
+            </table>
           </div>
-
-          <div class="earnings-section">
-            <div class="earnings-card">
-              <h3>История операций</h3>
-              <table class="earnings-table">
-                <thead><tr><th>Дата</th><th>Описание</th><th>Сумма</th></tr></thead>
-                <tbody id="history-body"></tbody>
-              </table>
-            </div>
+          <div id="my-pets-section" class="info-card" style="display:none">
+            <h3>🐾 Мои питомцы</h3>
+            <div class="pets-grid" id="my-pets-grid"></div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- TAB: Shop -->
+    <!-- TAB: Rewards / Lead shop -->
     <div id="tab-shop" class="tab-pane">
-      <div class="shop-section">
-        <div class="shop-title">Магазин</div>
-        <div class="shop-sub">Потратьте монеты на прокачку персонажа или покупку лидов</div>
-        <div class="shop-cats" id="shop-cats"></div>
-        <div class="shop-grid" id="shop-grid"></div>
+      <div class="tasks-section" id="reward-tasks" style="margin-bottom:20px">
+        <h3>⚔️ Задачи из Habitica</h3>
+        <div class="task-list" id="task-list">
+          <div class="loading"><div class="spinner"></div>Загрузка задач...</div>
+        </div>
       </div>
       <div class="lead-shop">
-        <h3>Купить лиды</h3>
-        <p>Потратьте монеты чтобы получить дополнительных клиентов</p>
+        <h3>📋 Купить лиды за золото</h3>
+        <p>Потратьте золото Habitica чтобы получить дополнительных клиентов</p>
         <div class="lead-cards" id="lead-cards"></div>
       </div>
     </div>
@@ -439,312 +436,196 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 </div>
 </div>
 
-<!-- ═══ TOAST ═══ -->
 <div class="toast" id="toast"></div>
 
 <script>
 // ═══════════════════ CONFIG ═══════════════════════════════════════
 const SUPABASE_URL = 'https://bdyakgmeibpdkisbiykt.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkeWFrZ21laWJwZGtpc2JpeWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTQzOTMsImV4cCI6MjA4Nzc5MDM5M30.nA187grJR6XFQRmTP6WOM-6-1dZK1EzYNNP2JH9aAMg';
-
-// ─── AVATAR SKINS (backgrounds) ───
-const SKINS = [
-  { id:'default',  icon:'🧑‍💼', bg:'linear-gradient(135deg,#6366f1,#818cf8)', name:'Стандарт', price:0, desc:'Базовый скин' },
-  { id:'fire',     icon:'🔥', bg:'linear-gradient(135deg,#ef4444,#f97316)', name:'Огненный', price:300, desc:'Горячий продавец' },
-  { id:'ice',      icon:'❄️', bg:'linear-gradient(135deg,#3b82f6,#06b6d4)', name:'Ледяной',  price:300, desc:'Хладнокровный закрыватель' },
-  { id:'gold',     icon:'👑', bg:'linear-gradient(135deg,#eab308,#f59e0b)', name:'Золотой',  price:500, desc:'Золотой продавец' },
-  { id:'emerald',  icon:'💎', bg:'linear-gradient(135deg,#10b981,#059669)', name:'Изумрудный', price:500, desc:'Элитный менеджер' },
-  { id:'shadow',   icon:'🥷', bg:'linear-gradient(135deg,#1e1b4b,#312e81)', name:'Теневой',  price:700, desc:'Тихий закрыватель' },
-  { id:'rainbow',  icon:'🌈', bg:'linear-gradient(135deg,#ec4899,#8b5cf6,#3b82f6,#10b981)', name:'Радужный', price:1000, desc:'Легендарный скин' },
-];
-
-// ─── HATS ───
-const HATS = [
-  { id:'crown',    icon:'👑', name:'Корона',     price:200, desc:'Корона лидера' },
-  { id:'tophat',   icon:'🎩', name:'Цилиндр',    price:150, desc:'Классика стиля' },
-  { id:'cap',      icon:'🧢', name:'Кепка',      price:100, desc:'Спортивный стиль' },
-  { id:'cowboy',   icon:'🤠', name:'Ковбойская', price:250, desc:'Дикий запад' },
-  { id:'wizard',   icon:'🧙', name:'Маг',        price:400, desc:'Волшебник продаж' },
-  { id:'helmet',   icon:'⛑️', name:'Каска',      price:180, desc:'Безопасность прежде всего' },
-];
-
-// ─── PETS ───
-const PETS = [
-  { id:'cat',      icon:'🐱', name:'Кот',        price:200, desc:'Мурлыкающий помощник' },
-  { id:'dog',      icon:'🐕', name:'Пёс',        price:200, desc:'Верный друг' },
-  { id:'dragon',   icon:'🐉', name:'Дракон',     price:600, desc:'Огнедышащий страж' },
-  { id:'unicorn',  icon:'🦄', name:'Единорог',   price:500, desc:'Магический компаньон' },
-  { id:'eagle',    icon:'🦅', name:'Орёл',       price:350, desc:'Зоркий глаз' },
-  { id:'fox',      icon:'🦊', name:'Лиса',       price:300, desc:'Хитрый помощник' },
-];
-
-// ─── AURAS ───
-const AURAS = [
-  { id:'fire',     icon:'🔴', name:'Огонь',     price:400, desc:'Пламенная аура', css:'aura-fire' },
-  { id:'ice',      icon:'🔵', name:'Лёд',       price:400, desc:'Ледяная аура', css:'aura-ice' },
-  { id:'gold',     icon:'🟡', name:'Золото',    price:600, desc:'Золотое сияние', css:'aura-gold' },
-  { id:'emerald',  icon:'🟢', name:'Изумруд',   price:500, desc:'Изумрудное свечение', css:'aura-emerald' },
-  { id:'purple',   icon:'🟣', name:'Аметист',   price:500, desc:'Фиолетовая энергия', css:'aura-purple' },
-];
-
-// ─── LEAD PACKAGES ───
-const LEAD_PACKAGES = [
-  { id:'lead1', count:1,  price:500,  icon:'📋', title:'1 лид',   desc:'Один дополнительный клиент' },
-  { id:'lead3', count:3,  price:1200, icon:'📦', title:'3 лида',  desc:'Пакет из трёх клиентов' },
-  { id:'lead5', count:5,  price:1800, icon:'🎁', title:'5 лидов', desc:'Выгодный пакет клиентов' },
-];
-
-// ─── XP TABLE ───
-function xpForLevel(lvl){ return lvl * 100; }
-function totalXpForLevel(lvl){ let s=0; for(let i=1;i<lvl;i++) s+=xpForLevel(i); return s; }
+const HABITICA_BASE = 'https://habitica.com/api/v3';
+const HABITICA_CLIENT = 'weglow-sales-dashboard';
 
 // ═══════════════════ STATE ═══════════════════════════════════════
 let MANAGERS = {};
 let MGR_TO_ROP = {};
-let GAME_DATA = {};  // { managerName: { coins, level, xp, skin, hat, pet, aura, purchases, history, leadsBought } }
-let currentUser = localStorage.getItem('game_user') || null;
+let HABITICA_ACCOUNTS = {};  // { mgrName: { uid, token, profile: {...} } }
+let currentUser = null;
 
-// ─── MANAGER COLORS ───
-const MGR_COLORS = [
-  'linear-gradient(135deg,#6366f1,#818cf8)',
-  'linear-gradient(135deg,#3b82f6,#60a5fa)',
-  'linear-gradient(135deg,#10b981,#34d399)',
-  'linear-gradient(135deg,#f59e0b,#fbbf24)',
-  'linear-gradient(135deg,#ef4444,#f87171)',
-  'linear-gradient(135deg,#8b5cf6,#a78bfa)',
-  'linear-gradient(135deg,#ec4899,#f472b6)',
-  'linear-gradient(135deg,#14b8a6,#2dd4bf)',
-  'linear-gradient(135deg,#f97316,#fb923c)',
-  'linear-gradient(135deg,#06b6d4,#22d3ee)',
-];
+// ═══════════════════ HABITICA API ════════════════════════════════
+function habHeaders(uid, token) {
+  return {
+    'Content-Type': 'application/json',
+    'x-api-user': uid,
+    'x-api-key': token,
+    'x-client': HABITICA_CLIENT
+  };
+}
 
-// ═══════════════════ SUPABASE HELPERS ════════════════════════════
+async function habGet(endpoint, uid, token) {
+  const r = await fetch(`${HABITICA_BASE}${endpoint}`, { headers: habHeaders(uid, token) });
+  if (!r.ok) throw new Error(`Habitica ${r.status}`);
+  const j = await r.json();
+  return j.data;
+}
+
+async function habPost(endpoint, uid, token, body = {}) {
+  const r = await fetch(`${HABITICA_BASE}${endpoint}`, {
+    method: 'POST',
+    headers: habHeaders(uid, token),
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error(`Habitica ${r.status}`);
+  const j = await r.json();
+  return j.data;
+}
+
+// ─── Get user profile ───
+async function getHabProfile(uid, token) {
+  const user = await habGet('/user', uid, token);
+  return {
+    name: user.profile?.name || user.auth?.local?.username || 'Герой',
+    class: user.stats?.class || 'warrior',
+    level: user.stats?.lvl || 1,
+    hp: user.stats?.hp || 0,
+    maxHp: user.stats?.maxHealth || 50,
+    xp: user.stats?.exp || 0,
+    maxXp: user.stats?.toNextLevel || 100,
+    mp: user.stats?.mp || 0,
+    maxMp: user.stats?.maxMP || 50,
+    gp: user.stats?.gp || 0,
+    str: user.stats?.str || 0,
+    int: user.stats?.int || 0,
+    con: user.stats?.con || 0,
+    per: user.stats?.per || 0,
+    costume: user.items?.gear?.equipped || {},
+    pets: user.items?.pets || {},
+    mounts: user.items?.mounts || {},
+    avatar: `https://habitica-assets.s3.amazonaws.com/mobileApp/images/avatar-${uid}.png`
+  };
+}
+
+// ─── Avatar image URL (pixel sprite) ───
+function avatarUrl(uid) {
+  return `https://habitica.com/export/avatar-${uid}.png`;
+}
+
+// ─── Score a task ───
+async function scoreTask(taskId, direction, uid, token) {
+  return habPost(`/tasks/${taskId}/score/${direction}`, uid, token);
+}
+
+// ─── Get tasks ───
+async function getTasks(uid, token) {
+  return habGet('/tasks/user', uid, token);
+}
+
+// ─── Create a todo task (for sales rewards) ───
+async function createSalesTodo(title, difficulty, uid, token) {
+  return habPost('/tasks/user', uid, token, {
+    text: title,
+    type: 'todo',
+    priority: difficulty  // 0.1=trivial, 1=easy, 1.5=medium, 2=hard
+  });
+}
+
+// ═══════════════════ SUPABASE ════════════════════════════════════
 async function loadData() {
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data,updated_at`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data`, {
       headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
     });
-    if (!res.ok) throw new Error(res.status);
     const rows = await res.json();
     if (rows?.[0]?.data) {
       const d = rows[0].data;
       if (d.MANAGERS) MANAGERS = d.MANAGERS;
       if (d.MGR_TO_ROP) MGR_TO_ROP = d.MGR_TO_ROP;
-      if (d.GAME_DATA) GAME_DATA = d.GAME_DATA;
+      if (d.HABITICA_ACCOUNTS) HABITICA_ACCOUNTS = d.HABITICA_ACCOUNTS;
     }
-  } catch(e) {
-    console.warn('Load error:', e);
-  }
+  } catch(e) { console.warn('Supabase load:', e); }
 }
 
-async function saveGameData() {
+async function saveAccounts() {
   try {
-    // Read current data first, then patch GAME_DATA
     const res = await fetch(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data`, {
       headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
     });
     const rows = await res.json();
     const current = rows?.[0]?.data || {};
-    current.GAME_DATA = GAME_DATA;
-
+    current.HABITICA_ACCOUNTS = HABITICA_ACCOUNTS;
     await fetch(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1`, {
       method: 'PATCH',
       headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal'
+        'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json', 'Prefer': 'return=minimal'
       },
       body: JSON.stringify({ data: current })
     });
-  } catch(e) {
-    console.warn('Save error:', e);
-  }
+  } catch(e) { console.warn('Save error:', e); }
 }
 
-// ═══════════════════ COIN CALCULATION ════════════════════════════
-function calcCoins(mgrName) {
-  let coins = 0;
-  const now = new Date();
-  const mm = String(now.getMonth()+1).padStart(2,'0');
-  const yyyy = now.getFullYear();
-
-  const { daily } = getMgrData(mgrName);
-
-  // Count current month from daily data
-  let totalLeads = 0, totalDeals = 0, totalBudget = 0;
-  for (const [date, vals] of Object.entries(daily)) {
-    const parts = date.split('.');
-    if (parts.length === 3) {
-      const dm = parts[1], dy = parts[2];
-      if (dm === mm && dy === String(yyyy)) {
-        totalLeads  += (vals[0] || 0);
-        totalDeals  += (vals[1] || 0);
-        totalBudget += (vals[2] || 0);
-      }
-    }
-  }
-
-  // Calculate coins from performance
-  coins += totalLeads * 5;       // 5 coins per lead
-  coins += totalDeals * 50;      // 50 coins per deal
-  coins += Math.floor(totalBudget / 100000) * 100;  // 100 coins per 100k
-
-  // Bonus: conv > 30%
-  if (totalLeads > 0 && (totalDeals/totalLeads*100) > 30) {
-    coins += 150;
-  }
-
-  return { coins, totalLeads, totalDeals, totalBudget };
-}
-
-function calcAllTopManagers() {
-  const now = new Date();
-  const dd = String(now.getDate()).padStart(2,'0');
-  const mm = String(now.getMonth()+1).padStart(2,'0');
-  const yyyy = now.getFullYear();
-  const todayKey = `${dd}.${mm}.${yyyy}`;
-
-  let best = { name: null, budget: 0 };
-  for (const prod of Object.keys(MANAGERS)) {
-    const list = MANAGERS[prod] || {};
-    for (const idx of Object.keys(list)) {
-      const mgr = list[idx];
-      if (!mgr || !mgr.name) continue;
-      const vals = mgr.daily?.[todayKey];
-      if (vals && vals[2] > best.budget) {
-        best = { name: mgr.name, budget: vals[2] };
-      }
-    }
-  }
-  return best.name;
-}
-
-// ═══════════════════ GAME DATA INIT ══════════════════════════════
-function ensureManagerGameData(name) {
-  if (!GAME_DATA[name]) {
-    GAME_DATA[name] = {
-      coins: 0, level: 1, xp: 0,
-      skin: 'default', hat: null, pet: null, aura: null,
-      purchases: [], history: [], leadsBought: 0,
-      lastCalcMonth: null
-    };
-  }
-  return GAME_DATA[name];
-}
-
-function recalcCoins(name) {
-  const gd = ensureManagerGameData(name);
-  const now = new Date();
-  const monthKey = `${now.getMonth()+1}.${now.getFullYear()}`;
-
-  const { coins: earned } = calcCoins(name);
-
-  // Calc spent coins from history
-  let spent = 0;
-  (gd.history || []).forEach(h => { if (h.amount < 0) spent += Math.abs(h.amount); });
-
-  // Total coins = earned - spent
-  const total = Math.max(0, earned - spent);
-  gd.coins = total;
-
-  // XP = earned coins (cumulative)
-  gd.xp = earned;
-
-  // Level calc
-  let lvl = 1;
-  let xpNeeded = xpForLevel(1);
-  let xpAccum = earned;
-  while (xpAccum >= xpNeeded && lvl < 99) {
-    xpAccum -= xpNeeded;
-    lvl++;
-    xpNeeded = xpForLevel(lvl);
-  }
-  gd.level = lvl;
-  gd.xpInLevel = xpAccum;
-  gd.xpNeeded = xpNeeded;
-
-  // Top-1 bonus
-  const topMgr = calcAllTopManagers();
-  if (topMgr === name) gd.coins += 200;
-
-  return gd;
-}
-
-// ═══════════════════ GET ALL MANAGER NAMES ═══════════════════════
+// ═══════════════════ MANAGER HELPERS ═════════════════════════════
 function getAllManagerNames() {
   const names = new Set();
   for (const prod of Object.keys(MANAGERS)) {
     const list = MANAGERS[prod] || {};
     for (const idx of Object.keys(list)) {
-      const mgr = list[idx];
-      if (mgr && mgr.name) names.add(mgr.name);
+      if (list[idx]?.name) names.add(list[idx].name);
     }
   }
   return [...names].sort();
 }
 
-function getMgrData(mgrName) {
-  // Returns { totalLeads, totalDeals, totalBudget, daily } aggregated across products
-  let totalLeads=0, totalDeals=0, totalBudget=0;
-  const daily = {};
-  for (const prod of Object.keys(MANAGERS)) {
-    const list = MANAGERS[prod] || {};
-    for (const idx of Object.keys(list)) {
-      const mgr = list[idx];
-      if (mgr && mgr.name === mgrName) {
-        totalLeads  += (mgr.leads || 0);
-        totalDeals  += (mgr.deals || 0);
-        totalBudget += (mgr.budget || 0);
-        if (mgr.daily) {
-          for (const [d, v] of Object.entries(mgr.daily)) {
-            if (!daily[d]) daily[d] = [0,0,0];
-            daily[d][0] += (v[0]||0);
-            daily[d][1] += (v[1]||0);
-            daily[d][2] += (v[2]||0);
-          }
-        }
-      }
-    }
+function getRop(name) { return MGR_TO_ROP[name] || ''; }
+
+const CLASS_NAMES = { warrior: 'Воин', rogue: 'Разбойник', healer: 'Целитель', wizard: 'Маг' };
+
+// ═══════════════════ CONNECT HABITICA ════════════════════════════
+async function connectHabitica() {
+  const btn = document.getElementById('setup-btn');
+  const err = document.getElementById('setup-error');
+  const mgr = document.getElementById('setup-mgr').value;
+  const uid = document.getElementById('setup-uid').value.trim();
+  const token = document.getElementById('setup-token').value.trim();
+
+  err.style.display = 'none';
+  if (!mgr) { err.textContent = 'Выберите менеджера'; err.style.display = 'block'; return; }
+  if (!uid || !token) { err.textContent = 'Введите User ID и API Token'; err.style.display = 'block'; return; }
+
+  btn.disabled = true; btn.textContent = 'Проверяем...';
+  try {
+    const profile = await getHabProfile(uid, token);
+    HABITICA_ACCOUNTS[mgr] = { uid, token, connected: true };
+    await saveAccounts();
+    currentUser = mgr;
+    localStorage.setItem('game_user', mgr);
+    showGame();
+    toast('Habitica подключена! Персонаж: ' + profile.name, 'success');
+  } catch(e) {
+    err.textContent = 'Ошибка подключения. Проверьте User ID и API Token.';
+    err.style.display = 'block';
+    console.error(e);
   }
-  return { totalLeads, totalDeals, totalBudget, daily };
-}
-
-function getRopForManager(name) {
-  if (MGR_TO_ROP[name]) return MGR_TO_ROP[name];
-  return 'Без РОП';
-}
-
-// ═══════════════════ RENDER: LOGIN ═══════════════════════════════
-function renderLogin() {
-  const names = getAllManagerNames();
-  const list = document.getElementById('login-list');
-  list.innerHTML = names.map((name, i) => {
-    const initial = name.charAt(0).toUpperCase();
-    const bg = MGR_COLORS[i % MGR_COLORS.length];
-    return `<button class="login-btn" onclick="login('${name.replace(/'/g,"\\'")}')">
-      <div class="avatar-mini" style="background:${bg}">${initial}</div>
-      <span>${name}</span>
-    </button>`;
-  }).join('');
+  btn.disabled = false; btn.textContent = 'Подключить персонажа';
 }
 
 // ═══════════════════ LOGIN / LOGOUT ══════════════════════════════
-function login(name) {
+function quickLogin(name) {
   currentUser = name;
   localStorage.setItem('game_user', name);
-  recalcCoins(name);
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('game-screen').style.display = 'block';
-  renderAll();
-  saveGameData();
+  showGame();
 }
 
 function logout() {
   currentUser = null;
   localStorage.removeItem('game_user');
-  document.getElementById('login-screen').style.display = '';
+  document.getElementById('setup-screen').style.display = '';
   document.getElementById('game-screen').style.display = 'none';
+}
+
+function showGame() {
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('game-screen').style.display = 'block';
+  renderAll();
 }
 
 // ═══════════════════ TABS ════════════════════════════════════════
@@ -753,259 +634,318 @@ function switchTab(tab, btn) {
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('tab-'+tab).classList.add('active');
+  if (tab === 'shop') renderTasks();
 }
 
 // ═══════════════════ RENDER ALL ══════════════════════════════════
-function renderAll() {
+async function renderAll() {
   if (!currentUser) return;
-  const gd = recalcCoins(currentUser);
-
-  // Header stats
-  document.getElementById('my-coins').textContent = gd.coins.toLocaleString('ru-RU');
-  document.getElementById('my-level').textContent = gd.level;
-
-  renderAllChars();
-  renderMyChar();
-  renderShop();
-  renderLeadShop();
-  renderHistory();
+  await Promise.all([renderAllChars(), renderMyChar(), renderLeadShop()]);
 }
 
-// ═══════════════════ RENDER: ALL CHARACTERS ══════════════════════
-function renderAllChars() {
-  const names = getAllManagerNames();
+// ═══════════════════ RENDER: ALL CHARS ═══════════════════════════
+async function renderAllChars() {
   const grid = document.getElementById('chars-grid');
+  grid.innerHTML = '<div class="loading"><div class="spinner"></div>Загрузка персонажей...</div>';
 
-  grid.innerHTML = names.map((name, i) => {
-    const gd = recalcCoins(name);
-    const skin = SKINS.find(s => s.id === gd.skin) || SKINS[0];
-    const hat = HATS.find(h => h.id === gd.hat);
-    const pet = PETS.find(p => p.id === gd.pet);
-    const aura = AURAS.find(a => a.id === gd.aura);
-    const rop = getRopForManager(name);
-    const isMe = name === currentUser;
-    const pct = gd.xpNeeded > 0 ? Math.min(100, (gd.xpInLevel||0)/gd.xpNeeded*100) : 0;
+  const connected = Object.entries(HABITICA_ACCOUNTS).filter(([,v]) => v.connected);
+  if (connected.length === 0) {
+    grid.innerHTML = '<div class="loading">Пока никто не подключил Habitica</div>';
+    return;
+  }
 
-    return `<div class="char-card ${isMe?'is-me':''}">
-      <div class="char-avatar" style="background:${skin.bg}">
-        ${aura ? `<div class="equip-aura ${aura.css}"></div>` : ''}
-        <span style="position:relative;z-index:2">${skin.icon}</span>
-        ${hat ? `<span class="equip-hat">${hat.icon}</span>` : ''}
-        ${pet ? `<span class="equip-pet">${pet.icon}</span>` : ''}
+  const cards = [];
+  for (const [name, acc] of connected) {
+    try {
+      const p = await getHabProfile(acc.uid, acc.token);
+      const rop = getRop(name);
+      const isMe = name === currentUser;
+      const hpPct = p.maxHp > 0 ? (p.hp / p.maxHp * 100) : 0;
+      const xpPct = p.maxXp > 0 ? (p.xp / p.maxXp * 100) : 0;
+      const mpPct = p.maxMp > 0 ? (p.mp / p.maxMp * 100) : 0;
+
+      cards.push(`<div class="char-card ${isMe?'is-me':''}">
+        <div class="char-avatar-wrap">
+          <img src="${avatarUrl(acc.uid)}" alt="${name}" onerror="this.src='https://habitica.com/static/img/stable/head_warrior_5.png'">
+        </div>
+        <div class="char-name">${name}</div>
+        <div class="char-class">${CLASS_NAMES[p.class] || p.class}</div>
+        ${rop ? `<div class="char-rop">${rop}</div>` : ''}
+        <div class="char-level">⚡ Уровень ${p.level}</div>
+        <div class="char-bars">
+          <div class="bar-row bar-hp">
+            <span class="bar-label" style="color:#ef4444">HP</span>
+            <div class="bar-track"><div class="bar-fill" style="width:${hpPct}%"></div></div>
+            <span class="bar-val">${Math.round(p.hp)}/${p.maxHp}</span>
+          </div>
+          <div class="bar-row bar-xp">
+            <span class="bar-label" style="color:#eab308">XP</span>
+            <div class="bar-track"><div class="bar-fill" style="width:${xpPct}%"></div></div>
+            <span class="bar-val">${Math.round(p.xp)}/${p.maxXp}</span>
+          </div>
+          <div class="bar-row bar-mp">
+            <span class="bar-label" style="color:#3b82f6">MP</span>
+            <div class="bar-track"><div class="bar-fill" style="width:${mpPct}%"></div></div>
+            <span class="bar-val">${Math.round(p.mp)}/${p.maxMp}</span>
+          </div>
+        </div>
+        <div class="char-gold">🪙 ${Math.floor(p.gp).toLocaleString('ru-RU')} золота</div>
+      </div>`);
+    } catch(e) {
+      cards.push(`<div class="char-card"><div class="char-name">${name}</div><div style="color:var(--muted);font-size:12px;margin-top:8px">Ошибка загрузки</div></div>`);
+    }
+  }
+  grid.innerHTML = cards.join('');
+}
+
+// ═══════════════════ RENDER: MY CHAR ═════════════════════════════
+async function renderMyChar() {
+  const card = document.getElementById('my-card');
+  const acc = HABITICA_ACCOUNTS[currentUser];
+  if (!acc) { card.innerHTML = '<div class="loading">Подключите Habitica</div>'; return; }
+
+  card.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    const p = await getHabProfile(acc.uid, acc.token);
+    const rop = getRop(currentUser);
+    const hpPct = p.maxHp > 0 ? (p.hp / p.maxHp * 100) : 0;
+    const xpPct = p.maxXp > 0 ? (p.xp / p.maxXp * 100) : 0;
+    const mpPct = p.maxMp > 0 ? (p.mp / p.maxMp * 100) : 0;
+
+    // Update header stats
+    document.getElementById('hdr-stats').innerHTML = `
+      <div class="stat-badge badge-gold">🪙 ${Math.floor(p.gp).toLocaleString('ru-RU')}</div>
+      <div class="stat-badge badge-lvl">⚡ Lvl ${p.level}</div>
+      <div class="stat-badge badge-hp">❤️ ${Math.round(p.hp)}</div>
+      <div class="stat-badge badge-xp">⭐ ${Math.round(p.xp)} XP</div>
+      <button class="logout-btn" onclick="logout()">Выйти</button>
+    `;
+
+    card.innerHTML = `
+      <div class="my-avatar-wrap">
+        <img src="${avatarUrl(acc.uid)}" alt="${currentUser}" onerror="this.src='https://habitica.com/static/img/stable/head_warrior_5.png'">
       </div>
-      <div class="char-name">${name}</div>
-      <div class="char-rop">${rop}</div>
-      <div class="char-level">⚡ Lvl ${gd.level}</div>
-      <div class="xp-bar"><div class="xp-fill" style="width:${pct}%"></div></div>
-      <div class="char-coins">🪙 ${gd.coins.toLocaleString('ru-RU')}</div>
-    </div>`;
-  }).join('');
-}
+      <div class="my-name">${currentUser}</div>
+      <div class="my-class">${CLASS_NAMES[p.class] || p.class} · ${p.name}</div>
+      ${rop ? `<div class="my-rop">${rop}</div>` : ''}
 
-// ═══════════════════ RENDER: MY CHARACTER ════════════════════════
-function renderMyChar() {
-  const gd = GAME_DATA[currentUser];
-  if (!gd) return;
-  const skin = SKINS.find(s => s.id === gd.skin) || SKINS[0];
-  const hat = HATS.find(h => h.id === gd.hat);
-  const pet = PETS.find(p => p.id === gd.pet);
-  const aura = AURAS.find(a => a.id === gd.aura);
-  const rop = getRopForManager(currentUser);
-  const pct = gd.xpNeeded > 0 ? Math.min(100, (gd.xpInLevel||0)/gd.xpNeeded*100) : 0;
-  const { totalLeads, totalDeals, totalBudget } = calcCoins(currentUser);
+      <div class="my-stats">
+        <div class="my-stat"><div class="val" style="color:#92400e">${Math.floor(p.gp).toLocaleString('ru-RU')}</div><div class="lbl">Золото 🪙</div></div>
+        <div class="my-stat"><div class="val" style="color:var(--green)">${p.level}</div><div class="lbl">Уровень ⚡</div></div>
+        <div class="my-stat"><div class="val">${p.str}</div><div class="lbl">Сила 💪</div></div>
+        <div class="my-stat"><div class="val">${p.int}</div><div class="lbl">Интеллект 🧠</div></div>
+        <div class="my-stat"><div class="val">${p.con}</div><div class="lbl">Стойкость 🛡️</div></div>
+        <div class="my-stat"><div class="val">${p.per}</div><div class="lbl">Восприятие 👁️</div></div>
+      </div>
 
-  const card = document.getElementById('my-char-card');
-  card.innerHTML = `
-    <div class="my-avatar-big" style="background:${skin.bg}">
-      ${aura ? `<div class="equip-aura ${aura.css}"></div>` : ''}
-      <span style="position:relative;z-index:2">${skin.icon}</span>
-      ${hat ? `<span class="equip-hat">${hat.icon}</span>` : ''}
-      ${pet ? `<span class="equip-pet">${pet.icon}</span>` : ''}
-    </div>
-    <div class="my-name">${currentUser}</div>
-    <div class="my-rop">${rop}</div>
-    <div class="my-stats">
-      <div class="my-stat"><div class="val">${gd.coins.toLocaleString('ru-RU')}</div><div class="lbl">Монеты 🪙</div></div>
-      <div class="my-stat"><div class="val">${gd.level}</div><div class="lbl">Уровень ⚡</div></div>
-      <div class="my-stat"><div class="val">${totalDeals}</div><div class="lbl">Сделки</div></div>
-      <div class="my-stat"><div class="val">${totalLeads}</div><div class="lbl">Лиды</div></div>
-    </div>
-    <div class="my-xp-section">
-      <div class="my-xp-label"><span>XP ${gd.xpInLevel||0} / ${gd.xpNeeded}</span><span>Уровень ${gd.level} → ${gd.level+1}</span></div>
-      <div class="my-xp-bar"><div class="my-xp-fill" style="width:${pct}%"></div></div>
-    </div>
-    <div class="equipped-section">
-      <div class="equipped-title">Экипировка</div>
-      <div class="equipped-slots">
-        <div class="eq-slot ${gd.skin!=='default'?'filled':''}" onclick="switchTab('shop',document.querySelectorAll('.tab-btn')[2])">
-          <span class="eq-icon">${skin.icon}</span>
-          <span class="eq-label">Скин</span>
+      <div class="my-bars">
+        <div class="my-bar-row">
+          <span class="my-bar-label" style="color:#ef4444">❤️</span>
+          <div class="my-bar-track"><div class="my-bar-fill" style="width:${hpPct}%;background:linear-gradient(90deg,#ef4444,#f87171)"></div></div>
+          <span class="my-bar-val">${Math.round(p.hp)} / ${p.maxHp}</span>
         </div>
-        <div class="eq-slot ${gd.hat?'filled':''}" onclick="switchTab('shop',document.querySelectorAll('.tab-btn')[2])">
-          <span class="eq-icon">${hat ? hat.icon : '🎩'}</span>
-          <span class="eq-label">Шляпа</span>
-          ${gd.hat ? `<button class="eq-remove" onclick="event.stopPropagation();unequip('hat')">×</button>` : ''}
+        <div class="my-bar-row">
+          <span class="my-bar-label" style="color:#eab308">⭐</span>
+          <div class="my-bar-track"><div class="my-bar-fill" style="width:${xpPct}%;background:linear-gradient(90deg,#eab308,#fbbf24)"></div></div>
+          <span class="my-bar-val">${Math.round(p.xp)} / ${p.maxXp}</span>
         </div>
-        <div class="eq-slot ${gd.pet?'filled':''}" onclick="switchTab('shop',document.querySelectorAll('.tab-btn')[2])">
-          <span class="eq-icon">${pet ? pet.icon : '🐾'}</span>
-          <span class="eq-label">Питомец</span>
-          ${gd.pet ? `<button class="eq-remove" onclick="event.stopPropagation();unequip('pet')">×</button>` : ''}
-        </div>
-        <div class="eq-slot ${gd.aura?'filled':''}" onclick="switchTab('shop',document.querySelectorAll('.tab-btn')[2])">
-          <span class="eq-icon">${aura ? aura.icon : '✨'}</span>
-          <span class="eq-label">Аура</span>
-          ${gd.aura ? `<button class="eq-remove" onclick="event.stopPropagation();unequip('aura')">×</button>` : ''}
+        <div class="my-bar-row">
+          <span class="my-bar-label" style="color:#3b82f6">💎</span>
+          <div class="my-bar-track"><div class="my-bar-fill" style="width:${mpPct}%;background:linear-gradient(90deg,#3b82f6,#60a5fa)"></div></div>
+          <span class="my-bar-val">${Math.round(p.mp)} / ${p.maxMp}</span>
         </div>
       </div>
-    </div>`;
+    `;
+
+    // Pets
+    const petKeys = Object.keys(p.pets || {}).filter(k => p.pets[k] > 0);
+    if (petKeys.length > 0) {
+      const petsSection = document.getElementById('my-pets-section');
+      petsSection.style.display = '';
+      const petsGrid = document.getElementById('my-pets-grid');
+      petsGrid.innerHTML = petKeys.slice(0, 30).map(k => {
+        const petName = k.replace(/-/g, ' ');
+        return `<div class="pet-item">
+          <img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/Pet-${k}.png" alt="${petName}" onerror="this.style.display='none'">
+          <div class="pet-name">${petName}</div>
+        </div>`;
+      }).join('');
+    }
+  } catch(e) {
+    card.innerHTML = '<div class="loading" style="color:var(--red)">Ошибка загрузки профиля</div>';
+    console.error(e);
+  }
 }
 
-// ═══════════════════ UNEQUIP ═════════════════════════════════════
-function unequip(slot) {
-  const gd = GAME_DATA[currentUser];
-  if (!gd) return;
-  if (slot === 'hat') gd.hat = null;
-  if (slot === 'pet') gd.pet = null;
-  if (slot === 'aura') gd.aura = null;
-  if (slot === 'skin') gd.skin = 'default';
-  renderAll();
-  saveGameData();
-  toast('Предмет снят');
-}
+// ═══════════════════ RENDER: TASKS ═══════════════════════════════
+async function renderTasks() {
+  const list = document.getElementById('task-list');
+  const acc = HABITICA_ACCOUNTS[currentUser];
+  if (!acc) { list.innerHTML = '<div class="loading">Подключите Habitica</div>'; return; }
 
-// ═══════════════════ RENDER: SHOP ════════════════════════════════
-let shopCat = 'skins';
+  list.innerHTML = '<div class="loading"><div class="spinner"></div>Загрузка задач...</div>';
+  try {
+    const tasks = await getTasks(acc.uid, acc.token);
+    const todos = tasks.filter(t => t.type === 'todo' && !t.completed).slice(0, 15);
+    const dailies = tasks.filter(t => t.type === 'daily').slice(0, 10);
+    const habits = tasks.filter(t => t.type === 'habit').slice(0, 10);
 
-function renderShop() {
-  const cats = [
-    { id:'skins', label:'Скины', icon:'🎨' },
-    { id:'hats', label:'Шляпы', icon:'🎩' },
-    { id:'pets', label:'Питомцы', icon:'🐾' },
-    { id:'auras', label:'Ауры', icon:'✨' },
-  ];
-
-  document.getElementById('shop-cats').innerHTML = cats.map(c =>
-    `<button class="shop-cat ${shopCat===c.id?'active':''}" onclick="shopCat='${c.id}';renderShop()">${c.icon} ${c.label}</button>`
-  ).join('');
-
-  const gd = GAME_DATA[currentUser];
-  let items = [];
-  let slotKey = '';
-
-  if (shopCat === 'skins')  { items = SKINS; slotKey = 'skin'; }
-  if (shopCat === 'hats')   { items = HATS; slotKey = 'hat'; }
-  if (shopCat === 'pets')   { items = PETS; slotKey = 'pet'; }
-  if (shopCat === 'auras')  { items = AURAS; slotKey = 'aura'; }
-
-  const grid = document.getElementById('shop-grid');
-  grid.innerHTML = items.map(item => {
-    const owned = gd.purchases.includes(`${shopCat}:${item.id}`) || (shopCat==='skins' && item.id==='default');
-    const equipped = gd[slotKey] === item.id;
-    const canAfford = gd.coins >= item.price;
-
-    let badge = '';
-    if (equipped) badge = `<span class="item-badge badge-equipped">Надето</span>`;
-    else if (owned) badge = `<span class="item-badge badge-owned">Куплено</span>`;
-
-    let btn = '';
-    if (equipped) {
-      btn = `<button class="buy-btn owned-btn" disabled>Надето ✓</button>`;
-    } else if (owned) {
-      btn = `<button class="buy-btn equip-btn" onclick="equipItem('${shopCat}','${item.id}','${slotKey}')">Надеть</button>`;
-    } else {
-      btn = `<button class="buy-btn" ${!canAfford?'disabled':''} onclick="buyItem('${shopCat}','${item.id}','${slotKey}',${item.price},'${item.name}')">
-        ${canAfford ? 'Купить' : 'Недостаточно монет'}
-      </button>`;
+    if (todos.length === 0 && dailies.length === 0 && habits.length === 0) {
+      list.innerHTML = '<div class="loading">Нет задач. Создайте их в <a href="https://habitica.com" target="_blank">Habitica</a></div>';
+      return;
     }
 
-    return `<div class="shop-item ${equipped?'equipped':owned?'owned':''}">
-      ${badge}
-      <span class="item-icon">${item.icon}</span>
-      <div class="item-name">${item.name}</div>
-      <div class="item-desc">${item.desc}</div>
-      ${item.price > 0 ? `<div class="item-price">🪙 ${item.price}</div>` : `<div class="item-price free">Бесплатно</div>`}
-      ${btn}
-    </div>`;
-  }).join('');
+    const COLORS = { '-20':'#e74c3c', '-10':'#e67e22', '-1':'#f1c40f', '1':'#2ecc71', '5':'#3498db', '10':'#9b59b6' };
+    function taskColor(val) {
+      if (val < -10) return COLORS['-20'];
+      if (val < -1) return COLORS['-10'];
+      if (val < 1) return COLORS['-1'];
+      if (val < 5) return COLORS['1'];
+      if (val < 10) return COLORS['5'];
+      return COLORS['10'];
+    }
+
+    let html = '';
+
+    if (dailies.length) {
+      html += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:8px 0">Ежедневные</div>';
+      dailies.forEach(t => {
+        html += taskItem(t, 'daily');
+      });
+    }
+    if (todos.length) {
+      html += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:12px 0 8px">Задачи</div>';
+      todos.forEach(t => {
+        html += taskItem(t, 'todo');
+      });
+    }
+    if (habits.length) {
+      html += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:12px 0 8px">Привычки</div>';
+      habits.forEach(t => {
+        html += taskItem(t, 'habit');
+      });
+    }
+
+    list.innerHTML = html;
+
+    function taskItem(t, type) {
+      const col = taskColor(t.value || 0);
+      const diff = { 0.1:'Простая', 1:'Лёгкая', 1.5:'Средняя', 2:'Сложная' };
+      const isDone = type === 'daily' && t.completed;
+      return `<div class="task-item" style="border-left:3px solid ${col}">
+        <div class="task-check ${isDone?'done':''}" onclick="completeTask('${t.id}','${type}',this)" title="Выполнить">✓</div>
+        <div class="task-info">
+          <div class="task-title">${t.text}</div>
+          <div class="task-sub">${diff[t.priority]||'Средняя'} · ${type==='daily'?'Ежедневная':type==='todo'?'Задача':'Привычка'}</div>
+        </div>
+        <div class="task-reward">+XP +🪙</div>
+      </div>`;
+    }
+  } catch(e) {
+    list.innerHTML = '<div class="loading" style="color:var(--red)">Ошибка загрузки задач</div>';
+    console.error(e);
+  }
 }
 
-// ═══════════════════ RENDER: LEAD SHOP ═══════════════════════════
-function renderLeadShop() {
-  const gd = GAME_DATA[currentUser];
+// ═══════════════════ COMPLETE TASK ═══════════════════════════════
+async function completeTask(taskId, type, el) {
+  const acc = HABITICA_ACCOUNTS[currentUser];
+  if (!acc) return;
+
+  el.classList.add('done');
+  try {
+    const result = await scoreTask(taskId, 'up', acc.uid, acc.token);
+    const delta = result;
+    toast(`Задача выполнена! +XP +золото`, 'success');
+    // Refresh stats
+    renderMyChar();
+    setTimeout(() => renderTasks(), 1000);
+  } catch(e) {
+    el.classList.remove('done');
+    toast('Ошибка выполнения задачи', 'error');
+    console.error(e);
+  }
+}
+
+// ═══════════════════ LEAD SHOP ═══════════════════════════════════
+const LEAD_PACKAGES = [
+  { id:'lead1', count:1, gold:50,  icon:'📋', title:'1 лид',   desc:'Один доп. клиент' },
+  { id:'lead3', count:3, gold:120, icon:'📦', title:'3 лида',  desc:'Пакет из 3 клиентов' },
+  { id:'lead5', count:5, gold:180, icon:'🎁', title:'5 лидов', desc:'Выгодный пакет' },
+];
+
+async function renderLeadShop() {
+  const acc = HABITICA_ACCOUNTS[currentUser];
+  let gp = 0;
+  if (acc) {
+    try {
+      const p = await getHabProfile(acc.uid, acc.token);
+      gp = p.gp;
+    } catch(e) {}
+  }
+
   document.getElementById('lead-cards').innerHTML = LEAD_PACKAGES.map(pkg => {
-    const canAfford = gd.coins >= pkg.price;
+    const canAfford = gp >= pkg.gold;
     return `<div class="lead-card">
       <div class="lead-icon">${pkg.icon}</div>
       <div class="lead-title">${pkg.title}</div>
       <div class="lead-desc">${pkg.desc}</div>
-      <div class="lead-price">🪙 ${pkg.price}</div>
-      <button class="lead-buy-btn" ${!canAfford?'disabled':''} onclick="buyLead('${pkg.id}',${pkg.count},${pkg.price})">
-        ${canAfford ? 'Купить' : 'Недостаточно монет'}
+      <div class="lead-price">🪙 ${pkg.gold} золота</div>
+      <button class="lead-buy" ${!canAfford?'disabled':''} onclick="buyLead('${pkg.id}',${pkg.count},${pkg.gold})">
+        ${canAfford ? 'Купить' : 'Мало золота'}
       </button>
     </div>`;
   }).join('');
 }
 
-// ═══════════════════ RENDER: HISTORY ═════════════════════════════
-function renderHistory() {
-  const gd = GAME_DATA[currentUser];
-  const body = document.getElementById('history-body');
-  const hist = (gd.history || []).slice(-20).reverse();
+async function buyLead(id, count, gold) {
+  const acc = HABITICA_ACCOUNTS[currentUser];
+  if (!acc) return;
 
-  if (hist.length === 0) {
-    body.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px">Пока нет операций</td></tr>';
-    return;
+  try {
+    // Create a "reward" task in Habitica that costs gold
+    const reward = await habPost('/tasks/user', acc.uid, acc.token, {
+      text: `Покупка: ${count} лид(ов) — WeGlow`,
+      type: 'reward',
+      value: gold
+    });
+    // Buy the reward (deducts gold)
+    await habPost(`/tasks/${reward.id}/score/up`, acc.uid, acc.token);
+    // Clean up — delete the reward task
+    await fetch(`${HABITICA_BASE}/tasks/${reward.id}`, {
+      method: 'DELETE',
+      headers: habHeaders(acc.uid, acc.token)
+    });
+
+    toast(`+${count} лид(ов) куплено за ${gold} золота!`, 'success');
+    renderMyChar();
+    renderLeadShop();
+  } catch(e) {
+    toast('Ошибка покупки', 'error');
+    console.error(e);
   }
-
-  body.innerHTML = hist.map(h => `
-    <tr>
-      <td>${h.date || '—'}</td>
-      <td>${h.desc || '—'}</td>
-      <td class="${h.amount >= 0 ? 'earn-plus' : 'earn-minus'}">${h.amount >= 0 ? '+' : ''}${h.amount} 🪙</td>
-    </tr>
-  `).join('');
 }
 
-// ═══════════════════ BUY / EQUIP ═════════════════════════════════
-function buyItem(cat, itemId, slotKey, price, name) {
-  const gd = GAME_DATA[currentUser];
-  if (gd.coins < price) { toast('Недостаточно монет!', 'error'); return; }
+// ═══════════════════ SETUP SCREEN ════════════════════════════════
+function renderSetup() {
+  const select = document.getElementById('setup-mgr');
+  const names = getAllManagerNames();
+  select.innerHTML = '<option value="">Выберите менеджера...</option>' +
+    names.map(n => `<option value="${n}">${n}</option>`).join('');
 
-  gd.purchases.push(`${cat}:${itemId}`);
-  gd.history.push({
-    date: new Date().toLocaleDateString('ru-RU'),
-    desc: `Покупка: ${name}`,
-    amount: -price
-  });
-  gd[slotKey] = itemId;
-
-  renderAll();
-  saveGameData();
-  toast(`${name} куплено и надето!`, 'success');
-}
-
-function equipItem(cat, itemId, slotKey) {
-  const gd = GAME_DATA[currentUser];
-  gd[slotKey] = itemId;
-  renderAll();
-  saveGameData();
-  toast('Экипировка обновлена!', 'success');
-}
-
-function buyLead(pkgId, count, price) {
-  const gd = GAME_DATA[currentUser];
-  if (gd.coins < price) { toast('Недостаточно монет!', 'error'); return; }
-
-  gd.leadsBought = (gd.leadsBought || 0) + count;
-  gd.history.push({
-    date: new Date().toLocaleDateString('ru-RU'),
-    desc: `Покупка: ${count} лид(ов)`,
-    amount: -price
-  });
-
-  renderAll();
-  saveGameData();
-  toast(`+${count} лид(ов) куплено!`, 'success');
+  // Quick login for already connected
+  const quickList = document.getElementById('quick-login-list');
+  const connected = Object.entries(HABITICA_ACCOUNTS).filter(([,v]) => v.connected);
+  if (connected.length > 0) {
+    quickList.innerHTML = connected.map(([name]) => {
+      const acc = HABITICA_ACCOUNTS[name];
+      return `<button class="setup-btn" style="background:var(--green);padding:10px;font-size:13px" onclick="quickLogin('${name.replace(/'/g,"\\'")}')">
+        🎮 ${name}
+      </button>`;
+    }).join('');
+  } else {
+    quickList.innerHTML = '<div style="font-size:12px;color:var(--muted)">Ещё никто не подключился</div>';
+  }
 }
 
 // ═══════════════════ TOAST ═══════════════════════════════════════
@@ -1013,29 +953,26 @@ function toast(msg, type='') {
   const el = document.getElementById('toast');
   el.textContent = msg;
   el.className = 'toast show ' + type;
-  setTimeout(() => el.className = 'toast', 2500);
+  setTimeout(() => el.className = 'toast', 3000);
 }
 
 // ═══════════════════ INIT ════════════════════════════════════════
 async function init() {
   await loadData();
 
-  // Init game data for all managers
-  getAllManagerNames().forEach(n => ensureManagerGameData(n));
-
-  if (currentUser && getAllManagerNames().includes(currentUser)) {
-    login(currentUser);
+  const saved = localStorage.getItem('game_user');
+  if (saved && HABITICA_ACCOUNTS[saved]?.connected) {
+    currentUser = saved;
+    showGame();
   } else {
-    currentUser = null;
-    localStorage.removeItem('game_user');
-    renderLogin();
+    renderSetup();
   }
 
-  // Refresh every 60s
+  // Refresh every 2 minutes
   setInterval(async () => {
     await loadData();
     if (currentUser) renderAll();
-  }, 60000);
+  }, 120000);
 }
 
 init();
