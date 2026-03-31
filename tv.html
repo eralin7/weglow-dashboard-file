@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>WeGlow — Гонка к Плану</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 html{font-size:16px;-webkit-font-smoothing:antialiased;}
 body{
   font-family:'DM Sans',sans-serif;
-  background:#0a0e1a;
+  background:linear-gradient(160deg, #050816 0%, #0a1628 40%, #0d0f24 100%);
   color:#fff;
   min-height:100vh;
   overflow:hidden;
@@ -18,262 +18,462 @@ body{
 }
 body.cursor-visible{cursor:default;}
 
-/* ── STARFIELD ── */
-body::before{
-  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
-  background:
-    radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,.4), transparent),
-    radial-gradient(1px 1px at 30% 70%, rgba(255,255,255,.3), transparent),
-    radial-gradient(1.5px 1.5px at 50% 10%, rgba(255,255,255,.5), transparent),
-    radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,.25), transparent),
-    radial-gradient(1px 1px at 90% 80%, rgba(255,255,255,.35), transparent),
-    radial-gradient(1.5px 1.5px at 15% 55%, rgba(255,255,255,.4), transparent),
-    radial-gradient(1px 1px at 60% 90%, rgba(255,255,255,.2), transparent),
-    radial-gradient(1px 1px at 80% 15%, rgba(255,255,255,.3), transparent),
-    radial-gradient(1px 1px at 25% 35%, rgba(255,255,255,.25), transparent),
-    radial-gradient(1.5px 1.5px at 45% 60%, rgba(255,255,255,.35), transparent),
-    radial-gradient(1px 1px at 5% 85%, rgba(255,255,255,.2), transparent),
-    radial-gradient(1px 1px at 95% 50%, rgba(255,255,255,.3), transparent),
-    radial-gradient(1px 1px at 35% 5%, rgba(255,255,255,.15), transparent),
-    radial-gradient(1px 1px at 75% 65%, rgba(255,255,255,.2), transparent),
-    radial-gradient(1.5px 1.5px at 55% 45%, rgba(255,255,255,.3), transparent),
-    radial-gradient(1px 1px at 85% 25%, rgba(255,255,255,.2), transparent);
-}
-@keyframes twinkle{0%,100%{opacity:.3}50%{opacity:.8}}
-body::after{
-  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
-  background:
-    radial-gradient(1.5px 1.5px at 20% 45%, rgba(255,255,255,.5), transparent),
-    radial-gradient(1px 1px at 65% 25%, rgba(255,255,255,.4), transparent),
-    radial-gradient(1.5px 1.5px at 40% 80%, rgba(255,255,255,.3), transparent),
-    radial-gradient(1px 1px at 88% 60%, rgba(255,255,255,.35), transparent);
-  animation:twinkle 4s ease-in-out infinite;
+/* ══════════════════════════════════════════════════════
+   ANIMATED PARTICLES / STARS
+   ══════════════════════════════════════════════════════ */
+#particles-canvas{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
 }
 
-/* ── LAYOUT ── */
+/* ══════════════════════════════════════════════════════
+   CYBERPUNK GRID FLOOR (perspective)
+   ══════════════════════════════════════════════════════ */
+.cyber-grid{
+  position:fixed;bottom:0;left:0;right:0;height:60vh;z-index:0;pointer-events:none;
+  perspective:600px;overflow:hidden;
+}
+.cyber-grid-inner{
+  position:absolute;bottom:-20%;left:-10%;right:-10%;height:140%;
+  transform:rotateX(55deg);
+  background:
+    repeating-linear-gradient(90deg, rgba(99,102,241,0.06) 0, rgba(99,102,241,0.06) 1px, transparent 1px, transparent 80px),
+    repeating-linear-gradient(0deg, rgba(99,102,241,0.04) 0, rgba(99,102,241,0.04) 1px, transparent 1px, transparent 80px);
+  animation:gridScroll 8s linear infinite;
+}
+@keyframes gridScroll{
+  0%{background-position:0 0;}
+  100%{background-position:0 80px;}
+}
+
+/* ══════════════════════════════════════════════════════
+   LAYOUT
+   ══════════════════════════════════════════════════════ */
 .page{position:relative;z-index:1;display:flex;flex-direction:column;height:100vh;}
 
-/* ── HEADER ── */
+/* ══════════════════════════════════════════════════════
+   HEADER
+   ══════════════════════════════════════════════════════ */
 .header{
   display:flex;align-items:center;justify-content:space-between;
-  padding:0 40px;height:64px;flex-shrink:0;
-  background:linear-gradient(135deg, rgba(15,20,40,.95), rgba(10,14,26,.98));
-  border-bottom:1px solid rgba(255,255,255,.06);
+  padding:0 40px;height:60px;flex-shrink:0;
+  background:linear-gradient(135deg, rgba(5,8,22,.95), rgba(10,22,40,.98));
+  border-bottom:1px solid rgba(99,102,241,0.15);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
 }
 .header-title{
-  font-family:'Playfair Display',serif;font-size:24px;font-weight:700;
-  letter-spacing:1px;
-  background:linear-gradient(135deg,#fff,rgba(255,255,255,.7));
+  font-family:'Playfair Display',serif;font-size:22px;font-weight:800;
+  letter-spacing:2px;text-transform:uppercase;
+  background:linear-gradient(135deg,#fff,rgba(200,200,255,.7));
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;
 }
 .header-month{
-  font-family:'Playfair Display',serif;font-size:20px;font-weight:600;
-  opacity:.85;letter-spacing:.5px;
+  font-family:'Playfair Display',serif;font-size:18px;font-weight:600;
+  opacity:.7;letter-spacing:1px;
 }
 .header-right{display:flex;align-items:center;gap:16px;}
 .header-clock{
-  font-family:'DM Sans',sans-serif;font-size:28px;font-weight:700;
-  font-variant-numeric:tabular-nums;letter-spacing:1px;
+  font-family:'DM Sans',sans-serif;font-size:26px;font-weight:700;
+  font-variant-numeric:tabular-nums;letter-spacing:2px;
+  color:rgba(255,255,255,.9);
 }
 .header-badge{
-  font-size:12px;padding:5px 14px;border-radius:20px;
-  background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);
-  font-weight:500;
+  font-size:11px;padding:5px 14px;border-radius:20px;
+  background:rgba(99,102,241,.12);
+  border:1px solid rgba(99,102,241,.2);
+  color:rgba(255,255,255,.5);font-weight:500;
 }
 
-/* ── RACE SECTION ── */
+/* ══════════════════════════════════════════════════════
+   3D RACE SECTION
+   ══════════════════════════════════════════════════════ */
 .race-section{
   flex:1;display:flex;flex-direction:column;justify-content:center;
-  padding:24px 40px 16px;gap:16px;min-height:0;
+  padding:20px 40px 16px;gap:12px;min-height:0;
+  perspective:1200px;
 }
+
+/* ── INDIVIDUAL TRACK ── */
 .race-track{
-  display:grid;grid-template-columns:220px 1fr 200px;align-items:center;gap:20px;
-  background:rgba(255,255,255,.03);
-  border:1px solid rgba(255,255,255,.06);
-  border-radius:16px;padding:16px 24px;
-  transition:all .3s;position:relative;
+  display:grid;grid-template-columns:200px 1fr 190px;align-items:center;gap:16px;
+  padding:14px 24px;border-radius:16px;
+  position:relative;
+  transform:perspective(800px) rotateX(1deg) rotateY(-0.5deg);
+  transform-style:preserve-3d;
+  background:linear-gradient(135deg, rgba(13,17,23,.85), rgba(15,20,35,.7));
+  border:1px solid rgba(99,102,241,0.08);
+  transition:all .4s cubic-bezier(.4,0,.2,1);
+}
+.race-track::before{
+  content:'';position:absolute;inset:0;border-radius:16px;z-index:-1;
+  background:linear-gradient(135deg, transparent, rgba(99,102,241,.03));
+  pointer-events:none;
 }
 .race-track.leader{
-  background:rgba(255,255,255,.05);
-  border-color:rgba(255,255,255,.12);
-  box-shadow:0 0 30px rgba(255,255,255,.03);
+  transform:perspective(800px) rotateX(1deg) rotateY(-0.5deg) scale(1.02);
+  background:linear-gradient(135deg, rgba(13,17,23,.9), rgba(20,25,45,.8));
+  border-color:rgba(255,255,255,.1);
+  box-shadow:
+    0 0 40px rgba(99,102,241,.06),
+    0 8px 32px rgba(0,0,0,.3);
 }
 
-/* Left info */
-.track-info{display:flex;flex-direction:column;gap:4px;}
-.track-rop{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;}
-.track-meta{display:flex;align-items:center;gap:8px;}
+/* ── LEFT: ROP INFO ── */
+.track-info{display:flex;flex-direction:column;gap:6px;}
+.track-name-row{display:flex;align-items:center;gap:10px;}
+.track-position{
+  display:flex;align-items:center;justify-content:center;
+  width:32px;height:32px;border-radius:10px;font-size:14px;font-weight:800;
+  flex-shrink:0;
+}
+.track-position.pos-1{
+  background:linear-gradient(135deg,#ffd700,#ffaa00);color:#1a1200;
+  box-shadow:0 0 12px rgba(255,215,0,.3);
+  animation:medalPulse 3s ease-in-out infinite;
+}
+.track-position.pos-2{
+  background:linear-gradient(135deg,#c0c0c0,#a0a0a0);color:#222;
+  box-shadow:0 0 8px rgba(192,192,192,.2);
+}
+.track-position.pos-3{
+  background:linear-gradient(135deg,#cd7f32,#a0622e);color:#1a1200;
+  box-shadow:0 0 8px rgba(205,127,50,.2);
+}
+.track-position.pos-4{
+  background:rgba(255,255,255,.08);color:rgba(255,255,255,.4);
+}
+@keyframes medalPulse{
+  0%,100%{box-shadow:0 0 12px rgba(255,215,0,.3);}
+  50%{box-shadow:0 0 20px rgba(255,215,0,.5);}
+}
+.track-rop{
+  font-family:'Playfair Display',serif;font-size:22px;font-weight:700;
+  letter-spacing:0.5px;
+  text-shadow:0 0 20px currentColor;
+}
+.track-meta{display:flex;align-items:center;gap:8px;margin-left:42px;}
 .track-badge{
-  font-size:11px;padding:3px 10px;border-radius:12px;
-  background:rgba(255,255,255,.08);color:rgba(255,255,255,.5);font-weight:500;
-}
-.track-rank{
-  font-size:12px;font-weight:700;opacity:.5;
+  font-size:10px;padding:3px 10px;border-radius:10px;
+  background:rgba(255,255,255,.06);color:rgba(255,255,255,.4);font-weight:600;
+  letter-spacing:0.5px;text-transform:uppercase;
 }
 
-/* Lane */
-.track-lane{position:relative;height:48px;border-radius:12px;background:rgba(255,255,255,.04);overflow:visible;}
+/* ── CENTER: TRACK LANE (3D asphalt) ── */
+.track-lane{
+  position:relative;height:52px;border-radius:14px;overflow:visible;
+  background:linear-gradient(180deg, #0d1117 0%, #161b22 50%, #0d1117 100%);
+  border:1px solid rgba(255,255,255,.04);
+  box-shadow:inset 0 2px 6px rgba(0,0,0,.4), inset 0 -1px 4px rgba(0,0,0,.2);
+}
+/* Lane dashed center line */
+.track-lane::before{
+  content:'';position:absolute;top:50%;left:10px;right:10px;height:2px;
+  transform:translateY(-50%);
+  background:repeating-linear-gradient(90deg,
+    rgba(255,255,255,.12) 0, rgba(255,255,255,.12) 20px,
+    transparent 20px, transparent 40px);
+  border-radius:1px;
+}
+/* Neon side-glow (color set via JS inline style on data attribute) */
+.track-lane::after{
+  content:'';position:absolute;inset:0;border-radius:14px;pointer-events:none;
+  box-shadow:
+    inset 0 2px 8px var(--lane-color-glow, transparent),
+    inset 0 -2px 8px var(--lane-color-glow, transparent);
+  opacity:.35;
+}
+
+/* Progress bar fill */
 .track-progress{
-  position:absolute;left:0;top:0;height:100%;border-radius:12px;
-  transition:width 2s ease-out;min-width:4px;
+  position:absolute;left:0;top:0;height:100%;border-radius:14px;
+  transition:width 2s cubic-bezier(0.34,1.56,0.64,1);min-width:4px;
+  overflow:hidden;
 }
 .track-progress-inner{
-  width:100%;height:100%;border-radius:12px;opacity:.25;
+  width:100%;height:100%;border-radius:14px;opacity:.15;
 }
 .track-progress-glow{
-  position:absolute;top:0;right:0;width:40px;height:100%;
-  border-radius:0 12px 12px 0;
-  filter:blur(8px);opacity:.4;
+  position:absolute;top:0;right:0;width:60px;height:100%;
+  border-radius:0 14px 14px 0;
+  filter:blur(12px);opacity:.5;
 }
 
-/* Finish line */
+/* Checkered finish line */
 .finish-line{
-  position:absolute;right:0;top:-2px;bottom:-2px;width:6px;
-  background:repeating-linear-gradient(
-    180deg,#fff 0,#fff 4px,#333 4px,#333 8px
-  );
-  border-radius:3px;opacity:.3;
+  position:absolute;right:0;top:-1px;bottom:-1px;width:14px;z-index:1;
+  background:
+    repeating-conic-gradient(#fff 0% 25%, #333 0% 50%) 0 0 / 7px 7px;
+  border-radius:0 14px 14px 0;
+  opacity:.2;
+  animation:finishShimmer 3s ease-in-out infinite;
+}
+@keyframes finishShimmer{
+  0%,100%{opacity:.15;}
+  50%{opacity:.3;}
 }
 
-/* Car */
+/* ── CAR ── */
 .car-wrap{
   position:absolute;top:50%;transform:translate(-50%,-50%);
-  transition:left 2s ease-out;z-index:2;
-  filter:drop-shadow(0 0 6px currentColor);
+  transition:left 2s cubic-bezier(0.34,1.56,0.64,1);
+  z-index:3;
+  filter:drop-shadow(0 4px 8px rgba(0,0,0,.5));
 }
+/* Exhaust trail */
+.car-wrap::before{
+  content:'';position:absolute;right:100%;top:50%;transform:translateY(-50%);
+  width:30px;height:8px;
+  background:linear-gradient(90deg, transparent, rgba(255,120,50,.4), rgba(255,200,50,.15));
+  border-radius:4px;
+  filter:blur(3px);
+  animation:exhaustFlicker .3s ease-in-out infinite alternate;
+}
+/* Speed lines */
+.car-wrap::after{
+  content:'';position:absolute;right:calc(100% + 8px);top:50%;transform:translateY(-50%);
+  width:40px;height:16px;
+  background:
+    linear-gradient(0deg,
+      transparent 0%, transparent 15%,
+      rgba(255,255,255,.08) 15%, rgba(255,255,255,.08) 20%,
+      transparent 20%, transparent 38%,
+      rgba(255,255,255,.12) 38%, rgba(255,255,255,.12) 42%,
+      transparent 42%, transparent 58%,
+      rgba(255,255,255,.12) 58%, rgba(255,255,255,.12) 62%,
+      transparent 62%, transparent 80%,
+      rgba(255,255,255,.08) 80%, rgba(255,255,255,.08) 85%,
+      transparent 85%);
+  opacity:.6;
+}
+@keyframes exhaustFlicker{
+  0%{width:25px;opacity:.6;}
+  100%{width:35px;opacity:.9;}
+}
+/* Car shadow */
+.car-shadow{
+  position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);
+  width:36px;height:8px;background:rgba(0,0,0,.35);
+  border-radius:50%;filter:blur(4px);
+}
+
 .car-wrap.leader-car{
-  animation:pulse-glow 2s ease-in-out infinite;
+  transform:translate(-50%,-50%) scale(1.15);
+  animation:leaderGlow 2s ease-in-out infinite;
+}
+.car-wrap.leader-car::before{
+  width:45px;height:12px;
+  background:linear-gradient(90deg, transparent, rgba(255,100,30,.5), rgba(255,200,50,.25));
+}
+@keyframes leaderGlow{
+  0%,100%{filter:drop-shadow(0 0 8px currentColor) drop-shadow(0 4px 8px rgba(0,0,0,.5));}
+  50%{filter:drop-shadow(0 0 20px currentColor) drop-shadow(0 0 35px currentColor) drop-shadow(0 4px 8px rgba(0,0,0,.5));}
 }
 .car-wrap.finished{
-  filter:drop-shadow(0 0 12px #10b981) drop-shadow(0 0 24px #10b981);
-}
-@keyframes pulse-glow{
-  0%,100%{filter:drop-shadow(0 0 6px currentColor);}
-  50%{filter:drop-shadow(0 0 16px currentColor) drop-shadow(0 0 24px currentColor);}
+  filter:drop-shadow(0 0 14px #10b981) drop-shadow(0 0 28px #10b981) drop-shadow(0 4px 8px rgba(0,0,0,.5));
 }
 
-/* Right stats */
-.track-stats{text-align:right;display:flex;flex-direction:column;gap:2px;}
+/* Finished text flash */
+.plan-done-flash{
+  position:absolute;top:50%;right:20px;transform:translateY(-50%);
+  font-family:'DM Sans',sans-serif;font-size:11px;font-weight:800;
+  letter-spacing:2px;text-transform:uppercase;
+  color:#10b981;
+  text-shadow:0 0 10px #10b981, 0 0 20px #10b981;
+  animation:flashIn .6s ease-out forwards;
+  z-index:5;
+  white-space:nowrap;
+}
+@keyframes flashIn{
+  0%{opacity:0;transform:translateY(-50%) scale(1.5);}
+  60%{opacity:1;transform:translateY(-50%) scale(0.95);}
+  100%{opacity:1;transform:translateY(-50%) scale(1);}
+}
+
+/* ── RIGHT: STATS PANEL ── */
+.track-stats{text-align:right;display:flex;flex-direction:column;gap:4px;align-items:flex-end;}
+.track-stats-top{display:flex;align-items:center;gap:12px;justify-content:flex-end;}
 .track-pct{
-  font-family:'Playfair Display',serif;font-size:32px;font-weight:700;
+  font-family:'DM Sans',sans-serif;font-size:34px;font-weight:800;
   font-variant-numeric:tabular-nums;line-height:1;
+  letter-spacing:-0.5px;
 }
-.track-amounts{font-size:12px;color:rgba(255,255,255,.45);font-weight:500;}
-.track-deals{font-size:11px;color:rgba(255,255,255,.3);margin-top:2px;}
+/* Mini progress arc */
+.mini-arc{
+  width:38px;height:38px;flex-shrink:0;
+}
+.mini-arc circle{transition:stroke-dashoffset 2s cubic-bezier(0.34,1.56,0.64,1);}
+.track-amounts{font-size:11px;color:rgba(255,255,255,.4);font-weight:500;letter-spacing:0.3px;}
+.track-deals-row{display:flex;gap:6px;justify-content:flex-end;margin-top:2px;}
+.track-deal-badge{
+  font-size:10px;padding:2px 8px;border-radius:8px;
+  background:rgba(255,255,255,.05);
+  color:rgba(255,255,255,.35);font-weight:600;
+  border:1px solid rgba(255,255,255,.04);
+}
 
-/* ── CONFETTI ── */
+/* ══════════════════════════════════════════════════════
+   CONFETTI / EXPLOSION
+   ══════════════════════════════════════════════════════ */
 @keyframes confetti-fall{
-  0%{transform:translateY(0) rotate(0deg);opacity:1;}
-  100%{transform:translateY(60px) rotate(360deg);opacity:0;}
+  0%{transform:translateY(0) rotate(0deg) scale(1);opacity:1;}
+  100%{transform:translateY(80px) rotate(720deg) scale(0);opacity:0;}
 }
 .confetti-particle{
-  position:absolute;width:4px;height:4px;border-radius:50%;
-  animation:confetti-fall 1.5s ease-out forwards;
+  position:absolute;border-radius:50%;
+  animation:confetti-fall 1.8s ease-out forwards;
   pointer-events:none;z-index:10;
 }
+/* Green neon explosion ring */
+@keyframes neonBurst{
+  0%{transform:scale(0);opacity:1;}
+  100%{transform:scale(3);opacity:0;}
+}
+.neon-burst{
+  position:absolute;width:40px;height:40px;border-radius:50%;
+  border:2px solid #10b981;pointer-events:none;z-index:9;
+  animation:neonBurst .8s ease-out forwards;
+  box-shadow:0 0 20px #10b981;
+}
 
-/* ── BOTTOM PANEL ── */
+/* ══════════════════════════════════════════════════════
+   BOTTOM PANEL (glassmorphism cards)
+   ══════════════════════════════════════════════════════ */
 .bottom-panel{
   display:grid;grid-template-columns:1fr 1fr;gap:20px;
   padding:0 40px 24px;flex-shrink:0;
 }
 .panel-card{
-  background:rgba(255,255,255,.05);
-  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-  border:1px solid rgba(255,255,255,.08);
-  border-radius:16px;padding:20px 24px;
+  background:rgba(13,17,23,.7);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border:1px solid rgba(99,102,241,0.1);
+  border-radius:18px;padding:20px 24px;
+  position:relative;overflow:hidden;
+}
+.panel-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg, transparent, rgba(99,102,241,.2), transparent);
 }
 .panel-title{
-  font-size:13px;font-weight:600;letter-spacing:1px;text-transform:uppercase;
-  color:rgba(255,255,255,.4);margin-bottom:16px;
+  font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  color:rgba(255,255,255,.3);margin-bottom:16px;
+  display:flex;align-items:center;gap:8px;
 }
+.panel-title-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:#10b981;
+  box-shadow:0 0 6px #10b981;
+  animation:livePulse 2s ease-in-out infinite;
+}
+@keyframes livePulse{0%,100%{opacity:1;}50%{opacity:.3;}}
 
-/* Top-3 */
+/* ── TOP-3 MANAGERS ── */
 .top3-list{display:flex;flex-direction:column;gap:10px;}
 .top3-item{
   display:flex;align-items:center;gap:14px;
-  padding:12px 16px;border-radius:12px;
-  background:rgba(255,255,255,.04);
-  border:1px solid rgba(255,255,255,.06);
-  transition:all .3s;
+  padding:12px 16px;border-radius:14px;
+  background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.05);
+  transition:all .4s;
+  position:relative;overflow:hidden;
 }
 .top3-item.gold{
-  background:rgba(255,215,0,.06);
-  border-color:rgba(255,215,0,.2);
-  box-shadow:0 0 20px rgba(255,215,0,.05);
+  background:linear-gradient(135deg, rgba(255,215,0,.05), rgba(255,170,0,.02));
+  border-color:rgba(255,215,0,.15);
+  box-shadow:0 0 24px rgba(255,215,0,.04);
+}
+.top3-item.gold::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg, transparent, rgba(255,215,0,.3), transparent);
+}
+.top3-item.silver{
+  background:rgba(192,192,192,.03);
+  border-color:rgba(192,192,192,.1);
+}
+.top3-item.bronze{
+  background:rgba(205,127,50,.03);
+  border-color:rgba(205,127,50,.08);
 }
 .top3-medal{font-size:28px;flex-shrink:0;width:36px;text-align:center;}
 .top3-info{flex:1;min-width:0;}
 .top3-name{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.top3-sub{font-size:12px;color:rgba(255,255,255,.4);margin-top:2px;}
+.top3-sub{font-size:11px;color:rgba(255,255,255,.35);margin-top:3px;}
 .top3-amount{
-  font-family:'Playfair Display',serif;font-size:20px;font-weight:700;
+  font-family:'DM Sans',sans-serif;font-size:20px;font-weight:800;
   font-variant-numeric:tabular-nums;white-space:nowrap;
+  letter-spacing:-0.3px;
 }
+.top3-amount.gold-text{color:#ffd700;text-shadow:0 0 12px rgba(255,215,0,.3);}
+.top3-amount.silver-text{color:#c0c0c0;}
+.top3-amount.bronze-text{color:#cd7f32;}
 
-/* Feed */
+/* ── FEED ── */
 .feed-list{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow:hidden;}
 .feed-item{
   display:flex;align-items:center;gap:12px;
-  padding:10px 14px;border-radius:10px;
-  background:rgba(255,255,255,.03);
+  padding:10px 14px;border-radius:12px;
+  background:rgba(255,255,255,.02);
   border:1px solid rgba(255,255,255,.04);
   font-size:13px;font-weight:500;
-  animation:slideDown .5s ease-out;
+  animation:feedSlideIn .6s cubic-bezier(.4,0,.2,1);
   transition:all .3s;
 }
 .feed-item.highlight{
-  background:rgba(16,185,129,.08);
-  border-color:rgba(16,185,129,.2);
-  box-shadow:0 0 16px rgba(16,185,129,.06);
+  background:rgba(16,185,129,.06);
+  border-color:rgba(16,185,129,.15);
+  box-shadow:0 0 20px rgba(16,185,129,.05);
 }
-@keyframes slideDown{
-  from{opacity:0;transform:translateY(-20px);}
-  to{opacity:1;transform:translateY(0);}
+@keyframes feedSlideIn{
+  from{opacity:0;transform:translateX(-30px) scale(.95);}
+  to{opacity:1;transform:translateX(0) scale(1);}
 }
-.feed-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:rgba(255,255,255,.7);}
+.feed-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:rgba(255,255,255,.6);}
 .feed-amount{
-  font-family:'Playfair Display',serif;font-weight:700;font-size:15px;
+  font-family:'DM Sans',sans-serif;font-weight:700;font-size:14px;
   font-variant-numeric:tabular-nums;white-space:nowrap;
 }
 .feed-tag{
-  font-size:10px;font-weight:600;padding:2px 8px;border-radius:8px;
-  background:rgba(255,255,255,.08);color:rgba(255,255,255,.4);
-  white-space:nowrap;
+  font-size:9px;font-weight:700;padding:3px 8px;border-radius:8px;
+  background:rgba(99,102,241,.1);
+  border:1px solid rgba(99,102,241,.15);
+  color:rgba(255,255,255,.4);white-space:nowrap;
+  text-transform:uppercase;letter-spacing:0.5px;
 }
 .feed-empty{
-  text-align:center;padding:24px;color:rgba(255,255,255,.25);font-size:13px;
+  text-align:center;padding:24px;color:rgba(255,255,255,.2);font-size:13px;
 }
 
-/* ── LOADING ── */
+/* ══════════════════════════════════════════════════════
+   LOADING
+   ══════════════════════════════════════════════════════ */
 .loading-screen{
   position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
-  background:#0a0e1a;flex-direction:column;gap:16px;
+  background:linear-gradient(160deg, #050816, #0a1628);flex-direction:column;gap:20px;
 }
 .loading-spinner{
-  width:40px;height:40px;border:3px solid rgba(255,255,255,.1);
-  border-top-color:rgba(255,255,255,.6);border-radius:50%;
+  width:44px;height:44px;border:3px solid rgba(99,102,241,.15);
+  border-top-color:rgba(99,102,241,.7);border-radius:50%;
   animation:spin .8s linear infinite;
 }
 @keyframes spin{to{transform:rotate(360deg)}}
-.loading-text{font-size:14px;color:rgba(255,255,255,.4);}
+.loading-text{font-size:13px;color:rgba(255,255,255,.3);letter-spacing:1px;}
 
-/* ── RESPONSIVE ── */
+/* ══════════════════════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════════════════════ */
 @media(max-width:1400px){
-  .header{padding:0 24px;height:56px;}
-  .header-title{font-size:20px;}
-  .header-clock{font-size:24px;}
-  .race-section{padding:16px 24px 12px;gap:12px;}
-  .race-track{grid-template-columns:180px 1fr 160px;padding:12px 20px;}
+  .header{padding:0 24px;height:54px;}
+  .header-title{font-size:18px;}
+  .header-clock{font-size:22px;}
+  .race-section{padding:16px 24px 12px;gap:10px;}
+  .race-track{grid-template-columns:170px 1fr 160px;padding:12px 18px;}
   .track-rop{font-size:18px;}
-  .track-pct{font-size:26px;}
+  .track-pct{font-size:28px;}
   .bottom-panel{padding:0 24px 16px;gap:16px;}
 }
 @media(max-width:1024px){
   .race-track{grid-template-columns:140px 1fr 130px;gap:12px;}
   .track-rop{font-size:16px;}
   .track-pct{font-size:22px;}
-  .track-lane{height:40px;}
+  .track-lane{height:44px;}
   .bottom-panel{grid-template-columns:1fr;}
 }
 @media(max-width:768px){
@@ -287,6 +487,12 @@ body::after{
 </style>
 </head>
 <body class="cursor-visible">
+
+<!-- PARTICLES -->
+<canvas id="particles-canvas"></canvas>
+
+<!-- CYBERPUNK GRID -->
+<div class="cyber-grid"><div class="cyber-grid-inner"></div></div>
 
 <!-- LOADING -->
 <div class="loading-screen" id="loading">
@@ -312,17 +518,67 @@ body::after{
   <!-- BOTTOM PANEL -->
   <div class="bottom-panel">
     <div class="panel-card">
-      <div class="panel-title">Топ-3 менеджера дня</div>
+      <div class="panel-title"><span class="panel-title-dot"></span> Топ-3 менеджера дня</div>
       <div class="top3-list" id="top3List"></div>
     </div>
     <div class="panel-card">
-      <div class="panel-title">Лента сделок</div>
+      <div class="panel-title"><span class="panel-title-dot"></span> Лента сделок</div>
       <div class="feed-list" id="feedList"></div>
     </div>
   </div>
 </div>
 
 <script>
+// ══════════════════════════════════════════════════════
+//  PARTICLES ENGINE
+// ══════════════════════════════════════════════════════
+(function(){
+  const canvas = document.getElementById('particles-canvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  const COUNT = 60;
+
+  function resize(){
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  function createParticle(){
+    return {
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      r: Math.random() * 1.5 + 0.3,
+      alpha: Math.random() * 0.4 + 0.1,
+      pulse: Math.random() * Math.PI * 2,
+    };
+  }
+  for(let i=0;i<COUNT;i++) particles.push(createParticle());
+
+  function animate(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.pulse += 0.02;
+      const a = p.alpha * (0.5 + 0.5 * Math.sin(p.pulse));
+      if(p.x < 0) p.x = canvas.width;
+      if(p.x > canvas.width) p.x = 0;
+      if(p.y < 0) p.y = canvas.height;
+      if(p.y > canvas.height) p.y = 0;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(140,160,255,${a})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(animate);
+  }
+  animate();
+})();
+
 // ═══════════════════ CONFIG ═══════════════════════════════════════
 const SUPABASE_URL = 'https://bdyakgmeibpdkisbiykt.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkeWFrZ21laWJwZGtpc2JpeWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTQzOTMsImV4cCI6MjA4Nzc5MDM5M30.nA187grJR6XFQRmTP6WOM-6-1dZK1EzYNNP2JH9aAMg';
@@ -351,7 +607,7 @@ let prevFinished = new Set();
 const parseDate = s => { const [d,m,y] = s.split('.'); return new Date(+y, +m-1, +d); };
 const fmtDate = d => `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
 const fmt = n => Math.round(n).toLocaleString('ru-RU');
-const fmtM = n => fmt(Math.round(n)) + ' ₸';
+const fmtM = n => fmt(Math.round(n)) + ' \u20B8';
 const getMonthKey = d => `${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
 
 function getDatesInRange(from, to) {
@@ -399,17 +655,50 @@ function aggregateManagersByPeriod(prodKey, from, to) {
   }).filter(m => m.budget > 0 || m.leads > 0);
 }
 
-// ═══════════════════ SVG CAR ═══════════════════════════════════════
+// ═══════════════════ SVG CAR (Top-down F1 style) ═══════════════════
 function carSVG(color) {
-  return `<svg width="44" height="22" viewBox="0 0 44 22" fill="none" xmlns="http://www.w3.org/2000/svg" style="color:${color}">
-    <path d="M6 16h3a3 3 0 006 0h14a3 3 0 006 0h3c2 0 3-1 3-3v-3c0-1-.5-2-1.5-2.5L36 6l-4-4H18l-6 4-6 2.5C4.5 9.5 3 10 3 12v1c0 2 1 3 3 3z" fill="currentColor"/>
-    <circle cx="11" cy="17" r="3" fill="#222" stroke="currentColor" stroke-width="1"/>
-    <circle cx="11" cy="17" r="1.2" fill="rgba(255,255,255,.3)"/>
-    <circle cx="33" cy="17" r="3" fill="#222" stroke="currentColor" stroke-width="1"/>
-    <circle cx="33" cy="17" r="1.2" fill="rgba(255,255,255,.3)"/>
-    <path d="M18 4l-3 4h10l1-4H18z" fill="rgba(255,255,255,.15)"/>
-    <path d="M27 4l-1 4h8l-3-4h-4z" fill="rgba(255,255,255,.1)"/>
-    <rect x="38" y="8" width="4" height="2" rx="1" fill="rgba(255,255,255,.3)"/>
+  // Darker shade for details
+  const dark = color;
+  return `<svg width="50" height="24" viewBox="0 0 50 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color:${color}">
+    <!-- Body -->
+    <path d="M8 6 L14 3 L34 2 L42 4 L46 7 L48 10 L48 14 L46 17 L42 20 L34 22 L14 21 L8 18 L4 14 L3 12 L4 10 Z" fill="${color}" opacity="0.9"/>
+    <!-- Cockpit -->
+    <ellipse cx="28" cy="12" rx="7" ry="4" fill="rgba(0,0,0,0.5)"/>
+    <ellipse cx="28" cy="12" rx="5" ry="2.5" fill="rgba(100,200,255,0.15)"/>
+    <!-- Front wing -->
+    <path d="M44 5 L50 4 L50 8 L46 7 Z" fill="${dark}" opacity="0.7"/>
+    <path d="M44 19 L50 20 L50 16 L46 17 Z" fill="${dark}" opacity="0.7"/>
+    <!-- Rear wing / spoiler -->
+    <rect x="3" y="3" width="3" height="18" rx="1.5" fill="${dark}" opacity="0.6"/>
+    <!-- Side pods -->
+    <path d="M16 4 L22 3 L22 6 L16 6 Z" fill="rgba(255,255,255,0.1)"/>
+    <path d="M16 20 L22 21 L22 18 L16 18 Z" fill="rgba(255,255,255,0.1)"/>
+    <!-- Wheels -->
+    <rect x="12" y="1" width="6" height="4" rx="1" fill="#222" stroke="${dark}" stroke-width="0.5"/>
+    <rect x="12" y="19" width="6" height="4" rx="1" fill="#222" stroke="${dark}" stroke-width="0.5"/>
+    <rect x="36" y="2" width="5" height="3.5" rx="1" fill="#222" stroke="${dark}" stroke-width="0.5"/>
+    <rect x="36" y="18.5" width="5" height="3.5" rx="1" fill="#222" stroke="${dark}" stroke-width="0.5"/>
+    <!-- Headlight glow -->
+    <circle cx="47" cy="10" r="1.5" fill="rgba(255,255,200,0.6)"/>
+    <circle cx="47" cy="14" r="1.5" fill="rgba(255,255,200,0.6)"/>
+    <!-- Body highlight -->
+    <path d="M14 6 L34 5 L38 7 L38 9 L14 9 Z" fill="rgba(255,255,255,0.12)"/>
+  </svg>`;
+}
+
+// ═══════════════════ MINI ARC SVG ═══════════════════════════════
+function miniArcSVG(pct, color) {
+  const r = 15;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (Math.min(pct, 100) / 100) * circ;
+  return `<svg class="mini-arc" viewBox="0 0 38 38">
+    <circle cx="19" cy="19" r="${r}" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="3"/>
+    <circle cx="19" cy="19" r="${r}" fill="none" stroke="${color}" stroke-width="3"
+      stroke-dasharray="${circ}" stroke-dashoffset="${offset}"
+      stroke-linecap="round"
+      transform="rotate(-90 19 19)"
+      style="transition:stroke-dashoffset 2s cubic-bezier(0.34,1.56,0.64,1)"/>
+    <text x="19" y="21" text-anchor="middle" font-size="8" font-weight="700" fill="rgba(255,255,255,.5)" font-family="DM Sans">${Math.round(pct)}%</text>
   </svg>`;
 }
 
@@ -459,7 +748,6 @@ function getTodayManagers() {
 
 function calcTop3() {
   const mgrs = getTodayManagers();
-  // Deduplicate by name (keep highest budget)
   const map = {};
   mgrs.forEach(m => {
     if (!map[m.name] || map[m.name].budget < m.budget) {
@@ -495,24 +783,34 @@ function calcFeed() {
   return entries.slice(0, 7);
 }
 
-// ═══════════════════ CONFETTI ═══════════════════════════════════════
+// ═══════════════════ CONFETTI + NEON BURST ═══════════════════════════
 function spawnConfetti(trackEl) {
-  const colors = ['#10b981','#34d399','#6ee7b7','#fbbf24','#f59e0b','#fff'];
+  const colors = ['#10b981','#34d399','#6ee7b7','#fbbf24','#f59e0b','#fff','#a78bfa'];
   const lane = trackEl.querySelector('.track-lane');
   if (!lane) return;
   const rect = lane.getBoundingClientRect();
-  for (let i = 0; i < 20; i++) {
+
+  // Neon burst ring
+  const burst = document.createElement('div');
+  burst.className = 'neon-burst';
+  burst.style.left = (rect.right - 20) + 'px';
+  burst.style.top = (rect.top + rect.height/2 - 20) + 'px';
+  document.body.appendChild(burst);
+  setTimeout(() => burst.remove(), 1000);
+
+  // Confetti particles
+  for (let i = 0; i < 25; i++) {
     const p = document.createElement('div');
     p.className = 'confetti-particle';
     p.style.background = colors[Math.floor(Math.random()*colors.length)];
-    p.style.left = (rect.right - 60 + Math.random()*60) + 'px';
-    p.style.top = (rect.top - 10 + Math.random()*30) + 'px';
-    p.style.width = (3 + Math.random()*4) + 'px';
+    p.style.left = (rect.right - 60 + Math.random()*70) + 'px';
+    p.style.top = (rect.top - 10 + Math.random()*40) + 'px';
+    p.style.width = (3 + Math.random()*5) + 'px';
     p.style.height = p.style.width;
-    p.style.animationDuration = (1 + Math.random()*1.5) + 's';
-    p.style.animationDelay = (Math.random()*0.5) + 's';
+    p.style.animationDuration = (1.2 + Math.random()*1.5) + 's';
+    p.style.animationDelay = (Math.random()*0.4) + 's';
     document.body.appendChild(p);
-    setTimeout(() => p.remove(), 3000);
+    setTimeout(() => p.remove(), 3500);
   }
 }
 
@@ -521,34 +819,42 @@ function renderRace() {
   const data = calcRopData();
   const container = document.getElementById('raceTracks');
 
-  // Keep existing DOM if possible for smooth transitions
   let tracks = container.querySelectorAll('.race-track');
 
   if (tracks.length !== data.length) {
     container.innerHTML = data.map((r, i) => `
       <div class="race-track ${i === 0 ? 'leader' : ''}" data-rop="${r.name}">
         <div class="track-info">
-          <div class="track-rop" style="color:${r.color}">${r.name.replace('РОП ','')}
+          <div class="track-name-row">
+            <div class="track-position pos-${i+1}">${i+1}</div>
+            <div class="track-rop" style="color:${r.color}">${r.name.replace('РОП ','')}</div>
           </div>
           <div class="track-meta">
-            <span class="track-rank">#${i+1}</span>
-            <span class="track-badge">${r.mgrCount} менедж.</span>
+            <span class="track-badge">${r.mgrCount} менеджеров</span>
           </div>
         </div>
-        <div class="track-lane">
+        <div class="track-lane" style="--lane-color-glow:${r.color}40">
           <div class="track-progress" style="width:0%;position:absolute;">
             <div class="track-progress-inner" style="background:${r.color}"></div>
             <div class="track-progress-glow" style="background:${r.color}"></div>
           </div>
           <div class="finish-line"></div>
           <div class="car-wrap ${i === 0 ? 'leader-car' : ''}" style="left:0%;color:${r.color}">
+            <div class="car-shadow"></div>
             ${carSVG(r.color)}
           </div>
+          ${r.pct >= 100 ? '<div class="plan-done-flash">ПЛАН ВЫПОЛНЕН!</div>' : ''}
         </div>
         <div class="track-stats">
-          <div class="track-pct" style="color:${r.color}">0%</div>
+          <div class="track-stats-top">
+            ${miniArcSVG(r.pct, r.color)}
+            <div class="track-pct" style="color:${r.color}">0%</div>
+          </div>
           <div class="track-amounts">${fmtM(r.fact)} / ${fmtM(r.plan)}</div>
-          <div class="track-deals">${r.leads} лидов  ·  ${r.deals} сделок</div>
+          <div class="track-deals-row">
+            <span class="track-deal-badge">${r.leads} лидов</span>
+            <span class="track-deal-badge">${r.deals} сделок</span>
+          </div>
         </div>
       </div>
     `).join('');
@@ -562,16 +868,23 @@ function renderRace() {
         const track = tracks[i];
         if (!track) return;
 
-        // Update info
+        // Update classes
         track.className = 'race-track' + (i === 0 ? ' leader' : '');
         track.dataset.rop = r.name;
 
+        // Left info
         const ropEl = track.querySelector('.track-rop');
         ropEl.style.color = r.color;
         ropEl.textContent = r.name.replace('РОП ','');
 
-        track.querySelector('.track-rank').textContent = '#' + (i+1);
-        track.querySelector('.track-badge').textContent = r.mgrCount + ' менедж.';
+        const posEl = track.querySelector('.track-position');
+        posEl.className = 'track-position pos-' + (i+1);
+        posEl.textContent = i+1;
+
+        track.querySelector('.track-badge').textContent = r.mgrCount + ' менеджеров';
+
+        // Lane glow color
+        track.querySelector('.track-lane').style.setProperty('--lane-color-glow', r.color + '40');
 
         // Animate progress bar
         const pctClamped = Math.min(r.pct, 100);
@@ -586,11 +899,40 @@ function renderRace() {
         car.style.color = r.color;
         car.className = 'car-wrap' + (i === 0 ? ' leader-car' : '') + (r.pct >= 100 ? ' finished' : '');
 
-        // Stats
+        // Plan done flash
+        const lane = track.querySelector('.track-lane');
+        const existingFlash = lane.querySelector('.plan-done-flash');
+        if (r.pct >= 100 && !existingFlash) {
+          const flash = document.createElement('div');
+          flash.className = 'plan-done-flash';
+          flash.textContent = 'ПЛАН ВЫПОЛНЕН!';
+          lane.appendChild(flash);
+        } else if (r.pct < 100 && existingFlash) {
+          existingFlash.remove();
+        }
+
+        // Right stats
         track.querySelector('.track-pct').textContent = r.pct.toFixed(1) + '%';
         track.querySelector('.track-pct').style.color = r.color;
         track.querySelector('.track-amounts').textContent = fmtM(r.fact) + ' / ' + fmtM(r.plan);
-        track.querySelector('.track-deals').textContent = r.leads + ' лидов  ·  ' + r.deals + ' сделок';
+
+        // Update mini arc
+        const statsTop = track.querySelector('.track-stats-top');
+        const oldArc = statsTop.querySelector('.mini-arc');
+        if (oldArc) {
+          const tmpDiv = document.createElement('div');
+          tmpDiv.innerHTML = miniArcSVG(r.pct, r.color);
+          oldArc.replaceWith(tmpDiv.firstElementChild);
+        }
+
+        // Update deal badges
+        const dealRow = track.querySelector('.track-deals-row');
+        if (dealRow) {
+          dealRow.innerHTML = `
+            <span class="track-deal-badge">${r.leads} лидов</span>
+            <span class="track-deal-badge">${r.deals} сделок</span>
+          `;
+        }
 
         // Confetti on crossing 100%
         if (r.pct >= 100 && !prevFinished.has(r.name)) {
@@ -605,6 +947,8 @@ function renderRace() {
 function renderTop3() {
   const top3 = calcTop3();
   const medals = ['\u{1F947}', '\u{1F948}', '\u{1F949}'];
+  const classes = ['gold', 'silver', 'bronze'];
+  const textClasses = ['gold-text', 'silver-text', 'bronze-text'];
   const el = document.getElementById('top3List');
 
   if (top3.length === 0) {
@@ -613,13 +957,13 @@ function renderTop3() {
   }
 
   el.innerHTML = top3.map((m, i) => `
-    <div class="top3-item ${i === 0 ? 'gold' : ''}">
+    <div class="top3-item ${classes[i] || ''}">
       <div class="top3-medal">${medals[i] || ''}</div>
       <div class="top3-info">
         <div class="top3-name">${m.name}</div>
         <div class="top3-sub">${m.deals} сделок</div>
       </div>
-      <div class="top3-amount">${fmtM(m.budget)}</div>
+      <div class="top3-amount ${textClasses[i] || ''}">${fmtM(m.budget)}</div>
     </div>
   `).join('');
 }
@@ -634,7 +978,6 @@ function renderFeed() {
   }
 
   const newKeys = new Set(feed.map(f => f.name + ':' + f.budget));
-  const hasNew = feed.some(f => !prevFeedKeys.has(f.name + ':' + f.budget));
 
   el.innerHTML = feed.map(f => {
     const isNew = !prevFeedKeys.has(f.name + ':' + f.budget);
@@ -687,7 +1030,6 @@ async function loadData() {
       }
       if (d.ROP_PLANS)  ROP_PLANS = d.ROP_PLANS;
 
-      // Update badge
       if (rows[0].updated_at) {
         const dt = new Date(rows[0].updated_at);
         document.getElementById('headerBadge').textContent =
