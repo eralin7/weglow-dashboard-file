@@ -1041,7 +1041,7 @@ function updateCarPositions(ropData) {
     const pct = Math.min(r.pct / 100, 1.2);
     const x = startX + pct * trackRange;
     const z = lanePositions[i] || lanePositions[0];
-    config.targetPos = new THREE.Vector3(x, 0, z);
+    config.targetPos = new THREE.Vector3(x, 0.35, z);
     config.targetRot = Math.PI / 2;
     config.pct = r.pct;
   });
