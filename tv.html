@@ -660,14 +660,44 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.2;
 sceneContainer.insertBefore(renderer.domElement, sceneContainer.firstChild);
 
-// Controls
+// Controls — OrbitControls for mouse, plus WASD free-fly
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
-controls.dampingFactor = 0.05;
-controls.minDistance = 10;
-controls.maxDistance = 150;
-controls.maxPolarAngle = Math.PI / 2.2;
+controls.dampingFactor = 0.08;
+controls.minDistance = 2;
+controls.maxDistance = 300;
+controls.maxPolarAngle = Math.PI / 1.5;
 controls.target.set(0, 0, 0);
+controls.enablePan = true;
+controls.panSpeed = 1.5;
+
+// WASD + QE free-fly keyboard controls
+const flyKeys = { w:false, a:false, s:false, d:false, q:false, e:false, shift:false };
+const flySpeed = 0.8;
+window.addEventListener('keydown', (e) => {
+  const k = e.key.toLowerCase();
+  if (k in flyKeys) flyKeys[k] = true;
+  if (k === 'shift') flyKeys.shift = true;
+});
+window.addEventListener('keyup', (e) => {
+  const k = e.key.toLowerCase();
+  if (k in flyKeys) flyKeys[k] = false;
+  if (k === 'shift') flyKeys.shift = false;
+});
+
+function updateFlyCamera() {
+  const speed = flyKeys.shift ? flySpeed * 3 : flySpeed;
+  const dir = new THREE.Vector3();
+  camera.getWorldDirection(dir);
+  const right = new THREE.Vector3().crossVectors(dir, camera.up).normalize();
+
+  if (flyKeys.w) { camera.position.addScaledVector(dir, speed); controls.target.addScaledVector(dir, speed); }
+  if (flyKeys.s) { camera.position.addScaledVector(dir, -speed); controls.target.addScaledVector(dir, -speed); }
+  if (flyKeys.a) { camera.position.addScaledVector(right, -speed); controls.target.addScaledVector(right, -speed); }
+  if (flyKeys.d) { camera.position.addScaledVector(right, speed); controls.target.addScaledVector(right, speed); }
+  if (flyKeys.q) { camera.position.y -= speed; controls.target.y -= speed; }
+  if (flyKeys.e) { camera.position.y += speed; controls.target.y += speed; }
+}
 
 // Lighting
 const sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
@@ -1169,6 +1199,7 @@ function animate() {
     }
   }
 
+  updateFlyCamera();
   controls.update();
   renderer.render(scene, camera);
   projectCarLabels();
