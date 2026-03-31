@@ -681,14 +681,70 @@ scene.add(ambientLight);
 const hemisphereLight = new THREE.HemisphereLight(0x87CEEB, 0x44aa44, 0.4);
 scene.add(hemisphereLight);
 
-// ═══════════════════ GREEN GRASS ═══════════════════════════════════
-const grassGeo = new THREE.PlaneGeometry(300, 300);
-const grassMat = new THREE.MeshLambertMaterial({ color: 0x4ade80 });
+// ═══════════════════ NATURAL GRASS TERRAIN ═════════════════════════
+// Base grass layer with natural green
+const grassGeo = new THREE.PlaneGeometry(300, 300, 64, 64);
+// Add slight height variation for natural terrain feel
+const posAttr = grassGeo.attributes.position;
+for (let i = 0; i < posAttr.count; i++) {
+  const x = posAttr.getX(i), y = posAttr.getY(i);
+  // Don't deform under the road area
+  const inRoad = Math.abs(y) < 10;
+  if (!inRoad) {
+    posAttr.setZ(i, (Math.sin(x*0.3)*0.15 + Math.cos(y*0.2)*0.12 + Math.sin(x*0.7+y*0.5)*0.08));
+  }
+}
+grassGeo.computeVertexNormals();
+
+// Natural grass color with vertex colors for variation
+const grassColors = new Float32Array(posAttr.count * 3);
+for (let i = 0; i < posAttr.count; i++) {
+  const x = posAttr.getX(i), y = posAttr.getY(i);
+  const noise = Math.sin(x*0.5)*0.1 + Math.cos(y*0.3)*0.08 + Math.sin(x*0.8+y*0.6)*0.06;
+  // Mix of natural greens: darker base with lighter patches
+  const r = 0.18 + noise * 0.15 + Math.random() * 0.03;
+  const g = 0.45 + noise * 0.2 + Math.random() * 0.05;
+  const b = 0.12 + noise * 0.08 + Math.random() * 0.02;
+  grassColors[i*3] = r;
+  grassColors[i*3+1] = g;
+  grassColors[i*3+2] = b;
+}
+grassGeo.setAttribute('color', new THREE.BufferAttribute(grassColors, 3));
+
+const grassMat = new THREE.MeshLambertMaterial({ vertexColors: true });
 const grass = new THREE.Mesh(grassGeo, grassMat);
 grass.rotation.x = -Math.PI / 2;
 grass.position.y = -0.01;
 grass.receiveShadow = true;
 scene.add(grass);
+
+// Dirt patches near road edges
+const dirtColors = [0x8B7355, 0x9B8B6B, 0x7B6B45];
+for (let i = 0; i < 20; i++) {
+  const x = (Math.random() - 0.5) * 240;
+  const side = Math.random() > 0.5 ? 1 : -1;
+  const z = side * (8 + Math.random() * 3);
+  const dirtGeo = new THREE.CircleGeometry(0.5 + Math.random() * 1.5, 8);
+  const dirtMat = new THREE.MeshLambertMaterial({ color: dirtColors[i % 3] });
+  const dirt = new THREE.Mesh(dirtGeo, dirtMat);
+  dirt.rotation.x = -Math.PI / 2;
+  dirt.position.set(x, 0.005, z);
+  scene.add(dirt);
+}
+
+// Grass tufts (small clusters near the road)
+const tuftGeo = new THREE.ConeGeometry(0.08, 0.3, 4);
+const tuftColors = [0x2d7a1e, 0x3a8a2e, 0x4a9a3e, 0x358028];
+for (let i = 0; i < 300; i++) {
+  const x = (Math.random() - 0.5) * 250;
+  const side = Math.random() > 0.5 ? 1 : -1;
+  const z = side * (7.5 + Math.random() * 40);
+  const tuft = new THREE.Mesh(tuftGeo, new THREE.MeshLambertMaterial({ color: tuftColors[i % 4] }));
+  tuft.position.set(x, 0.15, z);
+  tuft.scale.set(0.5 + Math.random() * 1, 0.5 + Math.random() * 1.5, 0.5 + Math.random() * 1);
+  tuft.rotation.y = Math.random() * Math.PI;
+  scene.add(tuft);
+}
 
 // ═══════════════════ STRAIGHT ROAD ═══════════════════════════════
 // Asphalt surface
