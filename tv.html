@@ -143,23 +143,25 @@ body{
   flex:3;
   display:grid;grid-template-columns:1fr 1fr;gap:20px;
   padding:12px 40px 20px;
-  background:linear-gradient(180deg, #f8fafc, #ffffff);
-  border-top:1px solid rgba(0,0,0,.06);
+  background:rgba(0,0,0,.25);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-top:1px solid rgba(255,255,255,.1);
   min-height:0;
   overflow:hidden;
 }
 .panel-card{
-  background:#fff;
+  background:rgba(255,255,255,.08);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   border-radius:16px;padding:16px 20px;
   position:relative;overflow:hidden;
-  box-shadow:0 2px 16px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.04);
-  border:1px solid rgba(0,0,0,.04);
+  box-shadow:0 4px 24px rgba(0,0,0,.15), inset 0 1px 0 rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.12);
   display:flex;flex-direction:column;
   min-height:0;
 }
 .panel-title{
   font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
-  color:#6b7280;margin-bottom:12px;
+  color:rgba(255,255,255,.7);margin-bottom:12px;
   display:flex;align-items:center;gap:8px;
   flex-shrink:0;
 }
@@ -176,54 +178,59 @@ body{
 .top3-item{
   display:flex;align-items:center;gap:14px;
   padding:10px 14px;border-radius:12px;
-  background:#fafafa;
+  background:rgba(255,255,255,.06);
   transition:all .4s;
   position:relative;overflow:hidden;
+  border:1px solid rgba(255,255,255,.08);
 }
 .top3-item.gold{
-  background:linear-gradient(135deg, #fffbeb, #fef3c7);
+  background:linear-gradient(135deg, rgba(251,191,36,.15), rgba(245,158,11,.08));
   border-left:4px solid #fbbf24;
+  border-color:rgba(251,191,36,.25);
 }
 .top3-item.silver{
-  background:linear-gradient(135deg, #f9fafb, #f3f4f6);
+  background:linear-gradient(135deg, rgba(192,192,192,.1), rgba(156,163,175,.06));
   border-left:4px solid #c0c0c0;
+  border-color:rgba(192,192,192,.2);
 }
 .top3-item.bronze{
-  background:linear-gradient(135deg, #fdf8f0, #fde7cb);
+  background:linear-gradient(135deg, rgba(205,127,50,.12), rgba(160,98,46,.06));
   border-left:4px solid #cd7f32;
+  border-color:rgba(205,127,50,.2);
 }
 .top3-medal{font-size:26px;flex-shrink:0;width:32px;text-align:center;}
 .top3-info{flex:1;min-width:0;}
-.top3-name{font-size:14px;font-weight:600;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.top3-sub{font-size:11px;color:#9ca3af;margin-top:2px;}
+.top3-name{font-size:14px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.top3-sub{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px;}
 .top3-amount{
   font-family:'DM Sans',sans-serif;font-size:18px;font-weight:800;
   font-variant-numeric:tabular-nums;white-space:nowrap;
   letter-spacing:-0.3px;
 }
-.top3-amount.gold-text{color:#d97706;}
-.top3-amount.silver-text{color:#6b7280;}
-.top3-amount.bronze-text{color:#a0622e;}
+.top3-amount.gold-text{color:#fbbf24;}
+.top3-amount.silver-text{color:rgba(255,255,255,.7);}
+.top3-amount.bronze-text{color:#cd7f32;}
 
 /* ── FEED ── */
 .feed-list{display:flex;flex-direction:column;gap:6px;overflow:hidden;flex:1;}
 .feed-item{
   display:flex;align-items:center;gap:12px;
   padding:8px 12px;border-radius:10px;
-  background:#fafafa;
-  font-size:13px;font-weight:500;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.08);
+  font-size:13px;font-weight:500;color:rgba(255,255,255,.8);
   animation:feedSlideIn .6s cubic-bezier(.4,0,.2,1);
   transition:all .3s;
 }
 .feed-item.highlight{
-  background:linear-gradient(135deg, #ecfdf5, #d1fae5);
-  border:1px solid rgba(16,185,129,.15);
+  background:linear-gradient(135deg, rgba(16,185,129,.15), rgba(16,185,129,.05));
+  border:1px solid rgba(16,185,129,.25);
 }
 @keyframes feedSlideIn{
   from{opacity:0;transform:translateX(-30px) scale(.95);}
   to{opacity:1;transform:translateX(0) scale(1);}
 }
-.feed-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#6b7280;}
+.feed-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:rgba(255,255,255,.6);}
 .feed-amount{
   font-family:'DM Sans',sans-serif;font-weight:700;font-size:14px;
   font-variant-numeric:tabular-nums;white-space:nowrap;color:#1a1a2e;
