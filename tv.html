@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>WeGlow — Гонка к Плану</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{font-size:16px;-webkit-font-smoothing:antialiased;}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:#0a0e1a;
+  color:#fff;
+  min-height:100vh;
+  overflow:hidden;
+  cursor:none;
+}
+body.cursor-visible{cursor:default;}
+
+/* ── STARFIELD ── */
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,.4), transparent),
+    radial-gradient(1px 1px at 30% 70%, rgba(255,255,255,.3), transparent),
+    radial-gradient(1.5px 1.5px at 50% 10%, rgba(255,255,255,.5), transparent),
+    radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,.25), transparent),
+    radial-gradient(1px 1px at 90% 80%, rgba(255,255,255,.35), transparent),
+    radial-gradient(1.5px 1.5px at 15% 55%, rgba(255,255,255,.4), transparent),
+    radial-gradient(1px 1px at 60% 90%, rgba(255,255,255,.2), transparent),
+    radial-gradient(1px 1px at 80% 15%, rgba(255,255,255,.3), transparent),
+    radial-gradient(1px 1px at 25% 35%, rgba(255,255,255,.25), transparent),
+    radial-gradient(1.5px 1.5px at 45% 60%, rgba(255,255,255,.35), transparent),
+    radial-gradient(1px 1px at 5% 85%, rgba(255,255,255,.2), transparent),
+    radial-gradient(1px 1px at 95% 50%, rgba(255,255,255,.3), transparent),
+    radial-gradient(1px 1px at 35% 5%, rgba(255,255,255,.15), transparent),
+    radial-gradient(1px 1px at 75% 65%, rgba(255,255,255,.2), transparent),
+    radial-gradient(1.5px 1.5px at 55% 45%, rgba(255,255,255,.3), transparent),
+    radial-gradient(1px 1px at 85% 25%, rgba(255,255,255,.2), transparent);
+}
+@keyframes twinkle{0%,100%{opacity:.3}50%{opacity:.8}}
+body::after{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(1.5px 1.5px at 20% 45%, rgba(255,255,255,.5), transparent),
+    radial-gradient(1px 1px at 65% 25%, rgba(255,255,255,.4), transparent),
+    radial-gradient(1.5px 1.5px at 40% 80%, rgba(255,255,255,.3), transparent),
+    radial-gradient(1px 1px at 88% 60%, rgba(255,255,255,.35), transparent);
+  animation:twinkle 4s ease-in-out infinite;
+}
+
+/* ── LAYOUT ── */
+.page{position:relative;z-index:1;display:flex;flex-direction:column;height:100vh;}
+
+/* ── HEADER ── */
+.header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 40px;height:64px;flex-shrink:0;
+  background:linear-gradient(135deg, rgba(15,20,40,.95), rgba(10,14,26,.98));
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.header-title{
+  font-family:'Playfair Display',serif;font-size:24px;font-weight:700;
+  letter-spacing:1px;
+  background:linear-gradient(135deg,#fff,rgba(255,255,255,.7));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.header-month{
+  font-family:'Playfair Display',serif;font-size:20px;font-weight:600;
+  opacity:.85;letter-spacing:.5px;
+}
+.header-right{display:flex;align-items:center;gap:16px;}
+.header-clock{
+  font-family:'DM Sans',sans-serif;font-size:28px;font-weight:700;
+  font-variant-numeric:tabular-nums;letter-spacing:1px;
+}
+.header-badge{
+  font-size:12px;padding:5px 14px;border-radius:20px;
+  background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);
+  font-weight:500;
+}
+
+/* ── RACE SECTION ── */
+.race-section{
+  flex:1;display:flex;flex-direction:column;justify-content:center;
+  padding:24px 40px 16px;gap:16px;min-height:0;
+}
+.race-track{
+  display:grid;grid-template-columns:220px 1fr 200px;align-items:center;gap:20px;
+  background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:16px;padding:16px 24px;
+  transition:all .3s;position:relative;
+}
+.race-track.leader{
+  background:rgba(255,255,255,.05);
+  border-color:rgba(255,255,255,.12);
+  box-shadow:0 0 30px rgba(255,255,255,.03);
+}
+
+/* Left info */
+.track-info{display:flex;flex-direction:column;gap:4px;}
+.track-rop{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;}
+.track-meta{display:flex;align-items:center;gap:8px;}
+.track-badge{
+  font-size:11px;padding:3px 10px;border-radius:12px;
+  background:rgba(255,255,255,.08);color:rgba(255,255,255,.5);font-weight:500;
+}
+.track-rank{
+  font-size:12px;font-weight:700;opacity:.5;
+}
+
+/* Lane */
+.track-lane{position:relative;height:48px;border-radius:12px;background:rgba(255,255,255,.04);overflow:visible;}
+.track-progress{
+  position:absolute;left:0;top:0;height:100%;border-radius:12px;
+  transition:width 2s ease-out;min-width:4px;
+}
+.track-progress-inner{
+  width:100%;height:100%;border-radius:12px;opacity:.25;
+}
+.track-progress-glow{
+  position:absolute;top:0;right:0;width:40px;height:100%;
+  border-radius:0 12px 12px 0;
+  filter:blur(8px);opacity:.4;
+}
+
+/* Finish line */
+.finish-line{
+  position:absolute;right:0;top:-2px;bottom:-2px;width:6px;
+  background:repeating-linear-gradient(
+    180deg,#fff 0,#fff 4px,#333 4px,#333 8px
+  );
+  border-radius:3px;opacity:.3;
+}
+
+/* Car */
+.car-wrap{
+  position:absolute;top:50%;transform:translate(-50%,-50%);
+  transition:left 2s ease-out;z-index:2;
+  filter:drop-shadow(0 0 6px currentColor);
+}
+.car-wrap.leader-car{
+  animation:pulse-glow 2s ease-in-out infinite;
+}
+.car-wrap.finished{
+  filter:drop-shadow(0 0 12px #10b981) drop-shadow(0 0 24px #10b981);
+}
+@keyframes pulse-glow{
+  0%,100%{filter:drop-shadow(0 0 6px currentColor);}
+  50%{filter:drop-shadow(0 0 16px currentColor) drop-shadow(0 0 24px currentColor);}
+}
+
+/* Right stats */
+.track-stats{text-align:right;display:flex;flex-direction:column;gap:2px;}
+.track-pct{
+  font-family:'Playfair Display',serif;font-size:32px;font-weight:700;
+  font-variant-numeric:tabular-nums;line-height:1;
+}
+.track-amounts{font-size:12px;color:rgba(255,255,255,.45);font-weight:500;}
+.track-deals{font-size:11px;color:rgba(255,255,255,.3);margin-top:2px;}
+
+/* ── CONFETTI ── */
+@keyframes confetti-fall{
+  0%{transform:translateY(0) rotate(0deg);opacity:1;}
+  100%{transform:translateY(60px) rotate(360deg);opacity:0;}
+}
+.confetti-particle{
+  position:absolute;width:4px;height:4px;border-radius:50%;
+  animation:confetti-fall 1.5s ease-out forwards;
+  pointer-events:none;z-index:10;
+}
+
+/* ── BOTTOM PANEL ── */
+.bottom-panel{
+  display:grid;grid-template-columns:1fr 1fr;gap:20px;
+  padding:0 40px 24px;flex-shrink:0;
+}
+.panel-card{
+  background:rgba(255,255,255,.05);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:16px;padding:20px 24px;
+}
+.panel-title{
+  font-size:13px;font-weight:600;letter-spacing:1px;text-transform:uppercase;
+  color:rgba(255,255,255,.4);margin-bottom:16px;
+}
+
+/* Top-3 */
+.top3-list{display:flex;flex-direction:column;gap:10px;}
+.top3-item{
+  display:flex;align-items:center;gap:14px;
+  padding:12px 16px;border-radius:12px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.06);
+  transition:all .3s;
+}
+.top3-item.gold{
+  background:rgba(255,215,0,.06);
+  border-color:rgba(255,215,0,.2);
+  box-shadow:0 0 20px rgba(255,215,0,.05);
+}
+.top3-medal{font-size:28px;flex-shrink:0;width:36px;text-align:center;}
+.top3-info{flex:1;min-width:0;}
+.top3-name{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.top3-sub{font-size:12px;color:rgba(255,255,255,.4);margin-top:2px;}
+.top3-amount{
+  font-family:'Playfair Display',serif;font-size:20px;font-weight:700;
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+
+/* Feed */
+.feed-list{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow:hidden;}
+.feed-item{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 14px;border-radius:10px;
+  background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.04);
+  font-size:13px;font-weight:500;
+  animation:slideDown .5s ease-out;
+  transition:all .3s;
+}
+.feed-item.highlight{
+  background:rgba(16,185,129,.08);
+  border-color:rgba(16,185,129,.2);
+  box-shadow:0 0 16px rgba(16,185,129,.06);
+}
+@keyframes slideDown{
+  from{opacity:0;transform:translateY(-20px);}
+  to{opacity:1;transform:translateY(0);}
+}
+.feed-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:rgba(255,255,255,.7);}
+.feed-amount{
+  font-family:'Playfair Display',serif;font-weight:700;font-size:15px;
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.feed-tag{
+  font-size:10px;font-weight:600;padding:2px 8px;border-radius:8px;
+  background:rgba(255,255,255,.08);color:rgba(255,255,255,.4);
+  white-space:nowrap;
+}
+.feed-empty{
+  text-align:center;padding:24px;color:rgba(255,255,255,.25);font-size:13px;
+}
+
+/* ── LOADING ── */
+.loading-screen{
+  position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
+  background:#0a0e1a;flex-direction:column;gap:16px;
+}
+.loading-spinner{
+  width:40px;height:40px;border:3px solid rgba(255,255,255,.1);
+  border-top-color:rgba(255,255,255,.6);border-radius:50%;
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:14px;color:rgba(255,255,255,.4);}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1400px){
+  .header{padding:0 24px;height:56px;}
+  .header-title{font-size:20px;}
+  .header-clock{font-size:24px;}
+  .race-section{padding:16px 24px 12px;gap:12px;}
+  .race-track{grid-template-columns:180px 1fr 160px;padding:12px 20px;}
+  .track-rop{font-size:18px;}
+  .track-pct{font-size:26px;}
+  .bottom-panel{padding:0 24px 16px;gap:16px;}
+}
+@media(max-width:1024px){
+  .race-track{grid-template-columns:140px 1fr 130px;gap:12px;}
+  .track-rop{font-size:16px;}
+  .track-pct{font-size:22px;}
+  .track-lane{height:40px;}
+  .bottom-panel{grid-template-columns:1fr;}
+}
+@media(max-width:768px){
+  .header{flex-wrap:wrap;height:auto;padding:12px 16px;gap:8px;}
+  .race-section{padding:12px 16px;gap:10px;}
+  .race-track{grid-template-columns:100px 1fr 100px;padding:10px 14px;}
+  .track-rop{font-size:14px;}
+  .track-pct{font-size:18px;}
+  .bottom-panel{padding:0 16px 12px;}
+}
+</style>
+</head>
+<body class="cursor-visible">
+
+<!-- LOADING -->
+<div class="loading-screen" id="loading">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Загрузка данных...</div>
+</div>
+
+<!-- MAIN PAGE -->
+<div class="page" id="page" style="display:none;">
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-title">ГОНКА К ПЛАНУ</div>
+    <div class="header-month" id="headerMonth"></div>
+    <div class="header-right">
+      <div class="header-clock" id="headerClock"></div>
+      <div class="header-badge" id="headerBadge">Обновлено: --:--</div>
+    </div>
+  </div>
+
+  <!-- RACE TRACKS -->
+  <div class="race-section" id="raceTracks"></div>
+
+  <!-- BOTTOM PANEL -->
+  <div class="bottom-panel">
+    <div class="panel-card">
+      <div class="panel-title">Топ-3 менеджера дня</div>
+      <div class="top3-list" id="top3List"></div>
+    </div>
+    <div class="panel-card">
+      <div class="panel-title">Лента сделок</div>
+      <div class="feed-list" id="feedList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════ CONFIG ═══════════════════════════════════════
+const SUPABASE_URL = 'https://bdyakgmeibpdkisbiykt.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkeWFrZ21laWJwZGtpc2JpeWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTQzOTMsImV4cCI6MjA4Nzc5MDM5M30.nA187grJR6XFQRmTP6WOM-6-1dZK1EzYNNP2JH9aAMg';
+
+const ROP_CRM_MAP = {
+  'РОП Айдана': ['Коллаген', 'Ummi'],
+  'РОП Аслиддин': ['Коллаген'],
+  'РОП Нурдаулет': ['Коллаген'],
+  'РОП Диас': ['Ummi'],
+};
+const ROP_COLORS = {
+  'РОП Айдана': '#1a56db',
+  'РОП Аслиддин': '#f59e0b',
+  'РОП Нурдаулет': '#10b981',
+  'РОП Диас': '#ef4444',
+};
+const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+
+// ═══════════════════ DATA ═══════════════════════════════════════
+let RAW = {}, MANAGERS = {}, ROP_PLANS = {}, MGR_TO_ROP = {};
+const _ropCache = {};
+let prevFeedKeys = new Set();
+let prevFinished = new Set();
+
+// ═══════════════════ UTILS ═══════════════════════════════════════
+const parseDate = s => { const [d,m,y] = s.split('.'); return new Date(+y, +m-1, +d); };
+const fmtDate = d => `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+const fmt = n => Math.round(n).toLocaleString('ru-RU');
+const fmtM = n => fmt(Math.round(n)) + ' ₸';
+const getMonthKey = d => `${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+
+function getDatesInRange(from, to) {
+  const res = []; let cur = parseDate(from); const end = parseDate(to);
+  while (cur <= end) { res.push(fmtDate(cur)); cur = new Date(cur.getTime() + 86400000); }
+  return res;
+}
+
+function getRop(mgrName) {
+  if (_ropCache[mgrName] !== undefined) return _ropCache[mgrName];
+  if (MGR_TO_ROP[mgrName]) { _ropCache[mgrName] = MGR_TO_ROP[mgrName]; return _ropCache[mgrName]; }
+  const lower = mgrName.toLowerCase();
+  for (const [k,v] of Object.entries(MGR_TO_ROP)) {
+    if (k.toLowerCase() === lower) { _ropCache[mgrName] = v; return v; }
+  }
+  for (const [k,v] of Object.entries(MGR_TO_ROP)) {
+    const kl = k.toLowerCase();
+    if (lower.startsWith(kl) || kl.startsWith(lower)) { _ropCache[mgrName] = v; return v; }
+  }
+  const pinMatch = lower.match(/^п[иі]н\s*(\d+)/i);
+  if (pinMatch) {
+    const pinNum = pinMatch[1];
+    for (const [k,v] of Object.entries(MGR_TO_ROP)) {
+      const km = k.toLowerCase().match(/^п[иі]н\s*(\d+)/i);
+      if (km && km[1] === pinNum) { _ropCache[mgrName] = v; return v; }
+    }
+  }
+  _ropCache[mgrName] = '';
+  return '';
+}
+function clearRopCache() { Object.keys(_ropCache).forEach(k => delete _ropCache[k]); }
+
+function aggregateManagersByPeriod(prodKey, from, to) {
+  const allMgrs = MANAGERS[prodKey] || [];
+  const dates = new Set(getDatesInRange(from, to));
+  return allMgrs.map(m => {
+    if (m.daily && Object.keys(m.daily).length > 0) {
+      let leads=0, deals=0, budget=0;
+      for (const [d, v] of Object.entries(m.daily)) {
+        if (dates.has(d)) { leads += v[0]||0; deals += v[1]||0; budget += v[2]||0; }
+      }
+      return { name: m.name, leads, deals, budget: Math.round(budget) };
+    }
+    return { name: m.name, leads: m.leads||0, deals: m.deals||0, budget: m.budget||0 };
+  }).filter(m => m.budget > 0 || m.leads > 0);
+}
+
+// ═══════════════════ SVG CAR ═══════════════════════════════════════
+function carSVG(color) {
+  return `<svg width="44" height="22" viewBox="0 0 44 22" fill="none" xmlns="http://www.w3.org/2000/svg" style="color:${color}">
+    <path d="M6 16h3a3 3 0 006 0h14a3 3 0 006 0h3c2 0 3-1 3-3v-3c0-1-.5-2-1.5-2.5L36 6l-4-4H18l-6 4-6 2.5C4.5 9.5 3 10 3 12v1c0 2 1 3 3 3z" fill="currentColor"/>
+    <circle cx="11" cy="17" r="3" fill="#222" stroke="currentColor" stroke-width="1"/>
+    <circle cx="11" cy="17" r="1.2" fill="rgba(255,255,255,.3)"/>
+    <circle cx="33" cy="17" r="3" fill="#222" stroke="currentColor" stroke-width="1"/>
+    <circle cx="33" cy="17" r="1.2" fill="rgba(255,255,255,.3)"/>
+    <path d="M18 4l-3 4h10l1-4H18z" fill="rgba(255,255,255,.15)"/>
+    <path d="M27 4l-1 4h8l-3-4h-4z" fill="rgba(255,255,255,.1)"/>
+    <rect x="38" y="8" width="4" height="2" rx="1" fill="rgba(255,255,255,.3)"/>
+  </svg>`;
+}
+
+// ═══════════════════ RACE CALCULATION ═══════════════════════════════
+function calcRopData() {
+  const now = new Date();
+  const lastDay = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  const monthFrom = `01.${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
+  const monthTo = `${String(lastDay).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
+  const monthKey = `${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
+
+  const results = [];
+  for (const [ropName, crms] of Object.entries(ROP_CRM_MAP)) {
+    let fact=0, leads=0, deals=0, mgrCount=0;
+    const mgrSet = new Set();
+    crms.forEach(crm => {
+      const mgrs = aggregateManagersByPeriod(crm, monthFrom, monthTo);
+      mgrs.filter(m => getRop(m.name) === ropName).forEach(m => {
+        fact += m.budget||0; leads += m.leads||0; deals += m.deals||0;
+        mgrSet.add(m.name);
+      });
+    });
+    mgrCount = mgrSet.size;
+    const plan = (ROP_PLANS[ropName] && ROP_PLANS[ropName][monthKey]) || 0;
+    const pct = plan > 0 ? (fact / plan * 100) : 0;
+    results.push({ name: ropName, fact, plan, pct, leads, deals, mgrCount, color: ROP_COLORS[ropName] });
+  }
+  results.sort((a,b) => b.pct - a.pct);
+  return results;
+}
+
+// ═══════════════════ TOP-3 & FEED ═══════════════════════════════════
+function getTodayManagers() {
+  const now = new Date();
+  const todayStr = fmtDate(now);
+  const allMgrs = [];
+  const allCrms = [...new Set(Object.values(ROP_CRM_MAP).flat())];
+
+  allCrms.forEach(crm => {
+    const mgrs = aggregateManagersByPeriod(crm, todayStr, todayStr);
+    mgrs.forEach(m => {
+      allMgrs.push({ ...m, crm });
+    });
+  });
+  return allMgrs;
+}
+
+function calcTop3() {
+  const mgrs = getTodayManagers();
+  // Deduplicate by name (keep highest budget)
+  const map = {};
+  mgrs.forEach(m => {
+    if (!map[m.name] || map[m.name].budget < m.budget) {
+      map[m.name] = m;
+    } else {
+      map[m.name].budget += m.budget;
+      map[m.name].deals += m.deals;
+    }
+  });
+  return Object.values(map).sort((a,b) => b.budget - a.budget).slice(0, 3);
+}
+
+function calcFeed() {
+  const now = new Date();
+  const todayStr = fmtDate(now);
+  const allCrms = [...new Set(Object.values(ROP_CRM_MAP).flat())];
+  const entries = [];
+
+  allCrms.forEach(crm => {
+    const mgrList = MANAGERS[crm] || [];
+    mgrList.forEach(m => {
+      if (m.daily && m.daily[todayStr]) {
+        const v = m.daily[todayStr];
+        const budget = v[2] || 0;
+        if (budget > 0) {
+          entries.push({ name: m.name, budget, deals: v[1]||0, crm });
+        }
+      }
+    });
+  });
+
+  entries.sort((a,b) => b.budget - a.budget);
+  return entries.slice(0, 7);
+}
+
+// ═══════════════════ CONFETTI ═══════════════════════════════════════
+function spawnConfetti(trackEl) {
+  const colors = ['#10b981','#34d399','#6ee7b7','#fbbf24','#f59e0b','#fff'];
+  const lane = trackEl.querySelector('.track-lane');
+  if (!lane) return;
+  const rect = lane.getBoundingClientRect();
+  for (let i = 0; i < 20; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti-particle';
+    p.style.background = colors[Math.floor(Math.random()*colors.length)];
+    p.style.left = (rect.right - 60 + Math.random()*60) + 'px';
+    p.style.top = (rect.top - 10 + Math.random()*30) + 'px';
+    p.style.width = (3 + Math.random()*4) + 'px';
+    p.style.height = p.style.width;
+    p.style.animationDuration = (1 + Math.random()*1.5) + 's';
+    p.style.animationDelay = (Math.random()*0.5) + 's';
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 3000);
+  }
+}
+
+// ═══════════════════ RENDER ═══════════════════════════════════════
+function renderRace() {
+  const data = calcRopData();
+  const container = document.getElementById('raceTracks');
+
+  // Keep existing DOM if possible for smooth transitions
+  let tracks = container.querySelectorAll('.race-track');
+
+  if (tracks.length !== data.length) {
+    container.innerHTML = data.map((r, i) => `
+      <div class="race-track ${i === 0 ? 'leader' : ''}" data-rop="${r.name}">
+        <div class="track-info">
+          <div class="track-rop" style="color:${r.color}">${r.name.replace('РОП ','')}
+          </div>
+          <div class="track-meta">
+            <span class="track-rank">#${i+1}</span>
+            <span class="track-badge">${r.mgrCount} менедж.</span>
+          </div>
+        </div>
+        <div class="track-lane">
+          <div class="track-progress" style="width:0%;position:absolute;">
+            <div class="track-progress-inner" style="background:${r.color}"></div>
+            <div class="track-progress-glow" style="background:${r.color}"></div>
+          </div>
+          <div class="finish-line"></div>
+          <div class="car-wrap ${i === 0 ? 'leader-car' : ''}" style="left:0%;color:${r.color}">
+            ${carSVG(r.color)}
+          </div>
+        </div>
+        <div class="track-stats">
+          <div class="track-pct" style="color:${r.color}">0%</div>
+          <div class="track-amounts">${fmtM(r.fact)} / ${fmtM(r.plan)}</div>
+          <div class="track-deals">${r.leads} лидов  ·  ${r.deals} сделок</div>
+        </div>
+      </div>
+    `).join('');
+    tracks = container.querySelectorAll('.race-track');
+  }
+
+  // Animate after brief delay
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      data.forEach((r, i) => {
+        const track = tracks[i];
+        if (!track) return;
+
+        // Update info
+        track.className = 'race-track' + (i === 0 ? ' leader' : '');
+        track.dataset.rop = r.name;
+
+        const ropEl = track.querySelector('.track-rop');
+        ropEl.style.color = r.color;
+        ropEl.textContent = r.name.replace('РОП ','');
+
+        track.querySelector('.track-rank').textContent = '#' + (i+1);
+        track.querySelector('.track-badge').textContent = r.mgrCount + ' менедж.';
+
+        // Animate progress bar
+        const pctClamped = Math.min(r.pct, 100);
+        const progress = track.querySelector('.track-progress');
+        progress.style.width = pctClamped + '%';
+        progress.querySelector('.track-progress-inner').style.background = r.color;
+        progress.querySelector('.track-progress-glow').style.background = r.color;
+
+        // Animate car
+        const car = track.querySelector('.car-wrap');
+        car.style.left = pctClamped + '%';
+        car.style.color = r.color;
+        car.className = 'car-wrap' + (i === 0 ? ' leader-car' : '') + (r.pct >= 100 ? ' finished' : '');
+
+        // Stats
+        track.querySelector('.track-pct').textContent = r.pct.toFixed(1) + '%';
+        track.querySelector('.track-pct').style.color = r.color;
+        track.querySelector('.track-amounts').textContent = fmtM(r.fact) + ' / ' + fmtM(r.plan);
+        track.querySelector('.track-deals').textContent = r.leads + ' лидов  ·  ' + r.deals + ' сделок';
+
+        // Confetti on crossing 100%
+        if (r.pct >= 100 && !prevFinished.has(r.name)) {
+          prevFinished.add(r.name);
+          spawnConfetti(track);
+        }
+      });
+    }, 50);
+  });
+}
+
+function renderTop3() {
+  const top3 = calcTop3();
+  const medals = ['\u{1F947}', '\u{1F948}', '\u{1F949}'];
+  const el = document.getElementById('top3List');
+
+  if (top3.length === 0) {
+    el.innerHTML = '<div class="feed-empty">Нет данных за сегодня</div>';
+    return;
+  }
+
+  el.innerHTML = top3.map((m, i) => `
+    <div class="top3-item ${i === 0 ? 'gold' : ''}">
+      <div class="top3-medal">${medals[i] || ''}</div>
+      <div class="top3-info">
+        <div class="top3-name">${m.name}</div>
+        <div class="top3-sub">${m.deals} сделок</div>
+      </div>
+      <div class="top3-amount">${fmtM(m.budget)}</div>
+    </div>
+  `).join('');
+}
+
+function renderFeed() {
+  const feed = calcFeed();
+  const el = document.getElementById('feedList');
+
+  if (feed.length === 0) {
+    el.innerHTML = '<div class="feed-empty">Нет сделок за сегодня</div>';
+    return;
+  }
+
+  const newKeys = new Set(feed.map(f => f.name + ':' + f.budget));
+  const hasNew = feed.some(f => !prevFeedKeys.has(f.name + ':' + f.budget));
+
+  el.innerHTML = feed.map(f => {
+    const isNew = !prevFeedKeys.has(f.name + ':' + f.budget);
+    const isHighlight = f.budget >= 100000;
+    return `
+      <div class="feed-item ${isHighlight ? 'highlight' : ''}" ${isNew ? '' : 'style="animation:none"'}>
+        <div class="feed-name">${f.name}</div>
+        <div class="feed-amount" ${isHighlight ? 'style="color:#10b981"' : ''}>${fmtM(f.budget)}</div>
+        <div class="feed-tag">${f.crm}</div>
+      </div>
+    `;
+  }).join('');
+
+  prevFeedKeys = newKeys;
+}
+
+function renderAll() {
+  renderRace();
+  renderTop3();
+  renderFeed();
+}
+
+// ═══════════════════ HEADER ═══════════════════════════════════════
+function updateHeader() {
+  const now = new Date();
+  document.getElementById('headerMonth').textContent =
+    MONTH_NAMES[now.getMonth()].toUpperCase() + ' ' + now.getFullYear();
+  document.getElementById('headerClock').textContent =
+    now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+// ═══════════════════ DATA LOADING ═══════════════════════════════════
+async function loadData() {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data,updated_at`, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+      }
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const rows = await res.json();
+    if (rows && rows[0] && rows[0].data) {
+      const d = rows[0].data;
+      if (d.RAW)        RAW = d.RAW;
+      if (d.MANAGERS)   MANAGERS = d.MANAGERS;
+      if (d.MGR_TO_ROP && Object.keys(d.MGR_TO_ROP).length > 0) {
+        MGR_TO_ROP = d.MGR_TO_ROP;
+        clearRopCache();
+      }
+      if (d.ROP_PLANS)  ROP_PLANS = d.ROP_PLANS;
+
+      // Update badge
+      if (rows[0].updated_at) {
+        const dt = new Date(rows[0].updated_at);
+        document.getElementById('headerBadge').textContent =
+          'Обновлено: ' + dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+      }
+    }
+    return true;
+  } catch(e) {
+    console.warn('Supabase load error:', e);
+    return false;
+  }
+}
+
+// ═══════════════════ CURSOR AUTO-HIDE ═══════════════════════════════
+let cursorTimer;
+function resetCursor() {
+  document.body.classList.add('cursor-visible');
+  clearTimeout(cursorTimer);
+  cursorTimer = setTimeout(() => {
+    document.body.classList.remove('cursor-visible');
+  }, 3000);
+}
+document.addEventListener('mousemove', resetCursor);
+document.addEventListener('mousedown', resetCursor);
+
+// ═══════════════════ INIT ═══════════════════════════════════════
+async function init() {
+  updateHeader();
+  setInterval(updateHeader, 1000);
+
+  const ok = await loadData();
+  if (ok) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('page').style.display = 'flex';
+    renderAll();
+  } else {
+    document.querySelector('.loading-text').textContent = 'Ошибка загрузки данных. Повтор...';
+    setTimeout(init, 5000);
+    return;
+  }
+
+  // Auto-reload every 60s
+  setInterval(async () => {
+    await loadData();
+    renderAll();
+  }, 60000);
+}
+
+init();
+</script>
+</body>
+</html>
