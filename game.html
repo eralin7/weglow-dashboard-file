@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>WeGlow — Персонажи</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:#0f1623; --ink2:#1e2840; --slate:#4a5568; --muted:#8896ae;
+  --line:#e8ecf4; --bg:#f7f8fc; --white:#fff;
+  --acc:#6366f1; --acc-l:#eef2ff;
+  --gold:#ca8a04; --gold-l:#fefce8;
+  --green:#16a34a; --green-l:#dcfce7;
+  --red:#c0392b; --red-l:#fde8e8;
+  --col:#1a56db; --ummi:#0a7c5c;
+  --shadow:0 1px 3px rgba(15,22,35,.06),0 4px 16px rgba(15,22,35,.08);
+  --shadow2:0 2px 8px rgba(15,22,35,.08),0 8px 32px rgba(15,22,35,.10);
+  --r:14px;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{font-size:15px;-webkit-font-smoothing:antialiased;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
+
+/* ─── LAYOUT ─── */
+.shell{display:flex;min-height:100vh;}
+
+/* ─── SIDEBAR ─── */
+.sidebar{
+  width:220px;flex-shrink:0;background:var(--ink);
+  display:flex;flex-direction:column;padding:0 0 24px;
+  position:fixed;top:0;left:0;bottom:0;z-index:100;
+  transition:transform .28s cubic-bezier(.4,0,.2,1);overflow-y:auto;
+}
+.sb-logo{padding:28px 24px 24px;border-bottom:1px solid rgba(255,255,255,.07);}
+.sb-logo h1{
+  font-family:'DM Sans',sans-serif;font-size:45px;font-weight:800;
+  letter-spacing:-.5px;line-height:1;
+  background:linear-gradient(180deg,#fff 0%,#d0e8ff 18%,#7bbfff 32%,#4a9eff 44%,#2979e8 54%,#1a5fcc 64%,#3a8fff 74%,#a0d0ff 84%,#e8f4ff 92%,#fff 100%);
+  background-size:100% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.sb-logo .tagline{font-size:9px;color:rgba(180,210,255,.45);letter-spacing:2.5px;text-transform:uppercase;margin-top:6px;font-weight:500;}
+.sb-nav{padding:14px 10px;flex:1;}
+.sb-section{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.25);padding:0 8px 10px;}
+.dock-wrap{display:flex;flex-direction:column;gap:3px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:6px;}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:10px;
+  color:rgba(255,255,255,.45);font-size:13px;font-weight:500;cursor:pointer;
+  border:none;background:transparent;width:100%;text-align:left;text-decoration:none;
+  transition:transform .22s cubic-bezier(.34,1.56,.64,1),background .18s,color .18s;
+}
+.nav-item:hover{background:rgba(255,255,255,.08);color:#fff;transform:scale(1.055) translateX(4px);}
+.nav-item.active{
+  background:linear-gradient(135deg,rgba(99,102,241,.3),rgba(99,102,241,.12));
+  color:#fff;border:1px solid rgba(99,102,241,.28);
+}
+.nav-item .icon{font-size:16px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:7px;background:rgba(255,255,255,.05);}
+.nav-item:hover .icon{transform:scale(1.22) rotate(-6deg);background:rgba(255,255,255,.1);}
+.nav-item.active .icon{background:rgba(99,102,241,.25);}
+.dock-divider{height:1px;background:rgba(255,255,255,.06);margin:4px 8px;}
+
+/* ─── MAIN CONTENT ─── */
+.main{margin-left:220px;flex:1;padding:28px 32px 40px;min-width:0;}
+
+/* ─── LOGIN SCREEN ─── */
+.login-screen{
+  display:flex;align-items:center;justify-content:center;min-height:80vh;
+}
+.login-card{
+  background:var(--white);border-radius:20px;padding:48px;
+  box-shadow:var(--shadow2);max-width:440px;width:100%;text-align:center;
+}
+.login-card h2{font-family:'Playfair Display',serif;font-size:28px;margin-bottom:8px;}
+.login-card p{color:var(--muted);font-size:13px;margin-bottom:28px;}
+.login-list{display:flex;flex-direction:column;gap:8px;}
+.login-btn{
+  padding:14px 20px;border-radius:12px;border:1.5px solid var(--line);
+  background:var(--white);cursor:pointer;font-size:14px;font-weight:600;
+  font-family:inherit;color:var(--ink);display:flex;align-items:center;gap:12px;
+  transition:all .2s;
+}
+.login-btn:hover{border-color:var(--acc);background:var(--acc-l);transform:translateY(-2px);box-shadow:var(--shadow);}
+.login-btn .avatar-mini{
+  width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-size:18px;color:#fff;font-weight:700;flex-shrink:0;
+}
+
+/* ─── PAGE HEADER ─── */
+.page-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px;}
+.page-hdr h2{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;}
+.hdr-stats{display:flex;align-items:center;gap:16px;}
+.coin-badge{
+  display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,#fef9c3,#fef08a);
+  padding:8px 16px;border-radius:12px;font-weight:700;font-size:15px;color:#92400e;
+  border:1px solid #fde047;box-shadow:0 2px 8px rgba(202,138,4,.15);
+}
+.coin-badge .coin-icon{font-size:20px;}
+.level-badge{
+  display:flex;align-items:center;gap:6px;background:linear-gradient(135deg,var(--acc-l),#ddd6fe);
+  padding:8px 16px;border-radius:12px;font-weight:700;font-size:14px;color:#4338ca;
+  border:1px solid #c4b5fd;
+}
+.logout-btn{
+  padding:8px 16px;border-radius:10px;border:1px solid var(--line);
+  background:var(--white);cursor:pointer;font-size:12px;font-weight:500;
+  font-family:inherit;color:var(--muted);transition:all .15s;
+}
+.logout-btn:hover{border-color:var(--red);color:var(--red);background:var(--red-l);}
+
+/* ─── TABS ─── */
+.tabs{display:flex;gap:4px;background:var(--white);border-radius:12px;padding:4px;box-shadow:var(--shadow);margin-bottom:24px;width:fit-content;}
+.tab-btn{
+  padding:10px 20px;border-radius:10px;border:none;background:transparent;
+  font-family:inherit;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;
+  transition:all .2s;
+}
+.tab-btn.active{background:var(--acc);color:#fff;box-shadow:0 2px 8px rgba(99,102,241,.3);}
+.tab-btn:hover:not(.active){background:var(--bg);color:var(--ink);}
+.tab-pane{display:none;}
+.tab-pane.active{display:block;}
+
+/* ─── ALL CHARACTERS GRID ─── */
+.chars-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;}
+.char-card{
+  background:var(--white);border-radius:16px;padding:20px;text-align:center;
+  box-shadow:var(--shadow);transition:all .25s;position:relative;overflow:hidden;
+}
+.char-card:hover{transform:translateY(-4px);box-shadow:var(--shadow2);}
+.char-card.is-me{border:2px solid var(--acc);}
+.char-card.is-me::after{
+  content:'Это вы';position:absolute;top:10px;right:10px;
+  font-size:10px;font-weight:700;color:var(--acc);background:var(--acc-l);
+  padding:3px 10px;border-radius:20px;
+}
+.char-avatar{
+  width:80px;height:80px;border-radius:50%;margin:0 auto 12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:36px;position:relative;
+  box-shadow:0 4px 16px rgba(0,0,0,.12);
+}
+.char-avatar .equip-hat{position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:28px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.2));}
+.char-avatar .equip-pet{position:absolute;bottom:-8px;right:-8px;font-size:22px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.2));}
+.char-avatar .equip-aura{
+  position:absolute;inset:-6px;border-radius:50%;pointer-events:none;
+}
+.aura-fire{box-shadow:0 0 16px 4px rgba(239,68,68,.4),0 0 32px 8px rgba(239,68,68,.15);animation:aura-pulse 2s ease-in-out infinite;}
+.aura-ice{box-shadow:0 0 16px 4px rgba(59,130,246,.4),0 0 32px 8px rgba(59,130,246,.15);animation:aura-pulse 2s ease-in-out infinite;}
+.aura-gold{box-shadow:0 0 16px 4px rgba(234,179,8,.5),0 0 32px 8px rgba(234,179,8,.2);animation:aura-pulse 2s ease-in-out infinite;}
+.aura-emerald{box-shadow:0 0 16px 4px rgba(16,185,129,.4),0 0 32px 8px rgba(16,185,129,.15);animation:aura-pulse 2s ease-in-out infinite;}
+.aura-purple{box-shadow:0 0 16px 4px rgba(139,92,246,.4),0 0 32px 8px rgba(139,92,246,.15);animation:aura-pulse 2s ease-in-out infinite;}
+@keyframes aura-pulse{0%,100%{opacity:.7;transform:scale(1);}50%{opacity:1;transform:scale(1.05);}}
+
+.char-name{font-weight:700;font-size:14px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.char-rop{font-size:11px;color:var(--muted);margin-bottom:8px;}
+.char-level{
+  display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;
+  color:#4338ca;background:#ede9fe;padding:3px 10px;border-radius:20px;margin-bottom:8px;
+}
+.xp-bar{height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden;margin-bottom:6px;}
+.xp-fill{height:100%;background:linear-gradient(90deg,var(--acc),#818cf8);border-radius:3px;transition:width .5s;}
+.char-coins{font-size:12px;color:#92400e;font-weight:600;display:flex;align-items:center;justify-content:center;gap:4px;}
+
+/* ─── MY CHARACTER (PERSONAL CABINET) ─── */
+.my-char-section{display:grid;grid-template-columns:340px 1fr;gap:24px;align-items:start;}
+.my-char-card{
+  background:var(--white);border-radius:20px;padding:32px;text-align:center;
+  box-shadow:var(--shadow2);position:relative;
+}
+.my-avatar-big{
+  width:120px;height:120px;border-radius:50%;margin:0 auto 16px;
+  display:flex;align-items:center;justify-content:center;font-size:54px;
+  position:relative;box-shadow:0 6px 24px rgba(0,0,0,.15);
+}
+.my-avatar-big .equip-hat{position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:40px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));}
+.my-avatar-big .equip-pet{position:absolute;bottom:-12px;right:-12px;font-size:30px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));}
+.my-avatar-big .equip-aura{position:absolute;inset:-8px;border-radius:50%;pointer-events:none;}
+.my-name{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin-bottom:4px;}
+.my-rop{font-size:12px;color:var(--muted);margin-bottom:16px;}
+.my-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.my-stat{background:var(--bg);border-radius:12px;padding:12px;}
+.my-stat .val{font-size:20px;font-weight:800;color:var(--ink);}
+.my-stat .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
+.my-xp-section{margin-top:8px;}
+.my-xp-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:6px;}
+.my-xp-bar{height:10px;background:#e5e7eb;border-radius:5px;overflow:hidden;}
+.my-xp-fill{height:100%;background:linear-gradient(90deg,#6366f1,#a78bfa,#c084fc);border-radius:5px;transition:width .5s;}
+
+/* ─── EQUIPPED ITEMS ─── */
+.equipped-section{margin-top:20px;}
+.equipped-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;}
+.equipped-slots{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.eq-slot{
+  background:var(--bg);border-radius:12px;padding:10px 6px;text-align:center;
+  border:1.5px dashed var(--line);min-height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:all .2s;cursor:pointer;position:relative;
+}
+.eq-slot.filled{border-style:solid;border-color:var(--acc);background:var(--acc-l);}
+.eq-slot .eq-icon{font-size:22px;margin-bottom:4px;}
+.eq-slot .eq-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+.eq-slot .eq-remove{
+  position:absolute;top:4px;right:4px;width:16px;height:16px;border-radius:50%;
+  background:var(--red);color:#fff;border:none;font-size:10px;cursor:pointer;
+  display:none;align-items:center;justify-content:center;line-height:1;
+}
+.eq-slot.filled:hover .eq-remove{display:flex;}
+
+/* ─── SHOP ─── */
+.shop-section{background:var(--white);border-radius:20px;padding:28px;box-shadow:var(--shadow);}
+.shop-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:4px;}
+.shop-sub{font-size:12px;color:var(--muted);margin-bottom:20px;}
+.shop-cats{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap;}
+.shop-cat{
+  padding:7px 14px;border-radius:20px;border:1px solid var(--line);
+  background:var(--white);font-family:inherit;font-size:12px;font-weight:600;
+  color:var(--muted);cursor:pointer;transition:all .15s;
+}
+.shop-cat.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+.shop-cat:hover:not(.active){border-color:var(--acc);color:var(--acc);}
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;}
+.shop-item{
+  background:var(--bg);border-radius:14px;padding:16px;text-align:center;
+  border:1.5px solid transparent;transition:all .2s;position:relative;
+}
+.shop-item:hover{border-color:var(--acc);transform:translateY(-2px);box-shadow:var(--shadow);}
+.shop-item.owned{border-color:var(--green);background:var(--green-l);}
+.shop-item.equipped{border-color:var(--acc);background:var(--acc-l);}
+.shop-item .item-icon{font-size:36px;margin-bottom:8px;display:block;}
+.shop-item .item-name{font-size:13px;font-weight:700;margin-bottom:4px;}
+.shop-item .item-desc{font-size:10px;color:var(--muted);margin-bottom:10px;line-height:1.4;}
+.shop-item .item-price{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:13px;font-weight:700;color:#92400e;
+  background:#fef9c3;padding:5px 12px;border-radius:20px;
+}
+.shop-item .item-price.free{color:var(--green);background:var(--green-l);}
+.buy-btn{
+  margin-top:8px;padding:8px 16px;border-radius:10px;border:none;
+  background:var(--acc);color:#fff;font-family:inherit;font-size:12px;font-weight:700;
+  cursor:pointer;transition:all .2s;width:100%;
+}
+.buy-btn:hover{background:#4f46e5;transform:scale(1.03);}
+.buy-btn:disabled{background:#cbd5e1;cursor:not-allowed;transform:none;}
+.buy-btn.owned-btn{background:var(--green);cursor:default;}
+.buy-btn.equip-btn{background:#f59e0b;color:#fff;}
+.shop-item .item-badge{
+  position:absolute;top:8px;right:8px;font-size:9px;font-weight:700;
+  padding:2px 8px;border-radius:10px;
+}
+.badge-owned{background:var(--green-l);color:var(--green);}
+.badge-equipped{background:var(--acc-l);color:var(--acc);}
+.badge-new{background:#fef3c7;color:#d97706;}
+
+/* ─── LEAD SHOP ─── */
+.lead-shop{
+  background:linear-gradient(135deg,#fef9c3,#fde68a);border-radius:16px;
+  padding:24px;margin-top:20px;border:1px solid #fde047;
+}
+.lead-shop h3{font-size:16px;font-weight:700;color:#92400e;margin-bottom:6px;}
+.lead-shop p{font-size:12px;color:#a16207;margin-bottom:16px;}
+.lead-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;}
+.lead-card{
+  background:rgba(255,255,255,.8);border-radius:12px;padding:16px;text-align:center;
+  border:1px solid rgba(202,138,4,.2);transition:all .2s;
+}
+.lead-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(202,138,4,.15);}
+.lead-card .lead-icon{font-size:32px;margin-bottom:8px;}
+.lead-card .lead-title{font-size:14px;font-weight:700;color:#92400e;margin-bottom:4px;}
+.lead-card .lead-desc{font-size:11px;color:#a16207;margin-bottom:10px;}
+.lead-card .lead-price{font-size:16px;font-weight:800;color:#92400e;margin-bottom:8px;}
+.lead-buy-btn{
+  padding:10px 20px;border-radius:10px;border:none;
+  background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;
+  font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;
+  transition:all .2s;width:100%;
+}
+.lead-buy-btn:hover{transform:scale(1.03);box-shadow:0 4px 12px rgba(217,119,6,.3);}
+.lead-buy-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+
+/* ─── EARNINGS LOG ─── */
+.earnings-section{margin-top:24px;}
+.earnings-card{background:var(--white);border-radius:16px;padding:24px;box-shadow:var(--shadow);}
+.earnings-card h3{font-size:16px;font-weight:700;margin-bottom:16px;}
+.earnings-table{width:100%;border-collapse:collapse;}
+.earnings-table th{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);}
+.earnings-table td{padding:10px 12px;font-size:13px;border-bottom:1px solid var(--line);}
+.earnings-table tr:last-child td{border-bottom:none;}
+.earn-plus{color:var(--green);font-weight:700;}
+.earn-minus{color:var(--red);font-weight:700;}
+
+/* ─── TOAST ─── */
+.toast{
+  position:fixed;bottom:24px;right:24px;z-index:999;
+  background:var(--ink);color:#fff;padding:14px 24px;border-radius:14px;
+  font-size:13px;font-weight:600;box-shadow:0 8px 32px rgba(0,0,0,.3);
+  transform:translateY(120%);opacity:0;transition:all .35s cubic-bezier(.4,0,.2,1);
+}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.success{background:#059669;}
+.toast.error{background:var(--red);}
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:1100px){
+  .my-char-section{grid-template-columns:1fr;}
+}
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%);}
+  .sidebar.open{transform:translateX(0);}
+  .main{margin-left:0;padding:16px;}
+  .chars-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));}
+  .shop-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));}
+  .my-avatar-big{width:90px;height:90px;font-size:40px;}
+  .burger{display:flex !important;}
+}
+.burger{
+  display:none;position:fixed;top:12px;left:12px;z-index:200;
+  width:40px;height:40px;border-radius:10px;background:var(--white);
+  box-shadow:var(--shadow);border:none;cursor:pointer;
+  align-items:center;justify-content:center;font-size:20px;
+}
+</style>
+</head>
+<body>
+<button class="burger" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+<div class="shell">
+<!-- ═══ SIDEBAR ═══ -->
+<aside class="sidebar">
+  <div class="sb-logo">
+    <h1>WeGlow</h1>
+    <div class="tagline">Sales Gamification</div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-section">Навигация</div>
+    <div class="dock-wrap">
+      <a href="dashboard.html" class="nav-item" data-tip="Дашборд">
+        <span class="icon">◈</span><span class="nav-label">Дашборд</span>
+      </a>
+      <a href="tv.html" class="nav-item" data-tip="Гонка к плану">
+        <span class="icon">🏎️</span><span class="nav-label">Гонка к плану</span>
+      </a>
+      <a href="game.html" class="nav-item active" data-tip="Персонажи">
+        <span class="icon">🎮</span><span class="nav-label">Персонажи</span>
+      </a>
+      <div class="dock-divider"></div>
+      <a href="rop.html" class="nav-item" data-tip="Кабинет РОП">
+        <span class="icon">👥</span><span class="nav-label">Кабинет РОП</span>
+      </a>
+      <a href="director.html" class="nav-item" data-tip="Кабинет директора">
+        <span class="icon">👔</span><span class="nav-label">Кабинет директора</span>
+      </a>
+    </div>
+  </nav>
+</aside>
+
+<!-- ═══ MAIN ═══ -->
+<div class="main">
+  <!-- LOGIN SCREEN -->
+  <div id="login-screen" class="login-screen">
+    <div class="login-card">
+      <h2>Выберите персонажа</h2>
+      <p>Войдите как менеджер чтобы прокачивать своего героя</p>
+      <div class="login-list" id="login-list"></div>
+    </div>
+  </div>
+
+  <!-- GAME SCREEN (hidden until login) -->
+  <div id="game-screen" style="display:none">
+    <div class="page-hdr">
+      <h2 id="page-title">Персонажи</h2>
+      <div class="hdr-stats">
+        <div class="coin-badge"><span class="coin-icon">🪙</span><span id="my-coins">0</span></div>
+        <div class="level-badge">⚡ Уровень <span id="my-level">1</span></div>
+        <button class="logout-btn" onclick="logout()">Выйти</button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('all',this)">Все персонажи</button>
+      <button class="tab-btn" onclick="switchTab('my',this)">Мой кабинет</button>
+      <button class="tab-btn" onclick="switchTab('shop',this)">Магазин</button>
+    </div>
+
+    <!-- TAB: All characters -->
+    <div id="tab-all" class="tab-pane active">
+      <div class="chars-grid" id="chars-grid"></div>
+    </div>
+
+    <!-- TAB: My character -->
+    <div id="tab-my" class="tab-pane">
+      <div class="my-char-section">
+        <div>
+          <div class="my-char-card" id="my-char-card"></div>
+        </div>
+        <div>
+          <div class="earnings-section">
+            <div class="earnings-card">
+              <h3>Как заработать монеты</h3>
+              <table class="earnings-table">
+                <thead><tr><th>Действие</th><th>Награда</th></tr></thead>
+                <tbody>
+                  <tr><td>Новый лид (заявка)</td><td class="earn-plus">+5 🪙</td></tr>
+                  <tr><td>Закрытая сделка</td><td class="earn-plus">+50 🪙</td></tr>
+                  <tr><td>Каждые 100 000 ₸ выручки</td><td class="earn-plus">+100 🪙</td></tr>
+                  <tr><td>Топ-1 менеджер дня</td><td class="earn-plus">+200 🪙</td></tr>
+                  <tr><td>Конверсия > 30%</td><td class="earn-plus">+150 🪙</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="earnings-section">
+            <div class="earnings-card">
+              <h3>История операций</h3>
+              <table class="earnings-table">
+                <thead><tr><th>Дата</th><th>Описание</th><th>Сумма</th></tr></thead>
+                <tbody id="history-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: Shop -->
+    <div id="tab-shop" class="tab-pane">
+      <div class="shop-section">
+        <div class="shop-title">Магазин</div>
+        <div class="shop-sub">Потратьте монеты на прокачку персонажа или покупку лидов</div>
+        <div class="shop-cats" id="shop-cats"></div>
+        <div class="shop-grid" id="shop-grid"></div>
+      </div>
+      <div class="lead-shop">
+        <h3>Купить лиды</h3>
+        <p>Потратьте монеты чтобы получить дополнительных клиентов</p>
+        <div class="lead-cards" id="lead-cards"></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══ TOAST ═══ -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════ CONFIG ═══════════════════════════════════════
+const SUPABASE_URL = 'https://bdyakgmeibpdkisbiykt.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkeWFrZ21laWJwZGtpc2JpeWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTQzOTMsImV4cCI6MjA4Nzc5MDM5M30.nA187grJR6XFQRmTP6WOM-6-1dZK1EzYNNP2JH9aAMg';
+
+// ─── AVATAR SKINS (backgrounds) ───
+const SKINS = [
+  { id:'default',  icon:'🧑‍💼', bg:'linear-gradient(135deg,#6366f1,#818cf8)', name:'Стандарт', price:0, desc:'Базовый скин' },
+  { id:'fire',     icon:'🔥', bg:'linear-gradient(135deg,#ef4444,#f97316)', name:'Огненный', price:300, desc:'Горячий продавец' },
+  { id:'ice',      icon:'❄️', bg:'linear-gradient(135deg,#3b82f6,#06b6d4)', name:'Ледяной',  price:300, desc:'Хладнокровный закрыватель' },
+  { id:'gold',     icon:'👑', bg:'linear-gradient(135deg,#eab308,#f59e0b)', name:'Золотой',  price:500, desc:'Золотой продавец' },
+  { id:'emerald',  icon:'💎', bg:'linear-gradient(135deg,#10b981,#059669)', name:'Изумрудный', price:500, desc:'Элитный менеджер' },
+  { id:'shadow',   icon:'🥷', bg:'linear-gradient(135deg,#1e1b4b,#312e81)', name:'Теневой',  price:700, desc:'Тихий закрыватель' },
+  { id:'rainbow',  icon:'🌈', bg:'linear-gradient(135deg,#ec4899,#8b5cf6,#3b82f6,#10b981)', name:'Радужный', price:1000, desc:'Легендарный скин' },
+];
+
+// ─── HATS ───
+const HATS = [
+  { id:'crown',    icon:'👑', name:'Корона',     price:200, desc:'Корона лидера' },
+  { id:'tophat',   icon:'🎩', name:'Цилиндр',    price:150, desc:'Классика стиля' },
+  { id:'cap',      icon:'🧢', name:'Кепка',      price:100, desc:'Спортивный стиль' },
+  { id:'cowboy',   icon:'🤠', name:'Ковбойская', price:250, desc:'Дикий запад' },
+  { id:'wizard',   icon:'🧙', name:'Маг',        price:400, desc:'Волшебник продаж' },
+  { id:'helmet',   icon:'⛑️', name:'Каска',      price:180, desc:'Безопасность прежде всего' },
+];
+
+// ─── PETS ───
+const PETS = [
+  { id:'cat',      icon:'🐱', name:'Кот',        price:200, desc:'Мурлыкающий помощник' },
+  { id:'dog',      icon:'🐕', name:'Пёс',        price:200, desc:'Верный друг' },
+  { id:'dragon',   icon:'🐉', name:'Дракон',     price:600, desc:'Огнедышащий страж' },
+  { id:'unicorn',  icon:'🦄', name:'Единорог',   price:500, desc:'Магический компаньон' },
+  { id:'eagle',    icon:'🦅', name:'Орёл',       price:350, desc:'Зоркий глаз' },
+  { id:'fox',      icon:'🦊', name:'Лиса',       price:300, desc:'Хитрый помощник' },
+];
+
+// ─── AURAS ───
+const AURAS = [
+  { id:'fire',     icon:'🔴', name:'Огонь',     price:400, desc:'Пламенная аура', css:'aura-fire' },
+  { id:'ice',      icon:'🔵', name:'Лёд',       price:400, desc:'Ледяная аура', css:'aura-ice' },
+  { id:'gold',     icon:'🟡', name:'Золото',    price:600, desc:'Золотое сияние', css:'aura-gold' },
+  { id:'emerald',  icon:'🟢', name:'Изумруд',   price:500, desc:'Изумрудное свечение', css:'aura-emerald' },
+  { id:'purple',   icon:'🟣', name:'Аметист',   price:500, desc:'Фиолетовая энергия', css:'aura-purple' },
+];
+
+// ─── LEAD PACKAGES ───
+const LEAD_PACKAGES = [
+  { id:'lead1', count:1,  price:500,  icon:'📋', title:'1 лид',   desc:'Один дополнительный клиент' },
+  { id:'lead3', count:3,  price:1200, icon:'📦', title:'3 лида',  desc:'Пакет из трёх клиентов' },
+  { id:'lead5', count:5,  price:1800, icon:'🎁', title:'5 лидов', desc:'Выгодный пакет клиентов' },
+];
+
+// ─── XP TABLE ───
+function xpForLevel(lvl){ return lvl * 100; }
+function totalXpForLevel(lvl){ let s=0; for(let i=1;i<lvl;i++) s+=xpForLevel(i); return s; }
+
+// ═══════════════════ STATE ═══════════════════════════════════════
+let MANAGERS = {};
+let MGR_TO_ROP = {};
+let GAME_DATA = {};  // { managerName: { coins, level, xp, skin, hat, pet, aura, purchases, history, leadsBought } }
+let currentUser = localStorage.getItem('game_user') || null;
+
+// ─── MANAGER COLORS ───
+const MGR_COLORS = [
+  'linear-gradient(135deg,#6366f1,#818cf8)',
+  'linear-gradient(135deg,#3b82f6,#60a5fa)',
+  'linear-gradient(135deg,#10b981,#34d399)',
+  'linear-gradient(135deg,#f59e0b,#fbbf24)',
+  'linear-gradient(135deg,#ef4444,#f87171)',
+  'linear-gradient(135deg,#8b5cf6,#a78bfa)',
+  'linear-gradient(135deg,#ec4899,#f472b6)',
+  'linear-gradient(135deg,#14b8a6,#2dd4bf)',
+  'linear-gradient(135deg,#f97316,#fb923c)',
+  'linear-gradient(135deg,#06b6d4,#22d3ee)',
+];
+
+// ═══════════════════ SUPABASE HELPERS ════════════════════════════
+async function loadData() {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data,updated_at`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+    if (!res.ok) throw new Error(res.status);
+    const rows = await res.json();
+    if (rows?.[0]?.data) {
+      const d = rows[0].data;
+      if (d.MANAGERS) MANAGERS = d.MANAGERS;
+      if (d.MGR_TO_ROP) MGR_TO_ROP = d.MGR_TO_ROP;
+      if (d.GAME_DATA) GAME_DATA = d.GAME_DATA;
+    }
+  } catch(e) {
+    console.warn('Load error:', e);
+  }
+}
+
+async function saveGameData() {
+  try {
+    // Read current data first, then patch GAME_DATA
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+    const rows = await res.json();
+    const current = rows?.[0]?.data || {};
+    current.GAME_DATA = GAME_DATA;
+
+    await fetch(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ data: current })
+    });
+  } catch(e) {
+    console.warn('Save error:', e);
+  }
+}
+
+// ═══════════════════ COIN CALCULATION ════════════════════════════
+function calcCoins(mgrName) {
+  let coins = 0;
+  const now = new Date();
+  const mm = String(now.getMonth()+1).padStart(2,'0');
+  const yyyy = now.getFullYear();
+
+  const { daily } = getMgrData(mgrName);
+
+  // Count current month from daily data
+  let totalLeads = 0, totalDeals = 0, totalBudget = 0;
+  for (const [date, vals] of Object.entries(daily)) {
+    const parts = date.split('.');
+    if (parts.length === 3) {
+      const dm = parts[1], dy = parts[2];
+      if (dm === mm && dy === String(yyyy)) {
+        totalLeads  += (vals[0] || 0);
+        totalDeals  += (vals[1] || 0);
+        totalBudget += (vals[2] || 0);
+      }
+    }
+  }
+
+  // Calculate coins from performance
+  coins += totalLeads * 5;       // 5 coins per lead
+  coins += totalDeals * 50;      // 50 coins per deal
+  coins += Math.floor(totalBudget / 100000) * 100;  // 100 coins per 100k
+
+  // Bonus: conv > 30%
+  if (totalLeads > 0 && (totalDeals/totalLeads*100) > 30) {
+    coins += 150;
+  }
+
+  return { coins, totalLeads, totalDeals, totalBudget };
+}
+
+function calcAllTopManagers() {
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2,'0');
+  const mm = String(now.getMonth()+1).padStart(2,'0');
+  const yyyy = now.getFullYear();
+  const todayKey = `${dd}.${mm}.${yyyy}`;
+
+  let best = { name: null, budget: 0 };
+  for (const prod of Object.keys(MANAGERS)) {
+    const list = MANAGERS[prod] || {};
+    for (const idx of Object.keys(list)) {
+      const mgr = list[idx];
+      if (!mgr || !mgr.name) continue;
+      const vals = mgr.daily?.[todayKey];
+      if (vals && vals[2] > best.budget) {
+        best = { name: mgr.name, budget: vals[2] };
+      }
+    }
+  }
+  return best.name;
+}
+
+// ═══════════════════ GAME DATA INIT ══════════════════════════════
+function ensureManagerGameData(name) {
+  if (!GAME_DATA[name]) {
+    GAME_DATA[name] = {
+      coins: 0, level: 1, xp: 0,
+      skin: 'default', hat: null, pet: null, aura: null,
+      purchases: [], history: [], leadsBought: 0,
+      lastCalcMonth: null
+    };
+  }
+  return GAME_DATA[name];
+}
+
+function recalcCoins(name) {
+  const gd = ensureManagerGameData(name);
+  const now = new Date();
+  const monthKey = `${now.getMonth()+1}.${now.getFullYear()}`;
+
+  const { coins: earned } = calcCoins(name);
+
+  // Calc spent coins from history
+  let spent = 0;
+  (gd.history || []).forEach(h => { if (h.amount < 0) spent += Math.abs(h.amount); });
+
+  // Total coins = earned - spent
+  const total = Math.max(0, earned - spent);
+  gd.coins = total;
+
+  // XP = earned coins (cumulative)
+  gd.xp = earned;
+
+  // Level calc
+  let lvl = 1;
+  let xpNeeded = xpForLevel(1);
+  let xpAccum = earned;
+  while (xpAccum >= xpNeeded && lvl < 99) {
+    xpAccum -= xpNeeded;
+    lvl++;
+    xpNeeded = xpForLevel(lvl);
+  }
+  gd.level = lvl;
+  gd.xpInLevel = xpAccum;
+  gd.xpNeeded = xpNeeded;
+
+  // Top-1 bonus
+  const topMgr = calcAllTopManagers();
+  if (topMgr === name) gd.coins += 200;
+
+  return gd;
+}
+
+// ═══════════════════ GET ALL MANAGER NAMES ═══════════════════════
+function getAllManagerNames() {
+  const names = new Set();
+  for (const prod of Object.keys(MANAGERS)) {
+    const list = MANAGERS[prod] || {};
+    for (const idx of Object.keys(list)) {
+      const mgr = list[idx];
+      if (mgr && mgr.name) names.add(mgr.name);
+    }
+  }
+  return [...names].sort();
+}
+
+function getMgrData(mgrName) {
+  // Returns { totalLeads, totalDeals, totalBudget, daily } aggregated across products
+  let totalLeads=0, totalDeals=0, totalBudget=0;
+  const daily = {};
+  for (const prod of Object.keys(MANAGERS)) {
+    const list = MANAGERS[prod] || {};
+    for (const idx of Object.keys(list)) {
+      const mgr = list[idx];
+      if (mgr && mgr.name === mgrName) {
+        totalLeads  += (mgr.leads || 0);
+        totalDeals  += (mgr.deals || 0);
+        totalBudget += (mgr.budget || 0);
+        if (mgr.daily) {
+          for (const [d, v] of Object.entries(mgr.daily)) {
+            if (!daily[d]) daily[d] = [0,0,0];
+            daily[d][0] += (v[0]||0);
+            daily[d][1] += (v[1]||0);
+            daily[d][2] += (v[2]||0);
+          }
+        }
+      }
+    }
+  }
+  return { totalLeads, totalDeals, totalBudget, daily };
+}
+
+function getRopForManager(name) {
+  if (MGR_TO_ROP[name]) return MGR_TO_ROP[name];
+  return 'Без РОП';
+}
+
+// ═══════════════════ RENDER: LOGIN ═══════════════════════════════
+function renderLogin() {
+  const names = getAllManagerNames();
+  const list = document.getElementById('login-list');
+  list.innerHTML = names.map((name, i) => {
+    const initial = name.charAt(0).toUpperCase();
+    const bg = MGR_COLORS[i % MGR_COLORS.length];
+    return `<button class="login-btn" onclick="login('${name.replace(/'/g,"\\'")}')">
+      <div class="avatar-mini" style="background:${bg}">${initial}</div>
+      <span>${name}</span>
+    </button>`;
+  }).join('');
+}
+
+// ═══════════════════ LOGIN / LOGOUT ══════════════════════════════
+function login(name) {
+  currentUser = name;
+  localStorage.setItem('game_user', name);
+  recalcCoins(name);
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('game-screen').style.display = 'block';
+  renderAll();
+  saveGameData();
+}
+
+function logout() {
+  currentUser = null;
+  localStorage.removeItem('game_user');
+  document.getElementById('login-screen').style.display = '';
+  document.getElementById('game-screen').style.display = 'none';
+}
+
+// ═══════════════════ TABS ════════════════════════════════════════
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-'+tab).classList.add('active');
+}
+
+// ═══════════════════ RENDER ALL ══════════════════════════════════
+function renderAll() {
+  if (!currentUser) return;
+  const gd = recalcCoins(currentUser);
+
+  // Header stats
+  document.getElementById('my-coins').textContent = gd.coins.toLocaleString('ru-RU');
+  document.getElementById('my-level').textContent = gd.level;
+
+  renderAllChars();
+  renderMyChar();
+  renderShop();
+  renderLeadShop();
+  renderHistory();
+}
+
+// ═══════════════════ RENDER: ALL CHARACTERS ══════════════════════
+function renderAllChars() {
+  const names = getAllManagerNames();
+  const grid = document.getElementById('chars-grid');
+
+  grid.innerHTML = names.map((name, i) => {
+    const gd = recalcCoins(name);
+    const skin = SKINS.find(s => s.id === gd.skin) || SKINS[0];
+    const hat = HATS.find(h => h.id === gd.hat);
+    const pet = PETS.find(p => p.id === gd.pet);
+    const aura = AURAS.find(a => a.id === gd.aura);
+    const rop = getRopForManager(name);
+    const isMe = name === currentUser;
+    const pct = gd.xpNeeded > 0 ? Math.min(100, (gd.xpInLevel||0)/gd.xpNeeded*100) : 0;
+
+    return `<div class="char-card ${isMe?'is-me':''}">
+      <div class="char-avatar" style="background:${skin.bg}">
+        ${aura ? `<div class="equip-aura ${aura.css}"></div>` : ''}
+        <span style="position:relative;z-index:2">${skin.icon}</span>
+        ${hat ? `<span class="equip-hat">${hat.icon}</span>` : ''}
+        ${pet ? `<span class="equip-pet">${pet.icon}</span>` : ''}
+      </div>
+      <div class="char-name">${name}</div>
+      <div class="char-rop">${rop}</div>
+      <div class="char-level">⚡ Lvl ${gd.level}</div>
+      <div class="xp-bar"><div class="xp-fill" style="width:${pct}%"></div></div>
+      <div class="char-coins">🪙 ${gd.coins.toLocaleString('ru-RU')}</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════ RENDER: MY CHARACTER ════════════════════════
+function renderMyChar() {
+  const gd = GAME_DATA[currentUser];
+  if (!gd) return;
+  const skin = SKINS.find(s => s.id === gd.skin) || SKINS[0];
+  const hat = HATS.find(h => h.id === gd.hat);
+  const pet = PETS.find(p => p.id === gd.pet);
+  const aura = AURAS.find(a => a.id === gd.aura);
+  const rop = getRopForManager(currentUser);
+  const pct = gd.xpNeeded > 0 ? Math.min(100, (gd.xpInLevel||0)/gd.xpNeeded*100) : 0;
+  const { totalLeads, totalDeals, totalBudget } = calcCoins(currentUser);
+
+  const card = document.getElementById('my-char-card');
+  card.innerHTML = `
+    <div class="my-avatar-big" style="background:${skin.bg}">
+      ${aura ? `<div class="equip-aura ${aura.css}"></div>` : ''}
+      <span style="position:relative;z-index:2">${skin.icon}</span>
+      ${hat ? `<span class="equip-hat">${hat.icon}</span>` : ''}
+      ${pet ? `<span class="equip-pet">${pet.icon}</span>` : ''}
+    </div>
+    <div class="my-name">${currentUser}</div>
+    <div class="my-rop">${rop}</div>
+    <div class="my-stats">
+      <div class="my-stat"><div class="val">${gd.coins.toLocaleString('ru-RU')}</div><div class="lbl">Монеты 🪙</div></div>
+      <div class="my-stat"><div class="val">${gd.level}</div><div class="lbl">Уровень ⚡</div></div>
+      <div class="my-stat"><div class="val">${totalDeals}</div><div class="lbl">Сделки</div></div>
+      <div class="my-stat"><div class="val">${totalLeads}</div><div class="lbl">Лиды</div></div>
+    </div>
+    <div class="my-xp-section">
+      <div class="my-xp-label"><span>XP ${gd.xpInLevel||0} / ${gd.xpNeeded}</span><span>Уровень ${gd.level} → ${gd.level+1}</span></div>
+      <div class="my-xp-bar"><div class="my-xp-fill" style="width:${pct}%"></div></div>
+    </div>
+    <div class="equipped-section">
+      <div class="equipped-title">Экипировка</div>
+      <div class="equipped-slots">
+        <div class="eq-slot ${gd.skin!=='default'?'filled':''}" onclick="switchTab('shop',document.querySelectorAll('.tab-btn')[2])">
+          <span class="eq-icon">${skin.icon}</span>
+          <span class="eq-label">Скин</span>
+        </div>
+        <div class="eq-slot ${gd.hat?'filled':''}" onclick="switchTab('shop',document.querySelectorAll('.tab-btn')[2])">
+          <span class="eq-icon">${hat ? hat.icon : '🎩'}</span>
+          <span class="eq-label">Шляпа</span>
+          ${gd.hat ? `<button class="eq-remove" onclick="event.stopPropagation();unequip('hat')">×</button>` : ''}
+        </div>
+        <div class="eq-slot ${gd.pet?'filled':''}" onclick="switchTab('shop',document.querySelectorAll('.tab-btn')[2])">
+          <span class="eq-icon">${pet ? pet.icon : '🐾'}</span>
+          <span class="eq-label">Питомец</span>
+          ${gd.pet ? `<button class="eq-remove" onclick="event.stopPropagation();unequip('pet')">×</button>` : ''}
+        </div>
+        <div class="eq-slot ${gd.aura?'filled':''}" onclick="switchTab('shop',document.querySelectorAll('.tab-btn')[2])">
+          <span class="eq-icon">${aura ? aura.icon : '✨'}</span>
+          <span class="eq-label">Аура</span>
+          ${gd.aura ? `<button class="eq-remove" onclick="event.stopPropagation();unequip('aura')">×</button>` : ''}
+        </div>
+      </div>
+    </div>`;
+}
+
+// ═══════════════════ UNEQUIP ═════════════════════════════════════
+function unequip(slot) {
+  const gd = GAME_DATA[currentUser];
+  if (!gd) return;
+  if (slot === 'hat') gd.hat = null;
+  if (slot === 'pet') gd.pet = null;
+  if (slot === 'aura') gd.aura = null;
+  if (slot === 'skin') gd.skin = 'default';
+  renderAll();
+  saveGameData();
+  toast('Предмет снят');
+}
+
+// ═══════════════════ RENDER: SHOP ════════════════════════════════
+let shopCat = 'skins';
+
+function renderShop() {
+  const cats = [
+    { id:'skins', label:'Скины', icon:'🎨' },
+    { id:'hats', label:'Шляпы', icon:'🎩' },
+    { id:'pets', label:'Питомцы', icon:'🐾' },
+    { id:'auras', label:'Ауры', icon:'✨' },
+  ];
+
+  document.getElementById('shop-cats').innerHTML = cats.map(c =>
+    `<button class="shop-cat ${shopCat===c.id?'active':''}" onclick="shopCat='${c.id}';renderShop()">${c.icon} ${c.label}</button>`
+  ).join('');
+
+  const gd = GAME_DATA[currentUser];
+  let items = [];
+  let slotKey = '';
+
+  if (shopCat === 'skins')  { items = SKINS; slotKey = 'skin'; }
+  if (shopCat === 'hats')   { items = HATS; slotKey = 'hat'; }
+  if (shopCat === 'pets')   { items = PETS; slotKey = 'pet'; }
+  if (shopCat === 'auras')  { items = AURAS; slotKey = 'aura'; }
+
+  const grid = document.getElementById('shop-grid');
+  grid.innerHTML = items.map(item => {
+    const owned = gd.purchases.includes(`${shopCat}:${item.id}`) || (shopCat==='skins' && item.id==='default');
+    const equipped = gd[slotKey] === item.id;
+    const canAfford = gd.coins >= item.price;
+
+    let badge = '';
+    if (equipped) badge = `<span class="item-badge badge-equipped">Надето</span>`;
+    else if (owned) badge = `<span class="item-badge badge-owned">Куплено</span>`;
+
+    let btn = '';
+    if (equipped) {
+      btn = `<button class="buy-btn owned-btn" disabled>Надето ✓</button>`;
+    } else if (owned) {
+      btn = `<button class="buy-btn equip-btn" onclick="equipItem('${shopCat}','${item.id}','${slotKey}')">Надеть</button>`;
+    } else {
+      btn = `<button class="buy-btn" ${!canAfford?'disabled':''} onclick="buyItem('${shopCat}','${item.id}','${slotKey}',${item.price},'${item.name}')">
+        ${canAfford ? 'Купить' : 'Недостаточно монет'}
+      </button>`;
+    }
+
+    return `<div class="shop-item ${equipped?'equipped':owned?'owned':''}">
+      ${badge}
+      <span class="item-icon">${item.icon}</span>
+      <div class="item-name">${item.name}</div>
+      <div class="item-desc">${item.desc}</div>
+      ${item.price > 0 ? `<div class="item-price">🪙 ${item.price}</div>` : `<div class="item-price free">Бесплатно</div>`}
+      ${btn}
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════ RENDER: LEAD SHOP ═══════════════════════════
+function renderLeadShop() {
+  const gd = GAME_DATA[currentUser];
+  document.getElementById('lead-cards').innerHTML = LEAD_PACKAGES.map(pkg => {
+    const canAfford = gd.coins >= pkg.price;
+    return `<div class="lead-card">
+      <div class="lead-icon">${pkg.icon}</div>
+      <div class="lead-title">${pkg.title}</div>
+      <div class="lead-desc">${pkg.desc}</div>
+      <div class="lead-price">🪙 ${pkg.price}</div>
+      <button class="lead-buy-btn" ${!canAfford?'disabled':''} onclick="buyLead('${pkg.id}',${pkg.count},${pkg.price})">
+        ${canAfford ? 'Купить' : 'Недостаточно монет'}
+      </button>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════ RENDER: HISTORY ═════════════════════════════
+function renderHistory() {
+  const gd = GAME_DATA[currentUser];
+  const body = document.getElementById('history-body');
+  const hist = (gd.history || []).slice(-20).reverse();
+
+  if (hist.length === 0) {
+    body.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px">Пока нет операций</td></tr>';
+    return;
+  }
+
+  body.innerHTML = hist.map(h => `
+    <tr>
+      <td>${h.date || '—'}</td>
+      <td>${h.desc || '—'}</td>
+      <td class="${h.amount >= 0 ? 'earn-plus' : 'earn-minus'}">${h.amount >= 0 ? '+' : ''}${h.amount} 🪙</td>
+    </tr>
+  `).join('');
+}
+
+// ═══════════════════ BUY / EQUIP ═════════════════════════════════
+function buyItem(cat, itemId, slotKey, price, name) {
+  const gd = GAME_DATA[currentUser];
+  if (gd.coins < price) { toast('Недостаточно монет!', 'error'); return; }
+
+  gd.purchases.push(`${cat}:${itemId}`);
+  gd.history.push({
+    date: new Date().toLocaleDateString('ru-RU'),
+    desc: `Покупка: ${name}`,
+    amount: -price
+  });
+  gd[slotKey] = itemId;
+
+  renderAll();
+  saveGameData();
+  toast(`${name} куплено и надето!`, 'success');
+}
+
+function equipItem(cat, itemId, slotKey) {
+  const gd = GAME_DATA[currentUser];
+  gd[slotKey] = itemId;
+  renderAll();
+  saveGameData();
+  toast('Экипировка обновлена!', 'success');
+}
+
+function buyLead(pkgId, count, price) {
+  const gd = GAME_DATA[currentUser];
+  if (gd.coins < price) { toast('Недостаточно монет!', 'error'); return; }
+
+  gd.leadsBought = (gd.leadsBought || 0) + count;
+  gd.history.push({
+    date: new Date().toLocaleDateString('ru-RU'),
+    desc: `Покупка: ${count} лид(ов)`,
+    amount: -price
+  });
+
+  renderAll();
+  saveGameData();
+  toast(`+${count} лид(ов) куплено!`, 'success');
+}
+
+// ═══════════════════ TOAST ═══════════════════════════════════════
+function toast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + type;
+  setTimeout(() => el.className = 'toast', 2500);
+}
+
+// ═══════════════════ INIT ════════════════════════════════════════
+async function init() {
+  await loadData();
+
+  // Init game data for all managers
+  getAllManagerNames().forEach(n => ensureManagerGameData(n));
+
+  if (currentUser && getAllManagerNames().includes(currentUser)) {
+    login(currentUser);
+  } else {
+    currentUser = null;
+    localStorage.removeItem('game_user');
+    renderLogin();
+  }
+
+  // Refresh every 60s
+  setInterval(async () => {
+    await loadData();
+    if (currentUser) renderAll();
+  }, 60000);
+}
+
+init();
+</script>
+</body>
+</html>
