@@ -318,7 +318,7 @@ body{
   <div class="loading-bar-container">
     <div class="loading-bar" id="loadingBar"></div>
   </div>
-  <div class="loading-text" id="loadingText">Загрузка 3D моделей...</div>
+  <div class="loading-text" id="loadingText">Подготовка сцены...</div>
 </div>
 
 <!-- MAIN PAGE -->
@@ -362,11 +362,7 @@ body{
 <!-- 3D SCENE + DATA LOGIC -->
 <script type="module">
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { FontLoader } from 'three/addons/loaders/FontLoader.js';
-import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 
 // ═══════════════════ CONFIG ═══════════════════════════════════════
 const SUPABASE_URL = 'https://bdyakgmeibpdkisbiykt.supabase.co';
@@ -386,8 +382,8 @@ const ROP_COLORS = {
 };
 const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 
-// ═══════════════════ STRAIGHT TRACK CONFIG ═══════════════════════
-const roadLength = 60;
+// ═══════════════════ STRAIGHT TRACK CONFIG (LONGER: 120) ═══════════
+const roadLength = 120;
 const roadWidth = 12;
 const laneWidth = 3;
 const startX = -roadLength / 2 + 2;
@@ -657,10 +653,10 @@ function renderFeed() {
 const sceneContainer = document.getElementById('sceneContainer');
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87CEEB);
-scene.fog = new THREE.Fog(0x87CEEB, 100, 300);
+scene.fog = new THREE.Fog(0x87CEEB, 120, 350);
 
 const camera = new THREE.PerspectiveCamera(45, sceneContainer.clientWidth / sceneContainer.clientHeight, 0.1, 1000);
-camera.position.set(0, 20, 30);
+camera.position.set(0, 30, 55);
 camera.lookAt(0, 0, 0);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -677,7 +673,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 controls.minDistance = 10;
-controls.maxDistance = 100;
+controls.maxDistance = 150;
 controls.maxPolarAngle = Math.PI / 2.2;
 controls.target.set(0, 0, 0);
 
@@ -687,9 +683,9 @@ sunLight.position.set(50, 50, 25);
 sunLight.castShadow = true;
 sunLight.shadow.mapSize.set(2048, 2048);
 sunLight.shadow.camera.near = 0.5;
-sunLight.shadow.camera.far = 200;
-sunLight.shadow.camera.left = -50;
-sunLight.shadow.camera.right = 50;
+sunLight.shadow.camera.far = 250;
+sunLight.shadow.camera.left = -80;
+sunLight.shadow.camera.right = 80;
 sunLight.shadow.camera.top = 50;
 sunLight.shadow.camera.bottom = -50;
 scene.add(sunLight);
@@ -701,7 +697,7 @@ const hemisphereLight = new THREE.HemisphereLight(0x87CEEB, 0x44aa44, 0.4);
 scene.add(hemisphereLight);
 
 // ═══════════════════ GREEN GRASS ═══════════════════════════════════
-const grassGeo = new THREE.PlaneGeometry(200, 200);
+const grassGeo = new THREE.PlaneGeometry(300, 300);
 const grassMat = new THREE.MeshLambertMaterial({ color: 0x4ade80 });
 const grass = new THREE.Mesh(grassGeo, grassMat);
 grass.rotation.x = -Math.PI / 2;
@@ -777,47 +773,398 @@ for (let row = 0; row < 8; row++) {
   startLine.rotation.x = -Math.PI / 2;
   startLine.position.set(startX, 0.025, 0);
   scene.add(startLine);
-
-  // "СТАРТ" sign as a 3D box
-  const signGeo = new THREE.BoxGeometry(0.3, 2, 3);
-  const signMat = new THREE.MeshStandardMaterial({ color: 0x1a56db });
-  const sign = new THREE.Mesh(signGeo, signMat);
-  sign.position.set(startX, 1.5, -roadWidth/2 - 2.5);
-  sign.castShadow = true;
-  scene.add(sign);
-
-  // Pole
-  const poleGeo = new THREE.CylinderGeometry(0.08, 0.08, 3, 8);
-  const poleMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
-  const pole = new THREE.Mesh(poleGeo, poleMat);
-  pole.position.set(startX, 1.5, -roadWidth/2 - 2.5);
-  scene.add(pole);
 }
 
-// ФИНИШ sign (right side)
-{
-  const signGeo = new THREE.BoxGeometry(0.3, 2, 3);
-  const signMat = new THREE.MeshStandardMaterial({ color: 0xef4444 });
-  const sign = new THREE.Mesh(signGeo, signMat);
-  sign.position.set(finishX + 1, 1.5, -roadWidth/2 - 2.5);
-  sign.castShadow = true;
-  scene.add(sign);
+// ═══════════════════ PROCEDURAL CAR BUILDERS ═══════════════════════
 
-  const poleGeo = new THREE.CylinderGeometry(0.08, 0.08, 3, 8);
-  const poleMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
-  const pole = new THREE.Mesh(poleGeo, poleMat);
-  pole.position.set(finishX + 1, 1.5, -roadWidth/2 - 2.5);
-  scene.add(pole);
+// Shared wheel function
+function addWheels(group, frontX, backX, sideZ, radius) {
+  const wheelGeo = new THREE.CylinderGeometry(radius, radius, 0.18, 12);
+  const wheelMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 });
+  const hubMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.8 });
+  const hubGeo = new THREE.CylinderGeometry(radius * 0.5, radius * 0.5, 0.19, 8);
+  const wheels = [];
+
+  [[frontX, sideZ], [frontX, -sideZ], [backX, sideZ], [backX, -sideZ]].forEach(([x, z]) => {
+    const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+    wheel.rotation.x = Math.PI / 2;
+    wheel.position.set(x, radius, z);
+    group.add(wheel);
+    wheels.push(wheel);
+    const hub = new THREE.Mesh(hubGeo, hubMat);
+    hub.rotation.x = Math.PI / 2;
+    hub.position.set(x, radius, z);
+    group.add(hub);
+  });
+  return wheels;
 }
 
-// ═══════════════════ LOAD 3D MODELS ═══════════════════════════════
-const dracoLoader = new DRACOLoader();
-dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/');
-const gltfLoader = new GLTFLoader();
-gltfLoader.setDRACOLoader(dracoLoader);
+// Car 1 — Formula 1 (Айдана, blue)
+function buildF1Car(color) {
+  const group = new THREE.Group();
+  // Low sleek body
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(3.5, 0.3, 1.2),
+    new THREE.MeshStandardMaterial({ color, metalness: 0.6, roughness: 0.3 })
+  );
+  body.position.y = 0.3;
+  body.castShadow = true;
+  group.add(body);
+  // Nose cone
+  const nose = new THREE.Mesh(
+    new THREE.ConeGeometry(0.4, 1.5, 8),
+    new THREE.MeshStandardMaterial({ color, metalness: 0.6, roughness: 0.3 })
+  );
+  nose.rotation.z = -Math.PI/2;
+  nose.position.set(2.3, 0.3, 0);
+  nose.castShadow = true;
+  group.add(nose);
+  // Cockpit
+  const cockpit = new THREE.Mesh(
+    new THREE.SphereGeometry(0.35, 8, 6, 0, Math.PI*2, 0, Math.PI/2),
+    new THREE.MeshStandardMaterial({ color: 0x111111 })
+  );
+  cockpit.position.set(-0.3, 0.5, 0);
+  group.add(cockpit);
+  // Rear wing
+  const wing = new THREE.Mesh(
+    new THREE.BoxGeometry(0.1, 0.5, 1.6),
+    new THREE.MeshStandardMaterial({ color })
+  );
+  wing.position.set(-1.8, 0.7, 0);
+  wing.castShadow = true;
+  group.add(wing);
+  // Wing supports
+  [-0.5, 0.5].forEach(z => {
+    const support = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.03, 0.03, 0.5),
+      new THREE.MeshStandardMaterial({ color: 0x333333 })
+    );
+    support.position.set(-1.8, 0.45, z);
+    group.add(support);
+  });
+  // Wheels
+  const wheels = addWheels(group, 1.2, -1.2, 0.65, 0.25);
+  group.userData.wheels = wheels;
+  return group;
+}
 
+// Car 2 — Sports/Supercar (Аслиддин, amber)
+function buildSupercar(color) {
+  const group = new THREE.Group();
+  // Body
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(3.2, 0.5, 1.4),
+    new THREE.MeshStandardMaterial({ color, metalness: 0.7, roughness: 0.2 })
+  );
+  body.position.y = 0.35;
+  body.castShadow = true;
+  group.add(body);
+  // Rounded roof
+  const roof = new THREE.Mesh(
+    new THREE.BoxGeometry(1.2, 0.35, 1.3),
+    new THREE.MeshStandardMaterial({ color, metalness: 0.7, roughness: 0.2 })
+  );
+  roof.position.set(-0.3, 0.7, 0);
+  roof.castShadow = true;
+  group.add(roof);
+  // Windshield (dark)
+  const windshield = new THREE.Mesh(
+    new THREE.BoxGeometry(0.05, 0.3, 1.2),
+    new THREE.MeshStandardMaterial({ color: 0x222244, metalness: 0.9, roughness: 0.1 })
+  );
+  windshield.rotation.z = 0.4;
+  windshield.position.set(0.35, 0.65, 0);
+  group.add(windshield);
+  // Spoiler
+  const spoiler = new THREE.Mesh(
+    new THREE.BoxGeometry(0.08, 0.25, 1.5),
+    new THREE.MeshStandardMaterial({ color })
+  );
+  spoiler.position.set(-1.65, 0.75, 0);
+  group.add(spoiler);
+  const wheels = addWheels(group, 1.1, -1.0, 0.7, 0.28);
+  group.userData.wheels = wheels;
+  return group;
+}
+
+// Car 3 — Muscle car (Нурдаулет, green)
+function buildMuscleCar(color) {
+  const group = new THREE.Group();
+  // Wide body
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(3.0, 0.55, 1.5),
+    new THREE.MeshStandardMaterial({ color, metalness: 0.5, roughness: 0.4 })
+  );
+  body.position.y = 0.4;
+  body.castShadow = true;
+  group.add(body);
+  // Hood scoop
+  const scoop = new THREE.Mesh(
+    new THREE.BoxGeometry(0.8, 0.15, 0.4),
+    new THREE.MeshStandardMaterial({ color: 0x111111 })
+  );
+  scoop.position.set(0.8, 0.73, 0);
+  group.add(scoop);
+  // Cabin
+  const cabin = new THREE.Mesh(
+    new THREE.BoxGeometry(1.0, 0.4, 1.35),
+    new THREE.MeshStandardMaterial({ color, metalness: 0.5, roughness: 0.4 })
+  );
+  cabin.position.set(-0.4, 0.85, 0);
+  cabin.castShadow = true;
+  group.add(cabin);
+  // Windows
+  const windowMesh = new THREE.Mesh(
+    new THREE.BoxGeometry(0.9, 0.25, 1.2),
+    new THREE.MeshStandardMaterial({ color: 0x334455, metalness: 0.8, roughness: 0.1 })
+  );
+  windowMesh.position.set(-0.4, 0.95, 0);
+  group.add(windowMesh);
+  const wheels = addWheels(group, 1.05, -1.0, 0.78, 0.3);
+  group.userData.wheels = wheels;
+  return group;
+}
+
+// Car 4 — Rally car (Диас, red)
+function buildRallyCar(color) {
+  const group = new THREE.Group();
+  // Higher body (rally clearance)
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(2.8, 0.6, 1.4),
+    new THREE.MeshStandardMaterial({ color, metalness: 0.4, roughness: 0.5 })
+  );
+  body.position.y = 0.5;
+  body.castShadow = true;
+  group.add(body);
+  // Roof
+  const roof = new THREE.Mesh(
+    new THREE.BoxGeometry(1.3, 0.3, 1.35),
+    new THREE.MeshStandardMaterial({ color, metalness: 0.4, roughness: 0.5 })
+  );
+  roof.position.set(-0.2, 0.95, 0);
+  roof.castShadow = true;
+  group.add(roof);
+  // Roof light bar
+  const lightBar = new THREE.Mesh(
+    new THREE.BoxGeometry(0.3, 0.12, 1.2),
+    new THREE.MeshStandardMaterial({ color: 0xffff00, emissive: 0xffff00, emissiveIntensity: 0.3 })
+  );
+  lightBar.position.set(-0.2, 1.15, 0);
+  group.add(lightBar);
+  // Number decal (white circle)
+  const decal = new THREE.Mesh(
+    new THREE.CircleGeometry(0.3, 16),
+    new THREE.MeshBasicMaterial({ color: 0xffffff })
+  );
+  decal.position.set(0, 0.81, 0.71);
+  group.add(decal);
+  // Bigger wheels (rally)
+  const wheels = addWheels(group, 1.0, -0.9, 0.75, 0.32);
+  group.userData.wheels = wheels;
+  return group;
+}
+
+// ═══════════════════ BUILD ALL CARS ═══════════════════════════════
+
+function buildAllCars() {
+  const builders = {
+    'РОП Айдана':    () => buildF1Car(0x1a56db),
+    'РОП Аслиддин':  () => buildSupercar(0xf59e0b),
+    'РОП Нурдаулет': () => buildMuscleCar(0x10b981),
+    'РОП Диас':      () => buildRallyCar(0xef4444),
+  };
+
+  for (const [ropName, config] of Object.entries(ROP_CARS)) {
+    const car = builders[ropName]();
+    car.position.set(startX, 0, lanePositions[0]);
+    car.rotation.y = Math.PI / 2; // face right (+X)
+    car.userData.ropName = ropName;
+    scene.add(car);
+    config.mesh = car;
+    config.wheelMeshes = car.userData.wheels || [];
+  }
+}
+
+buildAllCars();
+
+// ═══════════════════ VEGETATION ═══════════════════════════════════
+
+function buildPineTree(x, z) {
+  const group = new THREE.Group();
+  // Trunk
+  const trunk = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.15, 0.2, 1.5, 6),
+    new THREE.MeshStandardMaterial({ color: 0x8B4513 })
+  );
+  trunk.position.y = 0.75;
+  group.add(trunk);
+  // 3 cone layers
+  [1.5, 2.2, 2.8].forEach((y, i) => {
+    const size = 1.2 - i * 0.3;
+    const cone = new THREE.Mesh(
+      new THREE.ConeGeometry(size, 1.2, 8),
+      new THREE.MeshStandardMaterial({ color: 0x2d5a27 })
+    );
+    cone.position.y = y;
+    cone.castShadow = true;
+    group.add(cone);
+  });
+  group.position.set(x, 0, z);
+  const s = 0.7 + Math.random() * 0.6;
+  group.scale.set(s, s, s);
+  return group;
+}
+
+function buildRoundTree(x, z) {
+  const group = new THREE.Group();
+  const trunk = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.12, 0.18, 2, 6),
+    new THREE.MeshStandardMaterial({ color: 0x8B4513 })
+  );
+  trunk.position.y = 1;
+  group.add(trunk);
+  const crown = new THREE.Mesh(
+    new THREE.SphereGeometry(1.2, 8, 6),
+    new THREE.MeshStandardMaterial({ color: 0x3a8a2e })
+  );
+  crown.position.y = 2.8;
+  crown.castShadow = true;
+  group.add(crown);
+  group.position.set(x, 0, z);
+  const s = 0.6 + Math.random() * 0.8;
+  group.scale.set(s, s, s);
+  return group;
+}
+
+function buildBush(x, z) {
+  const group = new THREE.Group();
+  const colors = [0x3a8a2e, 0x4ade80, 0x2d6a24];
+  for (let i = 0; i < 3; i++) {
+    const sphere = new THREE.Mesh(
+      new THREE.SphereGeometry(0.4 + Math.random()*0.3, 6, 5),
+      new THREE.MeshStandardMaterial({ color: colors[i % 3] })
+    );
+    sphere.position.set(Math.random()*0.5-0.25, 0.3+Math.random()*0.2, Math.random()*0.5-0.25);
+    sphere.castShadow = true;
+    group.add(sphere);
+  }
+  group.position.set(x, 0, z);
+  return group;
+}
+
+// Seed random for consistent vegetation
+function seededRandom(seed) {
+  let s = seed;
+  return function() {
+    s = (s * 16807) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+const vRand = seededRandom(42);
+
+// Trees along both sides of the track
+for (let x = -roadLength/2; x < roadLength/2; x += 4 + vRand() * 6) {
+  // Near side (positive z)
+  const z1 = roadWidth/2 + 3 + vRand() * 15;
+  const treeType1 = vRand();
+  if (treeType1 < 0.4) scene.add(buildPineTree(x, z1));
+  else if (treeType1 < 0.8) scene.add(buildRoundTree(x, z1));
+  else scene.add(buildBush(x, z1));
+
+  // Far side (negative z)
+  const z2 = -roadWidth/2 - 3 - vRand() * 15;
+  const treeType2 = vRand();
+  if (treeType2 < 0.4) scene.add(buildPineTree(x + vRand()*2, z2));
+  else if (treeType2 < 0.8) scene.add(buildRoundTree(x + vRand()*2, z2));
+  else scene.add(buildBush(x + vRand()*2, z2));
+}
+
+// Extra bushes closer to road edge
+for (let x = -roadLength/2; x < roadLength/2; x += 6 + vRand() * 8) {
+  scene.add(buildBush(x, roadWidth/2 + 1.5 + vRand()));
+  scene.add(buildBush(x + 2, -roadWidth/2 - 1.5 - vRand()));
+}
+
+// ═══════════════════ SMALL ROCKS ═══════════════════════════════════
+for (let i = 0; i < 40; i++) {
+  const rx = -roadLength/2 + vRand() * roadLength;
+  const side = vRand() < 0.5 ? 1 : -1;
+  const rz = side * (roadWidth/2 + 2 + vRand() * 12);
+  const rockSize = 0.15 + vRand() * 0.35;
+  const rock = new THREE.Mesh(
+    new THREE.DodecahedronGeometry(rockSize, 0),
+    new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.9 })
+  );
+  rock.position.set(rx, rockSize * 0.5, rz);
+  rock.rotation.set(vRand()*Math.PI, vRand()*Math.PI, 0);
+  rock.castShadow = true;
+  scene.add(rock);
+}
+
+// ═══════════════════ FLOWERS ═══════════════════════════════════════
+const flowerColors = [0xff69b4, 0xff4500, 0xffff00, 0xff1493, 0xffa500, 0xee82ee];
+for (let i = 0; i < 60; i++) {
+  const fx = -roadLength/2 + vRand() * roadLength;
+  const side = vRand() < 0.5 ? 1 : -1;
+  const fz = side * (roadWidth/2 + 1.5 + vRand() * 10);
+  const flower = new THREE.Mesh(
+    new THREE.SphereGeometry(0.08 + vRand()*0.06, 6, 4),
+    new THREE.MeshStandardMaterial({
+      color: flowerColors[Math.floor(vRand() * flowerColors.length)],
+      emissive: 0x220000,
+      emissiveIntensity: 0.1
+    })
+  );
+  flower.position.set(fx, 0.08, fz);
+  scene.add(flower);
+}
+
+// ═══════════════════ START/FINISH ARCHES ═══════════════════════════
+function buildArch(x) {
+  const group = new THREE.Group();
+  const pillarGeo = new THREE.BoxGeometry(0.3, 5, 0.3);
+  const pillarMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+  const leftPillar = new THREE.Mesh(pillarGeo, pillarMat);
+  leftPillar.position.set(x, 2.5, -roadWidth/2 - 1);
+  leftPillar.castShadow = true;
+  group.add(leftPillar);
+  const rightPillar = new THREE.Mesh(pillarGeo, pillarMat);
+  rightPillar.position.set(x, 2.5, roadWidth/2 + 1);
+  rightPillar.castShadow = true;
+  group.add(rightPillar);
+  const banner = new THREE.Mesh(
+    new THREE.BoxGeometry(0.2, 1, roadWidth + 2.3),
+    new THREE.MeshStandardMaterial({ color: 0xdc2626 })
+  );
+  banner.position.set(x, 5, 0);
+  banner.castShadow = true;
+  group.add(banner);
+  return group;
+}
+scene.add(buildArch(roadLength/2 - 2));   // Finish arch
+scene.add(buildArch(-roadLength/2 + 2));  // Start arch
+
+// ═══════════════════ GRANDSTAND ═══════════════════════════════════
+function buildGrandstand(x, z) {
+  const group = new THREE.Group();
+  for (let row = 0; row < 4; row++) {
+    const step = new THREE.Mesh(
+      new THREE.BoxGeometry(8, 0.5, 1.5),
+      new THREE.MeshStandardMaterial({ color: 0x888888 })
+    );
+    step.position.set(x, row * 0.6, z + row * 1.5);
+    step.castShadow = true;
+    step.receiveShadow = true;
+    group.add(step);
+  }
+  return group;
+}
+scene.add(buildGrandstand(0, roadWidth/2 + 5));
+
+// ═══════════════════ LOADING PROGRESS ═══════════════════════════════
 let loadedCount = 0;
-const totalLoads = 3; // chassis + wheels + data (no track model)
+const totalLoads = 2; // cars built + data
 const loadingBar = document.getElementById('loadingBar');
 const loadingText = document.getElementById('loadingText');
 
@@ -828,95 +1175,25 @@ function updateLoadProgress(label) {
   loadingText.textContent = label;
 }
 
-let modelsReady = false;
 let dataReady = false;
-let wheelTemplate = null;
+
+// Cars already built synchronously
+updateLoadProgress('Машины построены...');
 
 // Sorted lane assignment (updated when data refreshes)
 let sortedRopNames = Object.keys(ROP_CARS);
 
-// Load chassis
-const chassisPromise = new Promise((resolve) => {
-  gltfLoader.load('assets/chassis-draco.glb', (gltf) => {
-    const carTemplate = gltf.scene;
-
-    for (const [ropName, config] of Object.entries(ROP_CARS)) {
-      const car = carTemplate.clone();
-      car.traverse(child => {
-        if (child.isMesh) {
-          child.material = child.material.clone();
-          child.material.color.set(config.color);
-          child.material.metalness = 0.4;
-          child.material.roughness = 0.3;
-          child.castShadow = true;
-        }
-      });
-      // Start at left edge, lane 0 initially
-      car.position.set(startX, 0.3, lanePositions[0]);
-      car.rotation.y = Math.PI / 2; // face right (+X)
-      car.userData.ropName = ropName;
-      scene.add(car);
-      config.mesh = car;
-    }
-
-    updateLoadProgress('Машины загружены...');
-    resolve();
-  }, undefined, (err) => {
-    console.warn('Chassis load error:', err);
-    updateLoadProgress('Машины: ошибка загрузки');
-    resolve();
-  });
-});
-
-// Load wheels
-const wheelPromise = new Promise((resolve) => {
-  gltfLoader.load('assets/wheel-draco.glb', (gltf) => {
-    wheelTemplate = gltf.scene;
-
-    // Attach wheels after chassis is loaded
-    chassisPromise.then(() => {
-      const wheelPositions = [
-        { x: 0.7, y: -0.2, z: 0.6 },
-        { x: -0.7, y: -0.2, z: 0.6 },
-        { x: 0.7, y: -0.2, z: -0.6 },
-        { x: -0.7, y: -0.2, z: -0.6 },
-      ];
-      for (const config of Object.values(ROP_CARS)) {
-        if (!config.mesh) continue;
-        config.wheelMeshes = [];
-        wheelPositions.forEach(pos => {
-          const wheel = wheelTemplate.clone();
-          wheel.position.set(pos.x, pos.y, pos.z);
-          // Mirror left wheels
-          if (pos.x < 0) wheel.scale.x = -1;
-          config.mesh.add(wheel);
-          config.wheelMeshes.push(wheel);
-        });
-      }
-      updateLoadProgress('Колёса установлены...');
-      resolve();
-    });
-  }, undefined, (err) => {
-    console.warn('Wheel load error:', err);
-    updateLoadProgress('Колёса: ошибка загрузки');
-    resolve();
-  });
-});
-
 // ═══════════════════ CAR POSITION UPDATE ═══════════════════════════
 function updateCarPositions(ropData) {
-  // ropData is already sorted by pct descending from calcRopData()
-  // Leader gets lane 1 (index 0), etc.
   sortedRopNames = ropData.map(r => r.name);
 
   ropData.forEach((r, i) => {
     const config = ROP_CARS[r.name];
     if (!config || !config.mesh) return;
-    const pct = Math.min(r.pct / 100, 1.2); // allow 20% overshoot past finish
+    const pct = Math.min(r.pct / 100, 1.2);
     const x = startX + pct * trackRange;
     const z = lanePositions[i] || lanePositions[0];
-    config.targetPos = new THREE.Vector3(x, 0.3, z);
-    // Cars face RIGHT (+X direction)
+    config.targetPos = new THREE.Vector3(x, 0, z);
     config.targetRot = Math.PI / 2;
     config.pct = r.pct;
   });
@@ -957,14 +1234,13 @@ function projectCarLabels() {
   for (const [ropName, config] of Object.entries(ROP_CARS)) {
     if (!config.mesh || !carLabelEls[ropName]) continue;
     const pos = config.mesh.position.clone();
-    pos.y += 2.5; // above car
+    pos.y += 2.5;
     pos.project(camera);
 
     const x = (pos.x * 0.5 + 0.5) * rect.width;
     const y = (-pos.y * 0.5 + 0.5) * rect.height;
 
     const label = carLabelEls[ropName];
-    // Hide if behind camera
     if (pos.z > 1) {
       label.style.opacity = '0';
     } else {
@@ -974,9 +1250,6 @@ function projectCarLabels() {
     }
   }
 }
-
-// ═══════════════════ WHEEL ROTATION ═══════════════════════════════
-let wheelRotation = 0;
 
 // ═══════════════════ ANIMATION LOOP ═══════════════════════════════
 function animate() {
@@ -1036,15 +1309,10 @@ async function init() {
   updateHeader();
   setInterval(updateHeader, 1000);
 
-  // Load data in parallel with models
-  const dataPromise = loadData().then(ok => {
-    updateLoadProgress('Данные загружены...');
-    dataReady = ok;
-    return ok;
-  });
-
-  // Wait for all (no track model to load anymore)
-  await Promise.all([chassisPromise, wheelPromise, dataPromise]);
+  // Load data
+  const dataOk = await loadData();
+  updateLoadProgress('Данные загружены...');
+  dataReady = dataOk;
 
   // Create labels
   createCarLabels();
@@ -1060,7 +1328,6 @@ async function init() {
   const loadingEl = document.getElementById('loading');
   loadingEl.classList.add('fade-out');
   document.getElementById('page').style.display = 'flex';
-  // Trigger resize after layout
   requestAnimationFrame(() => {
     onResize();
     setTimeout(() => {
