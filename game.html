@@ -3,17 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>WeGlow — Персонажи (Habitica)</title>
+<title>WeGlow — RPG Персонажи</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root {
-  --ink:#0f1623; --ink2:#1e2840; --slate:#4a5568; --muted:#8896ae;
-  --line:#e8ecf4; --bg:#f7f8fc; --white:#fff;
-  --acc:#6366f1; --acc-l:#eef2ff;
-  --gold:#ca8a04; --gold-l:#fefce8;
-  --green:#16a34a; --green-l:#dcfce7;
-  --red:#c0392b; --red-l:#fde8e8;
-  --col:#1a56db; --ummi:#0a7c5c;
+:root{
+  --ink:#0f1623;--ink2:#1e2840;--slate:#4a5568;--muted:#8896ae;
+  --line:#e8ecf4;--bg:#f7f8fc;--white:#fff;
+  --acc:#6366f1;--acc-l:#eef2ff;
+  --gold:#ca8a04;--gold-l:#fefce8;
+  --green:#16a34a;--green-l:#dcfce7;
+  --red:#c0392b;--red-l:#fde8e8;
+  --blue:#3b82f6;--blue-l:#dbeafe;
+  --purple:#8b5cf6;--purple-l:#ede9fe;
   --shadow:0 1px 3px rgba(15,22,35,.06),0 4px 16px rgba(15,22,35,.08);
   --shadow2:0 2px 8px rgba(15,22,35,.08),0 8px 32px rgba(15,22,35,.10);
   --r:14px;
@@ -21,8 +22,6 @@
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 html{font-size:15px;-webkit-font-smoothing:antialiased;}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
-
-/* ─── LAYOUT ─── */
 .shell{display:flex;min-height:100vh;}
 
 /* ─── SIDEBAR ─── */
@@ -50,274 +49,241 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
   transition:transform .22s cubic-bezier(.34,1.56,.64,1),background .18s,color .18s;
 }
 .nav-item:hover{background:rgba(255,255,255,.08);color:#fff;transform:scale(1.055) translateX(4px);}
-.nav-item.active{
-  background:linear-gradient(135deg,rgba(99,102,241,.3),rgba(99,102,241,.12));
-  color:#fff;border:1px solid rgba(99,102,241,.28);
-}
+.nav-item.active{background:linear-gradient(135deg,rgba(99,102,241,.3),rgba(99,102,241,.12));color:#fff;border:1px solid rgba(99,102,241,.28);}
 .nav-item .icon{font-size:16px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:7px;background:rgba(255,255,255,.05);}
 .nav-item:hover .icon{transform:scale(1.22) rotate(-6deg);background:rgba(255,255,255,.1);}
 .nav-item.active .icon{background:rgba(99,102,241,.25);}
 .dock-divider{height:1px;background:rgba(255,255,255,.06);margin:4px 8px;}
 
-/* ─── MAIN ─── */
 .main{margin-left:220px;flex:1;padding:28px 32px 40px;min-width:0;}
 
-/* ─── SETUP SCREEN ─── */
-.setup-screen{display:flex;align-items:center;justify-content:center;min-height:80vh;}
-.setup-card{
-  background:var(--white);border-radius:20px;padding:48px;
-  box-shadow:var(--shadow2);max-width:520px;width:100%;text-align:center;
+/* ─── LOGIN ─── */
+.login-screen{display:flex;align-items:center;justify-content:center;min-height:80vh;}
+.login-card{background:var(--white);border-radius:20px;padding:48px;box-shadow:var(--shadow2);max-width:480px;width:100%;text-align:center;}
+.login-card h2{font-family:'Playfair Display',serif;font-size:28px;margin-bottom:8px;}
+.login-card p{color:var(--muted);font-size:13px;margin-bottom:24px;}
+.login-list{display:flex;flex-direction:column;gap:6px;max-height:60vh;overflow-y:auto;padding-right:4px;}
+.login-btn{
+  padding:12px 16px;border-radius:12px;border:1.5px solid var(--line);
+  background:var(--white);cursor:pointer;font-size:13px;font-weight:600;
+  font-family:inherit;color:var(--ink);display:flex;align-items:center;gap:12px;
+  transition:all .2s;text-align:left;
 }
-.setup-card h2{font-family:'Playfair Display',serif;font-size:26px;margin-bottom:8px;}
-.setup-card p{color:var(--muted);font-size:13px;margin-bottom:24px;line-height:1.6;}
-.setup-card a{color:var(--acc);}
-.setup-steps{text-align:left;margin-bottom:24px;}
-.setup-step{display:flex;gap:12px;margin-bottom:16px;align-items:flex-start;}
-.step-num{
-  width:28px;height:28px;border-radius:50%;background:var(--acc);color:#fff;
-  display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;
-}
-.step-text{font-size:13px;color:var(--slate);line-height:1.6;}
-.step-text strong{color:var(--ink);}
-.mgr-select{
-  width:100%;padding:12px 16px;border-radius:12px;border:1.5px solid var(--line);
-  font-family:inherit;font-size:14px;margin-bottom:12px;background:var(--white);
-  appearance:none;cursor:pointer;
-}
-.mgr-select:focus{outline:none;border-color:var(--acc);}
-.input-row{display:flex;gap:10px;margin-bottom:12px;}
-.input-row input{
-  flex:1;padding:12px 16px;border-radius:12px;border:1.5px solid var(--line);
-  font-family:inherit;font-size:13px;
-}
-.input-row input:focus{outline:none;border-color:var(--acc);}
-.setup-btn{
-  width:100%;padding:14px;border-radius:12px;border:none;
-  background:var(--acc);color:#fff;font-family:inherit;font-size:14px;font-weight:700;
-  cursor:pointer;transition:all .2s;
-}
-.setup-btn:hover{background:#4f46e5;transform:translateY(-2px);}
-.setup-btn:disabled{background:#cbd5e1;cursor:not-allowed;transform:none;}
-.setup-error{color:var(--red);font-size:12px;margin-top:8px;display:none;}
+.login-btn:hover{border-color:var(--acc);background:var(--acc-l);transform:translateY(-2px);box-shadow:var(--shadow);}
+.login-btn .av{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.login-btn .login-info{flex:1;min-width:0;}
+.login-btn .login-name{font-weight:700;}
+.login-btn .login-sub{font-size:10px;color:var(--muted);margin-top:1px;}
 
 /* ─── PAGE HEADER ─── */
-.page-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px;}
+.page-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
 .page-hdr h2{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;}
-.hdr-stats{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
-.stat-badge{
-  display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:12px;
-  font-weight:700;font-size:13px;border:1px solid;
-}
-.badge-gold{background:#fef9c3;color:#92400e;border-color:#fde047;}
-.badge-hp{background:#fde8e8;color:#c0392b;border-color:#fca5a5;}
-.badge-xp{background:var(--acc-l);color:#4338ca;border-color:#c4b5fd;}
-.badge-lvl{background:var(--green-l);color:var(--green);border-color:#86efac;}
-.badge-mp{background:#dbeafe;color:#1d4ed8;border-color:#93c5fd;}
-.logout-btn{
-  padding:8px 16px;border-radius:10px;border:1px solid var(--line);
-  background:var(--white);cursor:pointer;font-size:12px;font-weight:500;
-  font-family:inherit;color:var(--muted);transition:all .15s;
-}
-.logout-btn:hover{border-color:var(--red);color:var(--red);background:var(--red-l);}
+.hdr-stats{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.badge{display:flex;align-items:center;gap:5px;padding:7px 13px;border-radius:11px;font-weight:700;font-size:12px;border:1px solid;}
+.b-gold{background:#fef9c3;color:#92400e;border-color:#fde047;}
+.b-hp{background:#fde8e8;color:#c0392b;border-color:#fca5a5;}
+.b-lvl{background:var(--green-l);color:var(--green);border-color:#86efac;}
+.b-class{background:var(--purple-l);color:var(--purple);border-color:#c4b5fd;}
+.logout-btn{padding:7px 14px;border-radius:10px;border:1px solid var(--line);background:var(--white);cursor:pointer;font-size:11px;font-weight:500;font-family:inherit;color:var(--muted);transition:all .15s;}
+.logout-btn:hover{border-color:var(--red);color:var(--red);}
 
 /* ─── TABS ─── */
 .tabs{display:flex;gap:4px;background:var(--white);border-radius:12px;padding:4px;box-shadow:var(--shadow);margin-bottom:24px;width:fit-content;}
-.tab-btn{
-  padding:10px 20px;border-radius:10px;border:none;background:transparent;
-  font-family:inherit;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .2s;
-}
+.tab-btn{padding:10px 18px;border-radius:10px;border:none;background:transparent;font-family:inherit;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .2s;}
 .tab-btn.active{background:var(--acc);color:#fff;box-shadow:0 2px 8px rgba(99,102,241,.3);}
 .tab-btn:hover:not(.active){background:var(--bg);color:var(--ink);}
-.tab-pane{display:none;}
-.tab-pane.active{display:block;}
+.tab-pane{display:none;}.tab-pane.active{display:block;}
 
-/* ─── ALL CHARACTERS ─── */
-.chars-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;}
+/* ─── CHARACTER CARDS ─── */
+.chars-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;}
 .char-card{
-  background:var(--white);border-radius:16px;padding:20px;text-align:center;
+  background:var(--white);border-radius:16px;padding:18px;text-align:center;
   box-shadow:var(--shadow);transition:all .25s;position:relative;overflow:hidden;
 }
 .char-card:hover{transform:translateY(-4px);box-shadow:var(--shadow2);}
 .char-card.is-me{border:2px solid var(--acc);}
-.char-card.is-me::after{
-  content:'Это вы';position:absolute;top:10px;right:10px;
-  font-size:10px;font-weight:700;color:var(--acc);background:var(--acc-l);
-  padding:3px 10px;border-radius:20px;
-}
-.char-avatar-wrap{
-  width:100px;height:100px;margin:0 auto 12px;position:relative;
-  border-radius:50%;overflow:hidden;background:#e5e7eb;
-  box-shadow:0 4px 16px rgba(0,0,0,.1);
-}
-.char-avatar-wrap img{
-  width:141px;height:147px;
-  object-fit:none;
-  object-position:-25px -24px;
-  image-rendering:pixelated;
-}
-.char-name{font-weight:700;font-size:14px;margin-bottom:2px;}
-.char-class{font-size:11px;color:var(--muted);margin-bottom:4px;text-transform:capitalize;}
-.char-rop{font-size:11px;color:var(--acc);margin-bottom:8px;font-weight:600;}
-.char-level{
-  display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;
-  color:var(--green);background:var(--green-l);padding:3px 10px;border-radius:20px;margin-bottom:8px;
-}
-.char-bars{display:flex;flex-direction:column;gap:4px;margin-bottom:8px;}
-.bar-row{display:flex;align-items:center;gap:6px;}
-.bar-label{font-size:9px;font-weight:700;width:20px;text-align:right;text-transform:uppercase;}
-.bar-track{flex:1;height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden;}
-.bar-fill{height:100%;border-radius:3px;transition:width .5s;}
-.bar-hp .bar-fill{background:linear-gradient(90deg,#ef4444,#f87171);}
-.bar-xp .bar-fill{background:linear-gradient(90deg,#eab308,#fbbf24);}
-.bar-mp .bar-fill{background:linear-gradient(90deg,#3b82f6,#60a5fa);}
-.bar-val{font-size:9px;color:var(--muted);width:50px;font-variant-numeric:tabular-nums;}
-.char-gold{font-size:12px;color:#92400e;font-weight:600;display:flex;align-items:center;justify-content:center;gap:4px;}
+.char-card.is-me::after{content:'ВЫ';position:absolute;top:8px;right:8px;font-size:9px;font-weight:800;color:var(--acc);background:var(--acc-l);padding:2px 8px;border-radius:20px;letter-spacing:1px;}
 
-/* ─── MY CHARACTER ─── */
-.my-section{display:grid;grid-template-columns:360px 1fr;gap:24px;align-items:start;}
-.my-card{background:var(--white);border-radius:20px;padding:32px;text-align:center;box-shadow:var(--shadow2);}
-.my-avatar-wrap{
-  width:141px;height:147px;margin:0 auto 16px;
-  image-rendering:pixelated;overflow:hidden;border-radius:16px;
-  background:#e5e7eb;box-shadow:0 6px 24px rgba(0,0,0,.12);
+/* Character Pixel Avatar */
+.pixel-avatar{
+  width:72px;height:72px;margin:0 auto 10px;border-radius:50%;position:relative;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(0,0,0,.12);overflow:visible;
 }
-.my-avatar-wrap img{width:141px;height:147px;image-rendering:pixelated;}
+.pixel-avatar .body{font-size:32px;position:relative;z-index:2;line-height:1;}
+.pixel-avatar .hat{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:24px;z-index:3;filter:drop-shadow(0 2px 3px rgba(0,0,0,.2));}
+.pixel-avatar .pet{position:absolute;bottom:-10px;right:-10px;font-size:20px;z-index:3;filter:drop-shadow(0 2px 3px rgba(0,0,0,.2));}
+.pixel-avatar .weapon{position:absolute;bottom:2px;left:-12px;font-size:18px;z-index:3;transform:rotate(-30deg);filter:drop-shadow(0 2px 3px rgba(0,0,0,.2));}
+.pixel-avatar .aura{position:absolute;inset:-6px;border-radius:50%;z-index:1;pointer-events:none;}
+@keyframes aura-p{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
+.aura-fire{box-shadow:0 0 14px 4px rgba(239,68,68,.4),0 0 28px rgba(239,68,68,.15);animation:aura-p 2s ease-in-out infinite;}
+.aura-ice{box-shadow:0 0 14px 4px rgba(59,130,246,.4),0 0 28px rgba(59,130,246,.15);animation:aura-p 2s ease-in-out infinite;}
+.aura-gold{box-shadow:0 0 14px 4px rgba(234,179,8,.5),0 0 28px rgba(234,179,8,.2);animation:aura-p 2s ease-in-out infinite;}
+.aura-nature{box-shadow:0 0 14px 4px rgba(16,185,129,.4),0 0 28px rgba(16,185,129,.15);animation:aura-p 2s ease-in-out infinite;}
+.aura-shadow{box-shadow:0 0 14px 4px rgba(139,92,246,.4),0 0 28px rgba(139,92,246,.15);animation:aura-p 2s ease-in-out infinite;}
+.aura-divine{box-shadow:0 0 18px 6px rgba(251,191,36,.5),0 0 36px rgba(251,191,36,.2);animation:aura-p 1.5s ease-in-out infinite;}
+
+.c-name{font-weight:700;font-size:13px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.c-class{font-size:10px;color:var(--muted);margin-bottom:3px;}
+.c-rop{font-size:10px;color:var(--acc);font-weight:600;margin-bottom:6px;}
+.c-lvl{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:var(--green);background:var(--green-l);padding:2px 8px;border-radius:16px;margin-bottom:6px;}
+.bars{display:flex;flex-direction:column;gap:3px;margin-bottom:6px;}
+.bar-r{display:flex;align-items:center;gap:4px;}
+.bar-l{font-size:8px;font-weight:700;width:16px;text-align:right;}
+.bar-t{flex:1;height:5px;background:#e5e7eb;border-radius:3px;overflow:hidden;}
+.bar-f{height:100%;border-radius:3px;transition:width .5s;}
+.bar-v{font-size:8px;color:var(--muted);width:36px;font-variant-numeric:tabular-nums;}
+.c-gold{font-size:11px;color:#92400e;font-weight:600;display:flex;align-items:center;justify-content:center;gap:3px;}
+
+/* ─── MY CHARACTER SECTION ─── */
+.my-grid{display:grid;grid-template-columns:320px 1fr;gap:24px;align-items:start;}
+.my-card{background:var(--white);border-radius:20px;padding:28px;text-align:center;box-shadow:var(--shadow2);}
+.my-avatar{
+  width:100px;height:100px;margin:0 auto 14px;border-radius:50%;position:relative;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 24px rgba(0,0,0,.15);
+}
+.my-avatar .body{font-size:44px;position:relative;z-index:2;}
+.my-avatar .hat{position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:34px;z-index:3;filter:drop-shadow(0 2px 4px rgba(0,0,0,.25));}
+.my-avatar .pet{position:absolute;bottom:-14px;right:-14px;font-size:26px;z-index:3;}
+.my-avatar .weapon{position:absolute;bottom:4px;left:-16px;font-size:24px;z-index:3;transform:rotate(-30deg);}
+.my-avatar .aura{position:absolute;inset:-8px;border-radius:50%;z-index:1;}
 .my-name{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin-bottom:2px;}
-.my-class{font-size:12px;color:var(--muted);margin-bottom:4px;text-transform:capitalize;}
-.my-rop{font-size:12px;color:var(--acc);margin-bottom:16px;font-weight:600;}
-.my-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
-.my-stat{background:var(--bg);border-radius:12px;padding:12px;text-align:center;}
-.my-stat .val{font-size:20px;font-weight:800;}
-.my-stat .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
-.my-bars{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;text-align:left;}
-.my-bar-row{display:flex;align-items:center;gap:8px;}
-.my-bar-label{font-size:11px;font-weight:700;width:24px;}
-.my-bar-track{flex:1;height:10px;background:#e5e7eb;border-radius:5px;overflow:hidden;}
-.my-bar-fill{height:100%;border-radius:5px;transition:width .5s;}
-.my-bar-val{font-size:11px;color:var(--muted);width:80px;text-align:right;font-variant-numeric:tabular-nums;}
-.my-equip{margin-top:16px;text-align:left;}
-.my-equip-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;}
-.equip-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
-.equip-slot{
-  background:var(--bg);border-radius:10px;padding:8px;text-align:center;
-  border:1.5px solid var(--line);
+.my-class-badge{font-size:12px;color:var(--purple);font-weight:600;margin-bottom:4px;}
+.my-rop{font-size:11px;color:var(--acc);margin-bottom:14px;}
+.my-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.stat-box{background:var(--bg);border-radius:10px;padding:10px;text-align:center;}
+.stat-box .v{font-size:18px;font-weight:800;}
+.stat-box .l{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-top:2px;}
+.my-bars{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;text-align:left;}
+.mb-row{display:flex;align-items:center;gap:8px;}
+.mb-icon{font-size:14px;width:20px;text-align:center;}
+.mb-track{flex:1;height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;}
+.mb-fill{height:100%;border-radius:4px;transition:width .5s;}
+.mb-val{font-size:10px;color:var(--muted);width:60px;text-align:right;font-variant-numeric:tabular-nums;}
+
+/* Equip slots */
+.equip-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;}
+.equip-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+.eq-slot{
+  background:var(--bg);border-radius:10px;padding:8px 4px;text-align:center;
+  border:1.5px dashed var(--line);min-height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .2s;position:relative;
 }
-.equip-slot img{width:40px;height:40px;image-rendering:pixelated;}
-.equip-slot .eq-name{font-size:9px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.eq-slot.filled{border-style:solid;border-color:var(--acc);background:var(--acc-l);}
+.eq-slot .eq-i{font-size:20px;margin-bottom:2px;}
+.eq-slot .eq-n{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;}
+.eq-slot .eq-rm{position:absolute;top:2px;right:2px;width:14px;height:14px;border-radius:50%;background:var(--red);color:#fff;border:none;font-size:9px;cursor:pointer;display:none;align-items:center;justify-content:center;line-height:1;}
+.eq-slot.filled:hover .eq-rm{display:flex;}
+
+/* Class selector */
+.class-select{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:16px 0;}
+.class-opt{
+  padding:12px;border-radius:12px;border:2px solid var(--line);background:var(--white);
+  cursor:pointer;text-align:center;transition:all .2s;
+}
+.class-opt:hover{border-color:var(--acc);transform:translateY(-2px);}
+.class-opt.active{border-color:var(--acc);background:var(--acc-l);}
+.class-opt .cl-icon{font-size:28px;margin-bottom:4px;}
+.class-opt .cl-name{font-size:12px;font-weight:700;}
+.class-opt .cl-desc{font-size:9px;color:var(--muted);margin-top:2px;}
 
 /* ─── RIGHT PANEL ─── */
-.right-panel{display:flex;flex-direction:column;gap:20px;}
-.info-card{background:var(--white);border-radius:16px;padding:24px;box-shadow:var(--shadow);}
-.info-card h3{font-size:16px;font-weight:700;margin-bottom:16px;}
-.earn-table{width:100%;border-collapse:collapse;}
-.earn-table th{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);}
-.earn-table td{padding:10px 12px;font-size:13px;border-bottom:1px solid var(--line);}
-.earn-table tr:last-child td{border-bottom:none;}
-.earn-plus{color:var(--green);font-weight:700;}
+.right-col{display:flex;flex-direction:column;gap:16px;}
+.info-card{background:var(--white);border-radius:16px;padding:20px;box-shadow:var(--shadow);}
+.info-card h3{font-size:15px;font-weight:700;margin-bottom:12px;}
 
-/* ─── REWARD TASKS ─── */
-.tasks-section{background:var(--white);border-radius:16px;padding:24px;box-shadow:var(--shadow);}
-.tasks-section h3{font-size:16px;font-weight:700;margin-bottom:16px;}
-.task-list{display:flex;flex-direction:column;gap:8px;}
-.task-item{
-  display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;
-  background:var(--bg);transition:all .2s;
+/* Quests */
+.quest-list{display:flex;flex-direction:column;gap:8px;}
+.quest-item{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;
+  background:var(--bg);transition:all .2s;border-left:3px solid var(--line);
 }
-.task-item:hover{transform:translateX(4px);box-shadow:var(--shadow);}
-.task-check{
-  width:28px;height:28px;border-radius:8px;border:2px solid var(--line);
-  background:var(--white);cursor:pointer;display:flex;align-items:center;justify-content:center;
-  font-size:14px;color:transparent;transition:all .2s;flex-shrink:0;
+.quest-item.done{opacity:.5;border-left-color:var(--green);}
+.quest-item.done .q-title{text-decoration:line-through;}
+.q-check{
+  width:24px;height:24px;border-radius:7px;border:2px solid var(--line);background:var(--white);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;color:transparent;
+  transition:all .2s;flex-shrink:0;
 }
-.task-check:hover{border-color:var(--green);color:var(--green);}
-.task-check.done{background:var(--green);border-color:var(--green);color:#fff;}
-.task-info{flex:1;min-width:0;}
-.task-title{font-size:13px;font-weight:600;}
-.task-sub{font-size:11px;color:var(--muted);margin-top:2px;}
-.task-reward{font-size:12px;font-weight:700;color:#92400e;white-space:nowrap;}
+.q-check:hover{border-color:var(--green);color:var(--green);}
+.q-check.done{background:var(--green);border-color:var(--green);color:#fff;}
+.q-body{flex:1;min-width:0;}
+.q-title{font-size:12px;font-weight:600;}
+.q-sub{font-size:10px;color:var(--muted);margin-top:1px;}
+.q-reward{font-size:11px;font-weight:700;color:#92400e;white-space:nowrap;}
+
+/* ─── SHOP ─── */
+.shop-section{background:var(--white);border-radius:16px;padding:24px;box-shadow:var(--shadow);}
+.shop-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:4px;}
+.shop-sub{font-size:12px;color:var(--muted);margin-bottom:16px;}
+.shop-cats{display:flex;gap:5px;margin-bottom:16px;flex-wrap:wrap;}
+.shop-cat{padding:6px 12px;border-radius:18px;border:1px solid var(--line);background:var(--white);font-family:inherit;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;}
+.shop-cat.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+.shop-cat:hover:not(.active){border-color:var(--acc);color:var(--acc);}
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+.shop-item{
+  background:var(--bg);border-radius:12px;padding:14px;text-align:center;
+  border:1.5px solid transparent;transition:all .2s;position:relative;
+}
+.shop-item:hover{border-color:var(--acc);transform:translateY(-2px);box-shadow:var(--shadow);}
+.shop-item.owned{border-color:var(--green);background:var(--green-l);}
+.shop-item.equipped{border-color:var(--acc);background:var(--acc-l);}
+.shop-item .si-icon{font-size:30px;margin-bottom:6px;display:block;}
+.shop-item .si-name{font-size:12px;font-weight:700;margin-bottom:3px;}
+.shop-item .si-desc{font-size:9px;color:var(--muted);margin-bottom:8px;line-height:1.4;}
+.shop-item .si-price{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:700;color:#92400e;background:#fef9c3;padding:4px 10px;border-radius:16px;}
+.shop-item .si-price.free{color:var(--green);background:var(--green-l);}
+.buy-btn{
+  margin-top:6px;padding:7px 14px;border-radius:8px;border:none;
+  background:var(--acc);color:#fff;font-family:inherit;font-size:11px;font-weight:700;
+  cursor:pointer;transition:all .2s;width:100%;
+}
+.buy-btn:hover{background:#4f46e5;transform:scale(1.03);}
+.buy-btn:disabled{background:#cbd5e1;cursor:not-allowed;transform:none;}
+.buy-btn.eq-btn{background:#f59e0b;}
+.buy-btn.done-btn{background:var(--green);}
+.item-badge{position:absolute;top:6px;right:6px;font-size:8px;font-weight:700;padding:2px 6px;border-radius:8px;}
+.ib-owned{background:var(--green-l);color:var(--green);}
+.ib-eq{background:var(--acc-l);color:var(--acc);}
 
 /* ─── LEAD SHOP ─── */
-.lead-shop{
-  background:linear-gradient(135deg,#fef9c3,#fde68a);border-radius:16px;
-  padding:24px;border:1px solid #fde047;
-}
-.lead-shop h3{font-size:16px;font-weight:700;color:#92400e;margin-bottom:6px;}
-.lead-shop p{font-size:12px;color:#a16207;margin-bottom:16px;}
-.lead-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;}
-.lead-card{
-  background:rgba(255,255,255,.8);border-radius:12px;padding:16px;text-align:center;
-  border:1px solid rgba(202,138,4,.2);transition:all .2s;
-}
+.lead-shop{background:linear-gradient(135deg,#fef9c3,#fde68a);border-radius:16px;padding:24px;border:1px solid #fde047;margin-top:16px;}
+.lead-shop h3{font-size:16px;font-weight:700;color:#92400e;margin-bottom:4px;}
+.lead-shop p{font-size:11px;color:#a16207;margin-bottom:14px;}
+.lead-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;}
+.lead-card{background:rgba(255,255,255,.8);border-radius:12px;padding:14px;text-align:center;border:1px solid rgba(202,138,4,.2);transition:all .2s;}
 .lead-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(202,138,4,.15);}
-.lead-icon{font-size:32px;margin-bottom:8px;}
-.lead-title{font-size:14px;font-weight:700;color:#92400e;margin-bottom:4px;}
-.lead-desc{font-size:11px;color:#a16207;margin-bottom:10px;}
-.lead-price{font-size:16px;font-weight:800;color:#92400e;margin-bottom:8px;}
-.lead-buy{
-  padding:10px 20px;border-radius:10px;border:none;
-  background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;
-  font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;
-  transition:all .2s;width:100%;
-}
-.lead-buy:hover{transform:scale(1.03);box-shadow:0 4px 12px rgba(217,119,6,.3);}
+.lc-icon{font-size:28px;margin-bottom:6px;}
+.lc-title{font-size:13px;font-weight:700;color:#92400e;margin-bottom:3px;}
+.lc-desc{font-size:10px;color:#a16207;margin-bottom:8px;}
+.lc-price{font-size:15px;font-weight:800;color:#92400e;margin-bottom:6px;}
+.lead-buy{padding:8px 16px;border-radius:8px;border:none;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;width:100%;}
+.lead-buy:hover{transform:scale(1.03);}
 .lead-buy:disabled{opacity:.5;cursor:not-allowed;transform:none;}
 
-/* ─── PETS ─── */
-.pets-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;}
-.pet-item{
-  background:var(--bg);border-radius:10px;padding:8px;text-align:center;
-  border:1.5px solid var(--line);transition:all .2s;
-}
-.pet-item:hover{border-color:var(--acc);transform:scale(1.05);}
-.pet-item img{width:50px;height:50px;image-rendering:pixelated;}
-.pet-item .pet-name{font-size:8px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-
 /* ─── TOAST ─── */
-.toast{
-  position:fixed;bottom:24px;right:24px;z-index:999;
-  background:var(--ink);color:#fff;padding:14px 24px;border-radius:14px;
-  font-size:13px;font-weight:600;box-shadow:0 8px 32px rgba(0,0,0,.3);
-  transform:translateY(120%);opacity:0;transition:all .35s cubic-bezier(.4,0,.2,1);
-}
+.toast{position:fixed;bottom:24px;right:24px;z-index:999;background:var(--ink);color:#fff;padding:14px 24px;border-radius:14px;font-size:13px;font-weight:600;box-shadow:0 8px 32px rgba(0,0,0,.3);transform:translateY(120%);opacity:0;transition:all .35s cubic-bezier(.4,0,.2,1);}
 .toast.show{transform:translateY(0);opacity:1;}
 .toast.success{background:#059669;}
 .toast.error{background:var(--red);}
 
-/* ─── LOADING ─── */
-.loading{text-align:center;padding:60px 20px;color:var(--muted);}
-.loading .spinner{
-  width:40px;height:40px;border:3px solid var(--line);border-top-color:var(--acc);
-  border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-
 /* ─── RESPONSIVE ─── */
-@media(max-width:1100px){.my-section{grid-template-columns:1fr;}}
+@media(max-width:1100px){.my-grid{grid-template-columns:1fr;}}
 @media(max-width:768px){
-  .sidebar{transform:translateX(-100%);}
-  .sidebar.open{transform:translateX(0);}
+  .sidebar{transform:translateX(-100%);}.sidebar.open{transform:translateX(0);}
   .main{margin-left:0;padding:16px;}
-  .chars-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));}
+  .chars-grid{grid-template-columns:repeat(auto-fill,minmax(155px,1fr));}
   .burger{display:flex !important;}
 }
-.burger{
-  display:none;position:fixed;top:12px;left:12px;z-index:200;
-  width:40px;height:40px;border-radius:10px;background:var(--white);
-  box-shadow:var(--shadow);border:none;cursor:pointer;
-  align-items:center;justify-content:center;font-size:20px;
-}
+.burger{display:none;position:fixed;top:12px;left:12px;z-index:200;width:40px;height:40px;border-radius:10px;background:var(--white);box-shadow:var(--shadow);border:none;cursor:pointer;align-items:center;justify-content:center;font-size:20px;}
 </style>
 </head>
 <body>
 <button class="burger" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
-
 <div class="shell">
-<!-- ═══ SIDEBAR ═══ -->
 <aside class="sidebar">
-  <div class="sb-logo">
-    <h1>WeGlow</h1>
-    <div class="tagline">Habitica RPG</div>
-  </div>
+  <div class="sb-logo"><h1>WeGlow</h1><div class="tagline">Sales RPG</div></div>
   <nav class="sb-nav">
     <div class="sb-section">Навигация</div>
     <div class="dock-wrap">
@@ -331,650 +297,542 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
   </nav>
 </aside>
 
-<!-- ═══ MAIN ═══ -->
 <div class="main">
-  <!-- SETUP SCREEN -->
-  <div id="setup-screen" class="setup-screen">
-    <div class="setup-card">
-      <h2>🎮 Привяжите Habitica</h2>
-      <p>Каждый менеджер прокачивает своего RPG-персонажа в <a href="https://habitica.com" target="_blank">Habitica</a>.<br>Монеты и XP начисляются автоматически за продажи!</p>
-
-      <div class="setup-steps">
-        <div class="setup-step">
-          <div class="step-num">1</div>
-          <div class="step-text">Зарегистрируйтесь на <a href="https://habitica.com" target="_blank"><strong>habitica.com</strong></a> (бесплатно)</div>
-        </div>
-        <div class="setup-step">
-          <div class="step-num">2</div>
-          <div class="step-text">Откройте <a href="https://habitica.com/user/settings/api" target="_blank"><strong>Настройки → API</strong></a> и скопируйте <strong>User ID</strong> и <strong>API Token</strong></div>
-        </div>
-        <div class="setup-step">
-          <div class="step-num">3</div>
-          <div class="step-text">Выберите своё имя и вставьте данные ниже</div>
-        </div>
-      </div>
-
-      <select class="mgr-select" id="setup-mgr">
-        <option value="">Выберите менеджера...</option>
-      </select>
-      <div class="input-row">
-        <input type="text" id="setup-uid" placeholder="User ID из Habitica">
-      </div>
-      <div class="input-row">
-        <input type="text" id="setup-token" placeholder="API Token из Habitica">
-      </div>
-      <button class="setup-btn" id="setup-btn" onclick="connectHabitica()">Подключить персонажа</button>
-      <div class="setup-error" id="setup-error"></div>
-
-      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--line)">
-        <p style="font-size:12px;color:var(--muted);margin-bottom:8px">Уже подключены? Выберите себя:</p>
-        <div id="quick-login-list" style="display:flex;flex-direction:column;gap:6px"></div>
-      </div>
+  <!-- LOGIN -->
+  <div id="login-screen" class="login-screen">
+    <div class="login-card">
+      <h2>⚔️ WeGlow RPG</h2>
+      <p>Выберите себя чтобы прокачать персонажа. Монеты и XP — за реальные продажи!</p>
+      <div class="login-list" id="login-list"></div>
     </div>
   </div>
 
-  <!-- GAME SCREEN -->
+  <!-- GAME -->
   <div id="game-screen" style="display:none">
     <div class="page-hdr">
-      <h2 id="page-title">Персонажи</h2>
+      <h2 id="page-title">⚔️ RPG Персонажи</h2>
       <div class="hdr-stats" id="hdr-stats"></div>
     </div>
-
     <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('all',this)">Все персонажи</button>
-      <button class="tab-btn" onclick="switchTab('my',this)">Мой кабинет</button>
-      <button class="tab-btn" onclick="switchTab('shop',this)">Награды</button>
+      <button class="tab-btn active" onclick="switchTab('all',this)">🏰 Все герои</button>
+      <button class="tab-btn" onclick="switchTab('my',this)">🧙 Мой кабинет</button>
+      <button class="tab-btn" onclick="switchTab('shop',this)">🛒 Магазин</button>
+      <button class="tab-btn" onclick="switchTab('quests',this)">📜 Квесты</button>
     </div>
 
-    <!-- TAB: All characters -->
-    <div id="tab-all" class="tab-pane active">
-      <div class="chars-grid" id="chars-grid">
-        <div class="loading"><div class="spinner"></div>Загрузка персонажей...</div>
-      </div>
-    </div>
+    <div id="tab-all" class="tab-pane active"><div class="chars-grid" id="chars-grid"></div></div>
 
-    <!-- TAB: My character -->
     <div id="tab-my" class="tab-pane">
-      <div class="my-section">
+      <div class="my-grid">
         <div><div class="my-card" id="my-card"></div></div>
-        <div class="right-panel">
-          <div class="info-card">
-            <h3>💰 Как заработать</h3>
-            <table class="earn-table">
-              <thead><tr><th>Действие</th><th>Награда</th></tr></thead>
-              <tbody>
-                <tr><td>Новый лид (заявка)</td><td class="earn-plus">+XP и золото в Habitica</td></tr>
-                <tr><td>Закрытая сделка</td><td class="earn-plus">+XP и золото (средняя задача)</td></tr>
-                <tr><td>Крупная сделка (500к+)</td><td class="earn-plus">+XP и золото (сложная задача)</td></tr>
-                <tr><td>Топ-1 менеджер дня</td><td class="earn-plus">+Бонусная задача</td></tr>
-              </tbody>
-            </table>
-          </div>
-          <div id="my-pets-section" class="info-card" style="display:none">
-            <h3>🐾 Мои питомцы</h3>
-            <div class="pets-grid" id="my-pets-grid"></div>
-          </div>
-        </div>
+        <div class="right-col" id="right-col"></div>
       </div>
     </div>
 
-    <!-- TAB: Rewards / Lead shop -->
     <div id="tab-shop" class="tab-pane">
-      <div class="tasks-section" id="reward-tasks" style="margin-bottom:20px">
-        <h3>⚔️ Задачи из Habitica</h3>
-        <div class="task-list" id="task-list">
-          <div class="loading"><div class="spinner"></div>Загрузка задач...</div>
-        </div>
-      </div>
-      <div class="lead-shop">
-        <h3>📋 Купить лиды за золото</h3>
-        <p>Потратьте золото Habitica чтобы получить дополнительных клиентов</p>
-        <div class="lead-cards" id="lead-cards"></div>
-      </div>
+      <div class="shop-section" id="shop-section"></div>
+      <div class="lead-shop" id="lead-shop-section"></div>
+    </div>
+
+    <div id="tab-quests" class="tab-pane">
+      <div class="info-card" id="quests-card"></div>
     </div>
   </div>
 </div>
 </div>
-
 <div class="toast" id="toast"></div>
 
 <script>
 // ═══════════════════ CONFIG ═══════════════════════════════════════
-const SUPABASE_URL = 'https://bdyakgmeibpdkisbiykt.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkeWFrZ21laWJwZGtpc2JpeWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTQzOTMsImV4cCI6MjA4Nzc5MDM5M30.nA187grJR6XFQRmTP6WOM-6-1dZK1EzYNNP2JH9aAMg';
-const HABITICA_BASE = 'https://habitica.com/api/v3';
-const HABITICA_CLIENT = 'weglow-sales-dashboard';
+const SB_URL = 'https://bdyakgmeibpdkisbiykt.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkeWFrZ21laWJwZGtpc2JpeWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTQzOTMsImV4cCI6MjA4Nzc5MDM5M30.nA187grJR6XFQRmTP6WOM-6-1dZK1EzYNNP2JH9aAMg';
 
-// ═══════════════════ STATE ═══════════════════════════════════════
-let MANAGERS = {};
-let MGR_TO_ROP = {};
-let HABITICA_ACCOUNTS = {};  // { mgrName: { uid, token, profile: {...} } }
-let currentUser = null;
+// ─── CLASSES ───
+const CLASSES = {
+  warrior: { icon:'⚔️', name:'Воин', desc:'Сила и стойкость', color:'#ef4444', bg:'linear-gradient(135deg,#ef4444,#f97316)' },
+  mage:    { icon:'🧙', name:'Маг',  desc:'Интеллект и магия', color:'#8b5cf6', bg:'linear-gradient(135deg,#8b5cf6,#6366f1)' },
+  rogue:   { icon:'🗡️', name:'Разбойник', desc:'Ловкость и скорость', color:'#10b981', bg:'linear-gradient(135deg,#10b981,#059669)' },
+  healer:  { icon:'💚', name:'Целитель', desc:'Мудрость и поддержка', color:'#3b82f6', bg:'linear-gradient(135deg,#3b82f6,#06b6d4)' },
+};
 
-// ═══════════════════ HABITICA API ════════════════════════════════
-function habHeaders(uid, token) {
-  return {
-    'Content-Type': 'application/json',
-    'x-api-user': uid,
-    'x-api-key': token,
-    'x-client': HABITICA_CLIENT
-  };
-}
-
-async function habGet(endpoint, uid, token) {
-  const r = await fetch(`${HABITICA_BASE}${endpoint}`, { headers: habHeaders(uid, token) });
-  if (!r.ok) throw new Error(`Habitica ${r.status}`);
-  const j = await r.json();
-  return j.data;
-}
-
-async function habPost(endpoint, uid, token, body = {}) {
-  const r = await fetch(`${HABITICA_BASE}${endpoint}`, {
-    method: 'POST',
-    headers: habHeaders(uid, token),
-    body: JSON.stringify(body)
-  });
-  if (!r.ok) throw new Error(`Habitica ${r.status}`);
-  const j = await r.json();
-  return j.data;
-}
-
-// ─── Get user profile ───
-async function getHabProfile(uid, token) {
-  const user = await habGet('/user', uid, token);
-  return {
-    name: user.profile?.name || user.auth?.local?.username || 'Герой',
-    class: user.stats?.class || 'warrior',
-    level: user.stats?.lvl || 1,
-    hp: user.stats?.hp || 0,
-    maxHp: user.stats?.maxHealth || 50,
-    xp: user.stats?.exp || 0,
-    maxXp: user.stats?.toNextLevel || 100,
-    mp: user.stats?.mp || 0,
-    maxMp: user.stats?.maxMP || 50,
-    gp: user.stats?.gp || 0,
-    str: user.stats?.str || 0,
-    int: user.stats?.int || 0,
-    con: user.stats?.con || 0,
-    per: user.stats?.per || 0,
-    costume: user.items?.gear?.equipped || {},
-    pets: user.items?.pets || {},
-    mounts: user.items?.mounts || {},
-    avatar: `https://habitica-assets.s3.amazonaws.com/mobileApp/images/avatar-${uid}.png`
-  };
-}
-
-// ─── Avatar image URL (pixel sprite) ───
-function avatarUrl(uid) {
-  return `https://habitica.com/export/avatar-${uid}.png`;
-}
-
-// ─── Score a task ───
-async function scoreTask(taskId, direction, uid, token) {
-  return habPost(`/tasks/${taskId}/score/${direction}`, uid, token);
-}
-
-// ─── Get tasks ───
-async function getTasks(uid, token) {
-  return habGet('/tasks/user', uid, token);
-}
-
-// ─── Create a todo task (for sales rewards) ───
-async function createSalesTodo(title, difficulty, uid, token) {
-  return habPost('/tasks/user', uid, token, {
-    text: title,
-    type: 'todo',
-    priority: difficulty  // 0.1=trivial, 1=easy, 1.5=medium, 2=hard
-  });
-}
-
-// ═══════════════════ SUPABASE ════════════════════════════════════
-async function loadData() {
-  try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data`, {
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-    });
-    const rows = await res.json();
-    if (rows?.[0]?.data) {
-      const d = rows[0].data;
-      if (d.MANAGERS) MANAGERS = d.MANAGERS;
-      if (d.MGR_TO_ROP) MGR_TO_ROP = d.MGR_TO_ROP;
-      if (d.HABITICA_ACCOUNTS) HABITICA_ACCOUNTS = d.HABITICA_ACCOUNTS;
-    }
-  } catch(e) { console.warn('Supabase load:', e); }
-}
-
-async function saveAccounts() {
-  try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data`, {
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-    });
-    const rows = await res.json();
-    const current = rows?.[0]?.data || {};
-    current.HABITICA_ACCOUNTS = HABITICA_ACCOUNTS;
-    await fetch(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1`, {
-      method: 'PATCH',
-      headers: {
-        'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json', 'Prefer': 'return=minimal'
-      },
-      body: JSON.stringify({ data: current })
-    });
-  } catch(e) { console.warn('Save error:', e); }
-}
-
-// ═══════════════════ MANAGER HELPERS ═════════════════════════════
-function getAllManagerNames() {
-  const names = new Set();
-  for (const prod of Object.keys(MANAGERS)) {
-    const list = MANAGERS[prod] || {};
-    for (const idx of Object.keys(list)) {
-      if (list[idx]?.name) names.add(list[idx].name);
-    }
-  }
-  return [...names].sort();
-}
-
-function getRop(name) { return MGR_TO_ROP[name] || ''; }
-
-const CLASS_NAMES = { warrior: 'Воин', rogue: 'Разбойник', healer: 'Целитель', wizard: 'Маг' };
-
-// ═══════════════════ CONNECT HABITICA ════════════════════════════
-async function connectHabitica() {
-  const btn = document.getElementById('setup-btn');
-  const err = document.getElementById('setup-error');
-  const mgr = document.getElementById('setup-mgr').value;
-  const uid = document.getElementById('setup-uid').value.trim();
-  const token = document.getElementById('setup-token').value.trim();
-
-  err.style.display = 'none';
-  if (!mgr) { err.textContent = 'Выберите менеджера'; err.style.display = 'block'; return; }
-  if (!uid || !token) { err.textContent = 'Введите User ID и API Token'; err.style.display = 'block'; return; }
-
-  btn.disabled = true; btn.textContent = 'Проверяем...';
-  try {
-    const profile = await getHabProfile(uid, token);
-    HABITICA_ACCOUNTS[mgr] = { uid, token, connected: true };
-    await saveAccounts();
-    currentUser = mgr;
-    localStorage.setItem('game_user', mgr);
-    showGame();
-    toast('Habitica подключена! Персонаж: ' + profile.name, 'success');
-  } catch(e) {
-    err.textContent = 'Ошибка подключения. Проверьте User ID и API Token.';
-    err.style.display = 'block';
-    console.error(e);
-  }
-  btn.disabled = false; btn.textContent = 'Подключить персонажа';
-}
-
-// ═══════════════════ LOGIN / LOGOUT ══════════════════════════════
-function quickLogin(name) {
-  currentUser = name;
-  localStorage.setItem('game_user', name);
-  showGame();
-}
-
-function logout() {
-  currentUser = null;
-  localStorage.removeItem('game_user');
-  document.getElementById('setup-screen').style.display = '';
-  document.getElementById('game-screen').style.display = 'none';
-}
-
-function showGame() {
-  document.getElementById('setup-screen').style.display = 'none';
-  document.getElementById('game-screen').style.display = 'block';
-  renderAll();
-}
-
-// ═══════════════════ TABS ════════════════════════════════════════
-function switchTab(tab, btn) {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('tab-'+tab).classList.add('active');
-  if (tab === 'shop') renderTasks();
-}
-
-// ═══════════════════ RENDER ALL ══════════════════════════════════
-async function renderAll() {
-  if (!currentUser) return;
-  await Promise.all([renderAllChars(), renderMyChar(), renderLeadShop()]);
-}
-
-// ═══════════════════ RENDER: ALL CHARS ═══════════════════════════
-async function renderAllChars() {
-  const grid = document.getElementById('chars-grid');
-  grid.innerHTML = '<div class="loading"><div class="spinner"></div>Загрузка персонажей...</div>';
-
-  const connected = Object.entries(HABITICA_ACCOUNTS).filter(([,v]) => v.connected);
-  if (connected.length === 0) {
-    grid.innerHTML = '<div class="loading">Пока никто не подключил Habitica</div>';
-    return;
-  }
-
-  const cards = [];
-  for (const [name, acc] of connected) {
-    try {
-      const p = await getHabProfile(acc.uid, acc.token);
-      const rop = getRop(name);
-      const isMe = name === currentUser;
-      const hpPct = p.maxHp > 0 ? (p.hp / p.maxHp * 100) : 0;
-      const xpPct = p.maxXp > 0 ? (p.xp / p.maxXp * 100) : 0;
-      const mpPct = p.maxMp > 0 ? (p.mp / p.maxMp * 100) : 0;
-
-      cards.push(`<div class="char-card ${isMe?'is-me':''}">
-        <div class="char-avatar-wrap">
-          <img src="${avatarUrl(acc.uid)}" alt="${name}" onerror="this.src='https://habitica.com/static/img/stable/head_warrior_5.png'">
-        </div>
-        <div class="char-name">${name}</div>
-        <div class="char-class">${CLASS_NAMES[p.class] || p.class}</div>
-        ${rop ? `<div class="char-rop">${rop}</div>` : ''}
-        <div class="char-level">⚡ Уровень ${p.level}</div>
-        <div class="char-bars">
-          <div class="bar-row bar-hp">
-            <span class="bar-label" style="color:#ef4444">HP</span>
-            <div class="bar-track"><div class="bar-fill" style="width:${hpPct}%"></div></div>
-            <span class="bar-val">${Math.round(p.hp)}/${p.maxHp}</span>
-          </div>
-          <div class="bar-row bar-xp">
-            <span class="bar-label" style="color:#eab308">XP</span>
-            <div class="bar-track"><div class="bar-fill" style="width:${xpPct}%"></div></div>
-            <span class="bar-val">${Math.round(p.xp)}/${p.maxXp}</span>
-          </div>
-          <div class="bar-row bar-mp">
-            <span class="bar-label" style="color:#3b82f6">MP</span>
-            <div class="bar-track"><div class="bar-fill" style="width:${mpPct}%"></div></div>
-            <span class="bar-val">${Math.round(p.mp)}/${p.maxMp}</span>
-          </div>
-        </div>
-        <div class="char-gold">🪙 ${Math.floor(p.gp).toLocaleString('ru-RU')} золота</div>
-      </div>`);
-    } catch(e) {
-      cards.push(`<div class="char-card"><div class="char-name">${name}</div><div style="color:var(--muted);font-size:12px;margin-top:8px">Ошибка загрузки</div></div>`);
-    }
-  }
-  grid.innerHTML = cards.join('');
-}
-
-// ═══════════════════ RENDER: MY CHAR ═════════════════════════════
-async function renderMyChar() {
-  const card = document.getElementById('my-card');
-  const acc = HABITICA_ACCOUNTS[currentUser];
-  if (!acc) { card.innerHTML = '<div class="loading">Подключите Habitica</div>'; return; }
-
-  card.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-  try {
-    const p = await getHabProfile(acc.uid, acc.token);
-    const rop = getRop(currentUser);
-    const hpPct = p.maxHp > 0 ? (p.hp / p.maxHp * 100) : 0;
-    const xpPct = p.maxXp > 0 ? (p.xp / p.maxXp * 100) : 0;
-    const mpPct = p.maxMp > 0 ? (p.mp / p.maxMp * 100) : 0;
-
-    // Update header stats
-    document.getElementById('hdr-stats').innerHTML = `
-      <div class="stat-badge badge-gold">🪙 ${Math.floor(p.gp).toLocaleString('ru-RU')}</div>
-      <div class="stat-badge badge-lvl">⚡ Lvl ${p.level}</div>
-      <div class="stat-badge badge-hp">❤️ ${Math.round(p.hp)}</div>
-      <div class="stat-badge badge-xp">⭐ ${Math.round(p.xp)} XP</div>
-      <button class="logout-btn" onclick="logout()">Выйти</button>
-    `;
-
-    card.innerHTML = `
-      <div class="my-avatar-wrap">
-        <img src="${avatarUrl(acc.uid)}" alt="${currentUser}" onerror="this.src='https://habitica.com/static/img/stable/head_warrior_5.png'">
-      </div>
-      <div class="my-name">${currentUser}</div>
-      <div class="my-class">${CLASS_NAMES[p.class] || p.class} · ${p.name}</div>
-      ${rop ? `<div class="my-rop">${rop}</div>` : ''}
-
-      <div class="my-stats">
-        <div class="my-stat"><div class="val" style="color:#92400e">${Math.floor(p.gp).toLocaleString('ru-RU')}</div><div class="lbl">Золото 🪙</div></div>
-        <div class="my-stat"><div class="val" style="color:var(--green)">${p.level}</div><div class="lbl">Уровень ⚡</div></div>
-        <div class="my-stat"><div class="val">${p.str}</div><div class="lbl">Сила 💪</div></div>
-        <div class="my-stat"><div class="val">${p.int}</div><div class="lbl">Интеллект 🧠</div></div>
-        <div class="my-stat"><div class="val">${p.con}</div><div class="lbl">Стойкость 🛡️</div></div>
-        <div class="my-stat"><div class="val">${p.per}</div><div class="lbl">Восприятие 👁️</div></div>
-      </div>
-
-      <div class="my-bars">
-        <div class="my-bar-row">
-          <span class="my-bar-label" style="color:#ef4444">❤️</span>
-          <div class="my-bar-track"><div class="my-bar-fill" style="width:${hpPct}%;background:linear-gradient(90deg,#ef4444,#f87171)"></div></div>
-          <span class="my-bar-val">${Math.round(p.hp)} / ${p.maxHp}</span>
-        </div>
-        <div class="my-bar-row">
-          <span class="my-bar-label" style="color:#eab308">⭐</span>
-          <div class="my-bar-track"><div class="my-bar-fill" style="width:${xpPct}%;background:linear-gradient(90deg,#eab308,#fbbf24)"></div></div>
-          <span class="my-bar-val">${Math.round(p.xp)} / ${p.maxXp}</span>
-        </div>
-        <div class="my-bar-row">
-          <span class="my-bar-label" style="color:#3b82f6">💎</span>
-          <div class="my-bar-track"><div class="my-bar-fill" style="width:${mpPct}%;background:linear-gradient(90deg,#3b82f6,#60a5fa)"></div></div>
-          <span class="my-bar-val">${Math.round(p.mp)} / ${p.maxMp}</span>
-        </div>
-      </div>
-    `;
-
-    // Pets
-    const petKeys = Object.keys(p.pets || {}).filter(k => p.pets[k] > 0);
-    if (petKeys.length > 0) {
-      const petsSection = document.getElementById('my-pets-section');
-      petsSection.style.display = '';
-      const petsGrid = document.getElementById('my-pets-grid');
-      petsGrid.innerHTML = petKeys.slice(0, 30).map(k => {
-        const petName = k.replace(/-/g, ' ');
-        return `<div class="pet-item">
-          <img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/Pet-${k}.png" alt="${petName}" onerror="this.style.display='none'">
-          <div class="pet-name">${petName}</div>
-        </div>`;
-      }).join('');
-    }
-  } catch(e) {
-    card.innerHTML = '<div class="loading" style="color:var(--red)">Ошибка загрузки профиля</div>';
-    console.error(e);
-  }
-}
-
-// ═══════════════════ RENDER: TASKS ═══════════════════════════════
-async function renderTasks() {
-  const list = document.getElementById('task-list');
-  const acc = HABITICA_ACCOUNTS[currentUser];
-  if (!acc) { list.innerHTML = '<div class="loading">Подключите Habitica</div>'; return; }
-
-  list.innerHTML = '<div class="loading"><div class="spinner"></div>Загрузка задач...</div>';
-  try {
-    const tasks = await getTasks(acc.uid, acc.token);
-    const todos = tasks.filter(t => t.type === 'todo' && !t.completed).slice(0, 15);
-    const dailies = tasks.filter(t => t.type === 'daily').slice(0, 10);
-    const habits = tasks.filter(t => t.type === 'habit').slice(0, 10);
-
-    if (todos.length === 0 && dailies.length === 0 && habits.length === 0) {
-      list.innerHTML = '<div class="loading">Нет задач. Создайте их в <a href="https://habitica.com" target="_blank">Habitica</a></div>';
-      return;
-    }
-
-    const COLORS = { '-20':'#e74c3c', '-10':'#e67e22', '-1':'#f1c40f', '1':'#2ecc71', '5':'#3498db', '10':'#9b59b6' };
-    function taskColor(val) {
-      if (val < -10) return COLORS['-20'];
-      if (val < -1) return COLORS['-10'];
-      if (val < 1) return COLORS['-1'];
-      if (val < 5) return COLORS['1'];
-      if (val < 10) return COLORS['5'];
-      return COLORS['10'];
-    }
-
-    let html = '';
-
-    if (dailies.length) {
-      html += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:8px 0">Ежедневные</div>';
-      dailies.forEach(t => {
-        html += taskItem(t, 'daily');
-      });
-    }
-    if (todos.length) {
-      html += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:12px 0 8px">Задачи</div>';
-      todos.forEach(t => {
-        html += taskItem(t, 'todo');
-      });
-    }
-    if (habits.length) {
-      html += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:12px 0 8px">Привычки</div>';
-      habits.forEach(t => {
-        html += taskItem(t, 'habit');
-      });
-    }
-
-    list.innerHTML = html;
-
-    function taskItem(t, type) {
-      const col = taskColor(t.value || 0);
-      const diff = { 0.1:'Простая', 1:'Лёгкая', 1.5:'Средняя', 2:'Сложная' };
-      const isDone = type === 'daily' && t.completed;
-      return `<div class="task-item" style="border-left:3px solid ${col}">
-        <div class="task-check ${isDone?'done':''}" onclick="completeTask('${t.id}','${type}',this)" title="Выполнить">✓</div>
-        <div class="task-info">
-          <div class="task-title">${t.text}</div>
-          <div class="task-sub">${diff[t.priority]||'Средняя'} · ${type==='daily'?'Ежедневная':type==='todo'?'Задача':'Привычка'}</div>
-        </div>
-        <div class="task-reward">+XP +🪙</div>
-      </div>`;
-    }
-  } catch(e) {
-    list.innerHTML = '<div class="loading" style="color:var(--red)">Ошибка загрузки задач</div>';
-    console.error(e);
-  }
-}
-
-// ═══════════════════ COMPLETE TASK ═══════════════════════════════
-async function completeTask(taskId, type, el) {
-  const acc = HABITICA_ACCOUNTS[currentUser];
-  if (!acc) return;
-
-  el.classList.add('done');
-  try {
-    const result = await scoreTask(taskId, 'up', acc.uid, acc.token);
-    const delta = result;
-    toast(`Задача выполнена! +XP +золото`, 'success');
-    // Refresh stats
-    renderMyChar();
-    setTimeout(() => renderTasks(), 1000);
-  } catch(e) {
-    el.classList.remove('done');
-    toast('Ошибка выполнения задачи', 'error');
-    console.error(e);
-  }
-}
-
-// ═══════════════════ LEAD SHOP ═══════════════════════════════════
-const LEAD_PACKAGES = [
-  { id:'lead1', count:1, gold:50,  icon:'📋', title:'1 лид',   desc:'Один доп. клиент' },
-  { id:'lead3', count:3, gold:120, icon:'📦', title:'3 лида',  desc:'Пакет из 3 клиентов' },
-  { id:'lead5', count:5, gold:180, icon:'🎁', title:'5 лидов', desc:'Выгодный пакет' },
+// ─── SKINS (body emoji + bg) ───
+const SKINS = [
+  { id:'default', icon:'🧑‍💼', name:'Менеджер',   price:0,    desc:'Стандартный герой' },
+  { id:'knight',  icon:'🛡️', name:'Рыцарь',     price:200,  desc:'Защитник клиентов' },
+  { id:'ninja',   icon:'🥷',  name:'Ниндзя',     price:300,  desc:'Тихий закрыватель' },
+  { id:'wizard',  icon:'🧙‍♂️', name:'Чародей',    price:300,  desc:'Мастер конверсий' },
+  { id:'robot',   icon:'🤖',  name:'Киборг',     price:400,  desc:'Машина продаж' },
+  { id:'devil',   icon:'😈',  name:'Демон',      price:500,  desc:'Адский продавец' },
+  { id:'angel',   icon:'👼',  name:'Ангел',      price:500,  desc:'Божественная конверсия' },
+  { id:'alien',   icon:'👽',  name:'Пришелец',   price:600,  desc:'Не из этого мира' },
+  { id:'king',    icon:'🤴',  name:'Король',     price:1000, desc:'Легендарный скин' },
+  { id:'dragon',  icon:'🐲',  name:'Дракон',     price:1500, desc:'Мифический скин' },
+];
+const HATS = [
+  { id:'crown',  icon:'👑', name:'Корона',     price:200,  desc:'Лидер продаж' },
+  { id:'tophat', icon:'🎩', name:'Цилиндр',    price:100,  desc:'Классика' },
+  { id:'cap',    icon:'🧢', name:'Кепка',      price:80,   desc:'Спортивный стиль' },
+  { id:'cowboy', icon:'🤠', name:'Ковбойская', price:150,  desc:'Дикий запад' },
+  { id:'helmet', icon:'⛑️', name:'Каска',      price:120,  desc:'Безопасность' },
+  { id:'party',  icon:'🥳', name:'Праздничная',price:180,  desc:'Вечеринка!' },
+  { id:'pirate', icon:'🏴‍☠️', name:'Пиратская',  price:250,  desc:'Йо-хо-хо' },
+  { id:'chef',   icon:'👨‍🍳', name:'Повар',      price:160,  desc:'Готовим сделки' },
+];
+const WEAPONS = [
+  { id:'sword',   icon:'⚔️', name:'Меч',       price:150,  desc:'+Сила' },
+  { id:'bow',     icon:'🏹', name:'Лук',       price:150,  desc:'+Ловкость' },
+  { id:'staff',   icon:'🪄', name:'Посох',     price:200,  desc:'+Магия' },
+  { id:'shield',  icon:'🛡️', name:'Щит',       price:180,  desc:'+Защита' },
+  { id:'axe',     icon:'🪓', name:'Топор',     price:250,  desc:'+Крит' },
+  { id:'trident', icon:'🔱', name:'Трезубец',  price:400,  desc:'+Все статы' },
+  { id:'crystal', icon:'🔮', name:'Кристалл',  price:500,  desc:'+Мудрость' },
+];
+const PETS = [
+  { id:'cat',     icon:'🐱', name:'Кот',       price:150,  desc:'Мурлыкающий помощник' },
+  { id:'dog',     icon:'🐕', name:'Пёс',       price:150,  desc:'Верный друг' },
+  { id:'dragon',  icon:'🐉', name:'Дракон',    price:500,  desc:'Огнедышащий' },
+  { id:'unicorn', icon:'🦄', name:'Единорог',  price:400,  desc:'Магический' },
+  { id:'eagle',   icon:'🦅', name:'Орёл',      price:250,  desc:'Зоркий' },
+  { id:'fox',     icon:'🦊', name:'Лиса',      price:200,  desc:'Хитрый' },
+  { id:'phoenix', icon:'🔥', name:'Феникс',    price:800,  desc:'Возрождение' },
+  { id:'wolf',    icon:'🐺', name:'Волк',      price:300,  desc:'Стая' },
+];
+const AURAS = [
+  { id:'fire',   icon:'🔴', name:'Огонь',   price:300, desc:'Пламя',   css:'aura-fire' },
+  { id:'ice',    icon:'🔵', name:'Лёд',     price:300, desc:'Холод',   css:'aura-ice' },
+  { id:'gold',   icon:'🟡', name:'Золото',  price:500, desc:'Богатство',css:'aura-gold' },
+  { id:'nature', icon:'🟢', name:'Природа', price:400, desc:'Жизнь',   css:'aura-nature' },
+  { id:'shadow', icon:'🟣', name:'Тень',    price:400, desc:'Тьма',    css:'aura-shadow' },
+  { id:'divine', icon:'⚪', name:'Божественная', price:1000, desc:'Высшая сила', css:'aura-divine' },
+];
+const LEADS = [
+  { id:'l1', count:1, price:500,  icon:'📋', title:'1 лид',   desc:'Один клиент' },
+  { id:'l3', count:3, price:1200, icon:'📦', title:'3 лида',  desc:'Пакет' },
+  { id:'l5', count:5, price:1800, icon:'🎁', title:'5 лидов', desc:'Выгодно' },
 ];
 
-async function renderLeadShop() {
-  const acc = HABITICA_ACCOUNTS[currentUser];
-  let gp = 0;
-  if (acc) {
-    try {
-      const p = await getHabProfile(acc.uid, acc.token);
-      gp = p.gp;
-    } catch(e) {}
-  }
+// ─── XP / LEVEL ───
+function xpFor(l){ return l*120; }
 
-  document.getElementById('lead-cards').innerHTML = LEAD_PACKAGES.map(pkg => {
-    const canAfford = gp >= pkg.gold;
-    return `<div class="lead-card">
-      <div class="lead-icon">${pkg.icon}</div>
-      <div class="lead-title">${pkg.title}</div>
-      <div class="lead-desc">${pkg.desc}</div>
-      <div class="lead-price">🪙 ${pkg.gold} золота</div>
-      <button class="lead-buy" ${!canAfford?'disabled':''} onclick="buyLead('${pkg.id}',${pkg.count},${pkg.gold})">
-        ${canAfford ? 'Купить' : 'Мало золота'}
-      </button>
+// ═══════════════════ STATE ═══════════════════════════════════════
+let MANAGERS={}, MGR_TO_ROP={}, GAME={};
+let currentUser = localStorage.getItem('game_user')||null;
+
+// ═══════════════════ SUPABASE ════════════════════════════════════
+const sbH = { 'apikey':SB_KEY, 'Authorization':`Bearer ${SB_KEY}` };
+async function loadData(){
+  try{
+    const r=await fetch(`${SB_URL}/rest/v1/weglow_data?id=eq.1&select=data`,{headers:sbH});
+    const rows=await r.json();
+    if(rows?.[0]?.data){
+      const d=rows[0].data;
+      if(d.MANAGERS) MANAGERS=d.MANAGERS;
+      if(d.MGR_TO_ROP) MGR_TO_ROP=d.MGR_TO_ROP;
+      if(d.GAME_DATA) GAME=d.GAME_DATA;
+    }
+  }catch(e){console.warn(e);}
+}
+async function saveGame(){
+  try{
+    const r=await fetch(`${SB_URL}/rest/v1/weglow_data?id=eq.1&select=data`,{headers:sbH});
+    const rows=await r.json();
+    const c=rows?.[0]?.data||{};
+    c.GAME_DATA=GAME;
+    await fetch(`${SB_URL}/rest/v1/weglow_data?id=eq.1`,{
+      method:'PATCH',headers:{...sbH,'Content-Type':'application/json','Prefer':'return=minimal'},
+      body:JSON.stringify({data:c})
+    });
+  }catch(e){console.warn(e);}
+}
+
+// ═══════════════════ HELPERS ═════════════════════════════════════
+function allNames(){
+  const s=new Set();
+  for(const p of Object.keys(MANAGERS))
+    for(const i of Object.keys(MANAGERS[p]||{}))
+      if(MANAGERS[p][i]?.name) s.add(MANAGERS[p][i].name);
+  return [...s].sort();
+}
+function getRop(n){ return MGR_TO_ROP[n]||''; }
+function getMgrStats(n){
+  const now=new Date(), mm=String(now.getMonth()+1).padStart(2,'0'), yy=now.getFullYear();
+  let leads=0,deals=0,budget=0;
+  for(const p of Object.keys(MANAGERS)){
+    for(const i of Object.keys(MANAGERS[p]||{})){
+      const m=MANAGERS[p][i];
+      if(m?.name!==n) continue;
+      for(const [dt,v] of Object.entries(m.daily||{})){
+        const ps=dt.split('.');
+        if(ps[1]===mm&&ps[2]===String(yy)){leads+=(v[0]||0);deals+=(v[1]||0);budget+=(v[2]||0);}
+      }
+    }
+  }
+  return{leads,deals,budget};
+}
+
+// ─── INIT GAME DATA ───
+function ensureGD(n){
+  if(!GAME[n]) GAME[n]={
+    class:'warrior',coins:0,level:1,xp:0,hp:100,maxHp:100,
+    str:5,int:5,agi:5,wis:5,
+    skin:'default',hat:null,weapon:null,pet:null,aura:null,
+    purchases:[],history:[],leadsBought:0,questsDone:[]
+  };
+  return GAME[n];
+}
+
+// ─── RECALC ───
+function recalc(n){
+  const g=ensureGD(n), s=getMgrStats(n);
+  // Earned coins
+  let earned = s.leads*5 + s.deals*50 + Math.floor(s.budget/100000)*100;
+  if(s.leads>0 && (s.deals/s.leads*100)>30) earned+=150;
+  // Spent
+  let spent=0;(g.history||[]).forEach(h=>{if(h.amt<0) spent+=Math.abs(h.amt);});
+  g.coins=Math.max(0, earned-spent);
+  // XP & level
+  let xp=earned, lvl=1, need=xpFor(1);
+  while(xp>=need&&lvl<99){xp-=need;lvl++;need=xpFor(lvl);}
+  g.level=lvl; g.xpInLevel=xp; g.xpNeeded=need;
+  // HP based on level + class
+  g.maxHp = 100 + (lvl-1)*10;
+  g.hp = g.maxHp; // always full (no damage mechanic yet)
+  // Stats from class + level
+  const cl=g.class;
+  const base=3+lvl;
+  g.str = base + (cl==='warrior'?lvl*2 : cl==='rogue'?lvl : 0);
+  g.int = base + (cl==='mage'?lvl*2 : cl==='healer'?lvl : 0);
+  g.agi = base + (cl==='rogue'?lvl*2 : cl==='warrior'?lvl : 0);
+  g.wis = base + (cl==='healer'?lvl*2 : cl==='mage'?lvl : 0);
+  g._stats = s;
+  return g;
+}
+
+// ═══════════════════ QUESTS ═══════════════════════════════════════
+function getQuests(n){
+  const s=getMgrStats(n), g=GAME[n]||{}, done=g.questsDone||[];
+  const now=new Date(), key=`${now.getMonth()+1}.${now.getFullYear()}`;
+  const quests=[
+    { id:`leads5_${key}`,  title:'Получить 5 лидов', desc:'Заведите 5 новых заявок', check:s.leads>=5, reward:50 },
+    { id:`leads20_${key}`, title:'Получить 20 лидов', desc:'Заведите 20 заявок', check:s.leads>=20, reward:150 },
+    { id:`leads50_${key}`, title:'Получить 50 лидов', desc:'50 заявок за месяц', check:s.leads>=50, reward:400 },
+    { id:`deal1_${key}`,   title:'Закрыть 1 сделку', desc:'Первая сделка месяца', check:s.deals>=1, reward:100 },
+    { id:`deal5_${key}`,   title:'Закрыть 5 сделок', desc:'5 сделок за месяц', check:s.deals>=5, reward:300 },
+    { id:`deal10_${key}`,  title:'Закрыть 10 сделок', desc:'10 сделок — мастер!', check:s.deals>=10, reward:600 },
+    { id:`rev500_${key}`,  title:'500к выручки', desc:'Заработать 500 000 ₸', check:s.budget>=500000, reward:500 },
+    { id:`rev1m_${key}`,   title:'1 млн выручки', desc:'Миллион за месяц!', check:s.budget>=1000000, reward:1000 },
+    { id:`conv30_${key}`,  title:'Конверсия > 30%', desc:'Высокая конверсия', check:s.leads>0&&(s.deals/s.leads*100)>30, reward:200 },
+    { id:`skin_${key}`,    title:'Купить скин', desc:'Приобретите новый образ', check:(g.purchases||[]).some(p=>p.startsWith('skins:')), reward:100 },
+    { id:`pet_${key}`,     title:'Завести питомца', desc:'Купите питомца', check:!!g.pet, reward:100 },
+    { id:`full_${key}`,    title:'Полная экипировка', desc:'Заполните все 4 слота', check:!!(g.hat&&g.weapon&&g.pet&&g.skin!=='default'), reward:300 },
+  ];
+  return quests.map(q=>({...q, claimed:done.includes(q.id)}));
+}
+
+// ═══════════════════ RENDER LOGIN ════════════════════════════════
+function renderLogin(){
+  const names=allNames();
+  document.getElementById('login-list').innerHTML=names.map((n,i)=>{
+    const g=GAME[n]; const lvl=g?g.level:1; const cls=g?CLASSES[g.class]:CLASSES.warrior;
+    const skin=g?SKINS.find(s=>s.id===g.skin)||SKINS[0]:SKINS[0];
+    const rop=getRop(n);
+    return `<button class="login-btn" onclick="login('${n.replace(/'/g,"\\'")}')">
+      <div class="av" style="background:${cls.bg};color:#fff">${skin.icon}</div>
+      <div class="login-info">
+        <div class="login-name">${n}</div>
+        <div class="login-sub">${cls.icon} ${cls.name} · Lvl ${lvl}${rop?' · '+rop:''}</div>
+      </div>
+    </button>`;
+  }).join('');
+}
+
+// ═══════════════════ LOGIN/LOGOUT ════════════════════════════════
+function login(n){
+  currentUser=n; localStorage.setItem('game_user',n);
+  recalc(n);
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('game-screen').style.display='block';
+  renderAll(); saveGame();
+}
+function logout(){
+  currentUser=null; localStorage.removeItem('game_user');
+  document.getElementById('login-screen').style.display='';
+  document.getElementById('game-screen').style.display='none';
+}
+function switchTab(t,b){
+  document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); document.getElementById('tab-'+t).classList.add('active');
+}
+
+// ═══════════════════ AVATAR HTML ═════════════════════════════════
+function avatarHTML(g, size=''){
+  const skin=SKINS.find(s=>s.id===g.skin)||SKINS[0];
+  const hat=HATS.find(h=>h.id===g.hat);
+  const wpn=WEAPONS.find(w=>w.id===g.weapon);
+  const pet=PETS.find(p=>p.id===g.pet);
+  const aura=AURAS.find(a=>a.id===g.aura);
+  const cls=CLASSES[g.class]||CLASSES.warrior;
+  const wrap = size==='big'?'my-avatar':'pixel-avatar';
+  return `<div class="${wrap}" style="background:${cls.bg}">
+    ${aura?`<div class="aura ${aura.css}"></div>`:''}
+    <span class="body">${skin.icon}</span>
+    ${hat?`<span class="hat">${hat.icon}</span>`:''}
+    ${wpn?`<span class="weapon">${wpn.icon}</span>`:''}
+    ${pet?`<span class="pet">${pet.icon}</span>`:''}
+  </div>`;
+}
+
+// ═══════════════════ RENDER ALL ═══════════════════════════════════
+function renderAll(){
+  if(!currentUser) return;
+  const g=recalc(currentUser);
+  const cls=CLASSES[g.class]||CLASSES.warrior;
+  // Header
+  document.getElementById('hdr-stats').innerHTML=`
+    <div class="badge b-gold">🪙 ${g.coins.toLocaleString('ru-RU')}</div>
+    <div class="badge b-lvl">⚡ Lvl ${g.level}</div>
+    <div class="badge b-class">${cls.icon} ${cls.name}</div>
+    <div class="badge b-hp">❤️ ${g.hp}/${g.maxHp}</div>
+    <button class="logout-btn" onclick="logout()">Выйти</button>
+  `;
+  renderChars(); renderMy(); renderShop(); renderQuests();
+}
+
+// ═══════════════════ ALL CHARS ════════════════════════════════════
+function renderChars(){
+  const names=allNames(), grid=document.getElementById('chars-grid');
+  grid.innerHTML=names.map(n=>{
+    const g=recalc(n);
+    const cls=CLASSES[g.class]||CLASSES.warrior;
+    const rop=getRop(n);
+    const isMe=n===currentUser;
+    const hpP=g.maxHp>0?(g.hp/g.maxHp*100):0;
+    const xpP=g.xpNeeded>0?((g.xpInLevel||0)/g.xpNeeded*100):0;
+    return `<div class="char-card ${isMe?'is-me':''}">
+      ${avatarHTML(g)}
+      <div class="c-name">${n}</div>
+      <div class="c-class">${cls.icon} ${cls.name}</div>
+      ${rop?`<div class="c-rop">${rop}</div>`:''}
+      <div class="c-lvl">⚡ Lvl ${g.level}</div>
+      <div class="bars">
+        <div class="bar-r"><span class="bar-l" style="color:#ef4444">HP</span><div class="bar-t"><div class="bar-f" style="width:${hpP}%;background:linear-gradient(90deg,#ef4444,#f87171)"></div></div><span class="bar-v">${g.hp}/${g.maxHp}</span></div>
+        <div class="bar-r"><span class="bar-l" style="color:#eab308">XP</span><div class="bar-t"><div class="bar-f" style="width:${xpP}%;background:linear-gradient(90deg,#eab308,#fbbf24)"></div></div><span class="bar-v">${g.xpInLevel||0}/${g.xpNeeded}</span></div>
+      </div>
+      <div class="c-gold">🪙 ${g.coins.toLocaleString('ru-RU')}</div>
     </div>`;
   }).join('');
 }
 
-async function buyLead(id, count, gold) {
-  const acc = HABITICA_ACCOUNTS[currentUser];
-  if (!acc) return;
+// ═══════════════════ MY CHAR ═════════════════════════════════════
+function renderMy(){
+  const g=GAME[currentUser]; if(!g) return;
+  const cls=CLASSES[g.class]||CLASSES.warrior;
+  const rop=getRop(currentUser);
+  const hpP=g.maxHp>0?(g.hp/g.maxHp*100):0;
+  const xpP=g.xpNeeded>0?((g.xpInLevel||0)/g.xpNeeded*100):0;
+  const s=g._stats||{leads:0,deals:0,budget:0};
 
-  try {
-    // Create a "reward" task in Habitica that costs gold
-    const reward = await habPost('/tasks/user', acc.uid, acc.token, {
-      text: `Покупка: ${count} лид(ов) — WeGlow`,
-      type: 'reward',
-      value: gold
-    });
-    // Buy the reward (deducts gold)
-    await habPost(`/tasks/${reward.id}/score/up`, acc.uid, acc.token);
-    // Clean up — delete the reward task
-    await fetch(`${HABITICA_BASE}/tasks/${reward.id}`, {
-      method: 'DELETE',
-      headers: habHeaders(acc.uid, acc.token)
-    });
+  const skin=SKINS.find(x=>x.id===g.skin)||SKINS[0];
+  const hat=HATS.find(x=>x.id===g.hat);
+  const wpn=WEAPONS.find(x=>x.id===g.weapon);
+  const pet=PETS.find(x=>x.id===g.pet);
+  const aura=AURAS.find(x=>x.id===g.aura);
 
-    toast(`+${count} лид(ов) куплено за ${gold} золота!`, 'success');
-    renderMyChar();
-    renderLeadShop();
-  } catch(e) {
-    toast('Ошибка покупки', 'error');
-    console.error(e);
-  }
+  document.getElementById('my-card').innerHTML=`
+    ${avatarHTML(g,'big')}
+    <div class="my-name">${currentUser}</div>
+    <div class="my-class-badge">${cls.icon} ${cls.name}</div>
+    ${rop?`<div class="my-rop">${rop}</div>`:''}
+    <div class="my-stats">
+      <div class="stat-box"><div class="v" style="color:#92400e">${g.coins.toLocaleString('ru-RU')}</div><div class="l">Монеты 🪙</div></div>
+      <div class="stat-box"><div class="v" style="color:var(--green)">${g.level}</div><div class="l">Уровень ⚡</div></div>
+      <div class="stat-box"><div class="v" style="color:#ef4444">${g.str}</div><div class="l">Сила 💪</div></div>
+      <div class="stat-box"><div class="v" style="color:#8b5cf6">${g.int}</div><div class="l">Интеллект 🧠</div></div>
+      <div class="stat-box"><div class="v" style="color:#10b981">${g.agi}</div><div class="l">Ловкость 🏃</div></div>
+      <div class="stat-box"><div class="v" style="color:#3b82f6">${g.wis}</div><div class="l">Мудрость 📖</div></div>
+    </div>
+    <div class="my-bars">
+      <div class="mb-row"><span class="mb-icon">❤️</span><div class="mb-track"><div class="mb-fill" style="width:${hpP}%;background:linear-gradient(90deg,#ef4444,#f87171)"></div></div><span class="mb-val">${g.hp}/${g.maxHp}</span></div>
+      <div class="mb-row"><span class="mb-icon">⭐</span><div class="mb-track"><div class="mb-fill" style="width:${xpP}%;background:linear-gradient(90deg,#eab308,#fbbf24)"></div></div><span class="mb-val">${g.xpInLevel||0}/${g.xpNeeded}</span></div>
+    </div>
+    <div class="equip-title">Экипировка</div>
+    <div class="equip-grid">
+      <div class="eq-slot ${g.skin!=='default'?'filled':''}" onclick="switchTab('shop',document.querySelectorAll('.tab-btn')[2])">
+        <span class="eq-i">${skin.icon}</span><span class="eq-n">Скин</span>
+      </div>
+      <div class="eq-slot ${g.hat?'filled':''}" onclick="switchTab('shop',document.querySelectorAll('.tab-btn')[2])">
+        <span class="eq-i">${hat?hat.icon:'🎩'}</span><span class="eq-n">Шляпа</span>
+        ${g.hat?`<button class="eq-rm" onclick="event.stopPropagation();unequip('hat')">×</button>`:''}
+      </div>
+      <div class="eq-slot ${g.weapon?'filled':''}" onclick="switchTab('shop',document.querySelectorAll('.tab-btn')[2])">
+        <span class="eq-i">${wpn?wpn.icon:'⚔️'}</span><span class="eq-n">Оружие</span>
+        ${g.weapon?`<button class="eq-rm" onclick="event.stopPropagation();unequip('weapon')">×</button>`:''}
+      </div>
+      <div class="eq-slot ${g.pet?'filled':''}" onclick="switchTab('shop',document.querySelectorAll('.tab-btn')[2])">
+        <span class="eq-i">${pet?pet.icon:'🐾'}</span><span class="eq-n">Питомец</span>
+        ${g.pet?`<button class="eq-rm" onclick="event.stopPropagation();unequip('pet')">×</button>`:''}
+      </div>
+    </div>
+    <div style="margin-top:14px">
+      <div class="equip-title">Класс</div>
+      <div class="class-select">
+        ${Object.entries(CLASSES).map(([k,c])=>`
+          <div class="class-opt ${g.class===k?'active':''}" onclick="setClass('${k}')">
+            <div class="cl-icon">${c.icon}</div>
+            <div class="cl-name">${c.name}</div>
+            <div class="cl-desc">${c.desc}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+  `;
+
+  // Right column — sales stats + earn table
+  document.getElementById('right-col').innerHTML=`
+    <div class="info-card">
+      <h3>📊 Продажи (этот месяц)</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:8px">
+        <div class="stat-box"><div class="v">${s.leads}</div><div class="l">Лиды</div></div>
+        <div class="stat-box"><div class="v">${s.deals}</div><div class="l">Сделки</div></div>
+        <div class="stat-box"><div class="v">${(s.budget/1000).toFixed(0)}к</div><div class="l">Выручка ₸</div></div>
+      </div>
+    </div>
+    <div class="info-card">
+      <h3>💰 Как заработать монеты</h3>
+      <table class="earn-table">
+        <thead><tr><th>Действие</th><th>Монеты</th></tr></thead>
+        <tbody>
+          <tr><td>Новый лид</td><td class="earn-plus">+5 🪙</td></tr>
+          <tr><td>Закрытая сделка</td><td class="earn-plus">+50 🪙</td></tr>
+          <tr><td>100 000 ₸ выручки</td><td class="earn-plus">+100 🪙</td></tr>
+          <tr><td>Конверсия > 30%</td><td class="earn-plus">+150 🪙</td></tr>
+          <tr><td>Выполнение квестов</td><td class="earn-plus">+50…1000 🪙</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="info-card">
+      <h3>📜 Последние операции</h3>
+      ${(g.history||[]).length===0?'<div style="color:var(--muted);font-size:12px;padding:8px">Пока пусто</div>':
+      '<div style="max-height:200px;overflow-y:auto">'+
+      (g.history||[]).slice(-10).reverse().map(h=>`
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:12px">
+          <span>${h.desc}</span>
+          <span style="font-weight:700;color:${h.amt>=0?'var(--green)':'var(--red)'}">${h.amt>=0?'+':''}${h.amt} 🪙</span>
+        </div>`).join('')+'</div>'}
+    </div>
+  `;
 }
 
-// ═══════════════════ SETUP SCREEN ════════════════════════════════
-function renderSetup() {
-  const select = document.getElementById('setup-mgr');
-  const names = getAllManagerNames();
-  select.innerHTML = '<option value="">Выберите менеджера...</option>' +
-    names.map(n => `<option value="${n}">${n}</option>`).join('');
+function setClass(c){ GAME[currentUser].class=c; renderAll(); saveGame(); toast(`Класс: ${CLASSES[c].name}!`,'success'); }
+function unequip(slot){ const g=GAME[currentUser]; g[slot]=slot==='skin'?'default':null; renderAll(); saveGame(); toast('Снято'); }
 
-  // Quick login for already connected
-  const quickList = document.getElementById('quick-login-list');
-  const connected = Object.entries(HABITICA_ACCOUNTS).filter(([,v]) => v.connected);
-  if (connected.length > 0) {
-    quickList.innerHTML = connected.map(([name]) => {
-      const acc = HABITICA_ACCOUNTS[name];
-      return `<button class="setup-btn" style="background:var(--green);padding:10px;font-size:13px" onclick="quickLogin('${name.replace(/'/g,"\\'")}')">
-        🎮 ${name}
-      </button>`;
-    }).join('');
-  } else {
-    quickList.innerHTML = '<div style="font-size:12px;color:var(--muted)">Ещё никто не подключился</div>';
-  }
+// ═══════════════════ SHOP ═════════════════════════════════════════
+let shopCat='skins';
+function renderShop(){
+  const g=GAME[currentUser]; if(!g) return;
+  const cats=[
+    {id:'skins',label:'Скины',icon:'🎭'},
+    {id:'hats',label:'Шляпы',icon:'🎩'},
+    {id:'weapons',label:'Оружие',icon:'⚔️'},
+    {id:'pets',label:'Питомцы',icon:'🐾'},
+    {id:'auras',label:'Ауры',icon:'✨'},
+  ];
+  const ITEMS={skins:SKINS,hats:HATS,weapons:WEAPONS,pets:PETS,auras:AURAS};
+  const SLOTS={skins:'skin',hats:'hat',weapons:'weapon',pets:'pet',auras:'aura'};
+  const items=ITEMS[shopCat]||[];
+  const slot=SLOTS[shopCat];
+
+  document.getElementById('shop-section').innerHTML=`
+    <div class="shop-title">🛒 Магазин</div>
+    <div class="shop-sub">Потратьте монеты на экипировку</div>
+    <div class="shop-cats">${cats.map(c=>`<button class="shop-cat ${shopCat===c.id?'active':''}" onclick="shopCat='${c.id}';renderShop()">${c.icon} ${c.label}</button>`).join('')}</div>
+    <div class="shop-grid">${items.map(item=>{
+      const owned=g.purchases.includes(`${shopCat}:${item.id}`)||(shopCat==='skins'&&item.id==='default');
+      const equipped=g[slot]===item.id;
+      const can=g.coins>=item.price;
+      let badge='',btn='';
+      if(equipped){badge=`<span class="item-badge ib-eq">Надето</span>`;btn=`<button class="buy-btn done-btn" disabled>Надето ✓</button>`;}
+      else if(owned){badge=`<span class="item-badge ib-owned">Есть</span>`;btn=`<button class="buy-btn eq-btn" onclick="equip('${shopCat}','${item.id}','${slot}')">Надеть</button>`;}
+      else{btn=`<button class="buy-btn" ${!can?'disabled':''} onclick="buy('${shopCat}','${item.id}','${slot}',${item.price},'${item.name}')">${can?'Купить':'Мало монет'}</button>`;}
+      return `<div class="shop-item ${equipped?'equipped':owned?'owned':''}">
+        ${badge}<span class="si-icon">${item.icon}</span>
+        <div class="si-name">${item.name}</div>
+        <div class="si-desc">${item.desc}</div>
+        ${item.price>0?`<div class="si-price">🪙 ${item.price}</div>`:`<div class="si-price free">Бесплатно</div>`}
+        ${btn}
+      </div>`;
+    }).join('')}</div>
+  `;
+
+  // Lead shop
+  document.getElementById('lead-shop-section').innerHTML=`
+    <h3>📋 Купить лиды</h3>
+    <p>Потратьте монеты чтобы получить клиентов</p>
+    <div class="lead-cards">${LEADS.map(p=>{
+      const can=g.coins>=p.price;
+      return `<div class="lead-card"><div class="lc-icon">${p.icon}</div><div class="lc-title">${p.title}</div><div class="lc-desc">${p.desc}</div><div class="lc-price">🪙 ${p.price}</div>
+        <button class="lead-buy" ${!can?'disabled':''} onclick="buyLead(${p.count},${p.price})">${can?'Купить':'Мало монет'}</button></div>`;
+    }).join('')}</div>
+  `;
+}
+
+function buy(cat,id,slot,price,name){
+  const g=GAME[currentUser];
+  if(g.coins<price){toast('Мало монет!','error');return;}
+  g.purchases.push(`${cat}:${id}`);
+  g.history.push({date:new Date().toLocaleDateString('ru-RU'),desc:`Покупка: ${name}`,amt:-price});
+  g[slot]=id;
+  recalc(currentUser); renderAll(); saveGame();
+  toast(`${name} куплено и надето!`,'success');
+}
+function equip(cat,id,slot){ GAME[currentUser][slot]=id; renderAll(); saveGame(); toast('Экипировка обновлена!','success'); }
+function buyLead(count,price){
+  const g=GAME[currentUser];
+  if(g.coins<price){toast('Мало монет!','error');return;}
+  g.leadsBought=(g.leadsBought||0)+count;
+  g.history.push({date:new Date().toLocaleDateString('ru-RU'),desc:`+${count} лид(ов)`,amt:-price});
+  recalc(currentUser); renderAll(); saveGame();
+  toast(`+${count} лид(ов) куплено!`,'success');
+}
+
+// ═══════════════════ QUESTS ═══════════════════════════════════════
+function renderQuests(){
+  const quests=getQuests(currentUser), g=GAME[currentUser];
+  const done=quests.filter(q=>q.claimed).length;
+  document.getElementById('quests-card').innerHTML=`
+    <h3>📜 Квесты (${done}/${quests.length} выполнено)</h3>
+    <div class="quest-list">${quests.map(q=>{
+      const ready=q.check&&!q.claimed;
+      const isDone=q.claimed;
+      return `<div class="quest-item ${isDone?'done':''}" style="border-left-color:${isDone?'var(--green)':ready?'#eab308':'var(--line)'}">
+        <div class="q-check ${isDone?'done':''}" ${ready?`onclick="claimQuest('${q.id}',${q.reward})" style="cursor:pointer;border-color:${ready?'#eab308':'var(--line)'};color:${ready?'#eab308':'transparent'}"`:''}>${isDone?'✓':ready?'!':'·'}</div>
+        <div class="q-body"><div class="q-title">${q.title}</div><div class="q-sub">${q.desc}</div></div>
+        <div class="q-reward">${isDone?'✅ Получено':ready?`🪙 +${q.reward}`:`🪙 ${q.reward}`}</div>
+      </div>`;
+    }).join('')}</div>
+  `;
+}
+function claimQuest(id,reward){
+  const g=GAME[currentUser];
+  if(!g.questsDone) g.questsDone=[];
+  if(g.questsDone.includes(id)) return;
+  g.questsDone.push(id);
+  g.history.push({date:new Date().toLocaleDateString('ru-RU'),desc:`Квест выполнен!`,amt:reward});
+  recalc(currentUser); renderAll(); saveGame();
+  toast(`Квест выполнен! +${reward} 🪙`,'success');
 }
 
 // ═══════════════════ TOAST ═══════════════════════════════════════
-function toast(msg, type='') {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className = 'toast show ' + type;
-  setTimeout(() => el.className = 'toast', 3000);
-}
+function toast(m,t=''){const e=document.getElementById('toast');e.textContent=m;e.className='toast show '+t;setTimeout(()=>e.className='toast',2500);}
 
 // ═══════════════════ INIT ════════════════════════════════════════
-async function init() {
+async function init(){
   await loadData();
-
-  const saved = localStorage.getItem('game_user');
-  if (saved && HABITICA_ACCOUNTS[saved]?.connected) {
-    currentUser = saved;
-    showGame();
-  } else {
-    renderSetup();
-  }
-
-  // Refresh every 2 minutes
-  setInterval(async () => {
-    await loadData();
-    if (currentUser) renderAll();
-  }, 120000);
+  allNames().forEach(n=>ensureGD(n));
+  if(currentUser&&allNames().includes(currentUser)){login(currentUser);}
+  else{currentUser=null;localStorage.removeItem('game_user');renderLogin();}
+  setInterval(async()=>{await loadData();if(currentUser)renderAll();},60000);
 }
-
 init();
 </script>
 </body>
