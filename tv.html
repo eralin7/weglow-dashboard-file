@@ -365,6 +365,8 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 
 // ═══════════════════ CONFIG ═══════════════════════════════════════
 const SUPABASE_URL = 'https://bdyakgmeibpdkisbiykt.supabase.co';
@@ -384,12 +386,28 @@ const ROP_COLORS = {
 };
 const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 
+// ═══════════════════ STRAIGHT TRACK CONFIG ═══════════════════════
+const roadLength = 60;
+const roadWidth = 12;
+const laneWidth = 3;
+const startX = -roadLength / 2 + 2;
+const endX = roadLength / 2 - 3;
+const trackRange = endX - startX;
+
+// Lane Z positions (4 lanes)
+const lanePositions = [
+  -roadWidth/2 + laneWidth * 0.5,
+  -roadWidth/2 + laneWidth * 1.5,
+  -roadWidth/2 + laneWidth * 2.5,
+  -roadWidth/2 + laneWidth * 3.5,
+];
+
 // ═══════════════════ 3D CAR CONFIG ═══════════════════════════════
 const ROP_CARS = {
-  'РОП Айдана':    { color: 0x1a56db, laneOffset: -3, mesh: null, targetPos: null, targetRot: 0, wheelMeshes: [] },
-  'РОП Аслиддин':  { color: 0xf59e0b, laneOffset: -1, mesh: null, targetPos: null, targetRot: 0, wheelMeshes: [] },
-  'РОП Нурдаулет': { color: 0x10b981, laneOffset: 1,  mesh: null, targetPos: null, targetRot: 0, wheelMeshes: [] },
-  'РОП Диас':      { color: 0xef4444, laneOffset: 3,  mesh: null, targetPos: null, targetRot: 0, wheelMeshes: [] },
+  'РОП Айдана':    { color: 0x1a56db, mesh: null, targetPos: null, targetRot: 0, wheelMeshes: [] },
+  'РОП Аслиддин':  { color: 0xf59e0b, mesh: null, targetPos: null, targetRot: 0, wheelMeshes: [] },
+  'РОП Нурдаулет': { color: 0x10b981, mesh: null, targetPos: null, targetRot: 0, wheelMeshes: [] },
+  'РОП Диас':      { color: 0xef4444, mesh: null, targetPos: null, targetRot: 0, wheelMeshes: [] },
 };
 
 // ═══════════════════ DATA STATE ═══════════════════════════════════
@@ -642,7 +660,7 @@ scene.background = new THREE.Color(0x87CEEB);
 scene.fog = new THREE.Fog(0x87CEEB, 100, 300);
 
 const camera = new THREE.PerspectiveCamera(45, sceneContainer.clientWidth / sceneContainer.clientHeight, 0.1, 1000);
-camera.position.set(0, 25, 40);
+camera.position.set(0, 20, 30);
 camera.lookAt(0, 0, 0);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -682,31 +700,114 @@ scene.add(ambientLight);
 const hemisphereLight = new THREE.HemisphereLight(0x87CEEB, 0x44aa44, 0.4);
 scene.add(hemisphereLight);
 
-// Ground plane
-const groundGeo = new THREE.PlaneGeometry(500, 500);
-const groundMat = new THREE.MeshLambertMaterial({ color: 0x44aa44 });
-const ground = new THREE.Mesh(groundGeo, groundMat);
-ground.rotation.x = -Math.PI / 2;
-ground.position.y = -0.5;
-ground.receiveShadow = true;
-scene.add(ground);
+// ═══════════════════ GREEN GRASS ═══════════════════════════════════
+const grassGeo = new THREE.PlaneGeometry(200, 200);
+const grassMat = new THREE.MeshLambertMaterial({ color: 0x4ade80 });
+const grass = new THREE.Mesh(grassGeo, grassMat);
+grass.rotation.x = -Math.PI / 2;
+grass.position.y = -0.01;
+grass.receiveShadow = true;
+scene.add(grass);
 
-// ═══════════════════ TRACK PATH ═══════════════════════════════════
-const TRACK_RX = 20;
-const TRACK_RZ = 15;
+// ═══════════════════ STRAIGHT ROAD ═══════════════════════════════
+// Asphalt surface
+const roadGeo = new THREE.PlaneGeometry(roadLength, roadWidth);
+const roadMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.9 });
+const road = new THREE.Mesh(roadGeo, roadMat);
+road.rotation.x = -Math.PI / 2;
+road.position.set(0, 0.01, 0);
+road.receiveShadow = true;
+scene.add(road);
 
-function getTrackPosition(t, laneOffset) {
-  const angle = t * Math.PI * 2;
-  return new THREE.Vector3(
-    Math.sin(angle) * TRACK_RX,
-    0.5,
-    Math.cos(angle) * TRACK_RZ + laneOffset
-  );
+// White dashed lane markings (3 dividers for 4 lanes)
+for (let i = 1; i <= 3; i++) {
+  const z = -roadWidth/2 + i * laneWidth;
+  for (let x = -roadLength/2; x < roadLength/2; x += 3) {
+    const dashGeo = new THREE.PlaneGeometry(1.5, 0.1);
+    const dashMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const dash = new THREE.Mesh(dashGeo, dashMat);
+    dash.rotation.x = -Math.PI / 2;
+    dash.position.set(x + 0.75, 0.02, z);
+    scene.add(dash);
+  }
 }
 
-function getTrackRotation(t) {
-  const angle = t * Math.PI * 2;
-  return Math.atan2(Math.cos(angle) * TRACK_RX, -Math.sin(angle) * TRACK_RZ);
+// Edge lines (solid white)
+[-roadWidth/2, roadWidth/2].forEach(z => {
+  const lineGeo = new THREE.PlaneGeometry(roadLength, 0.15);
+  const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const line = new THREE.Mesh(lineGeo, lineMat);
+  line.rotation.x = -Math.PI / 2;
+  line.position.set(0, 0.02, z);
+  scene.add(line);
+});
+
+// Red-white kerbs on edges
+[-roadWidth/2 - 0.5, roadWidth/2 + 0.5].forEach(z => {
+  for (let x = -roadLength/2; x < roadLength/2; x += 1) {
+    const kerbGeo = new THREE.PlaneGeometry(0.5, 0.8);
+    const isRed = Math.floor((x + roadLength/2) / 0.5) % 2 === 0;
+    const kerbMat = new THREE.MeshBasicMaterial({ color: isRed ? 0xdc2626 : 0xffffff });
+    const kerb = new THREE.Mesh(kerbGeo, kerbMat);
+    kerb.rotation.x = -Math.PI / 2;
+    kerb.position.set(x + 0.25, 0.02, z);
+    scene.add(kerb);
+  }
+});
+
+// Finish line (checkered pattern at the right end)
+const finishX = roadLength / 2 - 1;
+for (let row = 0; row < 8; row++) {
+  for (let col = 0; col < 4; col++) {
+    const checkGeo = new THREE.PlaneGeometry(0.5, laneWidth * 4 / 8);
+    const isBlack = (row + col) % 2 === 0;
+    const checkMat = new THREE.MeshBasicMaterial({ color: isBlack ? 0x000000 : 0xffffff });
+    const check = new THREE.Mesh(checkGeo, checkMat);
+    check.rotation.x = -Math.PI / 2;
+    check.position.set(finishX + col * 0.5, 0.025, -roadWidth/2 + row * (roadWidth/8) + roadWidth/16);
+    scene.add(check);
+  }
+}
+
+// START marker (left side)
+{
+  const startLineGeo = new THREE.PlaneGeometry(0.3, roadWidth);
+  const startLineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const startLine = new THREE.Mesh(startLineGeo, startLineMat);
+  startLine.rotation.x = -Math.PI / 2;
+  startLine.position.set(startX, 0.025, 0);
+  scene.add(startLine);
+
+  // "СТАРТ" sign as a 3D box
+  const signGeo = new THREE.BoxGeometry(0.3, 2, 3);
+  const signMat = new THREE.MeshStandardMaterial({ color: 0x1a56db });
+  const sign = new THREE.Mesh(signGeo, signMat);
+  sign.position.set(startX, 1.5, -roadWidth/2 - 2.5);
+  sign.castShadow = true;
+  scene.add(sign);
+
+  // Pole
+  const poleGeo = new THREE.CylinderGeometry(0.08, 0.08, 3, 8);
+  const poleMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
+  const pole = new THREE.Mesh(poleGeo, poleMat);
+  pole.position.set(startX, 1.5, -roadWidth/2 - 2.5);
+  scene.add(pole);
+}
+
+// ФИНИШ sign (right side)
+{
+  const signGeo = new THREE.BoxGeometry(0.3, 2, 3);
+  const signMat = new THREE.MeshStandardMaterial({ color: 0xef4444 });
+  const sign = new THREE.Mesh(signGeo, signMat);
+  sign.position.set(finishX + 1, 1.5, -roadWidth/2 - 2.5);
+  sign.castShadow = true;
+  scene.add(sign);
+
+  const poleGeo = new THREE.CylinderGeometry(0.08, 0.08, 3, 8);
+  const poleMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
+  const pole = new THREE.Mesh(poleGeo, poleMat);
+  pole.position.set(finishX + 1, 1.5, -roadWidth/2 - 2.5);
+  scene.add(pole);
 }
 
 // ═══════════════════ LOAD 3D MODELS ═══════════════════════════════
@@ -716,7 +817,7 @@ const gltfLoader = new GLTFLoader();
 gltfLoader.setDRACOLoader(dracoLoader);
 
 let loadedCount = 0;
-const totalLoads = 4; // track + chassis + wheels + data
+const totalLoads = 3; // chassis + wheels + data (no track model)
 const loadingBar = document.getElementById('loadingBar');
 const loadingText = document.getElementById('loadingText');
 
@@ -731,25 +832,8 @@ let modelsReady = false;
 let dataReady = false;
 let wheelTemplate = null;
 
-// Load track
-const trackPromise = new Promise((resolve) => {
-  gltfLoader.load('assets/track-draco.glb', (gltf) => {
-    const track = gltf.scene;
-    track.traverse(child => {
-      if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-      }
-    });
-    scene.add(track);
-    updateLoadProgress('Трасса загружена...');
-    resolve();
-  }, undefined, (err) => {
-    console.warn('Track load error:', err);
-    updateLoadProgress('Трасса: ошибка загрузки');
-    resolve();
-  });
-});
+// Sorted lane assignment (updated when data refreshes)
+let sortedRopNames = Object.keys(ROP_CARS);
 
 // Load chassis
 const chassisPromise = new Promise((resolve) => {
@@ -767,10 +851,9 @@ const chassisPromise = new Promise((resolve) => {
           child.castShadow = true;
         }
       });
-      // Start at 0% position
-      const startPos = getTrackPosition(0, config.laneOffset);
-      car.position.copy(startPos);
-      car.rotation.y = getTrackRotation(0);
+      // Start at left edge, lane 0 initially
+      car.position.set(startX, 0.3, lanePositions[0]);
+      car.rotation.y = Math.PI / 2; // face right (+X)
       car.userData.ropName = ropName;
       scene.add(car);
       config.mesh = car;
@@ -822,15 +905,21 @@ const wheelPromise = new Promise((resolve) => {
 
 // ═══════════════════ CAR POSITION UPDATE ═══════════════════════════
 function updateCarPositions(ropData) {
-  for (const r of ropData) {
+  // ropData is already sorted by pct descending from calcRopData()
+  // Leader gets lane 1 (index 0), etc.
+  sortedRopNames = ropData.map(r => r.name);
+
+  ropData.forEach((r, i) => {
     const config = ROP_CARS[r.name];
-    if (!config || !config.mesh) continue;
-    const t = Math.min(r.pct / 100, 1.5);
-    const pos = getTrackPosition(t, config.laneOffset);
-    config.targetPos = pos;
-    config.targetRot = getTrackRotation(t);
+    if (!config || !config.mesh) return;
+    const pct = Math.min(r.pct / 100, 1.2); // allow 20% overshoot past finish
+    const x = startX + pct * trackRange;
+    const z = lanePositions[i] || lanePositions[0];
+    config.targetPos = new THREE.Vector3(x, 0.3, z);
+    // Cars face RIGHT (+X direction)
+    config.targetRot = Math.PI / 2;
     config.pct = r.pct;
-  }
+  });
 }
 
 // ═══════════════════ CAR LABELS (HTML over 3D) ═══════════════════
@@ -954,8 +1043,8 @@ async function init() {
     return ok;
   });
 
-  // Wait for all
-  await Promise.all([trackPromise, chassisPromise, wheelPromise, dataPromise]);
+  // Wait for all (no track model to load anymore)
+  await Promise.all([chassisPromise, wheelPromise, dataPromise]);
 
   // Create labels
   createCarLabels();
