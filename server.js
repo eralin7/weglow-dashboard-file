@@ -126,6 +126,7 @@ const getField = (lead, id) => id
 
 function parseLeads(leads, acc, statusMap, userMap) {
   const daily = {}, mgrs = {};
+  const HOURS_24 = 24 * 60 * 60; // 24 hours in seconds
   for (const lead of leads) {
     const stage      = (statusMap[lead.status_id] || '').toLowerCase();
     const validStage = VALID_STAGES.has(stage);
@@ -135,30 +136,49 @@ function parseLeads(leads, acc, statusMap, userMap) {
     const orderVal   = getField(lead, acc.orderDateFieldId);
     const oDate      = (orderVal && validStage) ? fmtDate(orderVal) : null;
 
+    // Determine if deal is "new lead" (≤24h) or "base" (>24h)
+    let isNewLead = true;
+    if (oDate && lead.created_at && orderVal) {
+      const createdTs = Number(lead.created_at);
+      const orderTs   = Number(orderVal);
+      isNewLead = (orderTs - createdTs) <= HOURS_24;
+    }
+
     if (cDate) {
-      if (!daily[cDate]) daily[cDate] = [0,0,0];
+      if (!daily[cDate]) daily[cDate] = [0,0,0,0,0,0,0];
+      // [leads, deals, budget, newDeals, newBudget, baseDeals, baseBudget]
       daily[cDate][0]++;
       if (mgrName) {
-        if (!mgrs[mgrName]) mgrs[mgrName] = {leads:0,deals:0,budget:0,daily:{}};
+        if (!mgrs[mgrName]) mgrs[mgrName] = {leads:0,deals:0,budget:0,newDeals:0,newBudget:0,baseDeals:0,baseBudget:0,daily:{}};
         mgrs[mgrName].leads++;
-        if (!mgrs[mgrName].daily[cDate]) mgrs[mgrName].daily[cDate] = [0,0,0];
+        if (!mgrs[mgrName].daily[cDate]) mgrs[mgrName].daily[cDate] = [0,0,0,0,0,0,0];
         mgrs[mgrName].daily[cDate][0]++;
       }
     }
     if (oDate) {
-      if (!daily[oDate]) daily[oDate] = [0,0,0];
+      if (!daily[oDate]) daily[oDate] = [0,0,0,0,0,0,0];
       daily[oDate][1]++; daily[oDate][2] += budget;
+      if (isNewLead) { daily[oDate][3]++; daily[oDate][4] += budget; }
+      else           { daily[oDate][5]++; daily[oDate][6] += budget; }
       if (mgrName) {
-        if (!mgrs[mgrName]) mgrs[mgrName] = {leads:0,deals:0,budget:0,daily:{}};
+        if (!mgrs[mgrName]) mgrs[mgrName] = {leads:0,deals:0,budget:0,newDeals:0,newBudget:0,baseDeals:0,baseBudget:0,daily:{}};
         mgrs[mgrName].deals++; mgrs[mgrName].budget += budget;
-        if (!mgrs[mgrName].daily[oDate]) mgrs[mgrName].daily[oDate] = [0,0,0];
+        if (isNewLead) { mgrs[mgrName].newDeals++; mgrs[mgrName].newBudget += budget; }
+        else           { mgrs[mgrName].baseDeals++; mgrs[mgrName].baseBudget += budget; }
+        if (!mgrs[mgrName].daily[oDate]) mgrs[mgrName].daily[oDate] = [0,0,0,0,0,0,0];
         mgrs[mgrName].daily[oDate][1]++; mgrs[mgrName].daily[oDate][2] += budget;
+        if (isNewLead) { mgrs[mgrName].daily[oDate][3]++; mgrs[mgrName].daily[oDate][4] += budget; }
+        else           { mgrs[mgrName].daily[oDate][5]++; mgrs[mgrName].daily[oDate][6] += budget; }
       }
     }
   }
   const managers = Object.entries(mgrs).map(([name,v]) => ({
     name, leads:v.leads, deals:v.deals, budget:Math.round(v.budget),
+    newDeals:v.newDeals, newBudget:Math.round(v.newBudget),
+    baseDeals:v.baseDeals, baseBudget:Math.round(v.baseBudget),
     conv: v.leads>0 ? +(v.deals/v.leads*100).toFixed(1) : 0,
+    newConv: v.leads>0 ? +(v.newDeals/v.leads*100).toFixed(1) : 0,
+    baseConv: v.leads>0 ? +(v.baseDeals/v.leads*100).toFixed(1) : 0,
     avgCheck: v.deals>0 ? Math.round(v.budget/v.deals) : 0,
     daily: v.daily,
   })).sort((a,b) => b.budget-a.budget);
