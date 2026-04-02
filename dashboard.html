@@ -1002,16 +1002,33 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
   color:#f87171; font-size:12px; text-align:center; margin-top:10px; min-height:18px;
 }
 
-/* ── KPI TAB BUTTONS ──────────────────── */
-.kpi-tabs { display:flex; gap:4px; margin-bottom:12px; }
-.kpi-tab {
-  padding:6px 16px; border-radius:8px; border:1.5px solid var(--line);
-  background:transparent; color:var(--slate);
-  font-family:'DM Sans',sans-serif; font-size:12px; font-weight:600;
-  cursor:pointer; transition:all .15s;
+/* ── KPI 3-COLUMN LAYOUT ─────────────── */
+.kpi-3col { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:20px; }
+@media(max-width:1100px){ .kpi-3col { grid-template-columns:1fr; } }
+.kpi-col {
+  background:var(--white); border-radius:var(--r); padding:20px;
+  box-shadow:var(--shadow); border-top:3px solid var(--acc);
 }
-.kpi-tab:hover { border-color:var(--acc); color:var(--acc); }
-.kpi-tab.active { border-color:var(--acc); background:var(--acc-l); color:var(--acc); }
+.kpi-col-title {
+  font-family:'Playfair Display',serif; font-size:16px; font-weight:700;
+  margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--line);
+  color:var(--ink); display:flex; align-items:center; gap:8px;
+}
+.kpi-col-title .kpi-period-badge {
+  font-family:'DM Sans',sans-serif; font-size:10px; font-weight:600;
+  padding:3px 8px; border-radius:6px; background:var(--acc-l); color:var(--acc);
+}
+.kpi-col .kpi-row {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:7px 0; border-bottom:1px solid var(--line2);
+}
+.kpi-col .kpi-row:last-child { border-bottom:none; }
+.kpi-col .kpi-row-label { font-size:11px; color:var(--muted); font-weight:500; text-transform:uppercase; letter-spacing:.5px; }
+.kpi-col .kpi-row-val { font-size:14px; font-weight:700; text-align:right; }
+.kpi-col .kpi-row-sub { font-size:10px; color:var(--muted); text-align:right; margin-top:1px; }
+.kpi-col .kpi-row-growth { font-size:10px; font-weight:600; margin-top:1px; text-align:right; }
+.kpi-col .kpi-row-growth.up { color:#16a34a; }
+.kpi-col .kpi-row-growth.down { color:#c0392b; }
 
 /* ── RNP TABLE ────────────────────────── */
 .rnp-view { display:none; }
@@ -1263,12 +1280,7 @@ function doLogout(){
         <h2 id="main-title">Ключевые показатели</h2>
         <p id="main-sub">Февраль 2026 · Все продукты</p>
       </div>
-      <div class="kpi-tabs" id="kpi-tabs">
-        <button class="kpi-tab active" onclick="setKpiTab('month',this)">Месяц</button>
-        <button class="kpi-tab" onclick="setKpiTab('yesterday',this)">Вчера</button>
-        <button class="kpi-tab" onclick="setKpiTab('today',this)">Сегодня</button>
-      </div>
-      <div class="kpi-grid" id="kpi-grid"></div>
+      <div class="kpi-3col" id="kpi-3col"></div>
       <div id="rop-kpi-section"></div>
       <div class="sec-label mb20">Выполнение плана по группам</div>
       <div class="card mb24" style="overflow-x:auto;-webkit-overflow-scrolling:touch">
@@ -1839,14 +1851,7 @@ function setMgrProdSub(prod, el) {
   renderManagers();
 }
 
-// ═══════════════════ RENDER KPI ═══════════════════════════════════
-let activeKpiTab = 'month';
-function setKpiTab(tab, el) {
-  activeKpiTab = tab;
-  document.querySelectorAll('.kpi-tab').forEach(b=>b.classList.remove('active'));
-  el.classList.add('active');
-  if(lastStats) renderKPI(lastStats);
-}
+// ═══════════════════ RENDER KPI (3 COLUMNS) ═════════════════════════
 function _getKpiPeriod(tab) {
   const now = _now();
   const todayStr = _fmt(now);
@@ -1854,116 +1859,71 @@ function _getKpiPeriod(tab) {
   const yesterdayStr = _fmt(yest);
   if(tab==='today') return {from:todayStr, to:todayStr};
   if(tab==='yesterday') return {from:yesterdayStr, to:yesterdayStr};
-  // month - use current period (default is current month)
   return {from:activePeriod.from, to:activePeriod.to};
 }
-function renderKPI(d){
-  // Aggregate for the selected KPI tab period
-  const kpiPeriod = _getKpiPeriod(activeKpiTab);
-  let kd;
-  if(activeProd==='all') kd = aggregateAll(kpiPeriod.from, kpiPeriod.to);
-  else { const dd=aggregate(activeProd,kpiPeriod.from,kpiPeriod.to); kd={...dd,parts:{[activeProd]:dd},daily:dd.daily}; }
-
-  const isCur = kd.isCurrentMonth;
-  const pct = kd.plan
-    ? (isCur ? Math.round(kd.monthBudget/kd.plan*100) : Math.round(kd.budget/kd.plan*100))
-    : 0;
-
+function _aggregateForKpi(period) {
+  if(activeProd==='all') return aggregateAll(period.from, period.to);
+  const dd=aggregate(activeProd, period.from, period.to);
+  return {...dd, parts:{[activeProd]:dd}, daily:dd.daily};
+}
+function _kpiColHTML(label, badge, kd, borderColor) {
+  const pct = kd.plan ? (kd.isCurrentMonth ? Math.round(kd.monthBudget/kd.plan*100) : Math.round(kd.budget/kd.plan*100)) : 0;
   const drr = kd.budget ? +(kd.adTotal/kd.budget*100).toFixed(1) : 0;
+  const cpl = kd.cplMonth || 0;
+  const pctClr = pct>=100?'#16a34a':pct>=80?'#ca8a04':'#c0392b';
+  const drrClr = drr<=15?'#16a34a':drr<=25?'#ca8a04':'#c0392b';
+  const convClr = kd.conv>=12?'#16a34a':'#c0392b';
+  const chkClr = kd.avgCheck>=80000?'#16a34a':'#ca8a04';
+  const cplClr = cpl<=3000?'#16a34a':cpl<=6000?'#ca8a04':'#c0392b';
+
+  return `<div class="kpi-col" style="border-top-color:${borderColor}">
+    <div class="kpi-col-title">${label} <span class="kpi-period-badge">${badge}</span></div>
+    <div class="kpi-row">
+      <span class="kpi-row-label">План</span>
+      <div><div class="kpi-row-val">${kd.plan?fmtM(kd.plan):'—'}</div></div>
+    </div>
+    <div class="kpi-row">
+      <span class="kpi-row-label">Продажи</span>
+      <div><div class="kpi-row-val" style="color:${borderColor}">${fmtM(kd.budget)}</div>
+      <div class="kpi-row-sub">${fmt(kd.leads)} лидов · ${fmt(kd.deals)} сделок</div></div>
+    </div>
+    <div class="kpi-row">
+      <span class="kpi-row-label">Выполнение</span>
+      <div><div class="kpi-row-val" style="color:${pctClr}">${pct}%</div></div>
+    </div>
+    <div class="kpi-row">
+      <span class="kpi-row-label">ДРР</span>
+      <div><div class="kpi-row-val" style="color:${drrClr}">${drr}%</div>
+      <div class="kpi-row-sub">расход ${fmtM(kd.adTotal)}</div></div>
+    </div>
+    <div class="kpi-row">
+      <span class="kpi-row-label">Конверсия</span>
+      <div><div class="kpi-row-val" style="color:${convClr}">${kd.conv}%</div></div>
+    </div>
+    <div class="kpi-row">
+      <span class="kpi-row-label">Средний чек</span>
+      <div><div class="kpi-row-val" style="color:${chkClr}">${fmt(kd.avgCheck)} ₸</div></div>
+    </div>
+    <div class="kpi-row">
+      <span class="kpi-row-label">Ст-ть за лид</span>
+      <div><div class="kpi-row-val" style="color:${cpl?cplClr:'var(--muted)'}">${cpl?fmt(cpl)+' ₸':'—'}</div></div>
+    </div>
+  </div>`;
+}
+function renderKPI(d){
   const prodName = activeProd==='all' ? 'Все продукты' : PROD_CFG[activeProd].name;
-  const tabLabels = {month:'Месяц', yesterday:'Вчера', today:'Сегодня'};
   document.getElementById('main-title').textContent = 'Ключевые показатели';
-  document.getElementById('main-sub').textContent = `${tabLabels[activeKpiTab]} · ${activePeriod.label} · ${prodName}`;
+  document.getElementById('main-sub').textContent = `${activePeriod.label} · ${prodName}`;
   const clr = activeProd==='all' ? '#6366f1' : PROD_CFG[activeProd].color;
 
-  const revSub = kd.plan ? `план ${fmtM(kd.plan)}` : '—';
-  const revS2 = isCur && kd.plan && kd.remain>0
-    ? `нужно ${fmtM(kd.perDay)}/день · ост. ${kd.daysLeft} дн.`
-    : (isCur && kd.remain===0 ? '✓ план выполнен' : null);
-  const execSub = isCur && kd.plan
-    ? (kd.remain===0 ? '✓ план выполнен' : `ост. ${fmtM(kd.remain)}`)
-    : 'от плана';
-  const cpl = kd.cplMonth || 0;
+  const monthData = _aggregateForKpi(_getKpiPeriod('month'));
+  const yesterdayData = _aggregateForKpi(_getKpiPeriod('yesterday'));
+  const todayData = _aggregateForKpi(_getKpiPeriod('today'));
 
-  const _prevGrowth = (cur, prev) => prev>0 ? Math.round((cur-prev)/prev*100) : undefined;
-  let prev = null;
-  try {
-    const pFrom = kpiPeriod.from, pTo = kpiPeriod.to;
-    const fd = parseDate(pFrom), td = parseDate(pTo);
-    const span = Math.round((td-fd)/86400000)+1;
-    const pfd = new Date(fd); pfd.setDate(pfd.getDate()-span);
-    const ptd = new Date(fd); ptd.setDate(ptd.getDate()-1);
-    const fmtD = d2 => `${String(d2.getDate()).padStart(2,'0')}.${String(d2.getMonth()+1).padStart(2,'0')}.${d2.getFullYear()}`;
-    const prevFrom = fmtD(pfd), prevTo = fmtD(ptd);
-    if(activeProd==='all') prev = aggregateAll(prevFrom, prevTo);
-    else { const pd2 = aggregate(activeProd, prevFrom, prevTo); prev = {...pd2, parts:{[activeProd]:pd2}}; }
-  } catch(e) {}
-
-  const roi = kd.adTotal>0 ? Math.round((kd.budget - kd.adTotal)/kd.adTotal*100) : null;
-  let forecast = null;
-  if(isCur && kd.plan>0) {
-    const now2 = new Date();
-    const dayOfMonth = now2.getDate();
-    const totalDays = _lastDay(now2.getFullYear(), now2.getMonth()+1);
-    const dailyRate = dayOfMonth>0 ? kd.monthBudget/dayOfMonth : 0;
-    const projected = Math.round(dailyRate * totalDays);
-    forecast = kd.plan>0 ? Math.round(projected/kd.plan*100) : null;
-  }
-
-  // 7 KPI cards: Отдел(Plan), Продажи, Выполнение%, ДРР%, Конверсия%, Средний чек, CPL
-  const kpis=[
-    {l:'Отдел (План)',  v:fmtM(kd.plan||0), s:revSub, s2:revS2, s2c:'#6366f1',
-     planBar:!!kd.plan, planPct:pct, forecast, daysLeft:isCur?kd.daysLeft:null,
-     remain:kd.remain, perDay:kd.perDay, c:clr},
-    {l:'Продажи',      v:fmtM(kd.budget), s:`${fmt(kd.leads)} лидов · ${fmt(kd.deals)} сделок`,
-     growth:prev?_prevGrowth(kd.budget,prev.budget):undefined, c:clr},
-    {l:'Выполнение плана', v:`${pct}%`, s:execSub,
-     planBar:!!kd.plan, planPct:pct, forecast, daysLeft:isCur?kd.daysLeft:null,
-     remain:kd.remain, perDay:kd.perDay,
-     bc:pctBg(pct), c:pct>=100?'#16a34a':pct>=80?'#ca8a04':'#c0392b'},
-    {l:'ДРР',          v:`${drr}%`, s:`расход ${fmtM(kd.adTotal)}`,
-     drrVal:drr, drrBar:true,
-     badge:`ДРР ${drr}%`, bc:drr<=15?'bg-g':drr<=25?'bg-y':'bg-r',
-     c:drr<=15?'#16a34a':drr<=25?'#ca8a04':'#c0392b'},
-    {l:'Конверсия',    v:`${kd.conv}%`, s:'план 12%',
-     badge:kd.conv>=12?'В норме':'Ниже плана', bc:kd.conv>=12?'bg-g':'bg-r',
-     growth:prev?_prevGrowth(kd.conv,prev.conv):undefined,
-     c:kd.conv>=12?'#16a34a':'#c0392b'},
-    {l:'Средний чек',  v:`${fmt(kd.avgCheck)} ₸`, s:'план 80 000 ₸',
-     badge:kd.avgCheck>=80000?'В норме':'Ниже', bc:kd.avgCheck>=80000?'bg-g':'bg-y',
-     growth:prev?_prevGrowth(kd.avgCheck,prev.avgCheck):undefined,
-     c:kd.avgCheck>=80000?'#16a34a':'#ca8a04'},
-    {l:'Стоимость за лид', v:cpl?`${fmt(cpl)} ₸`:'—', s:'расход / лиды',
-     badge:cpl?(cpl<=3000?'Отлично':cpl<=6000?'Норма':'Дорого'):'нет данных',
-     bc:cpl<=3000?'bg-g':cpl<=6000?'bg-y':'bg-r',
-     growth:prev&&prev.cplMonth?_prevGrowth(cpl,prev.cplMonth):undefined,
-     c:cpl<=3000?'#16a34a':cpl<=6000?'#ca8a04':'#c0392b'},
-  ];
-  document.getElementById('kpi-grid').innerHTML=kpis.map((k,i)=>{
-    const spanCls = k.span===2 ? ' span-2' : '';
-    let html = `<div class="kpi-card${spanCls}" style="--kc:${k.c}" data-kpi="${i}">`;
-    html += `<div class="kc-lbl">${k.l}</div>`;
-    html += `<div class="kc-val" style="color:${k.c}">${k.v}</div>`;
-    html += `<div class="kc-sub">${k.s||''}</div>`;
-    if(k.s2) html += `<div class="kc-sub" style="color:${k.s2c||'#6366f1'};font-weight:700;margin-top:2px;font-size:11px">${k.s2}</div>`;
-    if(k.growth!==undefined) html += `<div class="kpi-growth ${k.growth>0?'up':k.growth<0?'down':'flat'}">${k.growth>0?'↑':'↓'} ${Math.abs(k.growth)}% vs пред.</div>`;
-    if(k.planBar) {
-      html += `<div class="plan-bar-wrap">
-        <div class="plan-bar-track"><div class="plan-bar-fill" style="width:${Math.min(k.planPct,100)}%;background:${k.c}"></div></div>
-        <div class="plan-forecast" style="color:${k.c}">${k.planPct}% выполнено${k.forecast?` · прогноз: ${k.forecast}%`:''}${k.daysLeft?' · ост. '+k.daysLeft+' дн.':''}</div>
-      </div>`;
-    }
-    if(k.drrBar) {
-      const drrClr = k.drrVal<=15?'#16a34a':k.drrVal<=25?'#ca8a04':'#c0392b';
-      html += `<div class="plan-bar-wrap">
-        <div class="plan-bar-track"><div class="plan-bar-fill" style="width:${Math.min(k.drrVal,100)}%;background:${drrClr}"></div></div>
-        <div class="plan-forecast" style="color:${drrClr}">ДРР ${k.drrVal}%${k.drrVal<=15?' · в норме':k.drrVal<=25?' · допустимо':' · высокий'}</div>
-      </div>`;
-    }
-    if(k.badge&&!k.planBar&&!k.drrBar) html += `<div class="kc-badge ${k.bc}">${k.badge}</div>`;
-    html += `</div>`;
-    return html;
-  }).join('');
+  document.getElementById('kpi-3col').innerHTML =
+    _kpiColHTML('Месяц', activePeriod.label, monthData, clr) +
+    _kpiColHTML('Вчера', _getKpiPeriod('yesterday').from, yesterdayData, '#ca8a04') +
+    _kpiColHTML('Сегодня', _getKpiPeriod('today').from, todayData, '#16a34a');
 }
 
 // ═══════════════════ FORECAST HELPER ══════════════════════════════
