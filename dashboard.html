@@ -1281,7 +1281,6 @@ function doLogout(){
         <p id="main-sub">Февраль 2026 · Все продукты</p>
       </div>
       <div class="kpi-3col" id="kpi-3col"></div>
-      <div id="rop-kpi-section"></div>
       <div class="sec-label mb20">Выполнение плана по группам</div>
       <div class="card mb24" style="overflow-x:auto;-webkit-overflow-scrolling:touch">
         <div id="plan-table" style="min-width:900px"></div>
@@ -2063,6 +2062,7 @@ function renderPlanTable(stats){
         ${remainCell}
         <td>${fmt(ropLeads)}</td><td>${fmt(ropDeals)}</td>
         <td class="${convCls(parseFloat(conv))}" style="font-weight:700">${conv}%</td>
+        <td style="font-weight:700">${ropDeals>0?fmt(Math.round(ropFact/ropDeals))+' ₸':'—'}</td>
         <td style="color:${cplM?cplM<=3000?'#16a34a':cplM<=6000?'#ca8a04':'#c0392b':'var(--muted)'};font-weight:700">${cplM?fmt(cplM)+' ₸':'—'}</td>
         <td style="color:#6366f1;font-weight:700">${rpl?fmt(rpl)+' ₸':'—'}</td>
         <td style="color:${parseFloat(ropDrr)<=15?'#16a34a':parseFloat(ropDrr)<=25?'#ca8a04':'#dc2626'};font-weight:700">${parseFloat(ropDrr)>0?ropDrr+'%':'—'}</td>
@@ -2096,6 +2096,7 @@ function renderPlanTable(stats){
       ${rTotRemainCell}
       <td><strong>${fmt(rTotLeads)}</strong></td><td><strong>${fmt(rTotDeals)}</strong></td>
       <td class="${convCls(parseFloat(rTotConv))}" style="font-weight:700"><strong>${rTotConv}%</strong></td>
+      <td style="font-weight:700"><strong>${rTotDeals>0?fmt(Math.round(rTotFact/rTotDeals))+' ₸':'—'}</strong></td>
       <td style="color:${rTotCpl?rTotCpl<=3000?'#16a34a':rTotCpl<=6000?'#ca8a04':'#c0392b':'var(--muted)'};font-weight:700"><strong>${rTotCpl?fmt(rTotCpl)+' ₸':'—'}</strong></td>
       <td style="color:#6366f1;font-weight:700"><strong>${rTotRpl?fmt(rTotRpl)+' ₸':'—'}</strong></td>
       <td style="color:${rTotDrr<=15?'#16a34a':rTotDrr<=25?'#ca8a04':'#dc2626'};font-weight:700"><strong>${rTotDrr>0?rTotDrr+'%':'—'}</strong></td>
@@ -2114,7 +2115,7 @@ function renderPlanTable(stats){
       <th style="color:${isCur?'#6366f1':'var(--muted)'}">Прогноз</th>
       <th style="color:${isCur?'#ca8a04':'var(--muted)'}">Остаток</th>
       <th style="color:${isCur?'#6366f1':'var(--muted)'}">Нужно/день</th>
-      <th>Лиды</th><th>Сделки</th><th>Конверсия</th><th style="color:#6366f1">Ст.лида рекл.</th><th style="color:#6366f1">Ст.лида прод.</th><th style="color:#ca8a04">ДРР</th><th style="color:#6366f1">Прод./мен.</th>
+      <th>Лиды</th><th>Сделки</th><th>Конверсия</th><th>Ср.чек</th><th style="color:#6366f1">Ст.лида рекл.</th><th style="color:#6366f1">Ст.лида прод.</th><th style="color:#ca8a04">ДРР</th><th style="color:#6366f1">Прод./мен.</th>
     </tr></thead><tbody>${rows}</tbody></table>`;
 }
 // ═══════════════════ ROP KPI CARDS ════════════════════════════════
@@ -2458,7 +2459,7 @@ function render(){
   lastStats=stats;
   renderKPI(stats);
   renderPlanTable(stats);
-  renderRopKPI(stats);
+  // renderRopKPI removed
   renderLine(stats);
   renderLeadsDeals(stats);
   renderSummaryChart();
