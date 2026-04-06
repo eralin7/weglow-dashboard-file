@@ -3979,19 +3979,37 @@ function renderRnp() {
   if(subEl) subEl.textContent=activeRnpDept==='all'?'Все продукты':activeRnpDept;
 
   const rnpDaily = RNP_EXCEL.daily || {};
+  // Map product filter to archive keys
+  const archMap = {'Коллаген':'Коллаген','Ummi':'Ummi','Грибы':null};
   const products = activeRnpDept==='all' ? Object.keys(rnpDaily) : [activeRnpDept];
 
-  // Collect all dates from selected products
+  // Collect dates from Excel + archive for selected products
   const allDates = new Set();
-  products.forEach(p => { Object.keys(rnpDaily[p]||{}).forEach(d => allDates.add(d)); });
+  products.forEach(p => {
+    Object.keys(rnpDaily[p]||{}).forEach(d => allDates.add(d));
+    const ak = archMap[p];
+    if(ak) Object.keys(RAW[ak]||{}).forEach(d => allDates.add(d));
+  });
   const sortedDates=[...allDates].sort((a,b)=>parseDate(b)-parseDate(a));
 
   let tLeads=0,tDeals=0,tBudget=0,tAd=0;
   const rows=sortedDates.map(date=>{
     let budget=0,leads=0,ad=0,deals=0;
     products.forEach(p => {
-      const v = (rnpDaily[p]||{})[date];
-      if(v){ budget+=v[0]; leads+=v[1]; ad+=v[2]; deals+=v[3]; }
+      const xl = (rnpDaily[p]||{})[date];
+      const ak = archMap[p];
+      const arch = ak ? (RAW[ak]||{})[date] : null; // [leads,deals,budget,...]
+      const archAd = ak ? ((AD_SPEND[ak]||{})[date]||0) : 0;
+      // Use Excel as primary, fill gaps from archive
+      if(xl && (xl[0]>0 || xl[3]>0)){
+        budget += xl[0]; deals += xl[3];
+        leads += xl[1]>0 ? xl[1] : (arch?arch[0]:0);
+        ad += xl[2]>0 ? xl[2] : archAd;
+      } else if(arch){
+        // No Excel data for this date — use archive
+        leads += arch[0]||0; deals += arch[1]||0; budget += arch[2]||0;
+        ad += archAd;
+      }
     });
 
     tLeads+=leads; tDeals+=deals; tBudget+=budget; tAd+=ad;
