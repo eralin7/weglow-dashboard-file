@@ -2979,7 +2979,13 @@ async function loadFromSupabase() {
           MANAGERS[acc].sort((a,b) => b.budget - a.budget);
         }
       }
-      if (d.AD_SPEND)    AD_SPEND    = d.AD_SPEND;
+      if (d.AD_SPEND) {
+        AD_SPEND = {};
+        for (const [k,v] of Object.entries(d.AD_SPEND)) {
+          const nk = k.replace(/\uFFFD/g,'').includes('лаген') ? 'Коллаген' : k;
+          AD_SPEND[nk] = v;
+        }
+      }
       if (d.PLANS)       PLANS       = d.PLANS;
       if (d.CROSS_SALES) CROSS_SALES = d.CROSS_SALES;
       if (d.PRODUCTS)    PRODUCTS    = d.PRODUCTS;
