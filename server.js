@@ -246,11 +246,17 @@ async function syncAll() {
   }
   console.log(`[MGR_TO_ROP] ${Object.keys(MGR_TO_ROP).length} managers mapped to ROPs`);
 
-  // Preserve AD_SPEND, ROP_PLANS from previous data
-  let AD_SPEND = {}, ROP_PLANS = {};
-  try { const r = await sbGet('weglow_data?id=eq.1&select=data'); if (r[0]?.data?.AD_SPEND) AD_SPEND = r[0].data.AD_SPEND; if (r[0]?.data?.ROP_PLANS) ROP_PLANS = r[0].data.ROP_PLANS; } catch(e) {}
+  // Preserve AD_SPEND, ROP_PLANS, ARCHIVE from previous data
+  let AD_SPEND = {}, ROP_PLANS = {}, ARCHIVE_RAW = {}, ARCHIVE_MANAGERS = {};
+  try {
+    const r = await sbGet('weglow_data?id=eq.1&select=data');
+    if (r[0]?.data?.AD_SPEND) AD_SPEND = r[0].data.AD_SPEND;
+    if (r[0]?.data?.ROP_PLANS) ROP_PLANS = r[0].data.ROP_PLANS;
+    if (r[0]?.data?.ARCHIVE_RAW) ARCHIVE_RAW = r[0].data.ARCHIVE_RAW;
+    if (r[0]?.data?.ARCHIVE_MANAGERS) ARCHIVE_MANAGERS = r[0].data.ARCHIVE_MANAGERS;
+  } catch(e) {}
 
-  await sbSave({ RAW, MANAGERS, AD_SPEND, ROP_PLANS, MGR_TO_ROP, updatedAt: new Date().toISOString() });
+  await sbSave({ RAW, MANAGERS, AD_SPEND, ROP_PLANS, MGR_TO_ROP, ARCHIVE_RAW, ARCHIVE_MANAGERS, updatedAt: new Date().toISOString() });
 
   const elapsed = ((Date.now()-t0)/1000).toFixed(1);
   lastSync = new Date().toISOString();

@@ -2944,6 +2944,41 @@ async function loadFromSupabase() {
       // Reassign mutable globals
       if (d.RAW)      RAW      = d.RAW;
       if (d.MANAGERS) MANAGERS = d.MANAGERS;
+      // Merge archive data (old CRM before 01.04.2026) into RAW and MANAGERS
+      if (d.ARCHIVE_RAW) {
+        for (const [acc, daily] of Object.entries(d.ARCHIVE_RAW)) {
+          if (!RAW[acc]) RAW[acc] = {};
+          for (const [date, vals] of Object.entries(daily)) {
+            if (!RAW[acc][date]) RAW[acc][date] = vals;
+          }
+        }
+      }
+      if (d.ARCHIVE_MANAGERS) {
+        for (const [acc, archMgrs] of Object.entries(d.ARCHIVE_MANAGERS)) {
+          if (!MANAGERS[acc]) MANAGERS[acc] = [];
+          const liveMap = {};
+          MANAGERS[acc].forEach(m => { liveMap[m.name] = m; });
+          for (const am of archMgrs) {
+            if (liveMap[am.name]) {
+              // Merge archive daily into existing manager
+              const live = liveMap[am.name];
+              if (!live.daily) live.daily = {};
+              for (const [date, vals] of Object.entries(am.daily || {})) {
+                if (!live.daily[date]) live.daily[date] = vals;
+              }
+              live.leads += am.leads||0; live.deals += am.deals||0; live.budget += am.budget||0;
+              live.newDeals += am.newDeals||0; live.newBudget += am.newBudget||0;
+              live.baseDeals += am.baseDeals||0; live.baseBudget += am.baseBudget||0;
+              live.conv = live.leads>0 ? +(live.deals/live.leads*100).toFixed(1) : 0;
+              live.avgCheck = live.deals>0 ? Math.round(live.budget/live.deals) : 0;
+            } else {
+              // Add archive-only manager
+              MANAGERS[acc].push(am);
+            }
+          }
+          MANAGERS[acc].sort((a,b) => b.budget - a.budget);
+        }
+      }
       if (d.AD_SPEND)    AD_SPEND    = d.AD_SPEND;
       if (d.PLANS)       PLANS       = d.PLANS;
       if (d.CROSS_SALES) CROSS_SALES = d.CROSS_SALES;
