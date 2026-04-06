@@ -1291,7 +1291,7 @@ function doLogout(){
         <div class="card-hdr">
           <span class="card-title" id="chart-lbl">Динамика продаж по РОПам</span>
         </div>
-        <div class="chart-body"><canvas id="lineChart" height="200"></canvas></div>
+        <div class="chart-body"><canvas id="lineChart" height="120"></canvas></div>
       </div>
 
       <!-- Combined Leads & Deals chart -->
@@ -1306,7 +1306,7 @@ function doLogout(){
             <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Диас',this)">Диас</button>
           </div>
         </div>
-        <div class="chart-body"><canvas id="leadsDealsChart" height="180"></canvas></div>
+        <div class="chart-body"><canvas id="leadsDealsChart" height="110"></canvas></div>
       </div>
 
       <!-- Monthly Summary chart -->
@@ -1341,7 +1341,7 @@ function doLogout(){
             </div>
           </div>
         </div>
-        <div class="chart-body"><canvas id="summaryChart" height="220"></canvas></div>
+        <div class="chart-body"><canvas id="summaryChart" height="130"></canvas></div>
       </div>
       <!-- prod-stats removed -->
 
@@ -1405,15 +1405,14 @@ function doLogout(){
     <div id="view-rnp" class="rnp-view">
       <div class="view-hdr">
         <h2>РНП — Ежедневная история</h2>
-        <p id="rnp-sub">Все отделы</p>
+        <p id="rnp-sub">Все продукты</p>
       </div>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
         <div class="rnp-filters" id="rnp-filters">
           <button class="pill active" onclick="setRnpDept('all',this)">Все</button>
-          <button class="pill" onclick="setRnpDept('РОП Айдана',this)">Айдана</button>
-          <button class="pill" onclick="setRnpDept('РОП Аслиддин',this)">Аслиддин</button>
-          <button class="pill" onclick="setRnpDept('РОП Нурдаулет',this)">Нурдаулет</button>
-          <button class="pill" onclick="setRnpDept('РОП Диас',this)">Диас</button>
+          <button class="pill" onclick="setRnpDept('Коллаген',this)">Коллаген</button>
+          <button class="pill" onclick="setRnpDept('Ummi',this)">Ummi</button>
+          <button class="pill" onclick="setRnpDept('Грибы',this)">Грибы</button>
         </div>
         <button class="export-btn" onclick="exportRnp()">📥 Excel</button>
       </div>
@@ -1486,6 +1485,7 @@ let CROSS_SALES = (_loaded && _loaded.CROSS_SALES) ? _loaded.CROSS_SALES : {};
 let PRODUCTS    = (_loaded && _loaded.PRODUCTS)    ? _loaded.PRODUCTS    : {};
 let PLANS = _loaded && _loaded.PLANS ? _loaded.PLANS : {'col':{'03.2026':86000000,'02.2026':60000000,'01.2026':60000000,'12.2025':60000000,'11.2025':60000000,'10.2025':60000000},'ummi':{'03.2026':25000000,'02.2026':30000000,'01.2026':30000000,'12.2025':30000000,'11.2025':30000000}};
 let ROP_PLANS = (_loaded && _loaded.ROP_PLANS) ? _loaded.ROP_PLANS : {};
+let RNP_EXCEL = (_loaded && _loaded.RNP_EXCEL) ? _loaded.RNP_EXCEL : {};
 
 const PROD_CFG = {
   col:    {name:'Коллаген', color:'#1a56db', rawKey:'Коллаген', mgrKey:'Коллаген'},
@@ -2324,7 +2324,7 @@ function renderLine(stats){
     };
   }
 
-  chartLine=new Chart(ctx,{type:'line',data:{labels,datasets},options:{responsive:true,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:TICK,font:{family:FONT,size:11},boxWidth:10,padding:16}},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmt(c.raw)} ₸`}}},scales}});
+  chartLine=new Chart(ctx,{type:'line',data:{labels,datasets},options:{responsive:true,aspectRatio:8,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:TICK,font:{family:FONT,size:11},boxWidth:10,padding:16}},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmt(c.raw)} ₸`}}},scales}});
 }
 
 // ═══ LEADS + DEALS combined chart ═══
@@ -2361,7 +2361,7 @@ function renderLeadsDeals(stats){
   chartLeadsDeals=new Chart(ctx,{type:'line',data:{labels,datasets:[
     {label:'Лиды',data:leadsData,borderColor:'#6366f1',backgroundColor:'#6366f118',borderWidth:2,tension:.4,pointRadius:2,fill:true},
     {label:'Сделки',data:dealsData,borderColor:'#16a34a',backgroundColor:'#16a34a18',borderWidth:2,tension:.4,pointRadius:2,fill:true}
-  ]},options:{responsive:true,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:TICK,font:{family:FONT,size:11},boxWidth:10}},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.raw}`}}},scales:{x:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10},maxTicksLimit:16}},y:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10}}}}}});
+  ]},options:{responsive:true,aspectRatio:8,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:TICK,font:{family:FONT,size:11},boxWidth:10}},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.raw}`}}},scales:{x:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10},maxTicksLimit:16}},y:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10}}}}}});
 }
 
 // ═══ MONTHLY SUMMARY CHART ═══
@@ -2439,7 +2439,7 @@ function renderSummaryChart(){
 
   chartSummary=new Chart(ctx.getContext('2d'),{type:'bar',data:{labels,datasets:[{
     label:metricLabels[summaryMetric],data,backgroundColor:clr+'cc',borderColor:clr,borderWidth:1,borderRadius:6
-  }]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{
+  }]},options:{responsive:true,aspectRatio:8,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{
     if(summaryMetric==='budget') return ` ${fmt(c.raw)} ₸`;
     if(summaryMetric==='conv'||summaryMetric==='drr') return ` ${c.raw}%`;
     return ` ${fmt(c.raw)} ₸`;
@@ -2989,6 +2989,7 @@ async function loadFromSupabase() {
         rebuildRopGroups();
       }
       if (d.ROP_PLANS) ROP_PLANS = d.ROP_PLANS;
+      if (d.RNP_EXCEL) RNP_EXCEL = d.RNP_EXCEL;
       // Update badge
       const badge = document.getElementById('data-badge');
       if (badge && rows[0].updated_at) {
@@ -3975,43 +3976,22 @@ function setRnpDept(dept, el) {
 }
 function renderRnp() {
   const subEl=document.getElementById('rnp-sub');
-  if(subEl) subEl.textContent=activeRnpDept==='all'?'Все отделы':activeRnpDept;
+  if(subEl) subEl.textContent=activeRnpDept==='all'?'Все продукты':activeRnpDept;
 
-  // Collect ALL dates from RAW + filter by dept
+  const rnpDaily = RNP_EXCEL.daily || {};
+  const products = activeRnpDept==='all' ? Object.keys(rnpDaily) : [activeRnpDept];
+
+  // Collect all dates from selected products
   const allDates = new Set();
-  ['Коллаген','Ummi'].forEach(crm=>{
-    Object.keys(RAW[crm]||{}).forEach(d=>allDates.add(d));
-  });
+  products.forEach(p => { Object.keys(rnpDaily[p]||{}).forEach(d => allDates.add(d)); });
   const sortedDates=[...allDates].sort((a,b)=>parseDate(b)-parseDate(a));
 
   let tLeads=0,tDeals=0,tBudget=0,tAd=0;
   const rows=sortedDates.map(date=>{
-    let leads=0,deals=0,budget=0,ad=0;
-    const crms=activeRnpDept==='all'?['Коллаген','Ummi']:(ROP_CRM_MAP[activeRnpDept]||['Коллаген']);
-
-    crms.forEach(crm=>{
-      if(activeRnpDept==='all'){
-        const v=(RAW[crm]||{})[date]||[0,0,0];
-        leads+=v[0]; deals+=v[1]; budget+=v[2];
-        ad+=(AD_SPEND[crm]||{})[date]||0;
-      } else {
-        // Sum only managers in this ROP
-        (MANAGERS[crm]||[]).forEach(m=>{
-          if(getRop(m.name)!==activeRnpDept) return;
-          if(m.daily&&m.daily[date]){
-            leads+=m.daily[date][0]||0; deals+=m.daily[date][1]||0; budget+=m.daily[date][2]||0;
-          }
-        });
-        // Proportional ad spend
-        const totalAd=(AD_SPEND[crm]||{})[date]||0;
-        if(totalAd>0){
-          let crmLeads=0,ropLeads=0;
-          (MANAGERS[crm]||[]).forEach(m=>{
-            if(m.daily&&m.daily[date]){crmLeads+=m.daily[date][0]||0; if(getRop(m.name)===activeRnpDept) ropLeads+=m.daily[date][0]||0;}
-          });
-          ad+=crmLeads>0?Math.round(totalAd*ropLeads/crmLeads):0;
-        }
-      }
+    let budget=0,leads=0,ad=0,deals=0;
+    products.forEach(p => {
+      const v = (rnpDaily[p]||{})[date];
+      if(v){ budget+=v[0]; leads+=v[1]; ad+=v[2]; deals+=v[3]; }
     });
 
     tLeads+=leads; tDeals+=deals; tBudget+=budget; tAd+=ad;
@@ -4035,7 +4015,6 @@ function renderRnp() {
 
   document.getElementById('rnp-tbody').innerHTML=rows;
 
-  // Totals
   const tCpl=tLeads>0?Math.round(tAd/tLeads):0;
   const tDrr=tBudget>0?+(tAd/tBudget*100).toFixed(1):0;
   const tConv=tLeads>0?+(tDeals/tLeads*100).toFixed(1):0;
