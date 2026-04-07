@@ -2051,8 +2051,13 @@ function renderPlanTable(stats){
 
     let rTotPlan=0,rTotFact=0,rTotLeads=0,rTotDeals=0,rTotAd=0;
 
+    // Historical-only groups: hide if period starts after their cutoff
+    const _historyCutoff = new Date(2026, 2, 23); // March 23
+    const _historyGroups = new Set(['РОП Ербол', 'РОП Диас']);
+
     for (const [ropName, ropCfg] of Object.entries(ROP_GROUPS)) {
       if (ropName === 'all') continue;
+      if (_historyGroups.has(ropName) && _fromD > _historyCutoff) continue;
       const ropCrms = ROP_CRM_MAP[ropName] || [];
       if (selectedProdName && !ropCrms.includes(selectedProdName)) continue;
       const crms = selectedProdName ? ropCrms.filter(c=>c===selectedProdName) : ropCrms;
@@ -2232,8 +2237,13 @@ function renderRopKPI(stats) {
 
   let html = '<div class="rop-section-label">Показатели по группам</div><div class="kpi-grid rop-grid">';
 
+  const _hCutoff = new Date(2026, 2, 23);
+  const _hGroups = new Set(['РОП Ербол', 'РОП Диас']);
+  const _kpiFromD = parseDate(from);
+
   for (const [ropName, ropCfg] of Object.entries(ROP_GROUPS)) {
     if (ropName === 'all') continue;
+    if (_hGroups.has(ropName) && _kpiFromD > _hCutoff) continue;
     const ropCrms = ROP_CRM_MAP[ropName] || [];
 
     // Skip ROPs that don't work in the selected product's CRM
@@ -2349,8 +2359,13 @@ function renderLine(stats){
   const datasets=[];
 
   // Build daily budget per ROP group
+  const _chCutoff = new Date(2026, 2, 23);
+  const _chGroups = new Set(['РОП Ербол', 'РОП Диас']);
+  const _chFromD = parseDate(from);
+
   for(const [ropName,ropCfg] of Object.entries(ROP_GROUPS)){
     if(ropName==='all') continue;
+    if(_chGroups.has(ropName) && _chFromD > _chCutoff) continue;
     const ropCrms = ROP_CRM_MAP[ropName]||[];
     const selectedProdName = activeProd==='all'?null:(PROD_CFG[activeProd]?.rawKey||null);
     const crms = selectedProdName ? ropCrms.filter(c=>c===selectedProdName) : ropCrms;
