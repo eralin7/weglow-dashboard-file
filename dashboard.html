@@ -1695,8 +1695,26 @@ function convCls(v){return v>=12?'txt-g':v>=8?'txt-y':'txt-r';}
 function pctBg(v){return v>=80?'bg-g':v>=50?'bg-y':'bg-r';}
 
 // ═══════════════════ AGGREGATE ════════════════════════════════════
+// Virtual CRM siblings: aggregate() merges these with the main CRM RAW
+const _VIRTUAL_CRMS = { 'Коллаген': ['Диас'], 'Ummi': ['Ербол'] };
+function _mergedRaw(mainKey) {
+  const main = RAW[mainKey] || {};
+  const siblings = _VIRTUAL_CRMS[mainKey] || [];
+  if (!siblings.length) return main;
+  // Merge: sum values from virtual CRMs into main
+  const merged = {};
+  const allKeys = new Set(Object.keys(main));
+  siblings.forEach(s => Object.keys(RAW[s]||{}).forEach(k => allKeys.add(k)));
+  for (const d of allKeys) {
+    const v = main[d] || [0,0,0];
+    let l=v[0], de=v[1], b=v[2];
+    siblings.forEach(s => { const sv=(RAW[s]||{})[d]; if(sv){l+=sv[0]||0;de+=sv[1]||0;b+=sv[2]||0;} });
+    merged[d] = [l, de, b];
+  }
+  return merged;
+}
 function aggregate(pk,from,to){
-  const raw=RAW[PROD_CFG[pk].rawKey]||{};
+  const raw=_mergedRaw(PROD_CFG[pk].rawKey);
   const dates=getDatesInRange(from,to);
   let leads=0,deals=0,budget=0;
   const dl={labels:[],leads:[],deals:[],budget:[]};
@@ -3131,7 +3149,7 @@ async function loadFromSupabase() {
       const remainKollagen = [];
       for (const m of (MANAGERS['Коллаген'] || [])) {
         const mgrRop = getRop(m.name);
-        if (mgrRop !== 'РОП Диас') { remainKollagen.push(m); continue; }
+        if (mgrRop !== 'РОП Диас' && mgrRop !== 'РОП Диас KIDS') { remainKollagen.push(m); continue; }
         const diasDaily = {}, afterDaily = {};
         for (const [date, vals] of Object.entries(m.daily || {})) {
           const [dd,mm,yy] = date.split('.').map(Number);
@@ -3681,7 +3699,7 @@ function renderAlerts(stats) {
     // 4. Нет сделок сегодня (только текущий месяц)
     if (d.isCurrentMonth && activePeriod.preset) {
       const todayStr = (() => { const t=new Date(); return `${String(t.getDate()).padStart(2,'0')}.${String(t.getMonth()+1).padStart(2,'0')}.${t.getFullYear()}`; })();
-      const raw = RAW[PROD_CFG[k].rawKey] || {};
+      const raw = _mergedRaw(PROD_CFG[k].rawKey);
       const todayDeals = raw[todayStr] ? raw[todayStr][1] : 0;
       if (todayDeals === 0 && now.getHours() >= 14) {
         alerts.push({ type:'info', icon:'ℹ️', color:'#1a56db', bg:'#e8f0fe',
@@ -3790,7 +3808,7 @@ function renderHeatmap() {
 
   const keys = activeProd === 'all' ? ['col','ummi'] : [activeProd];
   keys.forEach(k => {
-    const raw = RAW[PROD_CFG[k].rawKey] || {};
+    const raw = _mergedRaw(PROD_CFG[k].rawKey);
     Object.entries(raw).forEach(([d, v]) => {
       dailyData[d] = (dailyData[d] || 0) + (v[2] || 0);
     });
