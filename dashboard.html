@@ -1283,6 +1283,21 @@ function doLogout(){
         <p id="main-sub">Февраль 2026 · Все продукты</p>
       </div>
       <div class="kpi-3col" id="kpi-3col"></div>
+
+      <!-- AI Advisor Card -->
+      <div class="card mb24" id="ai-advisor-card" style="border-left:4px solid #7c3aed;position:relative">
+        <div class="card-hdr" style="align-items:flex-start">
+          <span class="card-title" style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:20px">🤖</span> ИИ-советник
+            <span id="ai-advisor-time" style="font-size:11px;color:var(--muted);font-weight:400"></span>
+          </span>
+          <button onclick="loadAiAdvice(true)" style="background:none;border:1px solid #e5e7eb;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:12px;color:var(--muted)" id="ai-refresh-btn">Обновить</button>
+        </div>
+        <div id="ai-advisor-body" style="padding:4px 24px 16px;font-size:14px;line-height:1.6;color:var(--text)">
+          <span style="color:var(--muted)">Загрузка рекомендаций...</span>
+        </div>
+      </div>
+
       <div class="sec-label mb20">Выполнение плана по группам</div>
       <div class="card mb24" style="overflow-x:auto;-webkit-overflow-scrolling:touch">
         <div id="plan-table" style="min-width:900px"></div>
@@ -3982,6 +3997,101 @@ function closeMgrModal() {
 
 // ── Keep Render alive + auto-refresh data every 60s ──────────
 const RENDER_URL = 'https://weglow-autosync.onrender.com';
+
+// ═══════════════════ AI ADVISOR ══════════════════════════════════
+let _aiLastLoad = 0;
+const AI_INTERVAL = 60 * 60 * 1000; // 1 hour
+
+function _collectMetrics() {
+  const monthP = _getKpiPeriod('month');
+  const md = _aggregateForKpi(monthP);
+  const yestP = _getKpiPeriod('yesterday');
+  const yd = _aggregateForKpi(yestP);
+  const drr = md.budget ? +(md.adTotal/md.budget*100).toFixed(1) : 0;
+  const cpl = md.cplMonth || 0;
+
+  // ROP breakdown
+  let ropLines = '';
+  for (const [ropName, ropCfg] of Object.entries(ROP_GROUPS)) {
+    if (ropName === 'all') continue;
+    const ropCrms = ROP_CRM_MAP[ropName] || [];
+    let rLeads=0,rDeals=0,rBudget=0;
+    const dates = getDatesInRange(monthP.from, monthP.to);
+    ropCrms.forEach(crm => {
+      (MANAGERS[crm]||[]).forEach(m => {
+        if(getRop(m.name)!==ropName) return;
+        dates.forEach(date => {
+          if(m.daily&&m.daily[date]){
+            rLeads+=m.daily[date][0]||0; rDeals+=m.daily[date][1]||0; rBudget+=m.daily[date][2]||0;
+          }
+        });
+      });
+    });
+    const rPlan = (ROP_PLANS[ropName]&&ROP_PLANS[ropName][getMonthKey(new Date())])||0;
+    if(rLeads||rDeals||rBudget||rPlan) {
+      const rConv = rLeads>0 ? +(rDeals/rLeads*100).toFixed(1) : 0;
+      ropLines += `\n- ${ropName}: план ${rPlan?fmt(rPlan)+'₸':'—'}, факт ${fmt(rBudget)}₸, лидов ${rLeads}, сделок ${rDeals}, конв ${rConv}%`;
+    }
+  }
+
+  return `Период: ${monthP.from} — ${monthP.to}
+Месяц: продажи ${fmt(md.budget)}₸, лидов ${md.leads}, сделок ${md.deals}, конверсия ${md.conv}%, средний чек ${fmt(md.avgCheck)}₸
+План: ${md.plan ? fmt(md.plan)+'₸' : 'не установлен'}, выполнение ${md.plan ? Math.round(md.budget/md.plan*100)+'%' : '—'}
+ДРР: ${drr}%, расход на рекламу ${fmt(md.adTotal)}₸, стоимость лида ${cpl?fmt(cpl)+'₸':'—'}
+Вчера: продажи ${fmt(yd.budget)}₸, лидов ${yd.leads}, сделок ${yd.deals}
+Группы:${ropLines}`;
+}
+
+async function loadAiAdvice(force) {
+  const body = document.getElementById('ai-advisor-body');
+  const timeEl = document.getElementById('ai-advisor-time');
+  if (!body) return;
+
+  // Check local cache
+  const cached = localStorage.getItem('wg_ai_advice');
+  if (cached && !force) {
+    try {
+      const c = JSON.parse(cached);
+      if (Date.now() - c.ts < AI_INTERVAL) {
+        body.innerHTML = c.html;
+        timeEl.textContent = 'обновлено ' + new Date(c.ts).toLocaleString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+        return;
+      }
+    } catch(e) {}
+  }
+
+  body.innerHTML = '<span style="color:var(--muted)">⏳ Анализирую данные...</span>';
+  try {
+    const metrics = _collectMetrics();
+    const res = await fetch(RENDER_URL + '/ai-advice', {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain'},
+      body: metrics
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    // Convert markdown-like bullets to HTML
+    const html = data.advice
+      .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+      .replace(/^[-•]\s*/gm, '')
+      .split('\n')
+      .filter(l => l.trim())
+      .map(l => `<div style="margin-bottom:8px;padding-left:20px;position:relative"><span style="position:absolute;left:0;color:#7c3aed">▸</span>${l}</div>`)
+      .join('');
+    body.innerHTML = html;
+    const ts = data.ts || Date.now();
+    timeEl.textContent = 'обновлено ' + new Date(ts).toLocaleString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+    localStorage.setItem('wg_ai_advice', JSON.stringify({ html, ts }));
+  } catch(e) {
+    console.error('[AI Advice]', e);
+    body.innerHTML = `<span style="color:var(--muted)">Не удалось загрузить рекомендации</span>`;
+  }
+}
+
+// Auto-load on start (after data loaded) and every hour
+setTimeout(() => loadAiAdvice(false), 3000);
+setInterval(() => loadAiAdvice(true), AI_INTERVAL);
 
 async function pingRender() {
   try {
