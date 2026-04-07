@@ -24,6 +24,7 @@ function sbFetch(path, opts = {}) {
       }
     };
     const req = https.request(options, res => {
+      res.setEncoding('utf8');
       let data = '';
       res.on('data', c => data += c);
       res.on('end', () => {
@@ -32,7 +33,7 @@ function sbFetch(path, opts = {}) {
       });
     });
     req.on('error', reject);
-    if (opts.body) req.write(opts.body);
+    if (opts.body) req.write(opts.body, 'utf8');
     req.end();
   });
 }
@@ -178,8 +179,9 @@ async function main() {
 
   console.log('[AI Advisor] Advice:\n' + advice);
 
-  // 4. Save to Supabase — merge AI_ADVICE into existing data
-  const currentData = rows[0].data;
+  // 4. Save to Supabase — re-read fresh data to avoid stale/corrupted overwrites
+  const freshRows = await sbFetch('weglow_data?id=eq.1&select=data', {});
+  const currentData = freshRows[0].data;
   currentData.AI_ADVICE = { text: advice, ts: Date.now() };
 
   const patchBody = JSON.stringify({ data: currentData, updated_at: new Date().toISOString() });
