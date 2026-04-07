@@ -1236,7 +1236,6 @@ function doLogout(){
       <button class="pill rop-pill" onclick="setMgrRop('РОП Айдана',this)">Айдана</button>
       <button class="pill rop-pill" onclick="setMgrRop('РОП Аслиддин',this)">Аслиддин</button>
       <button class="pill rop-pill" onclick="setMgrRop('РОП Нурдаулет',this)">Нурдаулет</button>
-      <button class="pill rop-pill" onclick="setMgrRop('РОП Диас',this)">Диас</button>
       <button class="pill rop-pill" onclick="setMgrRop('РОП Ербол',this)">Ербол</button>
       <button class="pill rop-pill" onclick="setMgrRop('РОП Айдана KIDS',this)">Айдана KIDS</button>
       <button class="pill rop-pill" onclick="setMgrRop('РОП Диас KIDS',this)">Диас KIDS</button>
@@ -1321,7 +1320,6 @@ function doLogout(){
             <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Айдана',this)">Айдана</button>
             <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Аслиддин',this)">Аслиддин</button>
             <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Нурдаулет',this)">Нурдаулет</button>
-            <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Диас',this)">Диас</button>
             <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Ербол',this)">Ербол</button>
             <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Айдана KIDS',this)">Айдана KIDS</button>
             <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Диас KIDS',this)">Диас KIDS</button>
@@ -1344,7 +1342,6 @@ function doLogout(){
               <button class="cf-btn" onclick="setSummaryDept('РОП Айдана',this)">Айдана</button>
               <button class="cf-btn" onclick="setSummaryDept('РОП Аслиддин',this)">Аслиддин</button>
               <button class="cf-btn" onclick="setSummaryDept('РОП Нурдаулет',this)">Нурдаулет</button>
-              <button class="cf-btn" onclick="setSummaryDept('РОП Диас',this)">Диас</button>
               <button class="cf-btn" onclick="setSummaryDept('РОП Ербол',this)">Ербол</button>
               <button class="cf-btn" onclick="setSummaryDept('РОП Айдана KIDS',this)">Айдана KIDS</button>
               <button class="cf-btn" onclick="setSummaryDept('РОП Диас KIDS',this)">Диас KIDS</button>
@@ -1554,17 +1551,15 @@ let ROP_GROUPS = {
   'РОП Айдана':       { label: 'РОП Айдана',      color: '#1a56db' },
   'РОП Аслиддин':     { label: 'РОП Аслиддин',    color: '#b45309' },
   'РОП Нурдаулет':    { label: 'РОП Нурдаулет',   color: '#0a7c5c' },
-  'РОП Диас':         { label: 'РОП Диас',         color: '#9333ea' },
   'РОП Ербол':        { label: 'РОП Ербол',       color: '#e11d48' },
   'РОП Айдана KIDS':  { label: 'РОП Айдана KIDS', color: '#7c3aed' },
   'РОП Диас KIDS':    { label: 'РОП Диас KIDS',   color: '#db2777' },
 };
-const ROP_COLORS = {'РОП Айдана':'#1a56db','РОП Аслиддин':'#b45309','РОП Нурдаулет':'#0a7c5c','РОП Диас':'#9333ea','РОП Ербол':'#e11d48','РОП Айдана KIDS':'#7c3aed','РОП Диас KIDS':'#db2777'};
+const ROP_COLORS = {'РОП Айдана':'#1a56db','РОП Аслиддин':'#b45309','РОП Нурдаулет':'#0a7c5c','РОП Ербол':'#e11d48','РОП Айдана KIDS':'#7c3aed','РОП Диас KIDS':'#db2777'};
 const ROP_CRM_MAP = {
   'РОП Айдана':       ['Коллаген'],
   'РОП Аслиддин':     ['Коллаген'],
   'РОП Нурдаулет':    ['Коллаген'],
-  'РОП Диас':         ['Диас'],    // Коллаген data — пока пусто (до 23.03)
   'РОП Ербол':        ['Ербол'],   // Ummi data ≤ 23.03.2026 (split at load time)
   'РОП Айдана KIDS':  ['Ummi'],    // Ummi data ≥ 24.03.2026
   'РОП Диас KIDS':    ['Ummi'],    // KIDS pipeline (weglow.amocrm.ru) ≥ 24.03.2026
@@ -1573,7 +1568,7 @@ function rebuildRopGroups() {
   // Rebuild ROP_GROUPS from MGR_TO_ROP data + always include fixed groups
   const ropSet = new Set(Object.values(MGR_TO_ROP));
   // Always include these groups even if not in MGR_TO_ROP
-  ['РОП Диас', 'РОП Ербол', 'РОП Айдана KIDS', 'РОП Диас KIDS'].forEach(r => ropSet.add(r));
+  ['РОП Ербол', 'РОП Айдана KIDS', 'РОП Диас KIDS'].forEach(r => ropSet.add(r));
   ROP_GROUPS = { 'all': { label: 'Все', color: '#6366f1' } };
   for (const rop of [...ropSet].sort()) {
     if (rop.includes('\ufffd')) continue; // skip corrupted entries
@@ -1621,7 +1616,6 @@ function clearRopCache() { Object.keys(_ropCache).forEach(k => delete _ropCache[
 // KIDS groups also match parent ROP; Ербол/Диас virtual CRMs — all managers belong (data pre-filtered by date)
 function ropMatches(mgrName, targetRop) {
   if (targetRop === 'РОП Ербол') return true;     // Ербол CRM: all Ummi managers pre-24.03
-  if (targetRop === 'РОП Диас') return true;      // Диас CRM: пока пусто (до 23.03)
   const mgrRop = getRop(mgrName);
   if (mgrRop === targetRop) return true;
   if (targetRop.endsWith(' KIDS')) return mgrRop === targetRop.replace(' KIDS', '');
@@ -1696,7 +1690,7 @@ function pctBg(v){return v>=80?'bg-g':v>=50?'bg-y':'bg-r';}
 
 // ═══════════════════ AGGREGATE ════════════════════════════════════
 // Virtual CRM siblings: aggregate() merges these with the main CRM RAW
-const _VIRTUAL_CRMS = { 'Коллаген': ['Диас'], 'Ummi': ['Ербол'] };
+const _VIRTUAL_CRMS = { 'Ummi': ['Ербол'] };
 function _mergedRaw(mainKey) {
   const main = RAW[mainKey] || {};
   const siblings = _VIRTUAL_CRMS[mainKey] || [];
@@ -2425,7 +2419,7 @@ function renderLeadsDeals(stats){
   const leadsData=[], dealsData=[];
   dateList.forEach(date=>{
     let dayLeads=0,dayDeals=0;
-    const crms=activeProd==='all'?['Коллаген','Ummi','Ербол','Диас']:activeProd==='ummi'?['Ummi','Ербол']:activeProd==='collagen'?['Коллаген','Диас']:[PROD_CFG[activeProd]?.rawKey].filter(Boolean);
+    const crms=activeProd==='all'?['Коллаген','Ummi','Ербол']:activeProd==='ummi'?['Ummi','Ербол']:activeProd==='collagen'?['Коллаген']:[PROD_CFG[activeProd]?.rawKey].filter(Boolean);
     crms.forEach(crm=>{
       if(activeLeadsDealsFilter==='all'){
         const v=(RAW[crm]||{})[date]||[0,0,0];
@@ -2457,7 +2451,7 @@ function renderSummaryChart(){
 
   // Get all months from RAW data
   const monthSet=new Set();
-  ['Коллаген','Ummi','Ербол','Диас'].forEach(crm=>{
+  ['Коллаген','Ummi','Ербол'].forEach(crm=>{
     Object.keys(RAW[crm]||{}).forEach(d=>{
       const parts=d.split('.');
       if(parts.length===3) monthSet.add(parts[1]+'.'+parts[2]);
@@ -2481,7 +2475,7 @@ function renderSummaryChart(){
     const dateList=getDatesInRange(mStart,mEnd);
 
     // Filter by product
-    const crms=summaryProd==='all'?['Коллаген','Ummi','Ербол','Диас']:[summaryProd];
+    const crms=summaryProd==='all'?['Коллаген','Ummi','Ербол']:[summaryProd];
     let leads=0,deals=0,budget=0,adSpend=0;
 
     dateList.forEach(date=>{
@@ -3103,7 +3097,7 @@ async function loadFromSupabase() {
             if (lower.includes('айдана')) MGR_TO_ROP[k] = 'РОП Айдана';
             else if (lower.includes('аслиддин')) MGR_TO_ROP[k] = 'РОП Аслиддин';
             else if (lower.includes('нурдаулет')) MGR_TO_ROP[k] = 'РОП Нурдаулет';
-            else if (lower.includes('диас')) MGR_TO_ROP[k] = 'РОП Диас';
+            else if (lower.includes('диас')) MGR_TO_ROP[k] = 'РОП Диас KIDS';
             else delete MGR_TO_ROP[k];
           }
         }
@@ -3173,53 +3167,6 @@ async function loadFromSupabase() {
         else kidsRaw[date] = vals;
       }
       RAW['Ummi'] = kidsRaw;
-
-      // ── Split Коллаген for РОП Диас: ≥ 24.03.2026 → Диас, ≤ 23.03 stays Коллаген ──
-      const _diasCutoff = new Date(2026, 2, 23); // March 23 inclusive (stays in Коллаген)
-      MANAGERS['Диас'] = [];
-      const remainKollagen = [];
-      for (const m of (MANAGERS['Коллаген'] || [])) {
-        const mgrRop = getRop(m.name);
-        if (mgrRop !== 'РОП Диас' && mgrRop !== 'РОП Диас KIDS') { remainKollagen.push(m); continue; }
-        const beforeDaily = {}, diasDaily = {};
-        for (const [date, vals] of Object.entries(m.daily || {})) {
-          const [dd,mm,yy] = date.split('.').map(Number);
-          const dt = new Date(yy, mm-1, dd);
-          if (dt <= _diasCutoff) beforeDaily[date] = vals; // ≤ 23.03 stays in Коллаген
-          else diasDaily[date] = vals; // ≥ 24.03 goes to РОП Диас
-        }
-        if (Object.keys(diasDaily).length) {
-          let l=0,d=0,b=0;
-          for (const v of Object.values(diasDaily)) { l+=v[0]||0; d+=v[1]||0; b+=v[2]||0; }
-          MANAGERS['Диас'].push({ name: m.name, leads:l, deals:d, budget:b,
-            conv: l>0 ? +(d/l*100).toFixed(1) : 0, avgCheck: d>0 ? Math.round(b/d) : 0, daily: diasDaily });
-        }
-        if (Object.keys(beforeDaily).length) {
-          let l=0,d=0,b=0;
-          for (const v of Object.values(beforeDaily)) { l+=v[0]||0; d+=v[1]||0; b+=v[2]||0; }
-          remainKollagen.push({ name: m.name, leads:l, deals:d, budget:b,
-            conv: l>0 ? +(d/l*100).toFixed(1) : 0, avgCheck: d>0 ? Math.round(b/d) : 0, daily: beforeDaily });
-        }
-      }
-      MANAGERS['Коллаген'] = remainKollagen;
-      MANAGERS['Диас'].sort((a,b) => b.budget - a.budget);
-      // Build RAW['Диас'] from managers daily and subtract from RAW['Коллаген']
-      RAW['Диас'] = {};
-      for (const m of MANAGERS['Диас']) {
-        for (const [date, vals] of Object.entries(m.daily || {})) {
-          if (!RAW['Диас'][date]) RAW['Диас'][date] = [0,0,0];
-          RAW['Диас'][date][0] += vals[0]||0;
-          RAW['Диас'][date][1] += vals[1]||0;
-          RAW['Диас'][date][2] += vals[2]||0;
-        }
-      }
-      for (const [date, vals] of Object.entries(RAW['Диас'])) {
-        if (RAW['Коллаген'] && RAW['Коллаген'][date]) {
-          RAW['Коллаген'][date][0] = Math.max(0, RAW['Коллаген'][date][0] - vals[0]);
-          RAW['Коллаген'][date][1] = Math.max(0, RAW['Коллаген'][date][1] - vals[1]);
-          RAW['Коллаген'][date][2] = Math.max(0, RAW['Коллаген'][date][2] - vals[2]);
-        }
-      }
 
       clearRopCache();
       rebuildRopGroups();
