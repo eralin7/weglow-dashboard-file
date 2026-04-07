@@ -2397,8 +2397,9 @@ function renderSummaryChart(){
     return (parseInt(ay)*12+parseInt(am))-(parseInt(by)*12+parseInt(bm));
   }).slice(-6); // last 6 months
 
+  const _monthNames=['','Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
   const labels=months.map(mk=>{
-    const [mm,yy]=mk.split('.'); return `${mm}.${yy.slice(2)}`;
+    const [mm,yy]=mk.split('.'); return `${_monthNames[parseInt(mm)]} ${yy}`;
   });
 
   const data=months.map(mk=>{
