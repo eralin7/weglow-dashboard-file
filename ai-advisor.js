@@ -4,7 +4,7 @@
 // Schedule: every hour via Windows Task Scheduler
 
 const https = require('https');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 const SUPABASE_URL = 'https://bdyakgmeibpdkisbiykt.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkeWFrZ21laWJwZGtpc2JpeWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTQzOTMsImV4cCI6MjA4Nzc5MDM5M30.nA187grJR6XFQRmTP6WOM-6-1dZK1EzYNNP2JH9aAMg';
@@ -102,7 +102,16 @@ async function main() {
   for (const [crm, mgrs] of Object.entries(MANAGERS)) {
     for (const m of mgrs) {
       if (!m.daily) continue;
-      const rop = MGR_TO_ROP[m.name] || 'unknown';
+      let rop = MGR_TO_ROP[m.name] || 'unknown';
+      // Fix corrupted encoding entries
+      if (rop.includes('\ufffd')) {
+        const clean = rop.replace(/\ufffd+/g, '').toLowerCase().trim();
+        if (clean.includes('айдана')) rop = 'РОП Айдана';
+        else if (clean.includes('аслиддин')) rop = 'РОП Аслиддин';
+        else if (clean.includes('нурдаулет')) rop = 'РОП Нурдаулет';
+        else if (clean.includes('диас')) rop = 'РОП Диас';
+        else rop = 'unknown';
+      }
       if (!ropStats[rop]) ropStats[rop] = { leads:0, deals:0, budget:0 };
 
       for (const date of dates) {
@@ -155,10 +164,12 @@ async function main() {
 
   let advice;
   try {
-    advice = execSync(`echo ${JSON.stringify(prompt)} | claude --print`, {
+    // Use execFileSync with input to pass UTF-8 prompt via stdin (no shell encoding issues)
+    advice = execFileSync('claude', ['--print'], {
       encoding: 'utf-8',
       timeout: 120000,
-      shell: true
+      input: prompt,
+      windowsHide: true
     }).trim();
   } catch (e) {
     console.error('[AI Advisor] Claude CLI error:', e.message);
