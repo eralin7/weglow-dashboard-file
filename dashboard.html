@@ -1567,7 +1567,7 @@ const ROP_CRM_MAP = {
   'РОП Диас':         ['Диас'],    // Коллаген data — пока пусто (до 23.03)
   'РОП Ербол':        ['Ербол'],   // Ummi data ≤ 23.03.2026 (split at load time)
   'РОП Айдана KIDS':  ['Ummi'],    // Ummi data ≥ 24.03.2026
-  'РОП Диас KIDS':    ['Диас'],    // Коллаген data ≥ 24.03.2026 (split at load time)
+  'РОП Диас KIDS':    ['Ummi'],    // KIDS pipeline (weglow.amocrm.ru) ≥ 24.03.2026
 };
 function rebuildRopGroups() {
   // Rebuild ROP_GROUPS from MGR_TO_ROP data + always include fixed groups
@@ -1622,7 +1622,6 @@ function clearRopCache() { Object.keys(_ropCache).forEach(k => delete _ropCache[
 function ropMatches(mgrName, targetRop) {
   if (targetRop === 'РОП Ербол') return true;     // Ербол CRM: all Ummi managers pre-24.03
   if (targetRop === 'РОП Диас') return true;      // Диас CRM: пока пусто (до 23.03)
-  if (targetRop === 'РОП Диас KIDS') return true;  // Диас CRM: Коллаген data ≥ 24.03, all managers belong
   const mgrRop = getRop(mgrName);
   if (mgrRop === targetRop) return true;
   if (targetRop.endsWith(' KIDS')) return mgrRop === targetRop.replace(' KIDS', '');
