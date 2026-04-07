@@ -3106,7 +3106,7 @@ async function loadFromSupabase() {
       MANAGERS['Ummi'].sort((a,b) => b.budget - a.budget);
 
       // ── Split Ummi by date: ≤ 23.04.2026 → Ербол, ≥ 24.04.2026 → Ummi (KIDS) ──
-      const _erbolCutoff = new Date(2026, 3, 23); // April 23 inclusive
+      const _erbolCutoff = new Date(2026, 2, 23); // March 23 inclusive
       MANAGERS['Ербол'] = [];
       const kidsUmmi = [];
       for (const m of (MANAGERS['Ummi'] || [])) {
@@ -3144,7 +3144,7 @@ async function loadFromSupabase() {
       RAW['Ummi'] = kidsRaw;
 
       // ── Split Коллаген for РОП Диас: ≤ 23.04.2026 → Диас, rest stays Коллаген ──
-      const _diasCutoff = new Date(2026, 3, 23); // April 23 inclusive
+      const _diasCutoff = new Date(2026, 2, 23); // March 23 inclusive
       MANAGERS['Диас'] = [];
       const remainKollagen = [];
       for (const m of (MANAGERS['Коллаген'] || [])) {
