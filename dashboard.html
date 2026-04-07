@@ -2981,12 +2981,14 @@ async function loadFromSupabase() {
       // Reassign mutable globals
       if (d.RAW)      RAW      = d.RAW;
       if (d.MANAGERS) MANAGERS = d.MANAGERS;
-      // Merge archive data (old CRM before 01.04.2026) into RAW and MANAGERS
+      // Merge archive data (backup ≤ 31.03.2026) into RAW and MANAGERS
+      // Archive OVERWRITES live for dates ≤ 31.03.2026 (live data is incomplete due to pipeline split)
+      const _isArchiveDate = dt => { const [dd,mm,yy]=dt.split('.').map(Number); return yy<2026||(yy===2026&&mm<4); };
       if (d.ARCHIVE_RAW) {
         for (const [acc, daily] of Object.entries(d.ARCHIVE_RAW)) {
           if (!RAW[acc]) RAW[acc] = {};
           for (const [date, vals] of Object.entries(daily)) {
-            if (!RAW[acc][date]) RAW[acc][date] = vals;
+            RAW[acc][date] = vals; // archive always wins for historical dates
           }
         }
       }
@@ -2997,17 +2999,19 @@ async function loadFromSupabase() {
           MANAGERS[acc].forEach(m => { liveMap[m.name] = m; });
           for (const am of archMgrs) {
             if (liveMap[am.name]) {
-              // Merge archive daily into existing manager
+              // Merge: archive wins for dates ≤ March, live wins for April+
               const live = liveMap[am.name];
               if (!live.daily) live.daily = {};
               for (const [date, vals] of Object.entries(am.daily || {})) {
-                if (!live.daily[date]) live.daily[date] = vals;
+                if (_isArchiveDate(date)) live.daily[date] = vals; // archive overwrites
+                else if (!live.daily[date]) live.daily[date] = vals; // fill gaps only
               }
-              live.leads += am.leads||0; live.deals += am.deals||0; live.budget += am.budget||0;
-              live.newDeals += am.newDeals||0; live.newBudget += am.newBudget||0;
-              live.baseDeals += am.baseDeals||0; live.baseBudget += am.baseBudget||0;
-              live.conv = live.leads>0 ? +(live.deals/live.leads*100).toFixed(1) : 0;
-              live.avgCheck = live.deals>0 ? Math.round(live.budget/live.deals) : 0;
+              // Recalculate totals from merged daily
+              let tl=0,td=0,tb=0;
+              for (const vals of Object.values(live.daily)) { tl+=vals[0]||0; td+=vals[1]||0; tb+=vals[2]||0; }
+              live.leads=tl; live.deals=td; live.budget=tb;
+              live.conv = tl>0 ? +(td/tl*100).toFixed(1) : 0;
+              live.avgCheck = td>0 ? Math.round(tb/td) : 0;
             } else {
               // Add archive-only manager
               MANAGERS[acc].push(am);
