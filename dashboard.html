@@ -1237,6 +1237,8 @@ function doLogout(){
       <button class="pill rop-pill" onclick="setMgrRop('РОП Аслиддин',this)">Аслиддин</button>
       <button class="pill rop-pill" onclick="setMgrRop('РОП Нурдаулет',this)">Нурдаулет</button>
       <button class="pill rop-pill" onclick="setMgrRop('РОП Диас',this)">Диас</button>
+      <button class="pill rop-pill" onclick="setMgrRop('РОП Айдана KIDS',this)">Айдана KIDS</button>
+      <button class="pill rop-pill" onclick="setMgrRop('РОП Диас KIDS',this)">Диас KIDS</button>
       <div class="pill-sep" id="prod-sub-sep" style="display:none"></div>
       <span class="tb-label" id="prod-sub-label" style="display:none">Продукт:</span>
       <div id="prod-sub-pills" style="display:contents"></div>
@@ -1304,6 +1306,8 @@ function doLogout(){
             <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Аслиддин',this)">Аслиддин</button>
             <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Нурдаулет',this)">Нурдаулет</button>
             <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Диас',this)">Диас</button>
+            <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Айдана KIDS',this)">Айдана KIDS</button>
+            <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Диас KIDS',this)">Диас KIDS</button>
           </div>
         </div>
         <div class="chart-body"><canvas id="leadsDealsChart" height="110"></canvas></div>
@@ -1324,6 +1328,8 @@ function doLogout(){
               <button class="cf-btn" onclick="setSummaryDept('РОП Аслиддин',this)">Аслиддин</button>
               <button class="cf-btn" onclick="setSummaryDept('РОП Нурдаулет',this)">Нурдаулет</button>
               <button class="cf-btn" onclick="setSummaryDept('РОП Диас',this)">Диас</button>
+              <button class="cf-btn" onclick="setSummaryDept('РОП Айдана KIDS',this)">Айдана KIDS</button>
+              <button class="cf-btn" onclick="setSummaryDept('РОП Диас KIDS',this)">Диас KIDS</button>
             </div>
             <div class="summary-filter-group">
               <span class="sf-label">Метрика:</span>
@@ -1522,18 +1528,22 @@ let MGR_TO_ROP = {
   'Пин 32 Айжан':        'РОП Аслиддин',
 };
 let ROP_GROUPS = {
-  'all':            { label: 'Все',            color: '#6366f1' },
-  'РОП Айдана':     { label: 'РОП Айдана',    color: '#1a56db' },
-  'РОП Аслиддин':   { label: 'РОП Аслиддин',  color: '#b45309' },
-  'РОП Нурдаулет':  { label: 'РОП Нурдаулет', color: '#0a7c5c' },
-  'РОП Диас':       { label: 'РОП Диас',      color: '#e11d48' },
+  'all':              { label: 'Все',              color: '#6366f1' },
+  'РОП Айдана':       { label: 'РОП Айдана',      color: '#1a56db' },
+  'РОП Аслиддин':     { label: 'РОП Аслиддин',    color: '#b45309' },
+  'РОП Нурдаулет':    { label: 'РОП Нурдаулет',   color: '#0a7c5c' },
+  'РОП Диас':         { label: 'РОП Диас',        color: '#e11d48' },
+  'РОП Айдана KIDS':  { label: 'РОП Айдана KIDS', color: '#7c3aed' },
+  'РОП Диас KIDS':    { label: 'РОП Диас KIDS',   color: '#db2777' },
 };
-const ROP_COLORS = {'РОП Айдана':'#1a56db','РОП Аслиддин':'#b45309','РОП Нурдаулет':'#0a7c5c','РОП Диас':'#e11d48'};
+const ROP_COLORS = {'РОП Айдана':'#1a56db','РОП Аслиддин':'#b45309','РОП Нурдаулет':'#0a7c5c','РОП Диас':'#e11d48','РОП Айдана KIDS':'#7c3aed','РОП Диас KIDS':'#db2777'};
 const ROP_CRM_MAP = {
-  'РОП Айдана':    ['Коллаген', 'Ummi'],
-  'РОП Аслиддин':  ['Коллаген'],
-  'РОП Нурдаулет': ['Коллаген'],
-  'РОП Диас':      ['Ummi'],
+  'РОП Айдана':       ['Коллаген'],
+  'РОП Аслиддин':     ['Коллаген'],
+  'РОП Нурдаулет':    ['Коллаген'],
+  'РОП Диас':         ['Коллаген', 'Ummi'],  // historical Ummi data in archive
+  'РОП Айдана KIDS':  ['Ummi'],
+  'РОП Диас KIDS':    ['Ummi'],
 };
 function rebuildRopGroups() {
   // Rebuild ROP_GROUPS from MGR_TO_ROP data
