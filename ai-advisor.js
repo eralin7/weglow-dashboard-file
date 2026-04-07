@@ -171,13 +171,16 @@ async function main() {
   const currentData = rows[0].data;
   currentData.AI_ADVICE = { text: advice, ts: Date.now() };
 
-  await sbFetch('weglow_data?id=eq.1', {
+  const patchBody = JSON.stringify({ data: currentData, updated_at: new Date().toISOString() });
+  console.log(`[AI Advisor] PATCH body size: ${(patchBody.length/1024/1024).toFixed(2)} MB`);
+
+  const patchRes = await sbFetch('weglow_data?id=eq.1', {
     method: 'PATCH',
     headers: { 'Prefer': 'return=minimal' },
-    body: JSON.stringify({ data: currentData, updated_at: new Date().toISOString() })
+    body: patchBody
   });
-
-  console.log('[AI Advisor] Saved to Supabase. Done!');
+  console.log('[AI Advisor] PATCH response:', JSON.stringify(patchRes).substring(0, 500));
+  console.log('[AI Advisor] Done!');
 }
 
 main().catch(e => { console.error(e); process.exit(1); });
