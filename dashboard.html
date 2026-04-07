@@ -3035,15 +3035,25 @@ async function loadFromSupabase() {
           }
         }
       }
+      // Fuzzy name matching for archive merge (handles case, spaces, encoding, pin renumbering)
+      function _normName(n) { return n.toLowerCase().replace(/\ufffd/g,'').replace(/\s+/g,' ').trim(); }
+      function _nameKey(n) { return n.toLowerCase().replace(/\ufffd/g,'').replace(/^пин\s+\d+\s+/i,'').replace(/\s+/g,' ').trim(); }
+
       if (d.ARCHIVE_MANAGERS) {
         for (const [acc, archMgrs] of Object.entries(d.ARCHIVE_MANAGERS)) {
           if (!MANAGERS[acc]) MANAGERS[acc] = [];
-          const liveMap = {};
-          MANAGERS[acc].forEach(m => { liveMap[m.name] = m; });
+          const liveExact = {}, liveNorm = {}, liveNameKey = {};
+          MANAGERS[acc].forEach(m => {
+            liveExact[m.name] = m;
+            liveNorm[_normName(m.name)] = m;
+            const nk = _nameKey(m.name);
+            if (nk.length > 2) liveNameKey[nk] = m;
+          });
           for (const am of archMgrs) {
-            if (liveMap[am.name]) {
+            const match = liveExact[am.name] || liveNorm[_normName(am.name)] || liveNameKey[_nameKey(am.name)];
+            if (match) {
               // Merge: archive wins for dates ≤ March, live wins for April+
-              const live = liveMap[am.name];
+              const live = match;
               if (!live.daily) live.daily = {};
               for (const [date, vals] of Object.entries(am.daily || {})) {
                 if (_isArchiveDate(date)) live.daily[date] = vals; // archive overwrites
@@ -3101,7 +3111,7 @@ async function loadFromSupabase() {
       if (!MANAGERS['Ummi']) MANAGERS['Ummi'] = [];
       for (const [rop, mgrs] of Object.entries(KIDS_ARCHIVE_MGRS)) {
         for (const am of mgrs) {
-          const existing = MANAGERS['Ummi'].find(m => m.name === am.n);
+          const existing = MANAGERS['Ummi'].find(m => m.name === am.n || _normName(m.name) === _normName(am.n) || (_nameKey(am.n).length > 2 && _nameKey(m.name) === _nameKey(am.n)));
           if (existing) {
             if (!existing.daily) existing.daily = {};
             for (const [date, vals] of Object.entries(am.d)) {
