@@ -1610,6 +1610,13 @@ function getRop(mgrName) {
   return '';
 }
 function clearRopCache() { Object.keys(_ropCache).forEach(k => delete _ropCache[k]); }
+// KIDS groups also match parent ROP (e.g. "РОП Айдана KIDS" matches managers with getRop = "РОП Айдана")
+function ropMatches(mgrName, targetRop) {
+  const mgrRop = getRop(mgrName);
+  if (mgrRop === targetRop) return true;
+  if (targetRop.endsWith(' KIDS')) return mgrRop === targetRop.replace(' KIDS', '');
+  return false;
+}
 let activeMgrRop = 'all';
 let activeMgrProdSub = 'all';
 // ═══════════════════ DYNAMIC DATES ═══════════════════════════════
@@ -2026,7 +2033,7 @@ function renderPlanTable(stats){
       let ropLeads=0, ropDeals=0, ropFact=0;
       crms.forEach(crm => {
         const mgrs = aggregateManagersByPeriod(crm, _planFrom, _planTo);
-        mgrs.filter(m => getRop(m.name)===ropName).forEach(m => {
+        mgrs.filter(m => ropMatches(m.name,ropName)).forEach(m => {
           ropLeads+=m.leads||0; ropDeals+=m.deals||0; ropFact+=m.budget||0;
         });
       });
@@ -2057,7 +2064,7 @@ function renderPlanTable(stats){
           const allMgrs=aggregateManagersByPeriod(crm,_planFrom,_planTo);
           allMgrs.forEach(m=>{crmTotalLeads+=m.leads||0;});
           let ropCrmLeads=0;
-          allMgrs.filter(m=>getRop(m.name)===ropName).forEach(m=>{ropCrmLeads+=m.leads||0;});
+          allMgrs.filter(m=>ropMatches(m.name,ropName)).forEach(m=>{ropCrmLeads+=m.leads||0;});
           adSpend += crmTotalLeads>0 ? Math.round(crmAdTotal*ropCrmLeads/crmTotalLeads) : 0;
         }
       });
@@ -2078,7 +2085,7 @@ function renderPlanTable(stats){
 
       // Count managers in this ROP group
       let ropMgrCount=0;
-      crms.forEach(crm=>{ (MANAGERS[crm]||[]).filter(m=>getRop(m.name)===ropName && !m.name.toLowerCase().startsWith('роп ')).forEach(()=>ropMgrCount++); });
+      crms.forEach(crm=>{ (MANAGERS[crm]||[]).filter(m=>ropMatches(m.name,ropName) && !m.name.toLowerCase().startsWith('роп ')).forEach(()=>ropMgrCount++); });
       const salesPerMgr = ropMgrCount>0?Math.round(ropFact/ropMgrCount):0;
 
       rows += `<tr>
@@ -2210,7 +2217,7 @@ function renderRopKPI(stats) {
 
     crms.forEach(crm => {
       const mgrs = aggregateManagersByPeriod(crm, stats.from || activePeriod.from, stats.to || activePeriod.to);
-      mgrs.filter(m => getRop(m.name) === ropName).forEach(m => {
+      mgrs.filter(m => ropMatches(m.name, ropName)).forEach(m => {
         leads += m.leads||0; deals += m.deals||0; budget += m.budget||0; mgrCount++;
       });
     });
@@ -2237,7 +2244,7 @@ function renderRopKPI(stats) {
         const allMgrs = aggregateManagersByPeriod(crm, stats.from || activePeriod.from, stats.to || activePeriod.to);
         allMgrs.forEach(m => { crmTotalLeads += m.leads || 0; });
         let ropCrmLeads = 0;
-        allMgrs.filter(m => getRop(m.name) === ropName).forEach(m => { ropCrmLeads += m.leads || 0; });
+        allMgrs.filter(m => ropMatches(m.name, ropName)).forEach(m => { ropCrmLeads += m.leads || 0; });
         adSpend += crmTotalLeads > 0 ? Math.round(crmAdTotal * ropCrmLeads / crmTotalLeads) : 0;
       }
     });
@@ -2326,7 +2333,7 @@ function renderLine(stats){
       crms.forEach(crm=>{
         const mgrList = MANAGERS[crm]||[];
         mgrList.forEach(m=>{
-          if(getRop(m.name)!==ropName) return;
+          if(!ropMatches(m.name,ropName)) return;
           if(m.daily && m.daily[date]) dayBudget += m.daily[date][2]||0;
         });
       });
@@ -2736,7 +2743,7 @@ function aggregateManagersByRop(ropKey, prodFilter, from, to) {
     const mgrs = aggregateManagersByPeriod(crm, from, to);
     mgrs.forEach(m => { m._crm = crm; });
     if (ropKey !== 'all') {
-      allMgrs.push(...mgrs.filter(m => getRop(m.name) === ropKey));
+      allMgrs.push(...mgrs.filter(m => ropMatches(m.name, ropKey)));
     } else {
       allMgrs.push(...mgrs);
     }
