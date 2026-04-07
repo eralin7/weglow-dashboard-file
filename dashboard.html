@@ -1236,7 +1236,7 @@ function doLogout(){
       <button class="pill rop-pill" onclick="setMgrRop('РОП Айдана',this)">Айдана</button>
       <button class="pill rop-pill" onclick="setMgrRop('РОП Аслиддин',this)">Аслиддин</button>
       <button class="pill rop-pill" onclick="setMgrRop('РОП Нурдаулет',this)">Нурдаулет</button>
-      <button class="pill rop-pill" onclick="setMgrRop('РОП Диас',this)">Диас</button>
+      <button class="pill rop-pill" onclick="setMgrRop('РОП Ербол',this)">Ербол</button>
       <button class="pill rop-pill" onclick="setMgrRop('РОП Айдана KIDS',this)">Айдана KIDS</button>
       <button class="pill rop-pill" onclick="setMgrRop('РОП Диас KIDS',this)">Диас KIDS</button>
       <div class="pill-sep" id="prod-sub-sep" style="display:none"></div>
@@ -1320,7 +1320,7 @@ function doLogout(){
             <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Айдана',this)">Айдана</button>
             <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Аслиддин',this)">Аслиддин</button>
             <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Нурдаулет',this)">Нурдаулет</button>
-            <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Диас',this)">Диас</button>
+            <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Ербол',this)">Ербол</button>
             <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Айдана KIDS',this)">Айдана KIDS</button>
             <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Диас KIDS',this)">Диас KIDS</button>
           </div>
@@ -1342,7 +1342,7 @@ function doLogout(){
               <button class="cf-btn" onclick="setSummaryDept('РОП Айдана',this)">Айдана</button>
               <button class="cf-btn" onclick="setSummaryDept('РОП Аслиддин',this)">Аслиддин</button>
               <button class="cf-btn" onclick="setSummaryDept('РОП Нурдаулет',this)">Нурдаулет</button>
-              <button class="cf-btn" onclick="setSummaryDept('РОП Диас',this)">Диас</button>
+              <button class="cf-btn" onclick="setSummaryDept('РОП Ербол',this)">Ербол</button>
               <button class="cf-btn" onclick="setSummaryDept('РОП Айдана KIDS',this)">Айдана KIDS</button>
               <button class="cf-btn" onclick="setSummaryDept('РОП Диас KIDS',this)">Диас KIDS</button>
             </div>
@@ -1551,24 +1551,27 @@ let ROP_GROUPS = {
   'РОП Айдана':       { label: 'РОП Айдана',      color: '#1a56db' },
   'РОП Аслиддин':     { label: 'РОП Аслиддин',    color: '#b45309' },
   'РОП Нурдаулет':    { label: 'РОП Нурдаулет',   color: '#0a7c5c' },
-  'РОП Диас':         { label: 'РОП Диас',        color: '#e11d48' },
+  'РОП Ербол':        { label: 'РОП Ербол',       color: '#e11d48' },
   'РОП Айдана KIDS':  { label: 'РОП Айдана KIDS', color: '#7c3aed' },
   'РОП Диас KIDS':    { label: 'РОП Диас KIDS',   color: '#db2777' },
 };
-const ROP_COLORS = {'РОП Айдана':'#1a56db','РОП Аслиддин':'#b45309','РОП Нурдаулет':'#0a7c5c','РОП Диас':'#e11d48','РОП Айдана KIDS':'#7c3aed','РОП Диас KIDS':'#db2777'};
+const ROP_COLORS = {'РОП Айдана':'#1a56db','РОП Аслиддин':'#b45309','РОП Нурдаулет':'#0a7c5c','РОП Ербол':'#e11d48','РОП Айдана KIDS':'#7c3aed','РОП Диас KIDS':'#db2777'};
 const ROP_CRM_MAP = {
   'РОП Айдана':       ['Коллаген'],
   'РОП Аслиддин':     ['Коллаген'],
   'РОП Нурдаулет':    ['Коллаген'],
-  'РОП Диас':         ['Коллаген', 'Ummi'],  // historical Ummi data in archive
-  'РОП Айдана KIDS':  ['Ummi'],
-  'РОП Диас KIDS':    ['Ummi'],
+  'РОП Ербол':        ['Ербол'],   // Ummi data ≤ 23.04.2026 (split at load time)
+  'РОП Айдана KIDS':  ['Ummi'],    // Ummi data ≥ 24.04.2026
+  'РОП Диас KIDS':    ['Ummi'],    // Ummi data ≥ 24.04.2026
 };
 function rebuildRopGroups() {
-  // Rebuild ROP_GROUPS from MGR_TO_ROP data
+  // Rebuild ROP_GROUPS from MGR_TO_ROP data + always include fixed groups
   const ropSet = new Set(Object.values(MGR_TO_ROP));
+  // Always include these groups even if not in MGR_TO_ROP
+  ['РОП Ербол', 'РОП Айдана KIDS', 'РОП Диас KIDS'].forEach(r => ropSet.add(r));
   ROP_GROUPS = { 'all': { label: 'Все', color: '#6366f1' } };
   for (const rop of [...ropSet].sort()) {
+    if (rop.includes('\ufffd')) continue; // skip corrupted entries
     ROP_GROUPS[rop] = { label: rop, color: ROP_COLORS[rop] || '#6366f1' };
   }
 }
@@ -1610,8 +1613,9 @@ function getRop(mgrName) {
   return '';
 }
 function clearRopCache() { Object.keys(_ropCache).forEach(k => delete _ropCache[k]); }
-// KIDS groups also match parent ROP (e.g. "РОП Айдана KIDS" matches managers with getRop = "РОП Айдана")
+// KIDS groups also match parent ROP; Ербол matches ALL Ummi managers (data split by date at load time)
 function ropMatches(mgrName, targetRop) {
+  if (targetRop === 'РОП Ербол') return true; // Ербол CRM only has pre-24.04 data, all managers belong
   const mgrRop = getRop(mgrName);
   if (mgrRop === targetRop) return true;
   if (targetRop.endsWith(' KIDS')) return mgrRop === targetRop.replace(' KIDS', '');
@@ -2376,7 +2380,7 @@ function renderLeadsDeals(stats){
   const leadsData=[], dealsData=[];
   dateList.forEach(date=>{
     let dayLeads=0,dayDeals=0;
-    const crms=activeProd==='all'?['Коллаген','Ummi']:[PROD_CFG[activeProd]?.rawKey].filter(Boolean);
+    const crms=activeProd==='all'?['Коллаген','Ummi','Ербол']:activeProd==='ummi'?['Ummi','Ербол']:[PROD_CFG[activeProd]?.rawKey].filter(Boolean);
     crms.forEach(crm=>{
       if(activeLeadsDealsFilter==='all'){
         const v=(RAW[crm]||{})[date]||[0,0,0];
@@ -3044,7 +3048,7 @@ async function loadFromSupabase() {
             if (lower.includes('айдана')) MGR_TO_ROP[k] = 'РОП Айдана';
             else if (lower.includes('аслиддин')) MGR_TO_ROP[k] = 'РОП Аслиддин';
             else if (lower.includes('нурдаулет')) MGR_TO_ROP[k] = 'РОП Нурдаулет';
-            else if (lower.includes('диас')) MGR_TO_ROP[k] = 'РОП Диас';
+            else if (lower.includes('диас')) MGR_TO_ROP[k] = 'РОП Диас KIDS';
             else delete MGR_TO_ROP[k];
           }
         }
@@ -3076,6 +3080,45 @@ async function loadFromSupabase() {
         }
       }
       MANAGERS['Ummi'].sort((a,b) => b.budget - a.budget);
+
+      // ── Split Ummi by date: ≤ 23.04.2026 → Ербол, ≥ 24.04.2026 → Ummi (KIDS) ──
+      const _erbolCutoff = new Date(2026, 3, 23); // April 23 inclusive
+      MANAGERS['Ербол'] = [];
+      const kidsUmmi = [];
+      for (const m of (MANAGERS['Ummi'] || [])) {
+        const erbDaily = {}, kidsDaily = {};
+        for (const [date, vals] of Object.entries(m.daily || {})) {
+          const [dd,mm,yy] = date.split('.').map(Number);
+          const dt = new Date(yy, mm-1, dd);
+          if (dt <= _erbolCutoff) erbDaily[date] = vals;
+          else kidsDaily[date] = vals;
+        }
+        if (Object.keys(erbDaily).length) {
+          let l=0,d=0,b=0;
+          for (const v of Object.values(erbDaily)) { l+=v[0]||0; d+=v[1]||0; b+=v[2]||0; }
+          MANAGERS['Ербол'].push({ name: m.name, leads:l, deals:d, budget:b,
+            conv: l>0 ? +(d/l*100).toFixed(1) : 0, avgCheck: d>0 ? Math.round(b/d) : 0, daily: erbDaily });
+        }
+        if (Object.keys(kidsDaily).length) {
+          let l=0,d=0,b=0;
+          for (const v of Object.values(kidsDaily)) { l+=v[0]||0; d+=v[1]||0; b+=v[2]||0; }
+          kidsUmmi.push({ name: m.name, leads:l, deals:d, budget:b,
+            conv: l>0 ? +(d/l*100).toFixed(1) : 0, avgCheck: d>0 ? Math.round(b/d) : 0, daily: kidsDaily });
+        }
+      }
+      MANAGERS['Ummi'] = kidsUmmi;
+      MANAGERS['Ербол'].sort((a,b) => b.budget - a.budget);
+      // Also split RAW
+      RAW['Ербол'] = {};
+      const kidsRaw = {};
+      for (const [date, vals] of Object.entries(RAW['Ummi'] || {})) {
+        const [dd,mm,yy] = date.split('.').map(Number);
+        const dt = new Date(yy, mm-1, dd);
+        if (dt <= _erbolCutoff) RAW['Ербол'][date] = vals;
+        else kidsRaw[date] = vals;
+      }
+      RAW['Ummi'] = kidsRaw;
+
       clearRopCache();
       rebuildRopGroups();
       if (d.ROP_PLANS) ROP_PLANS = d.ROP_PLANS;
