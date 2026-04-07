@@ -2052,6 +2052,10 @@ function renderPlanTable(stats){
 
     let rTotPlan=0,rTotFact=0,rTotLeads=0,rTotDeals=0,rTotAd=0;
 
+    // Forecast: use actual passed days (not full period if it extends into future)
+    const _actualEnd = new Date(Math.min(_toD.getTime(), _now.getTime()));
+    const _forecastDays = Math.max(1, Math.round((_actualEnd - _fromD) / 86400000) + 1);
+
     // Historical-only groups: hide if period starts after their cutoff
     const _historyCutoff = new Date(2026, 2, 23); // March 23
     const _historyGroups = new Set(['РОП Ербол']);
@@ -2082,8 +2086,6 @@ function renderPlanTable(stats){
       const perDay = _daysLeft>0&&remain>0 ? Math.round(remain/_daysLeft) : 0;
 
       // Forecast (extrapolate from PASSED days to full month)
-      const _actualEnd = new Date(Math.min(_toD.getTime(), _now.getTime()));
-      const _forecastDays = Math.max(1, Math.round((_actualEnd - _fromD) / 86400000) + 1);
       const dailyRate = _forecastDays>0 ? ropFact/_forecastDays : 0;
       const forecast = dailyRate>0&&fullMonthPlan>0 ? Math.round(dailyRate*_curTotalDays) : 0;
 
