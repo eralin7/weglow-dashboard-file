@@ -3028,6 +3028,22 @@ async function loadFromSupabase() {
       if (d.PRODUCTS)    PRODUCTS    = d.PRODUCTS;
       if (d.MGR_TO_ROP && Object.keys(d.MGR_TO_ROP).length > 0) {
         MGR_TO_ROP = d.MGR_TO_ROP;
+        // Fix corrupted encoding entries
+        for (const [k,v] of Object.entries(MGR_TO_ROP)) {
+          if (v.includes('\ufffd')) {
+            const fixed = v.replace(/\ufffd+/g, match => {
+              if (v.startsWith('Р') && v.includes('П ')) return v.replace(/\ufffd+/g, 'О');
+              return '';
+            });
+            // Try to match known ROP names
+            const lower = v.replace(/\ufffd+/g, '').toLowerCase().trim();
+            if (lower.includes('айдана')) MGR_TO_ROP[k] = 'РОП Айдана';
+            else if (lower.includes('аслиддин')) MGR_TO_ROP[k] = 'РОП Аслиддин';
+            else if (lower.includes('нурдаулет')) MGR_TO_ROP[k] = 'РОП Нурдаулет';
+            else if (lower.includes('диас')) MGR_TO_ROP[k] = 'РОП Диас';
+            else delete MGR_TO_ROP[k];
+          }
+        }
       }
       // ── Merge hardcoded KIDS archive (old Ummi CRM ≤ 05.04.2026) ──
       // Must run AFTER MGR_TO_ROP loaded from Supabase so KIDS overrides take effect
