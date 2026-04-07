@@ -1564,10 +1564,10 @@ const ROP_CRM_MAP = {
   'РОП Айдана':       ['Коллаген'],
   'РОП Аслиддин':     ['Коллаген'],
   'РОП Нурдаулет':    ['Коллаген'],
-  'РОП Диас':         ['Диас'],    // Коллаген data ≤ 23.04.2026 (split at load time)
-  'РОП Ербол':        ['Ербол'],   // Ummi data ≤ 23.04.2026 (split at load time)
-  'РОП Айдана KIDS':  ['Ummi'],    // Ummi data ≥ 24.04.2026
-  'РОП Диас KIDS':    ['Ummi'],    // Ummi data ≥ 24.04.2026
+  'РОП Диас':         ['Диас'],    // Коллаген data — пока пусто (до 23.03)
+  'РОП Ербол':        ['Ербол'],   // Ummi data ≤ 23.03.2026 (split at load time)
+  'РОП Айдана KIDS':  ['Ummi'],    // Ummi data ≥ 24.03.2026
+  'РОП Диас KIDS':    ['Диас'],    // Коллаген data ≥ 24.03.2026 (split at load time)
 };
 function rebuildRopGroups() {
   // Rebuild ROP_GROUPS from MGR_TO_ROP data + always include fixed groups
@@ -1620,8 +1620,9 @@ function getRop(mgrName) {
 function clearRopCache() { Object.keys(_ropCache).forEach(k => delete _ropCache[k]); }
 // KIDS groups also match parent ROP; Ербол/Диас virtual CRMs — all managers belong (data pre-filtered by date)
 function ropMatches(mgrName, targetRop) {
-  if (targetRop === 'РОП Ербол') return true; // Ербол CRM only has pre-24.04 data, all managers belong
-  if (targetRop === 'РОП Диас') return true;  // Диас CRM only has pre-24.04 Коллаген data, all managers belong
+  if (targetRop === 'РОП Ербол') return true;     // Ербол CRM: all Ummi managers pre-24.03
+  if (targetRop === 'РОП Диас') return true;      // Диас CRM: пока пусто (до 23.03)
+  if (targetRop === 'РОП Диас KIDS') return true;  // Диас CRM: Коллаген data ≥ 24.03, all managers belong
   const mgrRop = getRop(mgrName);
   if (mgrRop === targetRop) return true;
   if (targetRop.endsWith(' KIDS')) return mgrRop === targetRop.replace(' KIDS', '');
@@ -2053,7 +2054,7 @@ function renderPlanTable(stats){
 
     // Historical-only groups: hide if period starts after their cutoff
     const _historyCutoff = new Date(2026, 2, 23); // March 23
-    const _historyGroups = new Set(['РОП Ербол', 'РОП Диас']);
+    const _historyGroups = new Set(['РОП Ербол']);
 
     for (const [ropName, ropCfg] of Object.entries(ROP_GROUPS)) {
       if (ropName === 'all') continue;
@@ -2238,7 +2239,7 @@ function renderRopKPI(stats) {
   let html = '<div class="rop-section-label">Показатели по группам</div><div class="kpi-grid rop-grid">';
 
   const _hCutoff = new Date(2026, 2, 23);
-  const _hGroups = new Set(['РОП Ербол', 'РОП Диас']);
+  const _hGroups = new Set(['РОП Ербол']);
   const _kpiFromD = parseDate(from);
 
   for (const [ropName, ropCfg] of Object.entries(ROP_GROUPS)) {
@@ -2360,7 +2361,7 @@ function renderLine(stats){
 
   // Build daily budget per ROP group
   const _chCutoff = new Date(2026, 2, 23);
-  const _chGroups = new Set(['РОП Ербол', 'РОП Диас']);
+  const _chGroups = new Set(['РОП Ербол']);
   const _chFromD = parseDate(from);
 
   for(const [ropName,ropCfg] of Object.entries(ROP_GROUPS)){
@@ -3168,19 +3169,19 @@ async function loadFromSupabase() {
       }
       RAW['Ummi'] = kidsRaw;
 
-      // ── Split Коллаген for РОП Диас: ≤ 23.04.2026 → Диас, rest stays Коллаген ──
-      const _diasCutoff = new Date(2026, 2, 23); // March 23 inclusive
+      // ── Split Коллаген for РОП Диас: ≥ 24.03.2026 → Диас, ≤ 23.03 stays Коллаген ──
+      const _diasCutoff = new Date(2026, 2, 23); // March 23 inclusive (stays in Коллаген)
       MANAGERS['Диас'] = [];
       const remainKollagen = [];
       for (const m of (MANAGERS['Коллаген'] || [])) {
         const mgrRop = getRop(m.name);
         if (mgrRop !== 'РОП Диас' && mgrRop !== 'РОП Диас KIDS') { remainKollagen.push(m); continue; }
-        const diasDaily = {}, afterDaily = {};
+        const beforeDaily = {}, diasDaily = {};
         for (const [date, vals] of Object.entries(m.daily || {})) {
           const [dd,mm,yy] = date.split('.').map(Number);
           const dt = new Date(yy, mm-1, dd);
-          if (dt <= _diasCutoff) diasDaily[date] = vals;
-          else afterDaily[date] = vals;
+          if (dt <= _diasCutoff) beforeDaily[date] = vals; // ≤ 23.03 stays in Коллаген
+          else diasDaily[date] = vals; // ≥ 24.03 goes to РОП Диас
         }
         if (Object.keys(diasDaily).length) {
           let l=0,d=0,b=0;
@@ -3188,11 +3189,11 @@ async function loadFromSupabase() {
           MANAGERS['Диас'].push({ name: m.name, leads:l, deals:d, budget:b,
             conv: l>0 ? +(d/l*100).toFixed(1) : 0, avgCheck: d>0 ? Math.round(b/d) : 0, daily: diasDaily });
         }
-        if (Object.keys(afterDaily).length) {
+        if (Object.keys(beforeDaily).length) {
           let l=0,d=0,b=0;
-          for (const v of Object.values(afterDaily)) { l+=v[0]||0; d+=v[1]||0; b+=v[2]||0; }
+          for (const v of Object.values(beforeDaily)) { l+=v[0]||0; d+=v[1]||0; b+=v[2]||0; }
           remainKollagen.push({ name: m.name, leads:l, deals:d, budget:b,
-            conv: l>0 ? +(d/l*100).toFixed(1) : 0, avgCheck: d>0 ? Math.round(b/d) : 0, daily: afterDaily });
+            conv: l>0 ? +(d/l*100).toFixed(1) : 0, avgCheck: d>0 ? Math.round(b/d) : 0, daily: beforeDaily });
         }
       }
       MANAGERS['Коллаген'] = remainKollagen;
