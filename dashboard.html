@@ -2081,8 +2081,10 @@ function renderPlanTable(stats){
       const remain = planPeriod>0 ? Math.max(0, planPeriod-ropFact) : 0;
       const perDay = _daysLeft>0&&remain>0 ? Math.round(remain/_daysLeft) : 0;
 
-      // Forecast (extrapolate from period rate to full month)
-      const dailyRate = _periodDays>0 ? ropFact/_periodDays : 0;
+      // Forecast (extrapolate from PASSED days to full month)
+      const _actualEnd = new Date(Math.min(_toD.getTime(), _now.getTime()));
+      const _forecastDays = Math.max(1, Math.round((_actualEnd - _fromD) / 86400000) + 1);
+      const dailyRate = _forecastDays>0 ? ropFact/_forecastDays : 0;
       const forecast = dailyRate>0&&fullMonthPlan>0 ? Math.round(dailyRate*_curTotalDays) : 0;
 
       const conv = ropLeads>0?(ropDeals/ropLeads*100).toFixed(1):'0.0';
@@ -2148,7 +2150,7 @@ function renderPlanTable(stats){
     const rTotExecPct = rTotPlan>0?Math.round(rTotFact/rTotPlan*100):0;
     const rTotRemain = rTotPlan>0?Math.max(0,rTotPlan-rTotFact):0;
     const rTotPerDay = _daysLeft>0&&rTotRemain>0?Math.round(rTotRemain/_daysLeft):0;
-    const rTotDailyRate = _periodDays>0?rTotFact/_periodDays:0;
+    const rTotDailyRate = _forecastDays>0?rTotFact/_forecastDays:0;
     const rTotFc = rTotDailyRate>0&&rTotPlan>0?Math.round(rTotDailyRate*_curTotalDays):0;
     const rTotFcPct = rTotPlan>0&&rTotFc>0?Math.round(rTotFc/rTotPlan*100):0;
     const rTotRemainCell = rTotPlan>0
@@ -2266,7 +2268,9 @@ function renderRopKPI(stats) {
     const pct = planPeriod > 0 ? Math.round(budget / planPeriod * 100) : (budget > 0 ? 100 : 0);
     const remain = planPeriod > 0 ? Math.max(0, planPeriod - budget) : 0;
     const perDay = daysLeft > 0 && remain > 0 ? Math.round(remain / daysLeft) : 0;
-    const forecast = curPassedDays > 0 && fullMonthPlan > 0 ? Math.round((budget / Math.max(1, periodDays)) * curTotalDays) : 0;
+    const _kpiFcEnd = new Date(Math.min(parseDate(to).getTime(), now.getTime()));
+    const _kpiFcDays = Math.max(1, Math.round((_kpiFcEnd - parseDate(from)) / 86400000) + 1);
+    const forecast = curPassedDays > 0 && fullMonthPlan > 0 ? Math.round((budget / _kpiFcDays) * curTotalDays) : 0;
     const conv = leads > 0 ? (deals / leads * 100).toFixed(1) : '0.0';
     const avgCheck = deals > 0 ? Math.round(budget / deals) : 0;
 
