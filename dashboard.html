@@ -1570,8 +1570,10 @@ function rebuildRopGroups() {
   // Always include these groups even if not in MGR_TO_ROP
   ['РОП Ербол', 'РОП Айдана KIDS', 'РОП Диас KIDS'].forEach(r => ropSet.add(r));
   ROP_GROUPS = { 'all': { label: 'Все', color: '#6366f1' } };
+  const _hiddenRops = new Set(['РОП Диас']); // removed group, data goes to РОП Диас KIDS
   for (const rop of [...ropSet].sort()) {
     if (rop.includes('\ufffd')) continue; // skip corrupted entries
+    if (_hiddenRops.has(rop)) continue;
     ROP_GROUPS[rop] = { label: rop, color: ROP_COLORS[rop] || '#6366f1' };
   }
 }
