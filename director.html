@@ -294,14 +294,25 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
         </div>
         <div class="plan-card">
           <div class="pc-head">
-            <div class="pc-dot" style="background:#e11d48"></div>
-            <div class="pc-name">РОП Диас</div>
+            <div class="pc-dot" style="background:#7c3aed"></div>
+            <div class="pc-name">РОП Айдана KIDS</div>
           </div>
           <div class="pc-field">
             <div class="pc-label">План ₸</div>
-            <input class="pc-inp" type="number" id="rop-plan-dias" placeholder="22 000 000" min="0" step="1000000">
+            <input class="pc-inp" type="number" id="rop-plan-aidana-kids" placeholder="10 000 000" min="0" step="1000000">
           </div>
-          <div class="pc-current" id="cur-rop-dias">Текущий: —</div>
+          <div class="pc-current" id="cur-rop-aidana-kids">Текущий: —</div>
+        </div>
+        <div class="plan-card">
+          <div class="pc-head">
+            <div class="pc-dot" style="background:#db2777"></div>
+            <div class="pc-name">РОП Диас KIDS</div>
+          </div>
+          <div class="pc-field">
+            <div class="pc-label">План ₸</div>
+            <input class="pc-inp" type="number" id="rop-plan-dias-kids" placeholder="10 000 000" min="0" step="1000000">
+          </div>
+          <div class="pc-current" id="cur-rop-dias-kids">Текущий: —</div>
         </div>
       </div>
 
@@ -646,10 +657,11 @@ if(sessionStorage.getItem('dir_auth')==='1') init();
 // ROP GROUP PLANS
 // ══════════════════════════════════════════════
 const ROP_DEFS = [
-  {name:'РОП Айдана',    inputId:'rop-plan-aidana',    curId:'cur-rop-aidana',    color:'#1a56db'},
-  {name:'РОП Аслиддин',  inputId:'rop-plan-asliddin',  curId:'cur-rop-asliddin',  color:'#b45309'},
-  {name:'РОП Нурдаулет',  inputId:'rop-plan-nurdaulet', curId:'cur-rop-nurdaulet', color:'#0a7c5c'},
-  {name:'РОП Диас',       inputId:'rop-plan-dias',      curId:'cur-rop-dias',      color:'#e11d48'},
+  {name:'РОП Айдана',      inputId:'rop-plan-aidana',      curId:'cur-rop-aidana',      color:'#1a56db'},
+  {name:'РОП Аслиддин',    inputId:'rop-plan-asliddin',    curId:'cur-rop-asliddin',    color:'#b45309'},
+  {name:'РОП Нурдаулет',   inputId:'rop-plan-nurdaulet',   curId:'cur-rop-nurdaulet',   color:'#0a7c5c'},
+  {name:'РОП Айдана KIDS', inputId:'rop-plan-aidana-kids', curId:'cur-rop-aidana-kids', color:'#7c3aed'},
+  {name:'РОП Диас KIDS',   inputId:'rop-plan-dias-kids',   curId:'cur-rop-dias-kids',   color:'#db2777'},
 ];
 
 let ropPlans = {}; // { 'РОП Айдана': {'03.2026': 30000000, ...}, ... }
@@ -805,10 +817,11 @@ function editRopMonth(month){
 
 // ═══════════════════ ROP PLAN / FACT ═══════════════════════════
 const ROP_FACT_DEFS = [
-  {name:'РОП Айдана',    color:'#1a56db', crms:['Коллаген','Ummi']},
-  {name:'РОП Аслиддин',  color:'#b45309', crms:['Коллаген']},
-  {name:'РОП Нурдаулет', color:'#0a7c5c', crms:['Коллаген']},
-  {name:'РОП Диас',      color:'#e11d48', crms:['Ummi']},
+  {name:'РОП Айдана',      color:'#1a56db', crms:['Коллаген']},
+  {name:'РОП Аслиддин',    color:'#b45309', crms:['Коллаген']},
+  {name:'РОП Нурдаулет',   color:'#0a7c5c', crms:['Коллаген']},
+  {name:'РОП Айдана KIDS', color:'#7c3aed', crms:['Ummi']},
+  {name:'РОП Диас KIDS',   color:'#db2777', crms:['Ummi']},
 ];
 
 function initRopFactMonth(){
