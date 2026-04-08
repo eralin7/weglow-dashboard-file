@@ -1214,7 +1214,6 @@ function doLogout(){
       <span class="tb-label">Продукт:</span>
       <button class="pill prod-pill active" onclick="setProd('all',this)"><div class="prod-dot" style="background:#6366f1"></div>Все</button>
       <button class="pill prod-pill" onclick="setProd('col',this)"><div class="prod-dot" style="background:#1a56db"></div>Коллаген</button>
-      <button class="pill prod-pill" onclick="setProd('ummi',this)"><div class="prod-dot" style="background:#0a7c5c"></div>Ummi</button>
       <div class="pill-sep"></div>
       <span class="tb-label">Период:</span>
       <button class="pill period-pill" onclick="setPreset('today',this)">Сегодня</button>
@@ -1358,7 +1357,6 @@ function doLogout(){
               <span class="sf-label">Продукт:</span>
               <button class="cf-btn active" onclick="setSummaryProd('all',this)">Все</button>
               <button class="cf-btn" onclick="setSummaryProd('Коллаген',this)">Коллаген</button>
-              <button class="cf-btn" onclick="setSummaryProd('Ummi',this)">Ummi</button>
             </div>
           </div>
         </div>
@@ -1432,7 +1430,7 @@ function doLogout(){
         <div class="rnp-filters" id="rnp-filters">
           <button class="pill active" onclick="setRnpDept('all',this)">Все</button>
           <button class="pill" onclick="setRnpDept('Коллаген',this)">Коллаген</button>
-          <button class="pill" onclick="setRnpDept('Ummi',this)">Ummi</button>
+
           <button class="pill" onclick="setRnpDept('Грибы',this)">Грибы</button>
         </div>
         <button class="export-btn" onclick="exportRnp()">📥 Excel</button>
@@ -1508,13 +1506,12 @@ let AD_SPEND = AD_SPEND_STATIC; // Always start fresh, Supabase overwrites below
 
 let CROSS_SALES = (_loaded && _loaded.CROSS_SALES) ? _loaded.CROSS_SALES : {};
 let PRODUCTS    = (_loaded && _loaded.PRODUCTS)    ? _loaded.PRODUCTS    : {};
-let PLANS = _loaded && _loaded.PLANS ? _loaded.PLANS : {'col':{'03.2026':86000000,'02.2026':60000000,'01.2026':60000000,'12.2025':60000000,'11.2025':60000000,'10.2025':60000000},'ummi':{'03.2026':25000000,'02.2026':30000000,'01.2026':30000000,'12.2025':30000000,'11.2025':30000000}};
+let PLANS = _loaded && _loaded.PLANS ? _loaded.PLANS : {'col':{'03.2026':86000000,'02.2026':60000000,'01.2026':60000000,'12.2025':60000000,'11.2025':60000000,'10.2025':60000000}};
 let ROP_PLANS = (_loaded && _loaded.ROP_PLANS) ? _loaded.ROP_PLANS : {};
 let RNP_EXCEL = (_loaded && _loaded.RNP_EXCEL) ? _loaded.RNP_EXCEL : {};
 
 const PROD_CFG = {
   col:    {name:'Коллаген', color:'#1a56db', rawKey:'Коллаген', mgrKey:'Коллаген'},
-  ummi:   {name:'Ummi',     color:'#0a7c5c', rawKey:'Ummi',     mgrKey:'Ummi'},
 };
 
 // ═══ ROP GROUPS (all products) ════════════════════════════════════
@@ -1692,7 +1689,7 @@ function pctBg(v){return v>=80?'bg-g':v>=50?'bg-y':'bg-r';}
 
 // ═══════════════════ AGGREGATE ════════════════════════════════════
 // Virtual CRM siblings: aggregate() merges these with the main CRM RAW
-const _VIRTUAL_CRMS = { 'Ummi': ['Ербол'] };
+const _VIRTUAL_CRMS = { 'Коллаген': ['Ummi', 'Ербол'] };
 function _mergedRaw(mainKey) {
   const main = RAW[mainKey] || {};
   const siblings = _VIRTUAL_CRMS[mainKey] || [];
@@ -1768,7 +1765,7 @@ function aggregate(pk,from,to){
     conv:leads?+(deals/leads*100).toFixed(1):0,avgCheck:deals?Math.round(budget/deals):0};
 }
 function aggregateAll(from,to){
-  const parts={};['col','ummi'].forEach(k=>{parts[k]=aggregate(k,from,to);});
+  const parts={};['col'].forEach(k=>{parts[k]=aggregate(k,from,to);});
   const dates=getDatesInRange(from,to);
   const leads=Object.values(parts).reduce((a,p)=>a+p.leads,0);
   const deals=Object.values(parts).reduce((a,p)=>a+p.deals,0);
@@ -2421,7 +2418,7 @@ function renderLeadsDeals(stats){
   const leadsData=[], dealsData=[];
   dateList.forEach(date=>{
     let dayLeads=0,dayDeals=0;
-    const crms=activeProd==='all'?['Коллаген','Ummi','Ербол']:activeProd==='ummi'?['Ummi','Ербол']:activeProd==='collagen'?['Коллаген']:[PROD_CFG[activeProd]?.rawKey].filter(Boolean);
+    const crms=activeProd==='all'?['Коллаген','Ummi','Ербол']:[PROD_CFG[activeProd]?.rawKey].filter(Boolean);
     crms.forEach(crm=>{
       if(activeLeadsDealsFilter==='all'){
         const v=(RAW[crm]||{})[date]||[0,0,0];
@@ -2477,7 +2474,7 @@ function renderSummaryChart(){
     const dateList=getDatesInRange(mStart,mEnd);
 
     // Filter by product
-    const crms=summaryProd==='all'?['Коллаген','Ummi','Ербол']:[summaryProd];
+    const crms=summaryProd==='all'?['Коллаген','Ummi','Ербол']:[PROD_CFG[summaryProd]?.rawKey||summaryProd].filter(Boolean);
     let leads=0,deals=0,budget=0,adSpend=0;
 
     dateList.forEach(date=>{
@@ -2776,7 +2773,7 @@ function renderFtTotal() {
 function aggregateManagersByRop(ropKey, prodFilter, from, to) {
   let crmKeys;
   if (ropKey === 'all') {
-    crmKeys = ['Коллаген', 'Ummi', 'Ербол', 'Диас'];
+    crmKeys = ['Коллаген', 'Ummi', 'Ербол'];
   } else if (prodFilter !== 'all') {
     crmKeys = [prodFilter];
   } else {
@@ -2963,7 +2960,6 @@ function renderAdSpend(){
   const fromD=parseDate(from),toD=parseDate(to);
   const prods=[
     {k:'Коллаген',c:'#1a56db',sk:'col'},
-    {k:'Ummi',    c:'#0a7c5c',sk:'ummi'},
   ];
   const cards=prods.map(p=>{
     const adData=AD_SPEND[p.k]||{};
@@ -3231,7 +3227,7 @@ function renderSidebarKPI(now, dayOfMonth, totalDays){
 
   // Sum plan across all products for this month
   let totalPlan = 0;
-  const planProducts = {col:'Коллаген', ummi:'Ummi'};
+  const planProducts = {col:'Коллаген'};
   for(const [pk] of Object.entries(planProducts)){
     totalPlan += (PLANS[pk] && PLANS[pk][monthKey]) ? PLANS[pk][monthKey] : 0;
   }
@@ -3398,12 +3394,6 @@ const PROD_STATIC = {
     'Коллаген Синий':   { own:true,  daily:{'01.02.2026':6,'02.02.2026':5,'03.02.2026':4} },
     'Коллаген Кофе':    { own:true,  daily:{'01.02.2026':9,'02.02.2026':8,'03.02.2026':7} },
     'Детский Ummi':     { own:false, daily:{'01.02.2026':1,'02.02.2026':1} },
-  }},
-  'Ummi': { color:'#34d399', prods: {
-    'Ummi (кол-во)':    { own:true,  daily:{'01.02.2026':13,'02.02.2026':12,'03.02.2026':11} },
-    'Коллаген Красный': { own:false, daily:{'01.02.2026':2,'02.02.2026':1} },
-    'Коллаген Синий':   { own:false, daily:{'01.02.2026':1} },
-    'Коллаген Кофе':    { own:false, daily:{'01.02.2026':1} },
   }},
 };
 
@@ -3651,7 +3641,7 @@ function renderAlerts(stats) {
   const totalDays = _lastDay(now.getFullYear(), now.getMonth()+1);
   const monthPct = Math.round(dayOfMonth / totalDays * 100);
 
-  const keys = activeProd === 'all' ? ['col','ummi'] : [activeProd];
+  const keys = activeProd === 'all' ? ['col'] : [activeProd];
 
   keys.forEach(k => {
     const d = stats.parts ? stats.parts[k] : stats;
@@ -3738,7 +3728,7 @@ function renderTopManager() {
 
   // Collect today's stats per manager across selected products
   const mgrToday = {};
-  const keys = activeProd === 'all' ? ['col','ummi'] : [activeProd];
+  const keys = activeProd === 'all' ? ['col'] : [activeProd];
 
   keys.forEach(k => {
     const mgrs = MANAGERS[PROD_CFG[k].rawKey] || MANAGERS[PROD_CFG[k].name] || [];
@@ -3801,7 +3791,7 @@ function renderHeatmap() {
   const today = new Date();
   const dailyData = {};
 
-  const keys = activeProd === 'all' ? ['col','ummi'] : [activeProd];
+  const keys = activeProd === 'all' ? ['col'] : [activeProd];
   keys.forEach(k => {
     const raw = _mergedRaw(PROD_CFG[k].rawKey);
     Object.entries(raw).forEach(([d, v]) => {
@@ -3922,7 +3912,7 @@ function renderFunnel() {
   // Aggregate across selected ROP / product
   let crmKeys;
   if (activeMgrRop === 'all') {
-    crmKeys = ['Коллаген', 'Ummi', 'Ербол', 'Диас'];
+    crmKeys = ['Коллаген', 'Ummi', 'Ербол'];
   } else if (activeMgrProdSub !== 'all') {
     crmKeys = [activeMgrProdSub];
   } else {
@@ -4207,7 +4197,7 @@ function renderRnp() {
 
   const rnpDaily = RNP_EXCEL.daily || {};
   // Map product filter to archive keys
-  const archMap = {'Коллаген':'Коллаген','Ummi':'Ummi','Грибы':null};
+  const archMap = {'Коллаген':'Коллаген','Грибы':null};
   const products = activeRnpDept==='all' ? Object.keys(rnpDaily) : [activeRnpDept];
 
   // Collect dates from Excel + archive for selected products
