@@ -1327,6 +1327,18 @@ function doLogout(){
         <div class="chart-body"><canvas id="leadsDealsChart" height="110"></canvas></div>
       </div>
 
+      <!-- Products by ROP donut chart -->
+      <div class="sec-label mb20">Товары по отделам</div>
+      <div class="card mb24">
+        <div class="card-hdr">
+          <span class="card-title">Товары по отделам</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:24px;padding:8px 24px 20px;align-items:center;justify-content:center">
+          <div style="width:300px;height:300px"><canvas id="prodByRopChart"></canvas></div>
+          <div id="prodByRopLegend" style="font-size:13px;line-height:2;min-width:180px"></div>
+        </div>
+      </div>
+
       <!-- Monthly Summary chart -->
       <div class="sec-label mb20">Итоги за месяц</div>
       <div class="card mb24">
@@ -2545,6 +2557,7 @@ function render(){
   renderAlerts(stats);
   renderTopManager();
   renderHeatmap();
+  renderProdByRop();
 }
 
 // ═══════════════════ FIRST-TOUCH (AmoCRM) ════════════════════════
@@ -3604,6 +3617,91 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('keydown', e => { if(e.key==='Escape') closeSidebar(); });
 });
 
+
+// ═══════════════════════════════════════════════════════════
+//  ТОВАРЫ ПО ОТДЕЛАМ (DONUT)
+// ═══════════════════════════════════════════════════════════
+let _prodByRopChart = null;
+function renderProdByRop() {
+  const canvas = document.getElementById('prodByRopChart');
+  const legendEl = document.getElementById('prodByRopLegend');
+  if (!canvas || !legendEl) return;
+
+  const {from, to} = activePeriod;
+  const dates = getDatesInRange(from, to);
+
+  // Aggregate product quantities per ROP
+  const ropTotals = {};
+  for (const [ropName, ropCrms] of Object.entries(ROP_CRM_MAP)) {
+    let total = 0;
+    for (const comp of ropCrms) {
+      const { prods } = _getProdsForComp(comp);
+      for (const [, p] of Object.entries(prods)) {
+        if (!p.daily) continue;
+        for (const d of dates) {
+          total += p.daily[d] || 0;
+        }
+      }
+    }
+    if (total > 0) ropTotals[ropName] = total;
+  }
+
+  const labels = Object.keys(ropTotals);
+  const values = Object.values(ropTotals);
+  const colors = labels.map(r => ROP_COLORS[r] || '#6366f1');
+  const grandTotal = values.reduce((a, b) => a + b, 0);
+
+  if (_prodByRopChart) _prodByRopChart.destroy();
+
+  if (!grandTotal) {
+    canvas.style.display = 'none';
+    legendEl.innerHTML = '<span style="color:var(--muted)">Нет данных за период</span>';
+    return;
+  }
+  canvas.style.display = '';
+
+  _prodByRopChart = new Chart(canvas.getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: colors,
+        borderColor: '#ffffff',
+        borderWidth: 2,
+        hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      cutout: '55%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const pct = grandTotal > 0 ? (ctx.raw / grandTotal * 100).toFixed(1) : 0;
+              return ` ${ctx.label}: ${ctx.raw.toLocaleString('ru-RU')} шт (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // Custom legend
+  legendEl.innerHTML = labels.map((name, i) => {
+    const pct = (values[i] / grandTotal * 100).toFixed(1);
+    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      <div style="width:12px;height:12px;border-radius:50%;background:${colors[i]};flex-shrink:0"></div>
+      <span style="color:var(--ink);font-weight:500">${name}</span>
+      <span style="color:var(--muted);margin-left:auto;white-space:nowrap">${values[i].toLocaleString('ru-RU')} шт · ${pct}%</span>
+    </div>`;
+  }).join('') + `<div style="border-top:1px solid var(--line);margin-top:8px;padding-top:8px;font-weight:700;color:var(--ink)">
+    Итого: ${grandTotal.toLocaleString('ru-RU')} шт
+  </div>`;
+}
 
 // ═══════════════════════════════════════════════════════════
 //  ТРЕВОЖНЫЕ СИГНАЛЫ
