@@ -3104,6 +3104,21 @@ async function loadFromSupabase() {
           }
         }
       }
+      // ── Auto-map renamed managers (pin renumbering) by person name ──
+      const _ropByName = {};
+      for (const [k, v] of Object.entries(MGR_TO_ROP)) {
+        const nk = _nameKey(k);
+        if (nk.length > 2 && !_ropByName[nk]) _ropByName[nk] = v;
+      }
+      for (const crm of ['Ummi', 'Коллаген']) {
+        for (const m of (MANAGERS[crm] || [])) {
+          if (!MGR_TO_ROP[m.name]) {
+            const nk = _nameKey(m.name);
+            if (nk.length > 2 && _ropByName[nk]) MGR_TO_ROP[m.name] = _ropByName[nk];
+          }
+        }
+      }
+
       // ── Merge hardcoded KIDS archive (old Ummi CRM ≤ 05.04.2026) ──
       // Must run AFTER MGR_TO_ROP loaded from Supabase so KIDS overrides take effect
       if (!RAW['Ummi']) RAW['Ummi'] = {};
