@@ -3115,35 +3115,11 @@ async function loadFromSupabase() {
         }
       }
 
-      // ── Merge hardcoded KIDS archive (old Ummi CRM ≤ 05.04.2026) ──
-      // Must run AFTER MGR_TO_ROP loaded from Supabase so KIDS overrides take effect
+      // KIDS archive disabled — server now syncs KIDS pipeline (WEGLOW KIDS UMMI) correctly via pipeline_id
       if (!RAW['Ummi']) RAW['Ummi'] = {};
-      for (const [date, vals] of Object.entries(KIDS_ARCHIVE_RAW)) {
-        if (!RAW['Ummi'][date]) RAW['Ummi'][date] = vals;
-      }
       if (!MANAGERS['Ummi']) MANAGERS['Ummi'] = [];
-      for (const [rop, mgrs] of Object.entries(KIDS_ARCHIVE_MGRS)) {
-        for (const am of mgrs) {
-          const existing = MANAGERS['Ummi'].find(m => m.name === am.n || _normName(m.name) === _normName(am.n) || (_nameKey(am.n).length > 2 && _nameKey(m.name) === _nameKey(am.n)));
-          if (existing) {
-            if (!existing.daily) existing.daily = {};
-            for (const [date, vals] of Object.entries(am.d)) {
-              if (!existing.daily[date]) existing.daily[date] = vals;
-            }
-          } else {
-            let leads=0,deals=0,budget=0;
-            for (const v of Object.values(am.d)) { leads+=v[0]||0; deals+=v[1]||0; budget+=v[2]||0; }
-            MANAGERS['Ummi'].push({ name: am.n, leads, deals, budget: Math.round(budget),
-              conv: leads>0 ? +(deals/leads*100).toFixed(1) : 0,
-              avgCheck: deals>0 ? Math.round(budget/deals) : 0,
-              daily: am.d });
-          }
-          MGR_TO_ROP[am.n] = rop;
-        }
-      }
-      MANAGERS['Ummi'].sort((a,b) => b.budget - a.budget);
 
-      // ── Split Ummi by date: ≤ 23.04.2026 → Ербол, ≥ 24.04.2026 → Ummi (KIDS) ──
+      // ── Split Ummi (KIDS pipeline) by date: ≤ 23.03.2026 → Ербол, ≥ 24.03.2026 → Ummi (KIDS) ──
       const _erbolCutoff = new Date(2026, 2, 23); // March 23 inclusive
       MANAGERS['Ербол'] = [];
       const kidsUmmi = [];
