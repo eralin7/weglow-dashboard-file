@@ -3146,12 +3146,11 @@ async function loadFromSupabase() {
           for (const am of archMgrs) {
             const match = liveExact[am.name] || liveNorm[_normName(am.name)] || liveNameKey[_nameKey(am.name)];
             if (match) {
-              // Merge: archive wins for dates ≤ March, live wins for April+
+              // Merge: live always wins (reflects current amoCRM), archive fills gaps only
               const live = match;
               if (!live.daily) live.daily = {};
               for (const [date, vals] of Object.entries(am.daily || {})) {
-                if (_isArchiveDate(date)) live.daily[date] = vals; // archive overwrites
-                else if (!live.daily[date]) live.daily[date] = vals; // fill gaps only
+                if (!live.daily[date]) live.daily[date] = vals; // archive fills gaps only
               }
               // Recalculate totals from merged daily
               let tl=0,td=0,tb=0;
@@ -3186,13 +3185,10 @@ async function loadFromSupabase() {
             if (score > bestScore) { bestScore = score; bestMatch = lm; }
           }
           if (bestMatch && bestScore >= 1) {
-            // Merge daily: corrupted (archive) wins for dates ≤ March 2026
+            // Merge daily: live wins, archive fills gaps only
             if (!bestMatch.daily) bestMatch.daily = {};
             for (const [date, vals] of Object.entries(cm.daily || {})) {
-              const [dd,mm,yy] = date.split('.').map(Number);
-              const dt = new Date(yy, mm-1, dd);
-              if (dt <= new Date(2026, 2, 31)) bestMatch.daily[date] = vals;
-              else if (!bestMatch.daily[date]) bestMatch.daily[date] = vals;
+              if (!bestMatch.daily[date]) bestMatch.daily[date] = vals;
             }
             let tl=0,td=0,tb=0;
             for (const v of Object.values(bestMatch.daily)) { tl+=v[0]||0; td+=v[1]||0; tb+=v[2]||0; }
