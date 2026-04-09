@@ -1105,27 +1105,59 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
   </div>
 </div>
 <script>
-function doLogin(){
-  const u=document.getElementById('login-user').value.trim();
-  const p=document.getElementById('login-pass').value;
-  if(u==='admin'&&p==='weglow6977'){
-    sessionStorage.setItem('wg_auth','1');
-    document.getElementById('login-overlay').style.display='none';
-    document.getElementById('login-error').textContent='';
-  } else {
-    document.getElementById('login-error').textContent='Неверный логин или пароль';
+// ═══ AUTH SYSTEM (SHA-256 hashed credentials) ═══════════════════════
+const _USERS = {
+  'admin':   { h: '85c5ec2f7aeec6f41155fc3f05df58eb95e915ebb8cfc34a14b48c316a2e2ed7', role: 'admin' },
+  'viewer':  { h: '916f9dfe92c737c1c1be891a9e47f82f3fd7772a66d27e012d7801699adae2b4', role: 'viewer' },
+  'weglow':  { h: 'f12792f9746489582b0d4b627338856f9f0871853b757f0baa7096dd5d1bbf86', role: 'viewer' }
+};
+async function _sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+async function doLogin(){
+  const u = document.getElementById('login-user').value.trim().toLowerCase();
+  const p = document.getElementById('login-pass').value;
+  const user = _USERS[u];
+  if (user) {
+    const hash = await _sha256(p);
+    if (hash === user.h) {
+      sessionStorage.setItem('wg_auth','1');
+      sessionStorage.setItem('wg_role', user.role);
+      document.getElementById('login-overlay').style.display='none';
+      document.getElementById('login-error').textContent='';
+      _initKey();
+      loadFromSupabase();
+      return;
+    }
   }
+  document.getElementById('login-error').textContent='Неверный логин или пароль';
 }
 function doLogout(){
   sessionStorage.removeItem('wg_auth');
+  sessionStorage.removeItem('wg_role');
+  sessionStorage.removeItem('wg_data');
+  SUPABASE_KEY = null;
+  RAW = {}; MANAGERS = {};
   document.getElementById('login-overlay').style.display='flex';
 }
+// Anti-tamper: if overlay removed/hidden without auth, wipe data
+const _authGuard = new MutationObserver(() => {
+  const ov = document.getElementById('login-overlay');
+  if (sessionStorage.getItem('wg_auth') !== '1') {
+    if (!ov || getComputedStyle(ov).display === 'none') {
+      RAW = {}; MANAGERS = {}; SUPABASE_KEY = null;
+      if (ov) ov.style.display = 'flex'; else location.reload();
+    }
+  }
+});
 (function(){
   if(sessionStorage.getItem('wg_auth')==='1'){
     document.getElementById('login-overlay').style.display='none';
   }
   document.getElementById('login-pass').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
   document.getElementById('login-user').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
+  _authGuard.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
 })();
 </script>
 
@@ -1544,7 +1576,14 @@ function doLogout(){
 <script>
 // ═══════════════════ SUPABASE CONFIG ══════════════════════════════
 const SUPABASE_URL = 'https://bdyakgmeibpdkisbiykt.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkeWFrZ21laWJwZGtpc2JpeWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTQzOTMsImV4cCI6MjA4Nzc5MDM5M30.nA187grJR6XFQRmTP6WOM-6-1dZK1EzYNNP2JH9aAMg';
+let SUPABASE_KEY = null;
+function _initKey() {
+  const _e = 'Ej54A1s/FC59AnMxIj17WncRPjR7BWtNFAR7XXATBx9kKHNBWSJLIUkbRApbJFAyDSNqKVEhGgFIMWoxBA5cIVUiHg4EIlQyHCJlLUsiRXZeCm4yAB11H0kbRQ1CDm4MRw5bHFAbGn5BMWoxQQ5fLUwaRXNbJ3oyBx5qOlA3HQIBJUMxDgpmOkM3IwpBIlQuQyRxIg81HQYGJUMbQgp2Jgw1RHccBXhJT3BVGXMqQR90OmsVIxcEPHY1WnEfWl0iPHZ3EWA2ORcAIXFBFgZ/DA==';
+  const _x = 'wG2k9x';
+  const r = atob(_e); let o = '';
+  for (let i = 0; i < r.length; i++) o += String.fromCharCode(r.charCodeAt(i) ^ _x.charCodeAt(i % _x.length));
+  SUPABASE_KEY = o;
+}
 
 // ═══════════════════ DATA ═══════════════════════════════════════
 // Load from Supabase first, fallback to sessionStorage, then embedded
@@ -3100,6 +3139,7 @@ function renderAdSpend(){
 
 // ═══════════════════ LOAD FROM SUPABASE ══════════════════════════
 async function loadFromSupabase() {
+  if (!SUPABASE_KEY) { console.warn('[auth] No key, skipping load'); return; }
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data,updated_at`, {
       headers: {
@@ -3494,9 +3534,12 @@ function initDynamicUI() {
 }
 var _prodByRopChart = null;
 initDynamicUI();
-render(); // render immediately with embedded data so page is not blank
-// Then load fresh data from Supabase (will re-render with live data)
-loadFromSupabase();
+render(); // render shell (empty until auth)
+// Load data only if already authenticated (returning session)
+if (sessionStorage.getItem('wg_auth') === '1') {
+  _initKey();
+  loadFromSupabase();
+}
 
 
 // ═══════════════════ PRODUCTS VIEW ════════════════════════════════
@@ -4515,9 +4558,9 @@ async function pingRender() {
 // Ping Render every 10 min to prevent sleep
 setInterval(pingRender, 10 * 60 * 1000);
 
-// Reload data from Supabase every 60s (matches server sync interval)
+// Reload data from Supabase every 60s (only if authenticated)
 setInterval(() => {
-  loadFromSupabase();
+  if (sessionStorage.getItem('wg_auth') === '1' && SUPABASE_KEY) loadFromSupabase();
 }, 60 * 1000);
 
 // First ping immediately
