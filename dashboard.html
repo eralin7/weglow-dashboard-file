@@ -1732,7 +1732,18 @@ function getDatesInRange(from,to){
   while(cur<=end){res.push(fmtDate(cur));cur=new Date(cur.getTime()+86400000);}
   return res;
 }
-function getPlan(p,mk){return(PLANS[p]&&PLANS[p][mk])||0;}
+function getPlan(p,mk){
+  if(PLANS[p]&&PLANS[p][mk]) return PLANS[p][mk];
+  // Fallback: sum all ROP_PLANS for this month
+  if(p==='col'||!PLANS[p]){
+    let sum=0;
+    for(const rp of Object.values(ROP_PLANS)){
+      if(rp[mk]) sum+=rp[mk];
+    }
+    if(sum) return sum;
+  }
+  return 0;
+}
 function convCls(v){return v>=12?'txt-g':v>=8?'txt-y':'txt-r';}
 function pctBg(v){return v>=80?'bg-g':v>=50?'bg-y':'bg-r';}
 
@@ -1989,12 +2000,19 @@ function _kpiColHTML(label, badge, kd, borderColor) {
     </div>
     <div class="kpi-row">
       <span class="kpi-row-label">Продажи</span>
-      <div><div class="kpi-row-val" style="color:${borderColor}">${fmtM(kd.budget)}</div>
-      <div class="kpi-row-sub">${fmt(kd.leads)} лидов · ${fmt(kd.deals)} сделок</div></div>
+      <div><div class="kpi-row-val" style="color:${borderColor}">${fmtM(kd.budget)}</div></div>
     </div>
     <div class="kpi-row">
       <span class="kpi-row-label">Выполнение</span>
       <div><div class="kpi-row-val" style="color:${pctClr}">${pct}%</div></div>
+    </div>
+    <div class="kpi-row">
+      <span class="kpi-row-label">Лиды</span>
+      <div><div class="kpi-row-val">${fmt(kd.leads)}</div></div>
+    </div>
+    <div class="kpi-row">
+      <span class="kpi-row-label">Сделки</span>
+      <div><div class="kpi-row-val">${fmt(kd.deals)}</div></div>
     </div>
     <div class="kpi-row">
       <span class="kpi-row-label">ДРР</span>
