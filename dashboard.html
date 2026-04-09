@@ -2056,7 +2056,9 @@ function _kpiColHTML(label, badge, kd, borderColor, periodType) {
     : (kd.isCurrentMonth ? Math.round(kd.monthBudget/kd.plan*100) : Math.round(kd.budget/kd.plan*100))
   ) : 0;
   const drr = kd.budget ? +(kd.adTotal/kd.budget*100).toFixed(1) : 0;
-  const cpl = kd.cplMonth || 0;
+  const cpl = periodType === 'day'
+    ? (kd.leads ? Math.round(kd.adTotal / kd.leads) : 0)
+    : (kd.cplMonth || 0);
   const pctClr = pct>=100?'#16a34a':pct>=80?'#ca8a04':'#c0392b';
   const drrClr = drr<=15?'#16a34a':drr<=25?'#ca8a04':'#c0392b';
   const convClr = kd.conv>=12?'#16a34a':'#c0392b';
