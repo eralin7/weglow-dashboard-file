@@ -240,10 +240,10 @@ async function main() {
 
   console.log('[AI Advisor] Metrics:\n' + metrics);
 
-  // 3. Call Claude CLI — general + per-ROP advice
+  // 3. Call Claude CLI — structured per-section advice
   function callClaude(prompt) {
     const buf = execFileSync('claude', ['--print'], {
-      timeout: 120000,
+      timeout: 180000,
       input: Buffer.from(prompt, 'utf-8'),
       windowsHide: true,
       maxBuffer: 10 * 1024 * 1024,
@@ -252,19 +252,7 @@ async function main() {
     return buf.toString('utf-8').trim().replace(/\ufffd/g, '');
   }
 
-  // 3a. General advice
-  const generalPrompt = `Ты — ИИ-советник для отдела продаж WeGlow (Казахстан, косметика/БАД). Проанализируй метрики и дай 3-5 кратких конкретных рекомендаций на русском. Формат: маркированный список, каждый пункт — конкретное действие. Без вступлений.\n\nТекущие метрики:\n${metrics}`;
-
-  let advice;
-  try {
-    advice = callClaude(generalPrompt);
-  } catch (e) {
-    console.error('[AI Advisor] Claude CLI error (general):', e.message);
-    process.exit(1);
-  }
-  console.log('[AI Advisor] General advice:\n' + advice);
-
-  // 3b. Per-ROP advice — one call, structured output
+  // Build per-ROP metrics string
   const perRopMetrics = Object.entries(ropStats)
     .filter(([r]) => r !== 'unknown')
     .map(([rop, st]) => {
@@ -274,50 +262,65 @@ async function main() {
       return `${rop}: план ${plan ? fmt(plan)+'₸' : '—'}, факт ${fmt(st.budget)}₸ (${pct}%), лидов ${st.leads}, сделок ${st.deals}, конв ${rConv}%`;
     }).join('\n');
 
-  const perRopPrompt = `Ты — ИИ-советник отдела продаж WeGlow (Казахстан, косметика/БАД).
-Период: ${monthFrom} — ${monthTo} (день ${now.getDate()} из ${new Date(now.getFullYear(), now.getMonth()+1, 0).getDate()})
-Общие метрики: продажи ${fmt(totalBudget)}₸, конверсия ${conv}%, средний чек ${fmt(avgCheck)}₸
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  const dayNum = now.getDate();
 
-Метрики по группам:
+  const prompt = `Ты — ИИ-советник отдела продаж WeGlow (Казахстан, косметика/БАД).
+Период: ${monthFrom} — ${monthTo} (день ${dayNum} из ${daysInMonth})
+
+МЕТРИКИ:
+Месяц: продажи ${fmt(totalBudget)}₸, лидов ${totalLeads}, сделок ${totalDeals}, конверсия ${conv}%, средний чек ${fmt(avgCheck)}₸
+ДРР: ${drr}%, расход на рекламу ${fmt(adTotal)}₸
+Вчера: продажи ${fmt(yestBudget)}₸, лидов ${yestLeads}, сделок ${yestDeals}
+
+По группам:
 ${perRopMetrics}
 
-Дай по 1-2 конкретных рекомендации ДЛЯ КАЖДОЙ группы отдельно. Формат ответа строго:
-[РОП Айдана]
-- рекомендация
-[РОП Аслиддин]
-- рекомендация
-[РОП Нурдаулет]
-- рекомендация
-[РОП Айдана KIDS]
-- рекомендация
-[РОП Диас KIDS]
-- рекомендация
+Дай рекомендации по 5 БЛОКАМ дашборда. Формат строго:
 
-Только конкретные действия, без вступлений. Если данных нет — укажи что нужно проверить.`;
+[KPI]
+- 2-3 рекомендации по ключевым показателям (продажи, конверсия, средний чек, ДРР)
 
-  let perRopAdvice = {};
+[PLAN]
+- 2-3 рекомендации по выполнению плана каждой группой (кто отстаёт, что делать)
+
+[DYNAMICS]
+- 2-3 рекомендации по динамике продаж и товарному миксу (тренды, какие товары продвигать)
+
+[LEADS]
+- 2-3 рекомендации по лидам и конверсии (качество лидов, воронка, дожим)
+
+[SUMMARY]
+- 2-3 рекомендации по итогам месяца (прогноз, риски, приоритеты до конца месяца)
+
+Каждый пункт — конкретное действие. Без вступлений.`;
+
+  let sections = {};
+  let generalAdvice = '';
   try {
-    const raw = callClaude(perRopPrompt);
-    console.log('[AI Advisor] Per-ROP raw:\n' + raw);
-    // Parse [РОП Name] blocks
-    const blocks = raw.split(/\[([^\]]+)\]/g);
+    const raw = callClaude(prompt);
+    console.log('[AI Advisor] Raw:\n' + raw);
+    // Parse [SECTION] blocks
+    const blocks = raw.split(/\[([A-Z]+)\]/g);
     for (let i = 1; i < blocks.length; i += 2) {
-      const ropName = blocks[i].trim();
+      const key = blocks[i].trim();
       const text = (blocks[i+1] || '').trim();
-      if (ropName && text) perRopAdvice[ropName] = text;
+      if (key && text) sections[key] = text;
     }
-    console.log('[AI Advisor] Parsed ROPs:', Object.keys(perRopAdvice).join(', '));
+    // Build general advice from all sections combined
+    generalAdvice = Object.values(sections).join('\n\n');
+    console.log('[AI Advisor] Parsed sections:', Object.keys(sections).join(', '));
   } catch (e) {
-    console.error('[AI Advisor] Claude CLI error (per-ROP):', e.message);
-    // Non-fatal — general advice still saved
+    console.error('[AI Advisor] Claude CLI error:', e.message);
+    process.exit(1);
   }
 
   // 4. Save to Supabase — re-read fresh data to avoid stale/corrupted overwrites
   const freshRows = await sbFetch('weglow_data?id=eq.1&select=data', {});
   const currentData = freshRows[0].data;
   currentData.AI_ADVICE = {
-    text: advice,
-    perRop: perRopAdvice,
+    text: generalAdvice,
+    sections: sections,
     ts: Date.now()
   };
 
