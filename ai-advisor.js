@@ -79,6 +79,97 @@ async function main() {
   const MGR_TO_ROP = d.MGR_TO_ROP || {};
   const AD_SPEND = d.AD_SPEND || {};
 
+  // ── Merge archive data (same logic as dashboard) ──
+  const _isArchiveDate = dt => { const [dd,mm,yy]=dt.split('.').map(Number); return yy<2026||(yy===2026&&mm<4); };
+  function _normName(n) { return n.toLowerCase().replace(/\ufffd/g,'').replace(/\s+/g,' ').trim(); }
+  function _nameKey(n) { return n.toLowerCase().replace(/\ufffd/g,'').replace(/^пин\s+\d+\s+/i,'').replace(/\s+/g,' ').trim(); }
+
+  if (d.ARCHIVE_MANAGERS) {
+    for (const [acc, archMgrs] of Object.entries(d.ARCHIVE_MANAGERS)) {
+      if (!MANAGERS[acc]) MANAGERS[acc] = [];
+      const liveExact = {}, liveNorm = {}, liveNameKey = {};
+      MANAGERS[acc].forEach(m => {
+        liveExact[m.name] = m;
+        liveNorm[_normName(m.name)] = m;
+        const nk = _nameKey(m.name);
+        if (nk.length > 2) liveNameKey[nk] = m;
+      });
+      for (const am of archMgrs) {
+        const match = liveExact[am.name] || liveNorm[_normName(am.name)] || liveNameKey[_nameKey(am.name)];
+        if (match) {
+          if (!match.daily) match.daily = {};
+          for (const [date, vals] of Object.entries(am.daily || {})) {
+            if (_isArchiveDate(date)) match.daily[date] = vals;
+            else if (!match.daily[date]) match.daily[date] = vals;
+          }
+          let tl=0,td=0,tb=0;
+          for (const vals of Object.values(match.daily)) { tl+=vals[0]||0; td+=vals[1]||0; tb+=vals[2]||0; }
+          match.leads=tl; match.deals=td; match.budget=tb;
+        } else {
+          MANAGERS[acc].push(am);
+        }
+      }
+    }
+  }
+
+  // ── Split Ummi by date: ≤ 23.03.2026 → Ербол, ≥ 24.03.2026 → Ummi (KIDS) ──
+  if (!MANAGERS['Ummi']) MANAGERS['Ummi'] = [];
+  const _erbolCutoff = new Date(2026, 2, 23);
+  MANAGERS['Ербол'] = [];
+  const kidsUmmi = [];
+  for (const m of (MANAGERS['Ummi'] || [])) {
+    const erbDaily = {}, kidsDaily = {};
+    for (const [date, vals] of Object.entries(m.daily || {})) {
+      const [dd,mm,yy] = date.split('.').map(Number);
+      const dt = new Date(yy, mm-1, dd);
+      if (dt <= _erbolCutoff) erbDaily[date] = vals;
+      else kidsDaily[date] = vals;
+    }
+    if (Object.keys(erbDaily).length) {
+      let l=0,dl=0,b=0;
+      for (const v of Object.values(erbDaily)) { l+=v[0]||0; dl+=v[1]||0; b+=v[2]||0; }
+      MANAGERS['Ербол'].push({ name: m.name, leads:l, deals:dl, budget:b, daily: erbDaily });
+    }
+    if (Object.keys(kidsDaily).length) {
+      let l=0,dl=0,b=0;
+      for (const v of Object.values(kidsDaily)) { l+=v[0]||0; dl+=v[1]||0; b+=v[2]||0; }
+      kidsUmmi.push({ name: m.name, leads:l, deals:dl, budget:b, daily: kidsDaily });
+    }
+  }
+  MANAGERS['Ummi'] = kidsUmmi;
+
+  // ── Fix MGR_TO_ROP encoding + auto-map by person name ──
+  for (const [k,v] of Object.entries(MGR_TO_ROP)) {
+    if (v.includes('\ufffd')) {
+      const lower = v.replace(/\ufffd+/g, '').toLowerCase().trim();
+      if (lower.includes('айдана')) MGR_TO_ROP[k] = 'РОП Айдана';
+      else if (lower.includes('аслиддин')) MGR_TO_ROP[k] = 'РОП Аслиддин';
+      else if (lower.includes('нурдаулет')) MGR_TO_ROP[k] = 'РОП Нурдаулет';
+      else if (lower.includes('диас')) MGR_TO_ROP[k] = 'РОП Диас KIDS';
+      else delete MGR_TO_ROP[k];
+    }
+  }
+  const _ropByName = {};
+  for (const [k, v] of Object.entries(MGR_TO_ROP)) {
+    const nk = _nameKey(k);
+    if (nk.length > 2 && !_ropByName[nk]) _ropByName[nk] = v;
+  }
+  for (const crm of ['Ummi', 'Коллаген', 'Ербол']) {
+    for (const m of (MANAGERS[crm] || [])) {
+      if (!MGR_TO_ROP[m.name]) {
+        const nk = _nameKey(m.name);
+        if (nk.length > 2 && _ropByName[nk]) MGR_TO_ROP[m.name] = _ropByName[nk];
+      }
+    }
+  }
+
+  // ── Virtual CRMs: Коллаген aggregate includes Ummi + Ербол ──
+  const _VIRTUAL_CRMS = { 'Коллаген': ['Ummi', 'Ербол'] };
+
+  console.log('[AI Advisor] Data loaded — CRMs:', Object.keys(MANAGERS).join(', '),
+    '| Kol mgrs:', (MANAGERS['Коллаген']||[]).length,
+    '| Ummi mgrs:', (MANAGERS['Ummi']||[]).length);
+
   // 2. Compute metrics for current month
   const now = new Date();
   const monthKey = getMonthKey(now);
@@ -88,14 +179,7 @@ async function main() {
   const yestStr = fmtDate(yesterday);
   const dates = getDatesInRange(monthFrom, monthTo);
 
-  // Build ROP groups from MGR_TO_ROP
-  const ropGroups = {};
-  for (const [mgr, rop] of Object.entries(MGR_TO_ROP)) {
-    if (!ropGroups[rop]) ropGroups[rop] = [];
-    ropGroups[rop].push(mgr);
-  }
-
-  // Aggregate per ROP
+  // Aggregate per ROP — simple approach: iterate all CRM managers, group by MGR_TO_ROP
   let totalLeads=0, totalDeals=0, totalBudget=0;
   let yestLeads=0, yestDeals=0, yestBudget=0;
   const ropStats = {};
@@ -103,15 +187,11 @@ async function main() {
   for (const [crm, mgrs] of Object.entries(MANAGERS)) {
     for (const m of mgrs) {
       if (!m.daily) continue;
+      // Determine ROP for this manager
       let rop = MGR_TO_ROP[m.name] || 'unknown';
-      // Fix corrupted encoding entries
-      if (rop.includes('\ufffd')) {
-        const clean = rop.replace(/\ufffd+/g, '').toLowerCase().trim();
-        if (clean.includes('айдана')) rop = 'РОП Айдана';
-        else if (clean.includes('аслиддин')) rop = 'РОП Аслиддин';
-        else if (clean.includes('нурдаулет')) rop = 'РОП Нурдаулет';
-        else if (clean.includes('диас')) rop = 'РОП Диас';
-        else rop = 'unknown';
+      // For KIDS CRM (Ummi), managers map to KIDS ROP variant
+      if (crm === 'Ummi' && !rop.includes('KIDS')) {
+        if (rop.startsWith('РОП ')) rop = rop + ' KIDS';
       }
       if (!ropStats[rop]) ropStats[rop] = { leads:0, deals:0, budget:0 };
 
@@ -165,13 +245,17 @@ async function main() {
 
   let advice;
   try {
-    // Use execFileSync with input to pass UTF-8 prompt via stdin (no shell encoding issues)
-    advice = execFileSync('claude', ['--print'], {
-      encoding: 'utf-8',
+    // Get raw Buffer to avoid Windows code page corruption, then decode as UTF-8
+    const buf = execFileSync('claude', ['--print'], {
       timeout: 120000,
-      input: prompt,
-      windowsHide: true
-    }).trim();
+      input: Buffer.from(prompt, 'utf-8'),
+      windowsHide: true,
+      maxBuffer: 10 * 1024 * 1024,
+      env: { ...process.env, LANG: 'en_US.UTF-8', PYTHONIOENCODING: 'utf-8' }
+    });
+    advice = buf.toString('utf-8').trim();
+    // Strip any remaining replacement characters from encoding issues
+    advice = advice.replace(/\ufffd/g, '');
   } catch (e) {
     console.error('[AI Advisor] Claude CLI error:', e.message);
     process.exit(1);
