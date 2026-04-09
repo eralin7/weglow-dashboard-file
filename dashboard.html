@@ -1800,10 +1800,11 @@ function getDatesInRange(from,to){
 }
 function getPlan(p,mk){
   if(PLANS[p]&&PLANS[p][mk]) return PLANS[p][mk];
-  // Fallback: sum all ROP_PLANS for this month
+  // Fallback: sum all ROP_PLANS for this month (skip corrupted keys)
   if(p==='col'||!PLANS[p]){
     let sum=0;
-    for(const rp of Object.values(ROP_PLANS)){
+    for(const [k,rp] of Object.entries(ROP_PLANS)){
+      if(k.includes('\ufffd')) continue; // skip corrupted Unicode keys
       if(rp[mk]) sum+=rp[mk];
     }
     if(sum) return sum;
