@@ -2630,6 +2630,7 @@ function render(){
   renderTopManager();
   renderHeatmap();
   renderProdByRop();
+  renderCityMap();
 }
 
 // ═══════════════════ FIRST-TOUCH (AmoCRM) ════════════════════════
@@ -4330,9 +4331,13 @@ function renderCityMap() {
   const listEl = document.getElementById('cityList');
   if (!mapEl || !listEl) return;
 
-  // Aggregate cities with coordinates
+  // Get active period dates for filtering
+  const periodFrom = parseDate(activePeriod.from);
+  const periodTo = parseDate(activePeriod.to);
+
+  // Aggregate cities with coordinates, filtered by period
   const aggregated = {}; // { cityName: {lat, lng, deals, budget} }
-  for (const [name, data] of Object.entries(_cityData)) {
+  for (const [name, dailyData] of Object.entries(_cityData)) {
     const coords = _findCityCoords(name);
     if (!coords) continue;
     // Normalize to known city name
@@ -4342,9 +4347,28 @@ function renderCityMap() {
         normName = k; break;
       }
     }
+    // Sum daily data within period
+    let deals = 0, budget = 0;
+    if (typeof dailyData === 'object' && !Array.isArray(dailyData)) {
+      // New format: { "dd.mm.yyyy": [deals, budget] }
+      if (dailyData.deals !== undefined) {
+        // Old format fallback: { deals, budget }
+        deals = dailyData.deals; budget = dailyData.budget;
+      } else {
+        for (const [date, vals] of Object.entries(dailyData)) {
+          try {
+            const dt = parseDate(date);
+            if (dt >= periodFrom && dt <= periodTo) {
+              deals += vals[0] || 0; budget += vals[1] || 0;
+            }
+          } catch(e) {}
+        }
+      }
+    }
+    if (deals === 0) continue;
     if (!aggregated[normName]) aggregated[normName] = { lat: coords[0], lng: coords[1], deals: 0, budget: 0 };
-    aggregated[normName].deals += data.deals;
-    aggregated[normName].budget += data.budget;
+    aggregated[normName].deals += deals;
+    aggregated[normName].budget += budget;
   }
 
   const entries = Object.entries(aggregated).sort((a,b) => b[1].deals - a[1].deals);
