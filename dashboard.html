@@ -1302,12 +1302,28 @@ function doLogout(){
         <div id="plan-table" style="min-width:900px"></div>
       </div>
 
-      <!-- Sales by ROP chart -->
-      <div class="card mb24">
-        <div class="card-hdr">
-          <span class="card-title" id="chart-lbl">Динамика продаж по РОПам</span>
+      <!-- Sales by ROP chart + Products donut side by side -->
+      <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:24px">
+        <div class="card" style="flex:1;min-width:500px">
+          <div class="card-hdr">
+            <span class="card-title" id="chart-lbl">Динамика продаж по РОПам</span>
+          </div>
+          <div class="chart-body"><canvas id="lineChart" height="120"></canvas></div>
         </div>
-        <div class="chart-body"><canvas id="lineChart" height="120"></canvas></div>
+        <div class="card" style="width:380px;flex-shrink:0">
+          <div class="card-hdr" style="flex-wrap:wrap;gap:6px">
+            <span class="card-title">Товары</span>
+            <div class="chart-filters" id="prod-donut-filters">
+              <button class="cf-btn active" onclick="setProdDonutFilter('all',this)">Все</button>
+              <button class="cf-btn" onclick="setProdDonutFilter('Коллаген',this)">Коллаген</button>
+              <button class="cf-btn" onclick="setProdDonutFilter('Ummi',this)">KIDS</button>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;padding:8px 16px 16px">
+            <div style="width:220px;height:220px"><canvas id="prodByRopChart"></canvas></div>
+            <div id="prodByRopLegend" style="font-size:12px;line-height:1.8;width:100%;margin-top:8px"></div>
+          </div>
+        </div>
       </div>
 
       <!-- Combined Leads & Deals chart -->
@@ -1325,18 +1341,6 @@ function doLogout(){
           </div>
         </div>
         <div class="chart-body"><canvas id="leadsDealsChart" height="110"></canvas></div>
-      </div>
-
-      <!-- Products by ROP donut chart -->
-      <div class="sec-label mb20">Товары по отделам</div>
-      <div class="card mb24">
-        <div class="card-hdr">
-          <span class="card-title">Товары по отделам</span>
-        </div>
-        <div style="display:flex;flex-wrap:wrap;gap:24px;padding:8px 24px 20px;align-items:center;justify-content:center">
-          <div style="width:300px;height:300px"><canvas id="prodByRopChart"></canvas></div>
-          <div id="prodByRopLegend" style="font-size:13px;line-height:2;min-width:180px"></div>
-        </div>
       </div>
 
       <!-- Monthly Summary chart -->
@@ -3627,8 +3631,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 // ═══════════════════════════════════════════════════════════
-//  ТОВАРЫ ПО ОТДЕЛАМ (DONUT)
+//  ТОВАРЫ DONUT (product breakdown)
 // ═══════════════════════════════════════════════════════════
+var _prodDonutFilter = 'all'; // 'all' | 'Коллаген' | 'Ummi'
+var _PROD_COLORS = ['#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16'];
+
+function setProdDonutFilter(val, btn) {
+  _prodDonutFilter = val;
+  document.querySelectorAll('#prod-donut-filters .cf-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderProdByRop();
+}
+
 function renderProdByRop() {
   const canvas = document.getElementById('prodByRopChart');
   const legendEl = document.getElementById('prodByRopLegend');
@@ -3637,25 +3651,29 @@ function renderProdByRop() {
   const {from, to} = activePeriod;
   const dates = getDatesInRange(from, to);
 
-  // Aggregate product quantities per ROP
-  const ropTotals = {};
-  for (const [ropName, ropCrms] of Object.entries(ROP_CRM_MAP)) {
-    let total = 0;
-    for (const comp of ropCrms) {
-      const { prods } = _getProdsForComp(comp);
-      for (const [, p] of Object.entries(prods)) {
-        if (!p.daily) continue;
-        for (const d of dates) {
-          total += p.daily[d] || 0;
-        }
-      }
+  // Determine which CRMs to include
+  const crmKeys = _prodDonutFilter === 'all'
+    ? Object.keys(PRODUCTS || {})
+    : [_prodDonutFilter];
+
+  // Aggregate quantities per product name
+  const prodTotals = {};
+  for (const crm of crmKeys) {
+    const prods = PRODUCTS?.[crm];
+    if (!prods) continue;
+    for (const [name, info] of Object.entries(prods)) {
+      if (!info.daily) continue;
+      let total = 0;
+      for (const d of dates) { total += info.daily[d] || 0; }
+      if (total > 0) prodTotals[name] = (prodTotals[name] || 0) + total;
     }
-    if (total > 0) ropTotals[ropName] = total;
   }
 
-  const labels = Object.keys(ropTotals);
-  const values = Object.values(ropTotals);
-  const colors = labels.map(r => ROP_COLORS[r] || '#6366f1');
+  // Sort by value descending
+  const sorted = Object.entries(prodTotals).sort((a,b) => b[1] - a[1]);
+  const labels = sorted.map(e => e[0]);
+  const values = sorted.map(e => e[1]);
+  const colors = labels.map((_, i) => _PROD_COLORS[i % _PROD_COLORS.length]);
   const grandTotal = values.reduce((a, b) => a + b, 0);
 
   if (_prodByRopChart) _prodByRopChart.destroy();
@@ -3669,43 +3687,27 @@ function renderProdByRop() {
 
   _prodByRopChart = new Chart(canvas.getContext('2d'), {
     type: 'doughnut',
-    data: {
-      labels,
-      datasets: [{
-        data: values,
-        backgroundColor: colors,
-        borderColor: '#ffffff',
-        borderWidth: 2,
-        hoverOffset: 8
-      }]
-    },
+    data: { labels, datasets: [{ data: values, backgroundColor: colors, borderColor: '#fff', borderWidth: 2, hoverOffset: 6 }] },
     options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      cutout: '55%',
+      responsive: true, maintainAspectRatio: true, cutout: '55%',
       plugins: {
         legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => {
-              const pct = grandTotal > 0 ? (ctx.raw / grandTotal * 100).toFixed(1) : 0;
-              return ` ${ctx.label}: ${ctx.raw.toLocaleString('ru-RU')} шт (${pct}%)`;
-            }
-          }
-        }
+        tooltip: { callbacks: { label: ctx => {
+          const pct = grandTotal > 0 ? (ctx.raw / grandTotal * 100).toFixed(1) : 0;
+          return ` ${ctx.label}: ${ctx.raw.toLocaleString('ru-RU')} шт (${pct}%)`;
+        }}}
       }
     }
   });
 
-  // Custom legend
   legendEl.innerHTML = labels.map((name, i) => {
     const pct = (values[i] / grandTotal * 100).toFixed(1);
-    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-      <div style="width:12px;height:12px;border-radius:50%;background:${colors[i]};flex-shrink:0"></div>
-      <span style="color:var(--ink);font-weight:500">${name}</span>
-      <span style="color:var(--muted);margin-left:auto;white-space:nowrap">${values[i].toLocaleString('ru-RU')} шт · ${pct}%</span>
+    return `<div style="display:flex;align-items:center;gap:6px">
+      <div style="width:10px;height:10px;border-radius:50%;background:${colors[i]};flex-shrink:0"></div>
+      <span style="color:var(--ink);font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</span>
+      <span style="color:var(--muted);white-space:nowrap">${values[i].toLocaleString('ru-RU')} шт · ${pct}%</span>
     </div>`;
-  }).join('') + `<div style="border-top:1px solid var(--line);margin-top:8px;padding-top:8px;font-weight:700;color:var(--ink)">
+  }).join('') + `<div style="border-top:1px solid var(--line);margin-top:6px;padding-top:6px;font-weight:700;color:var(--ink);font-size:13px">
     Итого: ${grandTotal.toLocaleString('ru-RU')} шт
   </div>`;
 }
