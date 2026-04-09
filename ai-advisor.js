@@ -240,12 +240,8 @@ async function main() {
 
   console.log('[AI Advisor] Metrics:\n' + metrics);
 
-  // 3. Call Claude CLI
-  const prompt = `Ты — ИИ-советник для отдела продаж WeGlow (Казахстан, косметика/БАД). Проанализируй метрики и дай 3-5 кратких конкретных рекомендаций на русском. Формат: маркированный список, каждый пункт — конкретное действие. Без вступлений.\n\nТекущие метрики:\n${metrics}`;
-
-  let advice;
-  try {
-    // Get raw Buffer to avoid Windows code page corruption, then decode as UTF-8
+  // 3. Call Claude CLI — general + per-ROP advice
+  function callClaude(prompt) {
     const buf = execFileSync('claude', ['--print'], {
       timeout: 120000,
       input: Buffer.from(prompt, 'utf-8'),
@@ -253,20 +249,77 @@ async function main() {
       maxBuffer: 10 * 1024 * 1024,
       env: { ...process.env, LANG: 'en_US.UTF-8', PYTHONIOENCODING: 'utf-8' }
     });
-    advice = buf.toString('utf-8').trim();
-    // Strip any remaining replacement characters from encoding issues
-    advice = advice.replace(/\ufffd/g, '');
-  } catch (e) {
-    console.error('[AI Advisor] Claude CLI error:', e.message);
-    process.exit(1);
+    return buf.toString('utf-8').trim().replace(/\ufffd/g, '');
   }
 
-  console.log('[AI Advisor] Advice:\n' + advice);
+  // 3a. General advice
+  const generalPrompt = `Ты — ИИ-советник для отдела продаж WeGlow (Казахстан, косметика/БАД). Проанализируй метрики и дай 3-5 кратких конкретных рекомендаций на русском. Формат: маркированный список, каждый пункт — конкретное действие. Без вступлений.\n\nТекущие метрики:\n${metrics}`;
+
+  let advice;
+  try {
+    advice = callClaude(generalPrompt);
+  } catch (e) {
+    console.error('[AI Advisor] Claude CLI error (general):', e.message);
+    process.exit(1);
+  }
+  console.log('[AI Advisor] General advice:\n' + advice);
+
+  // 3b. Per-ROP advice — one call, structured output
+  const perRopMetrics = Object.entries(ropStats)
+    .filter(([r]) => r !== 'unknown')
+    .map(([rop, st]) => {
+      const plan = ROP_PLANS[rop]?.[monthKey] || 0;
+      const rConv = st.leads > 0 ? +(st.deals/st.leads*100).toFixed(1) : 0;
+      const pct = plan > 0 ? +(st.budget/plan*100).toFixed(1) : 0;
+      return `${rop}: план ${plan ? fmt(plan)+'₸' : '—'}, факт ${fmt(st.budget)}₸ (${pct}%), лидов ${st.leads}, сделок ${st.deals}, конв ${rConv}%`;
+    }).join('\n');
+
+  const perRopPrompt = `Ты — ИИ-советник отдела продаж WeGlow (Казахстан, косметика/БАД).
+Период: ${monthFrom} — ${monthTo} (день ${now.getDate()} из ${new Date(now.getFullYear(), now.getMonth()+1, 0).getDate()})
+Общие метрики: продажи ${fmt(totalBudget)}₸, конверсия ${conv}%, средний чек ${fmt(avgCheck)}₸
+
+Метрики по группам:
+${perRopMetrics}
+
+Дай по 1-2 конкретных рекомендации ДЛЯ КАЖДОЙ группы отдельно. Формат ответа строго:
+[РОП Айдана]
+- рекомендация
+[РОП Аслиддин]
+- рекомендация
+[РОП Нурдаулет]
+- рекомендация
+[РОП Айдана KIDS]
+- рекомендация
+[РОП Диас KIDS]
+- рекомендация
+
+Только конкретные действия, без вступлений. Если данных нет — укажи что нужно проверить.`;
+
+  let perRopAdvice = {};
+  try {
+    const raw = callClaude(perRopPrompt);
+    console.log('[AI Advisor] Per-ROP raw:\n' + raw);
+    // Parse [РОП Name] blocks
+    const blocks = raw.split(/\[([^\]]+)\]/g);
+    for (let i = 1; i < blocks.length; i += 2) {
+      const ropName = blocks[i].trim();
+      const text = (blocks[i+1] || '').trim();
+      if (ropName && text) perRopAdvice[ropName] = text;
+    }
+    console.log('[AI Advisor] Parsed ROPs:', Object.keys(perRopAdvice).join(', '));
+  } catch (e) {
+    console.error('[AI Advisor] Claude CLI error (per-ROP):', e.message);
+    // Non-fatal — general advice still saved
+  }
 
   // 4. Save to Supabase — re-read fresh data to avoid stale/corrupted overwrites
   const freshRows = await sbFetch('weglow_data?id=eq.1&select=data', {});
   const currentData = freshRows[0].data;
-  currentData.AI_ADVICE = { text: advice, ts: Date.now() };
+  currentData.AI_ADVICE = {
+    text: advice,
+    perRop: perRopAdvice,
+    ts: Date.now()
+  };
 
   const patchBody = JSON.stringify({ data: currentData, updated_at: new Date().toISOString() });
   console.log(`[AI Advisor] PATCH body size: ${(patchBody.length/1024/1024).toFixed(2)} MB`);
