@@ -2197,6 +2197,8 @@ function renderPlanTable(stats){
     const _historyCutoff = new Date(2026, 2, 23); // March 23
     const _historyGroups = new Set(['РОП Ербол', 'Кофе (Архив)']);
 
+    // Collect all ROP row data first
+    const _ropRows = [];
     for (const [ropName, ropCfg] of Object.entries(ROP_GROUPS)) {
       if (ropName === 'all') continue;
       if (_historyGroups.has(ropName) && _fromD > _historyCutoff) continue;
@@ -2204,7 +2206,6 @@ function renderPlanTable(stats){
       if (selectedProdName && !ropCrms.includes(selectedProdName)) continue;
       const crms = selectedProdName ? ropCrms.filter(c=>c===selectedProdName) : ropCrms;
 
-      // Fact for the selected period
       let ropLeads=0, ropDeals=0, ropFact=0;
       crms.forEach(crm => {
         const mgrs = aggregateManagersByPeriod(crm, _planFrom, _planTo);
@@ -2213,16 +2214,12 @@ function renderPlanTable(stats){
         });
       });
 
-      // Plan proportional to selected period
       const planPeriod = _getRopPlanPeriod(ropName);
       const fullMonthPlan = _getRopMonthPlan(ropName);
-
-      // Execution
       const execPct = planPeriod>0 ? Math.round(ropFact/planPeriod*100) : (ropFact>0?100:0);
       const remain = planPeriod>0 ? Math.max(0, planPeriod-ropFact) : 0;
       const perDay = _daysLeft>0&&remain>0 ? Math.round(remain/_daysLeft) : 0;
 
-      // Forecast: always based on current month fact (not filtered period)
       let _fcFact = 0;
       crms.forEach(crm => {
         const fcMgrs = aggregateManagersByPeriod(crm, _fcMonthStart, _fcMonthEnd);
@@ -2233,7 +2230,6 @@ function renderPlanTable(stats){
 
       const conv = ropLeads>0?(ropDeals/ropLeads*100).toFixed(1):'0.0';
 
-      // Ad spend — proportional by leads share within each CRM
       let adSpend=0;
       crms.forEach(crm=>{
         let crmAdTotal=0;
@@ -2252,6 +2248,19 @@ function renderPlanTable(stats){
       const rpl = ropLeads>0&&ropFact>0?Math.round(ropFact/ropLeads):0;
       const ropDrr = ropFact>0&&adSpend>0?(adSpend/ropFact*100).toFixed(1):'0.0';
 
+      let ropMgrCount=0;
+      crms.forEach(crm=>{ (MANAGERS[crm]||[]).filter(m=>ropMatches(m.name,ropName) && !m.name.toLowerCase().startsWith('роп ')).forEach(()=>ropMgrCount++); });
+      const salesPerMgr = ropMgrCount>0?Math.round(ropFact/ropMgrCount):0;
+
+      _ropRows.push({ ropName, ropCfg, ropFact, ropLeads, ropDeals, planPeriod, fullMonthPlan, execPct, remain, perDay, forecast, conv, adSpend, cplM, rpl, ropDrr, salesPerMgr, _fcFact });
+    }
+
+    // Sort by fact descending
+    _ropRows.sort((a,b) => b.ropFact - a.ropFact);
+
+    // Render sorted rows + accumulate totals
+    for (const r of _ropRows) {
+      const {ropName,ropCfg,ropFact,ropLeads,ropDeals,planPeriod,fullMonthPlan,execPct,remain,perDay,forecast,conv,adSpend,cplM,rpl,ropDrr,salesPerMgr,_fcFact} = r;
       rTotPlan+=planPeriod; rTotFullPlan+=fullMonthPlan; rTotFact+=ropFact; rTotLeads+=ropLeads; rTotDeals+=ropDeals; rTotAd+=adSpend; rTotFcFact+=_fcFact;
 
       const remainCell = planPeriod>0
@@ -2262,11 +2271,6 @@ function renderPlanTable(stats){
 
       const fcPct = fullMonthPlan>0&&forecast>0?Math.round(forecast/fullMonthPlan*100):0;
       const fcClr = fcPct>=100?'#16a34a':fcPct>=80?'#ca8a04':'#dc2626';
-
-      // Count managers in this ROP group
-      let ropMgrCount=0;
-      crms.forEach(crm=>{ (MANAGERS[crm]||[]).filter(m=>ropMatches(m.name,ropName) && !m.name.toLowerCase().startsWith('роп ')).forEach(()=>ropMgrCount++); });
-      const salesPerMgr = ropMgrCount>0?Math.round(ropFact/ropMgrCount):0;
 
       rows += `<tr>
         <td><div class="prod-name"><div class="prod-dot" style="background:${ropCfg.color}"></div>${ropName}</div></td>
