@@ -3167,6 +3167,47 @@ async function loadFromSupabase() {
           MANAGERS[acc].sort((a,b) => b.budget - a.budget);
         }
       }
+
+      // ── Dedup: merge corrupted-name managers (with FFFD) into clean counterparts ──
+      for (const acc of Object.keys(MANAGERS)) {
+        const mgrs = MANAGERS[acc];
+        const corrupted = mgrs.filter(m => m.name.includes('\uFFFD'));
+        if (!corrupted.length) continue;
+        const clean = mgrs.filter(m => !m.name.includes('\uFFFD'));
+        const toRemove = new Set();
+        for (const cm of corrupted) {
+          // Extract readable fragments from corrupted name (skip FFFD clusters)
+          const frags = cm.name.replace(/\uFFFD+/g, ' ').toLowerCase().split(/\s+/).filter(p => p.length > 2);
+          let bestMatch = null, bestScore = 0;
+          for (const lm of clean) {
+            const lLow = lm.name.toLowerCase();
+            let score = 0;
+            for (const f of frags) { if (lLow.includes(f)) score++; }
+            if (score > bestScore) { bestScore = score; bestMatch = lm; }
+          }
+          if (bestMatch && bestScore >= 1) {
+            // Merge daily: corrupted (archive) wins for dates ≤ March 2026
+            if (!bestMatch.daily) bestMatch.daily = {};
+            for (const [date, vals] of Object.entries(cm.daily || {})) {
+              const [dd,mm,yy] = date.split('.').map(Number);
+              const dt = new Date(yy, mm-1, dd);
+              if (dt <= new Date(2026, 2, 31)) bestMatch.daily[date] = vals;
+              else if (!bestMatch.daily[date]) bestMatch.daily[date] = vals;
+            }
+            let tl=0,td=0,tb=0;
+            for (const v of Object.values(bestMatch.daily)) { tl+=v[0]||0; td+=v[1]||0; tb+=v[2]||0; }
+            bestMatch.leads=tl; bestMatch.deals=td; bestMatch.budget=tb;
+            bestMatch.conv = tl>0 ? +(td/tl*100).toFixed(1) : 0;
+            bestMatch.avgCheck = td>0 ? Math.round(tb/td) : 0;
+            toRemove.add(cm);
+          }
+        }
+        if (toRemove.size) {
+          MANAGERS[acc] = mgrs.filter(m => !toRemove.has(m));
+          console.log('[dedup] Merged', toRemove.size, 'corrupted managers in', acc);
+        }
+      }
+
       if (d.AD_SPEND) {
         AD_SPEND = {};
         for (const [k,v] of Object.entries(d.AD_SPEND)) {
