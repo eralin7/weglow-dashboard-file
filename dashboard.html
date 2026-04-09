@@ -4434,6 +4434,7 @@ var _aiAdviceData = null; // { text, sections: {KPI,PLAN,DYNAMICS,LEADS,SUMMARY}
 
 function _renderAdviceBlock(text) {
   if (!text) return '<span style="color:var(--muted)">Рекомендации ещё не сгенерированы</span>';
+  text = text.replace(/\uFFFD+/g, '');
   const items = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
     .split('\n').filter(l => l.trim() && l.trim() !== '---' && l.trim() !== '--')
     .map(l => l.replace(/^[-•]\s*/, '').trim()).filter(Boolean);
