@@ -1660,8 +1660,9 @@ let ROP_GROUPS = {
   'РОП Айдана KIDS':  { label: 'РОП Айдана KIDS', color: '#7c3aed' },
   'РОП Диас KIDS':    { label: 'РОП Диас KIDS',   color: '#db2777' },
   'Кофе (Архив)':     { label: 'Кофе (Архив)',    color: '#b45309' },
+  'БОТА AI':          { label: 'БОТА AI',         color: '#0ea5e9' },
 };
-const ROP_COLORS = {'РОП Айдана':'#1a56db','РОП Аслиддин':'#b45309','РОП Нурдаулет':'#0a7c5c','РОП Ербол':'#e11d48','РОП Айдана KIDS':'#7c3aed','РОП Диас KIDS':'#db2777','Кофе (Архив)':'#b45309'};
+const ROP_COLORS = {'РОП Айдана':'#1a56db','РОП Аслиддин':'#b45309','РОП Нурдаулет':'#0a7c5c','РОП Ербол':'#e11d48','РОП Айдана KIDS':'#7c3aed','РОП Диас KIDS':'#db2777','Кофе (Архив)':'#b45309','БОТА AI':'#0ea5e9'};
 const ROP_CRM_MAP = {
   'РОП Айдана':       ['Коллаген'],
   'РОП Аслиддин':     ['Коллаген'],
@@ -1670,12 +1671,13 @@ const ROP_CRM_MAP = {
   'РОП Айдана KIDS':  ['Ummi'],    // Ummi data ≥ 24.03.2026
   'РОП Диас KIDS':    ['Ummi'],    // KIDS pipeline (weglow.amocrm.ru) ≥ 24.03.2026
   'Кофе (Архив)':     ['Кофе (Архив)'], // mushrooms.amocrm.ru data < 23.03.2026
+  'БОТА AI':          ['Коллаген'],    // AI bot manager in Коллаген CRM
 };
 function rebuildRopGroups() {
   // Rebuild ROP_GROUPS from MGR_TO_ROP data + always include fixed groups
   const ropSet = new Set(Object.values(MGR_TO_ROP));
   // Always include these groups even if not in MGR_TO_ROP
-  ['РОП Ербол', 'РОП Айдана KIDS', 'РОП Диас KIDS', 'Кофе (Архив)'].forEach(r => ropSet.add(r));
+  ['РОП Ербол', 'РОП Айдана KIDS', 'РОП Диас KIDS', 'Кофе (Архив)', 'БОТА AI'].forEach(r => ropSet.add(r));
   ROP_GROUPS = { 'all': { label: 'Все', color: '#6366f1' } };
   const _hiddenRops = new Set(['РОП Диас']); // removed group, data goes to РОП Диас KIDS
   for (const rop of [...ropSet].sort()) {
@@ -1726,6 +1728,7 @@ function clearRopCache() { Object.keys(_ropCache).forEach(k => delete _ropCache[
 function ropMatches(mgrName, targetRop) {
   if (targetRop === 'РОП Ербол') return true;     // Ербол CRM: all Ummi managers pre-24.03
   if (targetRop === 'Кофе (Архив)') return true;  // Кофе CRM: all mushrooms managers pre-23.03
+  if (targetRop === 'БОТА AI') return mgrName === 'БОТА AI';  // AI bot manager
   const mgrRop = getRop(mgrName);
   if (mgrRop === targetRop) return true;
   if (targetRop.endsWith(' KIDS')) return mgrRop === targetRop.replace(' KIDS', '');
