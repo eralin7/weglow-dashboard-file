@@ -314,6 +314,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
           </div>
           <div class="pc-current" id="cur-rop-dias-kids">Текущий: —</div>
         </div>
+        <div class="plan-card">
+          <div class="pc-head">
+            <div class="pc-dot" style="background:#0ea5e9"></div>
+            <div class="pc-name">БОТА AI</div>
+          </div>
+          <div class="pc-field">
+            <div class="pc-label">План ₸</div>
+            <input class="pc-inp" type="number" id="rop-plan-bota-ai" placeholder="5 000 000" min="0" step="1000000">
+          </div>
+          <div class="pc-current" id="cur-rop-bota-ai">Текущий: —</div>
+        </div>
       </div>
 
       <div class="save-wrap">
@@ -662,6 +673,7 @@ const ROP_DEFS = [
   {name:'РОП Нурдаулет',   inputId:'rop-plan-nurdaulet',   curId:'cur-rop-nurdaulet',   color:'#0a7c5c'},
   {name:'РОП Айдана KIDS', inputId:'rop-plan-aidana-kids', curId:'cur-rop-aidana-kids', color:'#7c3aed'},
   {name:'РОП Диас KIDS',   inputId:'rop-plan-dias-kids',   curId:'cur-rop-dias-kids',   color:'#db2777'},
+  {name:'БОТА AI',         inputId:'rop-plan-bota-ai',     curId:'cur-rop-bota-ai',     color:'#0ea5e9'},
 ];
 
 let ropPlans = {}; // { 'РОП Айдана': {'03.2026': 30000000, ...}, ... }
