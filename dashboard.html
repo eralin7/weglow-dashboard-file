@@ -3250,7 +3250,8 @@ async function loadFromSupabase() {
       if (d.AD_SPEND) {
         AD_SPEND = {};
         for (const [k,v] of Object.entries(d.AD_SPEND)) {
-          const nk = k.replace(/\uFFFD/g,'').includes('лаген') ? 'Коллаген' : k;
+          const _stripped = k.replace(/\uFFFD/g,'');
+          const nk = (_stripped.includes('олл') && _stripped.includes('ген')) ? 'Коллаген' : k;
           AD_SPEND[nk] = v;
         }
       }
