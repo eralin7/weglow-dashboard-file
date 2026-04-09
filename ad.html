@@ -55,7 +55,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 .card-title span{font-size:18px;}
 
 /* Form grid */
-.form-grid{display:grid;grid-template-columns:160px 1fr 1fr auto;gap:12px;align-items:end;}
+.form-grid{display:grid;grid-template-columns:160px 1fr 1fr 1fr auto;gap:12px;align-items:end;}
 .field{display:flex;flex-direction:column;gap:6px;}
 .field label{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;}
 .field input{padding:10px 14px;border:1.5px solid var(--line);border-radius:9px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;transition:border-color .15s;background:var(--bg);}
@@ -171,6 +171,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
           <label>Ummi ₸</label>
           <input type="number" id="f-ummi" placeholder="0" min="0">
         </div>
+        <div class="field">
+          <label>БОТА AI ₸</label>
+          <input type="number" id="f-bota" placeholder="0" min="0">
+        </div>
         <button class="save-btn" onclick="addEntry()">Сохранить</button>
       </div>
       <div class="status-bar" id="form-status"></div>
@@ -253,7 +257,7 @@ if(sessionStorage.getItem('ad_auth')==='1'){
 // ══════════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════════
-let adData = {}; // {date: {col, ummi}} format: DD.MM.YYYY
+let adData = {}; // {date: {col, ummi, bota}} format: DD.MM.YYYY
 let activeMonth = null; // "MM.YYYY"
 
 // ══════════════════════════════════════════════
@@ -291,10 +295,10 @@ async function sbDelete(table, filter){
 async function loadAdData(){
   setBadge('Загрузка...', 'load');
   try {
-    const rows = await sbGet('weglow_ad_spend', '?select=date,col,ummi&order=date.desc');
+    const rows = await sbGet('weglow_ad_spend', '?select=date,col,ummi,coffee&order=date.desc');
     adData = {};
     for(const r of rows){
-      adData[r.date] = {col: r.col||0, ummi: r.ummi||0};
+      adData[r.date] = {col: r.col||0, ummi: r.ummi||0, bota: r.coffee||0};
     }
     setBadge('Синхронизировано ✓', 'ok');
     // Also load revenue data for ROI/CPL calculations
@@ -310,8 +314,8 @@ async function loadAdData(){
   }
 }
 
-async function saveAdEntry(date, col, ummi){
-  await sbUpsert('weglow_ad_spend', {date, col, ummi});
+async function saveAdEntry(date, col, ummi, bota){
+  await sbUpsert('weglow_ad_spend', {date, col, ummi, coffee: bota});
   // Also update weglow_data AD_SPEND field
   await syncToDashboard();
 }
@@ -326,10 +330,11 @@ async function deleteAdEntry(date){
 async function syncToDashboard(){
   try {
     // Build AD_SPEND in format {product: {DD.MM.YYYY: amount}}
-    const AD_SPEND = {'Коллаген':{}, 'Ummi':{}};
+    const AD_SPEND = {'Коллаген':{}, 'Ummi':{}, 'БОТА AI':{}};
     for(const [date, v] of Object.entries(adData)){
       if(v.col)    AD_SPEND['Коллаген'][date] = v.col;
       if(v.ummi)   AD_SPEND['Ummi'][date]     = v.ummi;
+      if(v.bota)   AD_SPEND['БОТА AI'][date]  = v.bota;
     }
     // Get existing weglow_data and update just AD_SPEND
     const rows = await sbGet('weglow_data', '?id=eq.1&select=data');
@@ -360,14 +365,15 @@ async function addEntry(){
   const date = `${d}.${m}.${y}`;
   const col    = parseInt(document.getElementById('f-col').value)||0;
   const ummi   = parseInt(document.getElementById('f-ummi').value)||0;
-  if(!col && !ummi){ showStatus('Введите хотя бы одно значение', 'err'); return; }
+  const bota   = parseInt(document.getElementById('f-bota').value)||0;
+  if(!col && !ummi && !bota){ showStatus('Введите хотя бы одно значение', 'err'); return; }
 
   showStatus('Сохранение...', 'load');
   document.querySelector('.save-btn').disabled = true;
   try {
-    adData[date] = {col, ummi};
-    await saveAdEntry(date, col, ummi);
-    showStatus(`✓ Сохранено: ${date} — Кол: ${fmt(col)} / Ummi: ${fmt(ummi)} ₸`, 'ok');
+    adData[date] = {col, ummi, bota};
+    await saveAdEntry(date, col, ummi, bota);
+    showStatus(`✓ Сохранено: ${date} — Кол: ${fmt(col)} / Ummi: ${fmt(ummi)} / Бота: ${fmt(bota)} ₸`, 'ok');
     // Switch to the month of saved entry
     activeMonth = `${m}.${y}`;
     renderMonthTabs();
@@ -375,6 +381,7 @@ async function addEntry(){
     // Clear inputs
     document.getElementById('f-col').value='';
     document.getElementById('f-ummi').value='';
+    document.getElementById('f-bota').value='';
   } catch(e){
     showStatus('Ошибка сохранения: ' + e.message, 'err');
   } finally {
@@ -445,13 +452,14 @@ function renderTable(){
   rows.reverse(); // newest first
 
   // Totals
-  let totCol=0,totUmmi=0;
-  for(const {v} of rows) if(v){ totCol+=v.col||0; totUmmi+=v.ummi||0; }
-  const totAll = totCol+totUmmi;
+  let totCol=0,totUmmi=0,totBota=0;
+  for(const {v} of rows) if(v){ totCol+=v.col||0; totUmmi+=v.ummi||0; totBota+=v.bota||0; }
+  const totAll = totCol+totUmmi+totBota;
 
   document.getElementById('totals-row').innerHTML = `
     <div class="tot"><div class="tot-lbl">Коллаген</div><div class="tot-val tot-col">${fmtM(totCol)} ₸</div></div>
     <div class="tot"><div class="tot-lbl">Ummi</div><div class="tot-val tot-ummi">${fmtM(totUmmi)} ₸</div></div>
+    <div class="tot"><div class="tot-lbl">БОТА AI</div><div class="tot-val" style="color:#0ea5e9">${fmtM(totBota)} ₸</div></div>
     <div class="tot"><div class="tot-lbl">Итого</div><div class="tot-val tot-all">${fmtM(totAll)} ₸</div></div>
   `;
 
@@ -465,13 +473,15 @@ function renderTable(){
     const hasData = !!v;
     const col    = v?v.col:0;
     const ummi   = v?v.ummi:0;
-    const total  = col+ummi;
+    const bota   = v?v.bota:0;
+    const total  = col+ummi+bota;
     const [dd,mm2,yy2] = date.split('.');
     const dayOfWeek = ['вс','пн','вт','ср','чт','пт','сб'][new Date(+yy2,+mm2-1,+dd).getDay()];
     return `<tr class="${isToday?'tr-today':''}" id="row-${date}">
       <td style="color:var(--muted);font-size:12px;white-space:nowrap">${dd}.${mm2} <span style="color:var(--acc)">${dayOfWeek}</span>${isToday?' <span style="background:#6366f1;color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px">сегодня</span>':''}</td>
       <td><input class="edit-inp" type="number" id="inp-col-${date}" value="${col||''}" placeholder="0" style="border-color:var(--col)30;" onfocus="this.style.borderColor='var(--col)'" onblur="this.style.borderColor='var(--col)30'"></td>
       <td><input class="edit-inp" type="number" id="inp-ummi-${date}" value="${ummi||''}" placeholder="0" style="border-color:var(--ummi)30;" onfocus="this.style.borderColor='var(--ummi)'" onblur="this.style.borderColor='var(--ummi)30'"></td>
+      <td><input class="edit-inp" type="number" id="inp-bota-${date}" value="${bota||''}" placeholder="0" style="border-color:#0ea5e930;" onfocus="this.style.borderColor='#0ea5e9'" onblur="this.style.borderColor='#0ea5e930'"></td>
       <td style="color:var(--acc);font-weight:700;white-space:nowrap">${total?fmt(total)+' ₸':'—'}</td>
       <td><button class="save-row-btn" onclick="saveRow('${date}')">Сохр.</button></td>
       <td>${hasData?`<button class="del-btn" onclick="deleteRow('${date}')" title="Удалить">✕</button>`:''}</td>
@@ -484,6 +494,7 @@ function renderTable(){
         <th>Дата</th>
         <th style="color:var(--col)">Коллаген ₸</th>
         <th style="color:var(--ummi)">Ummi ₸</th>
+        <th style="color:#0ea5e9">БОТА AI ₸</th>
         <th>Итого</th>
         <th></th><th></th>
       </tr></thead>
@@ -494,10 +505,11 @@ function renderTable(){
 async function saveRow(date){
   const col    = parseInt(document.getElementById(`inp-col-${date}`).value)||0;
   const ummi   = parseInt(document.getElementById(`inp-ummi-${date}`).value)||0;
+  const bota   = parseInt(document.getElementById(`inp-bota-${date}`).value)||0;
   setBadge('Сохранение...','load');
   try {
-    adData[date] = {col, ummi};
-    await saveAdEntry(date, col, ummi);
+    adData[date] = {col, ummi, bota};
+    await saveAdEntry(date, col, ummi, bota);
     renderTable();
     setBadge('Сохранено ✓','ok');
   } catch(e){
@@ -570,8 +582,8 @@ function renderAdAnalytics() {
   const daysInMonth=new Date(+yy,+mm,0).getDate();
 
   // Collect daily data for this month
-  let colTotal=0, ummiTotal=0;
-  const labels=[], colArr=[], ummiArr=[];
+  let colTotal=0, ummiTotal=0, botaTotal=0;
+  const labels=[], colArr=[], ummiArr=[], botaArr=[];
 
   for(let d=1;d<=daysInMonth;d++){
     const date=`${String(d).padStart(2,'0')}.${mm}.${yy}`;
@@ -579,10 +591,11 @@ function renderAdAnalytics() {
     labels.push(String(d).padStart(2,'0'));
     colArr.push(v?v.col||0:0);
     ummiArr.push(v?v.ummi||0:0);
-    if(v){ colTotal+=v.col||0; ummiTotal+=v.ummi||0; }
+    botaArr.push(v?v.bota||0:0);
+    if(v){ colTotal+=v.col||0; ummiTotal+=v.ummi||0; botaTotal+=v.bota||0; }
   }
 
-  const total=colTotal+ummiTotal;
+  const total=colTotal+ummiTotal+botaTotal;
 
   // We don't have revenue in ad.html directly — show spend KPIs
   // KPI: total spend, per product, days with data
@@ -624,6 +637,7 @@ function renderAdAnalytics() {
     const rows=[
       {name:'Коллаген', spend:colTotal, color:'#1a56db'},
       {name:'Ummi',     spend:ummiTotal, color:'#0a7c5c'},
+      {name:'БОТА AI',  spend:botaTotal, color:'#0ea5e9'},
     ];
     const maxSpend=Math.max(...rows.map(r=>r.spend),1);
     roiEl.innerHTML=rows.map(r=>{
@@ -650,9 +664,9 @@ function renderAdAnalytics() {
     adAnalyticsDonut=new Chart(donutCtx,{
       type:'doughnut',
       data:{
-        labels:['Коллаген','Ummi'],
-        datasets:[{data:[colTotal,ummiTotal],
-          backgroundColor:['#1a56db','#0a7c5c'],borderWidth:0,hoverOffset:6}]
+        labels:['Коллаген','Ummi','БОТА AI'],
+        datasets:[{data:[colTotal,ummiTotal,botaTotal],
+          backgroundColor:['#1a56db','#0a7c5c','#0ea5e9'],borderWidth:0,hoverOffset:6}]
       },
       options:{cutout:'72%',responsive:true,
         plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:12,boxWidth:10}},
@@ -669,6 +683,7 @@ function renderAdAnalytics() {
       data:{labels,datasets:[
         {label:'Коллаген',data:colArr,backgroundColor:'rgba(26,86,219,.7)',borderRadius:3,stack:'s'},
         {label:'Ummi',data:ummiArr,backgroundColor:'rgba(10,124,92,.7)',borderRadius:3,stack:'s'},
+        {label:'БОТА AI',data:botaArr,backgroundColor:'rgba(14,165,233,.7)',borderRadius:3,stack:'s'},
       ]},
       options:{
         responsive:true,
@@ -689,13 +704,13 @@ function renderAdAnalytics() {
     const monthTotals=allMonths.map(m=>{
       const [mm2,yy2]=m.split('.');
       const days=new Date(+yy2,+mm2,0).getDate();
-      let col=0,ummi=0;
+      let col=0,ummi=0,bota=0;
       for(let d=1;d<=days;d++){
         const date=`${String(d).padStart(2,'0')}.${mm2}.${yy2}`;
         const v=adData[date]||null;
-        if(v){ col+=v.col||0; ummi+=v.ummi||0; }
+        if(v){ col+=v.col||0; ummi+=v.ummi||0; bota+=v.bota||0; }
       }
-      return {m,col,ummi,total:col+ummi};
+      return {m,col,ummi,bota,total:col+ummi+bota};
     });
     const names=['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
     cmpEl.innerHTML=`<table style="width:100%;border-collapse:collapse">
@@ -703,6 +718,7 @@ function renderAdAnalytics() {
         <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">Месяц</th>
         <th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:#1a56db;text-transform:uppercase;letter-spacing:1px">Коллаген</th>
         <th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:#0a7c5c;text-transform:uppercase;letter-spacing:1px">Ummi</th>
+        <th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:#0ea5e9;text-transform:uppercase;letter-spacing:1px">БОТА AI</th>
         <th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">Итого</th>
       </tr></thead>
       <tbody>${monthTotals.map(r=>{
@@ -712,6 +728,7 @@ function renderAdAnalytics() {
           <td style="padding:8px 10px;font-size:13px;font-weight:${isCur?700:500}">${names[+mm3-1]}</td>
           <td style="padding:8px 10px;text-align:right;font-size:12px;color:#1a56db">${fmtM(r.col)}</td>
           <td style="padding:8px 10px;text-align:right;font-size:12px;color:#0a7c5c">${fmtM(r.ummi)}</td>
+          <td style="padding:8px 10px;text-align:right;font-size:12px;color:#0ea5e9">${fmtM(r.bota)}</td>
           <td style="padding:8px 10px;text-align:right;font-size:13px;font-weight:700">${fmtM(r.total)}</td>
         </tr>`;
       }).join('')}</tbody>
