@@ -1005,6 +1005,25 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
 /* ── KPI 3-COLUMN LAYOUT ─────────────── */
 .kpi-3col { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:20px; }
 @media(max-width:1100px){ .kpi-3col { grid-template-columns:1fr; } }
+
+/* AI advice tip strips */
+.ai-tip {
+  background: var(--white); border-radius: var(--r); margin-bottom: 20px;
+  border-left: 4px solid #7c3aed; box-shadow: var(--shadow);
+  padding: 12px 20px; display: flex; gap: 16px; align-items: flex-start;
+}
+.ai-tip-hdr {
+  font-size: 12px; font-weight: 700; color: var(--ink); white-space: nowrap;
+  display: flex; flex-direction: column; gap: 2px; min-width: 160px; flex-shrink: 0;
+}
+.ai-tip-ts { font-size: 10px; color: var(--muted); font-weight: 400; }
+.ai-tip-body {
+  font-size: 11px; line-height: 1.55; color: var(--text);
+  display: flex; flex-wrap: wrap; gap: 4px 24px;
+}
+.ai-tip-body > div { flex: 1 1 320px; min-width: 0; }
+@media(max-width:900px){ .ai-tip { flex-direction:column; gap:8px; } .ai-tip-hdr { min-width:0; } }
+
 .kpi-col {
   background:var(--white); border-radius:var(--r); padding:20px;
   box-shadow:var(--shadow); border-top:3px solid var(--acc);
@@ -1281,33 +1300,19 @@ function doLogout(){
         <h2 id="main-title">Ключевые показатели</h2>
         <p id="main-sub">Февраль 2026 · Все продукты</p>
       </div>
-      <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:24px">
-        <div style="flex:1;min-width:600px">
-          <div class="kpi-3col" id="kpi-3col"></div>
-        </div>
-        <div class="card" style="width:320px;flex-shrink:0;max-height:400px;overflow-y:auto;border-left:4px solid #7c3aed">
-          <div class="card-hdr"><span class="card-title" style="font-size:13px">🤖 Ключевые показатели</span>
-            <span id="ai-advisor-time" style="font-size:10px;color:var(--muted)"></span>
-          </div>
-          <div id="ai-section-KPI" class="ai-section-body" style="padding:4px 16px 16px;font-size:12px;line-height:1.6">
-            <span style="color:var(--muted)">Загрузка...</span>
-          </div>
-        </div>
+      <div class="kpi-3col" id="kpi-3col"></div>
+      <div class="ai-tip" style="border-left-color:#7c3aed">
+        <div class="ai-tip-hdr"><span>🤖 Ключевые показатели</span><span id="ai-advisor-time" class="ai-tip-ts"></span></div>
+        <div id="ai-section-KPI" class="ai-tip-body"><span style="color:var(--muted)">Загрузка...</span></div>
       </div>
 
       <div class="sec-label mb20">Выполнение плана по группам</div>
-      <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:24px">
-        <div class="card" style="flex:1;min-width:700px;overflow-x:auto;-webkit-overflow-scrolling:touch">
-          <div id="plan-table" style="min-width:900px"></div>
-        </div>
-        <div class="card" style="width:320px;flex-shrink:0;max-height:520px;overflow-y:auto;border-left:4px solid #f59e0b">
-          <div class="card-hdr" style="position:sticky;top:0;background:var(--card);z-index:1">
-            <span class="card-title" style="font-size:13px">🤖 Выполнение плана</span>
-          </div>
-          <div id="ai-section-PLAN" class="ai-section-body" style="padding:4px 16px 16px;font-size:12px;line-height:1.6">
-            <span style="color:var(--muted)">Загрузка...</span>
-          </div>
-        </div>
+      <div class="card mb24" style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+        <div id="plan-table" style="min-width:900px"></div>
+      </div>
+      <div class="ai-tip" style="border-left-color:#f59e0b">
+        <div class="ai-tip-hdr"><span>🤖 Выполнение плана</span></div>
+        <div id="ai-section-PLAN" class="ai-tip-body"><span style="color:var(--muted)">Загрузка...</span></div>
       </div>
 
       <!-- Sales by ROP chart + Products donut side by side -->
@@ -1332,81 +1337,71 @@ function doLogout(){
             <div id="prodByRopLegend" style="font-size:12px;line-height:1.8;width:100%;margin-top:8px"></div>
           </div>
         </div>
-        <div class="card" style="width:280px;flex-shrink:0;max-height:420px;overflow-y:auto;border-left:4px solid #10b981">
-          <div class="card-hdr"><span class="card-title" style="font-size:13px">🤖 Динамика и товары</span></div>
-          <div id="ai-section-DYNAMICS" class="ai-section-body" style="padding:4px 16px 16px;font-size:12px;line-height:1.6">
-            <span style="color:var(--muted)">Загрузка...</span>
-          </div>
-        </div>
+      </div>
+      <div class="ai-tip" style="border-left-color:#10b981">
+        <div class="ai-tip-hdr"><span>🤖 Динамика и товары</span></div>
+        <div id="ai-section-DYNAMICS" class="ai-tip-body"><span style="color:var(--muted)">Загрузка...</span></div>
       </div>
 
       <!-- Combined Leads & Deals chart -->
-      <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:24px">
-        <div class="card" style="flex:1;min-width:600px">
-          <div class="card-hdr">
-            <span class="card-title">Лиды и Сделки</span>
-            <div class="chart-filters" id="leads-deals-filters">
-              <button class="cf-btn active" onclick="setLeadsDealsFilter('all',this)">Все</button>
-              <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Айдана',this)">Айдана</button>
-              <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Аслиддин',this)">Аслиддин</button>
-              <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Нурдаулет',this)">Нурдаулет</button>
-              <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Ербол',this)">Ербол</button>
-              <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Айдана KIDS',this)">Айдана KIDS</button>
-              <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Диас KIDS',this)">Диас KIDS</button>
-            </div>
-          </div>
-          <div class="chart-body"><canvas id="leadsDealsChart" height="110"></canvas></div>
-        </div>
-        <div class="card" style="width:280px;flex-shrink:0;max-height:400px;overflow-y:auto;border-left:4px solid #6366f1">
-          <div class="card-hdr"><span class="card-title" style="font-size:13px">🤖 Лиды и сделки</span></div>
-          <div id="ai-section-LEADS" class="ai-section-body" style="padding:4px 16px 16px;font-size:12px;line-height:1.6">
-            <span style="color:var(--muted)">Загрузка...</span>
+      <div class="card mb24">
+        <div class="card-hdr">
+          <span class="card-title">Лиды и Сделки</span>
+          <div class="chart-filters" id="leads-deals-filters">
+            <button class="cf-btn active" onclick="setLeadsDealsFilter('all',this)">Все</button>
+            <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Айдана',this)">Айдана</button>
+            <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Аслиддин',this)">Аслиддин</button>
+            <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Нурдаулет',this)">Нурдаулет</button>
+            <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Ербол',this)">Ербол</button>
+            <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Айдана KIDS',this)">Айдана KIDS</button>
+            <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Диас KIDS',this)">Диас KIDS</button>
           </div>
         </div>
+        <div class="chart-body"><canvas id="leadsDealsChart" height="110"></canvas></div>
+      </div>
+      <div class="ai-tip" style="border-left-color:#6366f1">
+        <div class="ai-tip-hdr"><span>🤖 Лиды и сделки</span></div>
+        <div id="ai-section-LEADS" class="ai-tip-body"><span style="color:var(--muted)">Загрузка...</span></div>
       </div>
 
       <!-- Monthly Summary chart -->
       <div class="sec-label mb20">Итоги за месяц</div>
-      <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:24px">
-        <div class="card" style="flex:1;min-width:600px">
-          <div class="card-hdr" style="flex-wrap:wrap;gap:8px">
-            <span class="card-title">Итоги за месяц</span>
-          </div>
-          <div style="padding:12px 24px 0">
-            <div class="summary-filters">
-              <div class="summary-filter-group">
-                <span class="sf-label">Отдел:</span>
-                <button class="cf-btn active" onclick="setSummaryDept('all',this)">Все</button>
-                <button class="cf-btn" onclick="setSummaryDept('РОП Айдана',this)">Айдана</button>
-                <button class="cf-btn" onclick="setSummaryDept('РОП Аслиддин',this)">Аслиддин</button>
-                <button class="cf-btn" onclick="setSummaryDept('РОП Нурдаулет',this)">Нурдаулет</button>
-                <button class="cf-btn" onclick="setSummaryDept('РОП Ербол',this)">Ербол</button>
-                <button class="cf-btn" onclick="setSummaryDept('РОП Айдана KIDS',this)">Айдана KIDS</button>
-                <button class="cf-btn" onclick="setSummaryDept('РОП Диас KIDS',this)">Диас KIDS</button>
-              </div>
-              <div class="summary-filter-group">
-                <span class="sf-label">Метрика:</span>
-                <button class="cf-btn active" onclick="setSummaryMetric('budget',this)">Продажи</button>
-                <button class="cf-btn" onclick="setSummaryMetric('conv',this)">Конверсия</button>
-                <button class="cf-btn" onclick="setSummaryMetric('drr',this)">ДРР</button>
-                <button class="cf-btn" onclick="setSummaryMetric('cpl',this)">Ст. за 1 лид</button>
-                <button class="cf-btn" onclick="setSummaryMetric('avgCheck',this)">Средний чек</button>
-              </div>
-              <div class="summary-filter-group">
-                <span class="sf-label">Продукт:</span>
-                <button class="cf-btn active" onclick="setSummaryProd('all',this)">Все</button>
-                <button class="cf-btn" onclick="setSummaryProd('Коллаген',this)">Коллаген</button>
-              </div>
+      <div class="card mb24">
+        <div class="card-hdr" style="flex-wrap:wrap;gap:8px">
+          <span class="card-title">Итоги за месяц</span>
+        </div>
+        <div style="padding:12px 24px 0">
+          <div class="summary-filters">
+            <div class="summary-filter-group">
+              <span class="sf-label">Отдел:</span>
+              <button class="cf-btn active" onclick="setSummaryDept('all',this)">Все</button>
+              <button class="cf-btn" onclick="setSummaryDept('РОП Айдана',this)">Айдана</button>
+              <button class="cf-btn" onclick="setSummaryDept('РОП Аслиддин',this)">Аслиддин</button>
+              <button class="cf-btn" onclick="setSummaryDept('РОП Нурдаулет',this)">Нурдаулет</button>
+              <button class="cf-btn" onclick="setSummaryDept('РОП Ербол',this)">Ербол</button>
+              <button class="cf-btn" onclick="setSummaryDept('РОП Айдана KIDS',this)">Айдана KIDS</button>
+              <button class="cf-btn" onclick="setSummaryDept('РОП Диас KIDS',this)">Диас KIDS</button>
+            </div>
+            <div class="summary-filter-group">
+              <span class="sf-label">Метрика:</span>
+              <button class="cf-btn active" onclick="setSummaryMetric('budget',this)">Продажи</button>
+              <button class="cf-btn" onclick="setSummaryMetric('conv',this)">Конверсия</button>
+              <button class="cf-btn" onclick="setSummaryMetric('drr',this)">ДРР</button>
+              <button class="cf-btn" onclick="setSummaryMetric('cpl',this)">Ст. за 1 лид</button>
+              <button class="cf-btn" onclick="setSummaryMetric('avgCheck',this)">Средний чек</button>
+            </div>
+            <div class="summary-filter-group">
+              <span class="sf-label">Продукт:</span>
+              <button class="cf-btn active" onclick="setSummaryProd('all',this)">Все</button>
+              <button class="cf-btn" onclick="setSummaryProd('Коллаген',this)">Коллаген</button>
             </div>
           </div>
-          <div class="chart-body"><canvas id="summaryChart" height="130"></canvas></div>
         </div>
-        <div class="card" style="width:280px;flex-shrink:0;max-height:500px;overflow-y:auto;border-left:4px solid #e11d48">
-          <div class="card-hdr"><span class="card-title" style="font-size:13px">🤖 Итоги за месяц</span></div>
-          <div id="ai-section-SUMMARY" class="ai-section-body" style="padding:4px 16px 16px;font-size:12px;line-height:1.6">
-            <span style="color:var(--muted)">Загрузка...</span>
-          </div>
-        </div>
+        <div class="chart-body"><canvas id="summaryChart" height="130"></canvas></div>
+      </div>
+      <div class="ai-tip" style="border-left-color:#e11d48">
+        <div class="ai-tip-hdr"><span>🤖 Итоги за месяц</span></div>
+        <div id="ai-section-SUMMARY" class="ai-tip-body"><span style="color:var(--muted)">Загрузка...</span></div>
       </div>
       <!-- prod-stats removed -->
 
@@ -4243,14 +4238,12 @@ var _aiAdviceData = null; // { text, sections: {KPI,PLAN,DYNAMICS,LEADS,SUMMARY}
 
 function _renderAdviceBlock(text) {
   if (!text) return '<span style="color:var(--muted)">Рекомендации ещё не сгенерированы</span>';
-  return text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+  const items = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
     .split('\n').filter(l => l.trim() && l.trim() !== '---' && l.trim() !== '--')
-    .map(l => {
-      const s = l.replace(/^[-•]\s*/, '').trim();
-      if (!s) return '';
-      if (/^\d+\./.test(s)) return `<div style="margin:8px 0 4px;font-weight:600;color:var(--text)">${s}</div>`;
-      return `<div style="margin-bottom:6px;padding-left:14px;position:relative"><span style="position:absolute;left:0;color:var(--muted)">▸</span>${s}</div>`;
-    }).join('');
+    .map(l => l.replace(/^[-•]\s*/, '').trim()).filter(Boolean);
+  return items.map(s =>
+    `<div style="padding-left:14px;position:relative;margin-bottom:4px"><span style="position:absolute;left:0;color:var(--muted)">▸</span>${s}</div>`
+  ).join('');
 }
 
 function renderSectionAdvice() {
