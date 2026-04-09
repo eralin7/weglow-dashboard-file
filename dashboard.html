@@ -3032,12 +3032,15 @@ async function loadFromSupabase() {
     const rows = await res.json();
     if (rows && rows[0] && rows[0].data) {
       const d = rows[0].data;
+
       // Reassign mutable globals
       if (d.RAW)      RAW      = d.RAW;
       if (d.MANAGERS) MANAGERS = d.MANAGERS;
+
       // Merge archive data (backup ≤ 31.03.2026) into RAW and MANAGERS
       // Archive OVERWRITES live for dates ≤ 31.03.2026 (live data is incomplete due to pipeline split)
       const _isArchiveDate = dt => { const [dd,mm,yy]=dt.split('.').map(Number); return yy<2026||(yy===2026&&mm<4); };
+
       if (d.ARCHIVE_RAW) {
         for (const [acc, daily] of Object.entries(d.ARCHIVE_RAW)) {
           if (!RAW[acc]) RAW[acc] = {};
@@ -3049,6 +3052,7 @@ async function loadFromSupabase() {
       // Fuzzy name matching for archive merge (handles case, spaces, encoding, pin renumbering)
       function _normName(n) { return n.toLowerCase().replace(/\ufffd/g,'').replace(/\s+/g,' ').trim(); }
       function _nameKey(n) { return n.toLowerCase().replace(/\ufffd/g,'').replace(/^пин\s+\d+\s+/i,'').replace(/\s+/g,' ').trim(); }
+
 
       if (d.ARCHIVE_MANAGERS) {
         for (const [acc, archMgrs] of Object.entries(d.ARCHIVE_MANAGERS)) {
@@ -3170,10 +3174,13 @@ async function loadFromSupabase() {
       }
       RAW['Ummi'] = kidsRaw;
 
+
       clearRopCache();
       rebuildRopGroups();
+
       if (d.ROP_PLANS) ROP_PLANS = d.ROP_PLANS;
       if (d.RNP_EXCEL) RNP_EXCEL = d.RNP_EXCEL;
+
       if (d.AI_ADVICE) { _aiAdviceData = d.AI_ADVICE; renderAiAdvice(); }
       // Update badge
       const badge = document.getElementById('data-badge');
@@ -3368,6 +3375,7 @@ function initDynamicUI() {
     });
   });
 }
+var _prodByRopChart = null;
 initDynamicUI();
 render(); // render immediately with embedded data so page is not blank
 // Then load fresh data from Supabase (will re-render with live data)
@@ -3376,7 +3384,7 @@ loadFromSupabase();
 
 // ═══════════════════ PRODUCTS VIEW ════════════════════════════════
 // Fallback static data (used before server sync arrives)
-const PROD_STATIC = {
+var PROD_STATIC = {
   'Коллаген': { color:'#818cf8', prods: {
     'Коллаген (упак.)': { own:true,  daily:{'01.02.2026':3680,'02.02.2026':3521,'03.02.2026':3401} },
     'Коллаген Красный': { own:true,  daily:{'01.02.2026':72,'02.02.2026':68,'03.02.2026':61} },
@@ -3393,14 +3401,14 @@ let _prodTo     = null;
 function _getProdsForComp(comp) {
   // Use live PRODUCTS from Supabase if available, else fallback to static
   if (PRODUCTS && PRODUCTS[comp] && Object.keys(PRODUCTS[comp]).length) {
-    const color = PROD_STATIC[comp]?.color || '#818cf8';
+    const color = (PROD_STATIC && PROD_STATIC[comp]?.color) || '#818cf8';
     const liveProds = {};
     for (const [name, info] of Object.entries(PRODUCTS[comp])) {
       liveProds[name] = { own: info.own, daily: info.daily || {} };
     }
     return { color, prods: liveProds };
   }
-  return PROD_STATIC[comp] || { color:'#818cf8', prods:{} };
+  return (PROD_STATIC && PROD_STATIC[comp]) || { color:'#818cf8', prods:{} };
 }
 
 function _dateRange() {
@@ -3621,7 +3629,6 @@ document.addEventListener('DOMContentLoaded', () => {
 // ═══════════════════════════════════════════════════════════
 //  ТОВАРЫ ПО ОТДЕЛАМ (DONUT)
 // ═══════════════════════════════════════════════════════════
-let _prodByRopChart = null;
 function renderProdByRop() {
   const canvas = document.getElementById('prodByRopChart');
   const legendEl = document.getElementById('prodByRopLegend');
@@ -4200,7 +4207,7 @@ function closeMgrModal() {
 const RENDER_URL = 'https://weglow-autosync.onrender.com';
 
 // ═══════════════════ AI ADVISOR ══════════════════════════════════
-let _aiAdviceData = null; // { text, ts } from Supabase AI_ADVICE
+var _aiAdviceData = null; // { text, ts } from Supabase AI_ADVICE
 
 function renderAiAdvice() {
   const body = document.getElementById('ai-advisor-body');
