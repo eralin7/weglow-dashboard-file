@@ -242,14 +242,17 @@ async function main() {
 
   // 3. Call Claude CLI — structured per-section advice
   function callClaude(prompt) {
+    // Force UTF-8 console codepage on Windows before exec
+    try { execFileSync('cmd', ['/c', 'chcp', '65001'], { windowsHide: true }); } catch(e) {}
     const buf = execFileSync('claude', ['--print'], {
       timeout: 180000,
       input: Buffer.from(prompt, 'utf-8'),
       windowsHide: true,
       maxBuffer: 10 * 1024 * 1024,
-      env: { ...process.env, LANG: 'en_US.UTF-8', PYTHONIOENCODING: 'utf-8' }
+      env: { ...process.env, LANG: 'en_US.UTF-8', PYTHONIOENCODING: 'utf-8', CHCP: '65001' }
     });
-    return buf.toString('utf-8').trim().replace(/\ufffd/g, '');
+    // Clean: remove BOM, replacement chars, and stray null bytes
+    return buf.toString('utf-8').replace(/^\uFEFF/, '').replace(/\ufffd/g, '').replace(/\0/g, '').trim();
   }
 
   // Build per-ROP metrics string
