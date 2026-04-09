@@ -1808,7 +1808,7 @@ function pctBg(v){return v>=80?'bg-g':v>=50?'bg-y':'bg-r';}
 
 // ═══════════════════ AGGREGATE ════════════════════════════════════
 // Virtual CRM siblings: aggregate() merges these with the main CRM RAW
-const _VIRTUAL_CRMS = { 'Коллаген': ['Ummi', 'Ербол'] };
+const _VIRTUAL_CRMS = { 'Коллаген': ['Ummi', 'Ербол', 'Кофе (Архив)'] };
 function _mergedRaw(mainKey) {
   const main = RAW[mainKey] || {};
   const siblings = _VIRTUAL_CRMS[mainKey] || [];
@@ -2544,7 +2544,7 @@ function renderLeadsDeals(stats){
   const leadsData=[], dealsData=[];
   dateList.forEach(date=>{
     let dayLeads=0,dayDeals=0;
-    const crms=activeProd==='all'?['Коллаген','Ummi','Ербол']:[PROD_CFG[activeProd]?.rawKey].filter(Boolean);
+    const crms=activeProd==='all'?['Коллаген','Ummi','Ербол','Кофе (Архив)']:[PROD_CFG[activeProd]?.rawKey].filter(Boolean);
     crms.forEach(crm=>{
       if(activeLeadsDealsFilter==='all'){
         const v=(RAW[crm]||{})[date]||[0,0,0];
@@ -2576,7 +2576,7 @@ function renderSummaryChart(){
 
   // Get all months from RAW data
   const monthSet=new Set();
-  ['Коллаген','Ummi','Ербол'].forEach(crm=>{
+  ['Коллаген','Ummi','Ербол','Кофе (Архив)'].forEach(crm=>{
     Object.keys(RAW[crm]||{}).forEach(d=>{
       const parts=d.split('.');
       if(parts.length===3) monthSet.add(parts[1]+'.'+parts[2]);
@@ -2603,7 +2603,7 @@ function renderSummaryChart(){
     const dateList=getDatesInRange(mStart,mEnd);
 
     // Filter by product
-    const crms=summaryProd==='all'?['Коллаген','Ummi','Ербол']:[PROD_CFG[summaryProd]?.rawKey||summaryProd].filter(Boolean);
+    const crms=summaryProd==='all'?['Коллаген','Ummi','Ербол','Кофе (Архив)']:[PROD_CFG[summaryProd]?.rawKey||summaryProd].filter(Boolean);
     let leads=0,deals=0,budget=0,adSpend=0;
 
     dateList.forEach(date=>{
@@ -2904,7 +2904,7 @@ function renderFtTotal() {
 function aggregateManagersByRop(ropKey, prodFilter, from, to) {
   let crmKeys;
   if (ropKey === 'all') {
-    crmKeys = ['Коллаген', 'Ummi', 'Ербол'];
+    crmKeys = ['Коллаген', 'Ummi', 'Ербол', 'Кофе (Архив)'];
   } else if (prodFilter !== 'all') {
     crmKeys = [prodFilter];
   } else {
@@ -3279,7 +3279,7 @@ async function loadFromSupabase() {
         const nk = _nameKey(k);
         if (nk.length > 2 && !_ropByName[nk]) _ropByName[nk] = v;
       }
-      for (const crm of ['Ummi', 'Коллаген']) {
+      for (const crm of ['Ummi', 'Коллаген', 'Кофе (Архив)']) {
         for (const m of (MANAGERS[crm] || [])) {
           if (!MGR_TO_ROP[m.name]) {
             const nk = _nameKey(m.name);
@@ -4151,7 +4151,7 @@ function renderFunnel() {
   // Aggregate across selected ROP / product
   let crmKeys;
   if (activeMgrRop === 'all') {
-    crmKeys = ['Коллаген', 'Ummi', 'Ербол'];
+    crmKeys = ['Коллаген', 'Ummi', 'Ербол', 'Кофе (Архив)'];
   } else if (activeMgrProdSub !== 'all') {
     crmKeys = [activeMgrProdSub];
   } else {
