@@ -2171,11 +2171,12 @@ function renderPlanTable(stats){
       return (ROP_PLANS[ropName]&&ROP_PLANS[ropName][mk])||0;
     }
 
-    let rTotPlan=0,rTotFact=0,rTotLeads=0,rTotDeals=0,rTotAd=0;
+    let rTotPlan=0,rTotFact=0,rTotLeads=0,rTotDeals=0,rTotAd=0,rTotFcFact=0;
 
-    // Forecast: use actual passed days (not full period if it extends into future)
-    const _actualEnd = new Date(Math.min(_toD.getTime(), _now.getTime()));
-    const _forecastDays = Math.max(1, Math.round((_actualEnd - _fromD) / 86400000) + 1);
+    // Forecast: ALWAYS based on current month (1st → today), independent of selected period filter
+    const _fcMonthStart = `01.${String(_now.getMonth()+1).padStart(2,'0')}.${_now.getFullYear()}`;
+    const _fcMonthEnd = `${String(_now.getDate()).padStart(2,'0')}.${String(_now.getMonth()+1).padStart(2,'0')}.${_now.getFullYear()}`;
+    const _forecastDays = _curPassedDays; // days passed in current month
 
     // Historical-only groups: hide if period starts after their cutoff
     const _historyCutoff = new Date(2026, 2, 23); // March 23
@@ -2206,9 +2207,14 @@ function renderPlanTable(stats){
       const remain = planPeriod>0 ? Math.max(0, planPeriod-ropFact) : 0;
       const perDay = _daysLeft>0&&remain>0 ? Math.round(remain/_daysLeft) : 0;
 
-      // Forecast (extrapolate from PASSED days to full month)
-      const dailyRate = _forecastDays>0 ? ropFact/_forecastDays : 0;
-      const forecast = dailyRate>0&&fullMonthPlan>0 ? Math.round(dailyRate*_curTotalDays) : 0;
+      // Forecast: always based on current month fact (not filtered period)
+      let _fcFact = 0;
+      crms.forEach(crm => {
+        const fcMgrs = aggregateManagersByPeriod(crm, _fcMonthStart, _fcMonthEnd);
+        fcMgrs.filter(m => ropMatches(m.name, ropName)).forEach(m => { _fcFact += m.budget || 0; });
+      });
+      const dailyRate = _forecastDays > 0 ? _fcFact / _forecastDays : 0;
+      const forecast = dailyRate > 0 && fullMonthPlan > 0 ? Math.round(dailyRate * _curTotalDays) : 0;
 
       const conv = ropLeads>0?(ropDeals/ropLeads*100).toFixed(1):'0.0';
 
@@ -2231,7 +2237,7 @@ function renderPlanTable(stats){
       const rpl = ropLeads>0&&ropFact>0?Math.round(ropFact/ropLeads):0;
       const ropDrr = ropFact>0&&adSpend>0?(adSpend/ropFact*100).toFixed(1):'0.0';
 
-      rTotPlan+=planPeriod; rTotFact+=ropFact; rTotLeads+=ropLeads; rTotDeals+=ropDeals; rTotAd+=adSpend;
+      rTotPlan+=planPeriod; rTotFact+=ropFact; rTotLeads+=ropLeads; rTotDeals+=ropDeals; rTotAd+=adSpend; rTotFcFact+=_fcFact;
 
       const remainCell = planPeriod>0
         ? remain===0
@@ -2273,7 +2279,7 @@ function renderPlanTable(stats){
     const rTotExecPct = rTotPlan>0?Math.round(rTotFact/rTotPlan*100):0;
     const rTotRemain = rTotPlan>0?Math.max(0,rTotPlan-rTotFact):0;
     const rTotPerDay = _daysLeft>0&&rTotRemain>0?Math.round(rTotRemain/_daysLeft):0;
-    const rTotDailyRate = _forecastDays>0?rTotFact/_forecastDays:0;
+    const rTotDailyRate = _forecastDays>0?rTotFcFact/_forecastDays:0;
     const rTotFc = rTotDailyRate>0&&rTotPlan>0?Math.round(rTotDailyRate*_curTotalDays):0;
     const rTotFcPct = rTotPlan>0&&rTotFc>0?Math.round(rTotFc/rTotPlan*100):0;
     const rTotRemainCell = rTotPlan>0
