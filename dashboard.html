@@ -2508,6 +2508,9 @@ function renderSummaryChart(){
   const months=[...monthSet].sort((a,b)=>{
     const [am,ay]=a.split('.'); const [bm,by]=b.split('.');
     return (parseInt(ay)*12+parseInt(am))-(parseInt(by)*12+parseInt(bm));
+  }).filter(mk=>{
+    const [mm,yy]=mk.split('.'); const now=new Date();
+    return parseInt(yy)*12+parseInt(mm) <= (now.getFullYear())*12+(now.getMonth()+1);
   }).slice(-6); // last 6 months
 
   const _monthNames=['','Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
