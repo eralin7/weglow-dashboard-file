@@ -2044,8 +2044,17 @@ function _aggregateForKpi(period) {
   const dd=aggregate(activeProd, period.from, period.to);
   return {...dd, parts:{[activeProd]:dd}, daily:dd.daily};
 }
-function _kpiColHTML(label, badge, kd, borderColor) {
-  const pct = kd.plan ? (kd.isCurrentMonth ? Math.round(kd.monthBudget/kd.plan*100) : Math.round(kd.budget/kd.plan*100)) : 0;
+function _kpiColHTML(label, badge, kd, borderColor, periodType) {
+  // For 'day' cards (Вчера/Сегодня): show daily plan and daily execution
+  // For 'month' card: show full month plan and month-to-date execution
+  const now2 = new Date();
+  const totalDaysM = _lastDay(now2.getFullYear(), now2.getMonth()+1);
+  const dailyPlan = kd.plan ? Math.round(kd.plan / totalDaysM) : 0;
+  const displayPlan = periodType === 'day' ? dailyPlan : kd.plan;
+  const pct = displayPlan ? (periodType === 'day'
+    ? Math.round(kd.budget / dailyPlan * 100)
+    : (kd.isCurrentMonth ? Math.round(kd.monthBudget/kd.plan*100) : Math.round(kd.budget/kd.plan*100))
+  ) : 0;
   const drr = kd.budget ? +(kd.adTotal/kd.budget*100).toFixed(1) : 0;
   const cpl = kd.cplMonth || 0;
   const pctClr = pct>=100?'#16a34a':pct>=80?'#ca8a04':'#c0392b';
@@ -2058,7 +2067,7 @@ function _kpiColHTML(label, badge, kd, borderColor) {
     <div class="kpi-col-title">${label} <span class="kpi-period-badge">${badge}</span></div>
     <div class="kpi-row">
       <span class="kpi-row-label">План</span>
-      <div><div class="kpi-row-val">${kd.plan?fmtM(kd.plan):'—'}</div></div>
+      <div><div class="kpi-row-val">${displayPlan?fmtM(displayPlan):'—'}</div></div>
     </div>
     <div class="kpi-row">
       <span class="kpi-row-label">Продажи</span>
@@ -2106,9 +2115,9 @@ function renderKPI(d){
   const todayData = _aggregateForKpi(_getKpiPeriod('today'));
 
   document.getElementById('kpi-3col').innerHTML =
-    _kpiColHTML('Месяц', activePeriod.label, monthData, clr) +
-    _kpiColHTML('Вчера', _getKpiPeriod('yesterday').from, yesterdayData, '#ca8a04') +
-    _kpiColHTML('Сегодня', _getKpiPeriod('today').from, todayData, '#16a34a');
+    _kpiColHTML('Месяц', activePeriod.label, monthData, clr, 'month') +
+    _kpiColHTML('Вчера', _getKpiPeriod('yesterday').from, yesterdayData, '#ca8a04', 'day') +
+    _kpiColHTML('Сегодня', _getKpiPeriod('today').from, todayData, '#16a34a', 'day');
 }
 
 // ═══════════════════ FORECAST HELPER ══════════════════════════════
