@@ -2182,7 +2182,7 @@ function renderPlanTable(stats){
       return (ROP_PLANS[ropName]&&ROP_PLANS[ropName][mk])||0;
     }
 
-    let rTotPlan=0,rTotFact=0,rTotLeads=0,rTotDeals=0,rTotAd=0,rTotFcFact=0;
+    let rTotPlan=0,rTotFullPlan=0,rTotFact=0,rTotLeads=0,rTotDeals=0,rTotAd=0,rTotFcFact=0;
 
     // Forecast: ALWAYS based on current month (1st → today), independent of selected period filter
     const _fcMonthStart = `01.${String(_now.getMonth()+1).padStart(2,'0')}.${_now.getFullYear()}`;
@@ -2248,7 +2248,7 @@ function renderPlanTable(stats){
       const rpl = ropLeads>0&&ropFact>0?Math.round(ropFact/ropLeads):0;
       const ropDrr = ropFact>0&&adSpend>0?(adSpend/ropFact*100).toFixed(1):'0.0';
 
-      rTotPlan+=planPeriod; rTotFact+=ropFact; rTotLeads+=ropLeads; rTotDeals+=ropDeals; rTotAd+=adSpend; rTotFcFact+=_fcFact;
+      rTotPlan+=planPeriod; rTotFullPlan+=fullMonthPlan; rTotFact+=ropFact; rTotLeads+=ropLeads; rTotDeals+=ropDeals; rTotAd+=adSpend; rTotFcFact+=_fcFact;
 
       const remainCell = planPeriod>0
         ? remain===0
@@ -2266,7 +2266,7 @@ function renderPlanTable(stats){
 
       rows += `<tr>
         <td><div class="prod-name"><div class="prod-dot" style="background:${ropCfg.color}"></div>${ropName}</div></td>
-        <td>${fmt(planPeriod)}</td>
+        <td>${fmt(fullMonthPlan)}</td>
         <td style="color:var(--slate);font-weight:600">${fmt(planPeriod)}</td>
         <td style="color:${ropCfg.color};font-weight:700">${fmt(ropFact)}</td>
         <td><div class="bar-wrap"><span style="font-weight:700;font-size:13px;min-width:36px;text-align:right;color:${execPct>=100?'#16a34a':execPct>=80?'#ca8a04':'#dc2626'}">${execPct}%</span></div></td>
@@ -2300,7 +2300,7 @@ function renderPlanTable(stats){
 
     rows += `<tr class="tr-sum" style="border-top:1.5px solid var(--line)">
       <td><div class="prod-name"><div class="prod-dot" style="background:#6366f1"></div><strong>ИТОГО РОП</strong></div></td>
-      <td><strong>${fmt(rTotPlan)}</strong></td>
+      <td><strong>${fmt(rTotFullPlan)}</strong></td>
       <td style="color:var(--slate);font-weight:600"><strong>${fmt(rTotPlan)}</strong></td>
       <td style="color:#6366f1;font-weight:700"><strong>${fmt(rTotFact)}</strong></td>
       <td><div class="bar-wrap"><span style="font-weight:700;font-size:13px;color:${rTotExecPct>=100?'#16a34a':rTotExecPct>=80?'#ca8a04':'#dc2626'};min-width:36px;text-align:right">${rTotExecPct}%</span></div></td>
