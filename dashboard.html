@@ -1782,6 +1782,7 @@ let activePeriod={..._defaultPreset, preset:_defaultKey};
 let activeMgrPeriod={..._defaultPreset, preset:_defaultKey};
 let activeAdPeriod={..._defaultPreset, preset:_defaultKey};
 let chartLine=null, chartDonut=null, mgrCharts={}, adCharts={};
+let _mgrSortCol=null, _mgrSortAsc=false; // manager table sort state
 
 // ═══════════════════ UTILS ════════════════════════════════════════
 const parseDate = s => { const [d,m,y]=s.split('.'); return new Date(+y,+m-1,+d); };
@@ -2999,6 +3000,11 @@ function aggregateManagersByPeriod(prodKey, from, to) {
     .sort((a,b) => b.budget - a.budget);
 }
 
+function _mgrSort(col){
+  if(_mgrSortCol===col) _mgrSortAsc=!_mgrSortAsc;
+  else { _mgrSortCol=col; _mgrSortAsc=col==='name'||col==='group'; }
+  renderManagers();
+}
 function renderManagers(){
   const{from,to}=activeMgrPeriod;
   let mgrs = aggregateManagersByRop(activeMgrRop, activeMgrProdSub, from, to);
@@ -3010,19 +3016,56 @@ function renderManagers(){
 
   const cfg = activeMgrRop !== 'all' ? {color: ROP_GROUPS[activeMgrRop]?.color || '#6366f1'} : {color:'#6366f1'};
 
-  const withDeals=mgrs.filter(m=>m.deals>0).sort((a,b)=>b.budget-a.budget);
+  let withDeals=mgrs.filter(m=>m.deals>0).sort((a,b)=>b.budget-a.budget);
   const withoutDeals=mgrs.filter(m=>m.deals===0);
+
+  // Apply column sort if active
+  if (_mgrSortCol) {
+    const colDef = {
+      name:  m=>m.name.toLowerCase(),
+      group: m=>(getRop(m.name)||'').toLowerCase(),
+      leads: m=>m.leads, new: m=>m.newDeals||0, base: m=>m.baseDeals||0,
+      deals: m=>m.deals, budget: m=>m.budget, conv: m=>m.conv,
+      convN: m=>m.leads>0&&(m.newDeals||0)>0?(m.newDeals/m.leads*100):0,
+      convB: m=>m.leads>0&&(m.baseDeals||0)>0?(m.baseDeals/m.leads*100):0,
+      avg:   m=>m.avgCheck,
+    };
+    const getter = colDef[_mgrSortCol];
+    if (getter) {
+      withDeals = withDeals.sort((a,b) => {
+        const va=getter(a), vb=getter(b);
+        if (typeof va==='string') return _mgrSortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+        return _mgrSortAsc ? va-vb : vb-va;
+      });
+    }
+  }
   const maxB=Math.max(...withDeals.map(m=>m.budget),1);
   const ranks=['🥇','🥈','🥉'];
 
-  // Always show ROP group column + new/base columns
-  document.querySelector('#view-managers .dt thead tr').innerHTML =
-    `<th style="width:40px;text-align:center">#</th>
-     <th style="text-align:left">Менеджер</th>
-     <th style="color:var(--muted);font-size:11px">Группа</th>
-     <th>Лиды</th><th>Новые</th><th>База</th><th>Сделки</th><th>Выручка</th>
-     <th>Конв.</th><th>Конв.(нов)</th><th>Конв.(база)</th>
-     <th class="ft-tooltip" data-tip="Конверсия первого касания из AmoCRM">1-е касание ✦</th><th>Ср. чек</th><th>Доля</th>`;
+  // Sortable columns definition
+  const _mgrCols = [
+    {key:'#',      label:'#',           sortable:false, style:'width:40px;text-align:center'},
+    {key:'name',   label:'Менеджер',    sortable:true,  style:'text-align:left', get:m=>m.name.toLowerCase()},
+    {key:'group',  label:'Группа',      sortable:true,  style:'color:var(--muted);font-size:11px', get:m=>(getRop(m.name)||'').toLowerCase()},
+    {key:'leads',  label:'Лиды',        sortable:true,  get:m=>m.leads},
+    {key:'new',    label:'Новые',       sortable:true,  get:m=>m.newDeals||0},
+    {key:'base',   label:'База',        sortable:true,  get:m=>m.baseDeals||0},
+    {key:'deals',  label:'Сделки',      sortable:true,  get:m=>m.deals},
+    {key:'budget', label:'Выручка',     sortable:true,  get:m=>m.budget},
+    {key:'conv',   label:'Конв.',       sortable:true,  get:m=>m.conv},
+    {key:'convN',  label:'Конв.(нов)',  sortable:true,  get:m=>m.leads>0&&(m.newDeals||0)>0?(m.newDeals/m.leads*100):0},
+    {key:'convB',  label:'Конв.(база)', sortable:true,  get:m=>m.leads>0&&(m.baseDeals||0)>0?(m.baseDeals/m.leads*100):0},
+    {key:'ft',     label:'1-е касание ✦',sortable:false, cls:'ft-tooltip', tip:'Конверсия первого касания из AmoCRM'},
+    {key:'avg',    label:'Ср. чек',     sortable:true,  get:m=>m.avgCheck},
+    {key:'share',  label:'Доля',        sortable:false},
+  ];
+  const _sortArrow = k => _mgrSortCol===k ? (_mgrSortAsc?' ▲':' ▼') : '';
+  document.querySelector('#view-managers .dt thead tr').innerHTML = _mgrCols.map(c => {
+    const cls = (c.cls?` class="${c.cls}"`:'') + (c.tip?` data-tip="${c.tip}"`:'');
+    const st = c.style ? ` style="${c.style};${c.sortable?'cursor:pointer':''}"` : (c.sortable?' style="cursor:pointer"':'');
+    const onclick = c.sortable ? ` onclick="_mgrSort('${c.key}')"` : '';
+    return `<th${cls}${st}${onclick}>${c.label}${c.sortable?`<span style="font-size:10px;color:var(--acc)">${_sortArrow(c.key)}</span>`:''}</th>`;
+  }).join('\n     ');
 
   let tbody='';
   withDeals.forEach((m,i)=>{
