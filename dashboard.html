@@ -2636,7 +2636,7 @@ function render(){
   renderTopManager();
   renderHeatmap();
   renderProdByRop();
-  renderCityMap();
+  try { renderCityMap(); } catch(e) { console.warn('cityMap:', e.message); }
 }
 
 // ═══════════════════ FIRST-TOUCH (AmoCRM) ════════════════════════
@@ -4336,6 +4336,7 @@ function renderCityMap() {
   const mapEl = document.getElementById('cityMap');
   const listEl = document.getElementById('cityList');
   if (!mapEl || !listEl) return;
+  if (!_cityData || typeof _cityData !== 'object') return;
 
   // Get active period dates for filtering
   const periodFrom = parseDate(activePeriod.from);
