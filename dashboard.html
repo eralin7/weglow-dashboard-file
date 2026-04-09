@@ -2232,19 +2232,26 @@ function renderPlanTable(stats){
       const conv = ropLeads>0?(ropDeals/ropLeads*100).toFixed(1):'0.0';
 
       let adSpend=0;
-      crms.forEach(crm=>{
-        let crmAdTotal=0;
-        const ad=AD_SPEND[crm]||{};
-        Object.entries(ad).forEach(([d,v])=>{try{const dd=parseDate(d);if(dd>=_fromD&&dd<=_toD)crmAdTotal+=v;}catch(e){}});
-        if(crmAdTotal>0){
-          let crmTotalLeads=0;
-          const allMgrs=aggregateManagersByPeriod(crm,_planFrom,_planTo);
-          allMgrs.forEach(m=>{crmTotalLeads+=m.leads||0;});
-          let ropCrmLeads=0;
-          allMgrs.filter(m=>ropMatches(m.name,ropName)).forEach(m=>{ropCrmLeads+=m.leads||0;});
-          adSpend += crmTotalLeads>0 ? Math.round(crmAdTotal*ropCrmLeads/crmTotalLeads) : 0;
-        }
-      });
+      if (AD_SPEND[ropName]) {
+        // Direct ad spend key (e.g. БОТА AI) — use own data from ad cabinet
+        const ad=AD_SPEND[ropName]||{};
+        Object.entries(ad).forEach(([d,v])=>{try{const dd=parseDate(d);if(dd>=_fromD&&dd<=_toD)adSpend+=v;}catch(e){}});
+      } else {
+        // Proportional: share of CRM ad spend by leads ratio
+        crms.forEach(crm=>{
+          let crmAdTotal=0;
+          const ad=AD_SPEND[crm]||{};
+          Object.entries(ad).forEach(([d,v])=>{try{const dd=parseDate(d);if(dd>=_fromD&&dd<=_toD)crmAdTotal+=v;}catch(e){}});
+          if(crmAdTotal>0){
+            let crmTotalLeads=0;
+            const allMgrs=aggregateManagersByPeriod(crm,_planFrom,_planTo);
+            allMgrs.forEach(m=>{crmTotalLeads+=m.leads||0;});
+            let ropCrmLeads=0;
+            allMgrs.filter(m=>ropMatches(m.name,ropName)).forEach(m=>{ropCrmLeads+=m.leads||0;});
+            adSpend += crmTotalLeads>0 ? Math.round(crmAdTotal*ropCrmLeads/crmTotalLeads) : 0;
+          }
+        });
+      }
       const cplM = ropLeads>0&&adSpend>0?Math.round(adSpend/ropLeads):0;
       const rpl = ropLeads>0&&ropFact>0?Math.round(ropFact/ropLeads):0;
       const ropDrr = ropFact>0&&adSpend>0?(adSpend/ropFact*100).toFixed(1):'0.0';
