@@ -148,6 +148,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
   <div style="background:#fff;border-bottom:1px solid var(--line);padding:0 24px;display:flex;gap:4px">
     <button class="ad-tab active" onclick="adTab('data',this)">📝 Данные</button>
     <button class="ad-tab" onclick="adTab('analytics',this)">📊 Аналитика</button>
+    <button class="ad-tab" onclick="adTab('requests',this)">💬 Запросы</button>
   </div>
 
   <div class="content">
@@ -219,6 +220,23 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
         <div id="ad-monthly-table"></div>
       </div>
     </div><!-- /ad-tab-analytics -->
+
+    <!-- REQUESTS TAB -->
+    <div id="ad-tab-requests" style="display:none">
+      <div style="font-size:18px;font-weight:700;margin-bottom:4px;color:var(--ink)">Запросы на изменение</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:20px">Опишите что хотите изменить на странице — запрос попадёт к разработчику</div>
+
+      <div style="background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px 28px;margin-bottom:24px">
+        <textarea id="req-text" placeholder="Например: Добавить колонку для Facebook Ads, изменить цвет графика, добавить фильтр по датам..." style="width:100%;min-height:120px;padding:14px;border:1.5px solid var(--line);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;resize:vertical;background:var(--bg);transition:border-color .15s" onfocus="this.style.borderColor='var(--acc)'" onblur="this.style.borderColor='var(--line)'"></textarea>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:12px">
+          <button class="save-btn" onclick="sendRequest()" id="req-send-btn">Отправить запрос</button>
+          <span id="req-status" style="font-size:13px"></span>
+        </div>
+      </div>
+
+      <div style="font-size:13px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px">История запросов</div>
+      <div id="req-history" style="font-size:13px;color:var(--muted)">Загрузка...</div>
+    </div><!-- /ad-tab-requests -->
 
   </div>
 </div>
@@ -548,11 +566,12 @@ function adTab(name, el) {
     b.classList.remove('active');
   });
   el.classList.add('active');
-  ['data','analytics'].forEach(t=>{
+  ['data','analytics','requests'].forEach(t=>{
     const el2=document.getElementById('ad-tab-'+t);
     if(el2) el2.style.display=t===name?'':'none';
   });
   if(name==='analytics') { buildAdAnalyticsPeriod(); renderAdAnalytics(); }
+  if(name==='requests') { loadRequests(); }
 }
 
 // ══════════════════════════════════════════════
@@ -733,6 +752,67 @@ function renderAdAnalytics() {
         </tr>`;
       }).join('')}</tbody>
     </table>`;
+  }
+}
+
+// ══════════════════════════════════════════════
+// REQUESTS (stored in weglow_data.AD_REQUESTS)
+// ══════════════════════════════════════════════
+async function loadRequests(){
+  const el=document.getElementById('req-history');
+  try {
+    const rows=await sbGet('weglow_data','?id=eq.1&select=data');
+    const reqs=(rows&&rows[0]&&rows[0].data&&rows[0].data.AD_REQUESTS)||[];
+    if(!reqs.length){ el.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">Пока нет запросов</div>'; return; }
+    el.innerHTML=reqs.slice().reverse().map(r=>{
+      const statusClr=r.status==='done'?'#16a34a':r.status==='in-progress'?'#ca8a04':'#6366f1';
+      const statusTxt=r.status==='done'?'Выполнено':r.status==='in-progress'?'В работе':'Новый';
+      return `<div style="background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin-bottom:10px;border-left:3px solid ${statusClr}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-size:11px;color:var(--muted)">${r.date}</span>
+          <span style="font-size:11px;font-weight:600;color:${statusClr};background:${statusClr}11;padding:2px 10px;border-radius:10px">${statusTxt}</span>
+        </div>
+        <div style="font-size:14px;color:var(--ink);line-height:1.5">${r.message}</div>
+        ${r.reply?`<div style="margin-top:8px;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:13px;color:var(--slate)"><strong>Ответ:</strong> ${r.reply}</div>`:''}
+      </div>`;
+    }).join('');
+  } catch(e){
+    el.innerHTML='<div style="color:var(--red)">Ошибка загрузки</div>';
+  }
+}
+
+async function sendRequest(){
+  const text=document.getElementById('req-text').value.trim();
+  if(!text){ document.getElementById('req-status').innerHTML='<span style="color:var(--red)">Напишите запрос</span>'; return; }
+
+  const btn=document.getElementById('req-send-btn');
+  btn.disabled=true;
+  document.getElementById('req-status').innerHTML='<span style="color:var(--acc)">Отправка...</span>';
+
+  try {
+    const rows=await sbGet('weglow_data','?id=eq.1&select=data');
+    let payload=rows&&rows[0]?rows[0].data:{};
+    if(!payload.AD_REQUESTS) payload.AD_REQUESTS=[];
+
+    const now=new Date();
+    payload.AD_REQUESTS.push({
+      id: Date.now(),
+      date: `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
+      message: text,
+      status: 'new',
+      reply: ''
+    });
+
+    payload.updatedAt=new Date().toISOString();
+    await sbUpsert('weglow_data',{id:1, data:payload, updated_at:new Date().toISOString()});
+
+    document.getElementById('req-text').value='';
+    document.getElementById('req-status').innerHTML='<span style="color:var(--green)">Запрос отправлен!</span>';
+    loadRequests();
+  } catch(e){
+    document.getElementById('req-status').innerHTML='<span style="color:var(--red)">Ошибка: '+e.message+'</span>';
+  } finally {
+    btn.disabled=false;
   }
 }
 
