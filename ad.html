@@ -229,6 +229,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 
       <div style="background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px 28px;margin-bottom:24px">
         <textarea id="req-text" placeholder="Например: Добавить колонку для Facebook Ads, изменить цвет графика, добавить фильтр по датам..." style="width:100%;min-height:120px;padding:14px;border:1.5px solid var(--line);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;resize:vertical;background:var(--bg);transition:border-color .15s" onfocus="this.style.borderColor='var(--acc)'" onblur="this.style.borderColor='var(--line)'"></textarea>
+        <div style="margin-top:12px">
+          <label style="display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border:1.5px dashed var(--line);border-radius:10px;cursor:pointer;font-size:13px;color:var(--muted);transition:all .15s" onmouseenter="this.style.borderColor='var(--acc)';this.style.color='var(--acc)'" onmouseleave="this.style.borderColor='var(--line)';this.style.color='var(--muted)'">
+            📎 Прикрепить файл (скриншот, фото, документ)
+            <input type="file" id="req-file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" style="display:none" onchange="updateFileLabel()">
+          </label>
+          <span id="req-file-names" style="font-size:12px;color:var(--slate);margin-left:8px"></span>
+        </div>
         <div style="display:flex;align-items:center;gap:12px;margin-top:12px">
           <button class="save-btn" onclick="sendRequest()" id="req-send-btn">Отправить запрос</button>
           <span id="req-status" style="font-size:13px"></span>
@@ -774,6 +781,10 @@ async function loadRequests(){
           <span style="font-size:11px;font-weight:600;color:${statusClr};background:${statusClr}11;padding:2px 10px;border-radius:10px">${statusTxt}</span>
         </div>
         <div style="font-size:14px;color:var(--ink);line-height:1.5">${r.message}</div>
+        ${(r.files||[]).length?`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">${r.files.map(f=>
+          f.type.startsWith('image/')?`<a href="${f.data}" target="_blank" style="display:block;border-radius:8px;overflow:hidden;border:1px solid var(--line)"><img src="${f.data}" style="max-width:200px;max-height:120px;display:block"></a>`
+          :`<a href="${f.data}" download="${f.name}" style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;background:var(--bg);border:1px solid var(--line);border-radius:8px;font-size:12px;color:var(--acc);text-decoration:none">📄 ${f.name}</a>`
+        ).join('')}</div>`:''}
         ${r.reply?`<div style="margin-top:8px;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:13px;color:var(--slate)"><strong>Ответ:</strong> ${r.reply}</div>`:''}
       </div>`;
     }).join('');
@@ -782,15 +793,42 @@ async function loadRequests(){
   }
 }
 
+function updateFileLabel(){
+  const inp=document.getElementById('req-file');
+  const el=document.getElementById('req-file-names');
+  if(inp.files.length){
+    const names=[...inp.files].map(f=>`${f.name} (${(f.size/1024).toFixed(0)}KB)`);
+    el.textContent=names.join(', ');
+  } else { el.textContent=''; }
+}
+
+function fileToBase64(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(reader.result);
+    reader.onerror=reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 async function sendRequest(){
   const text=document.getElementById('req-text').value.trim();
-  if(!text){ document.getElementById('req-status').innerHTML='<span style="color:var(--red)">Напишите запрос</span>'; return; }
+  const fileInp=document.getElementById('req-file');
+  if(!text && !fileInp.files.length){ document.getElementById('req-status').innerHTML='<span style="color:var(--red)">Напишите запрос или прикрепите файл</span>'; return; }
 
   const btn=document.getElementById('req-send-btn');
   btn.disabled=true;
   document.getElementById('req-status').innerHTML='<span style="color:var(--acc)">Отправка...</span>';
 
   try {
+    // Convert files to base64
+    const files=[];
+    for(const f of fileInp.files){
+      if(f.size>3*1024*1024){ document.getElementById('req-status').innerHTML='<span style="color:var(--red)">Файл '+f.name+' слишком большой (макс 3MB)</span>'; btn.disabled=false; return; }
+      const data=await fileToBase64(f);
+      files.push({name:f.name, type:f.type, size:f.size, data});
+    }
+
     const rows=await sbGet('weglow_data','?id=eq.1&select=data');
     let payload=rows&&rows[0]?rows[0].data:{};
     if(!payload.AD_REQUESTS) payload.AD_REQUESTS=[];
@@ -799,7 +837,8 @@ async function sendRequest(){
     payload.AD_REQUESTS.push({
       id: Date.now(),
       date: `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
-      message: text,
+      message: text||'(файл без описания)',
+      files,
       status: 'new',
       reply: ''
     });
@@ -808,6 +847,8 @@ async function sendRequest(){
     await sbUpsert('weglow_data',{id:1, data:payload, updated_at:new Date().toISOString()});
 
     document.getElementById('req-text').value='';
+    fileInp.value='';
+    document.getElementById('req-file-names').textContent='';
     document.getElementById('req-status').innerHTML='<span style="color:var(--green)">Запрос отправлен!</span>';
     loadRequests();
   } catch(e){
