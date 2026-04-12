@@ -2,414 +2,142 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>WeGlow — Гонка к Плану</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=1920">
+<title>WeGlow — Race to Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
 <style>
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
-html{font-size:16px;-webkit-font-smoothing:antialiased;}
-body{
-  font-family:'DM Sans',sans-serif;
-  background:#000;
-  color:#1a1a2e;
-  min-height:100vh;
-  overflow:hidden;
-}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;overflow:hidden;background:#0a0e1a;color:#e2e8f0;font-family:'DM Sans',sans-serif;}
+body.hide-cursor{cursor:none;}
 
-/* ══════════════════════════════════════════════════════
-   LAYOUT
-   ══════════════════════════════════════════════════════ */
-.page{display:flex;flex-direction:column;height:100vh;}
+/* ── Header ── */
+.header{display:flex;justify-content:space-between;align-items:center;padding:18px 40px;background:linear-gradient(135deg,#0f1629,#1a1f3a);border-bottom:1px solid rgba(255,255,255,.06);}
+.header h1{font-family:'Playfair Display',serif;font-size:32px;color:#fff;letter-spacing:1px;}
+.header h1 span{color:#f59e0b;}
+.header .updated{font-size:14px;color:#64748b;}
 
-/* ══════════════════════════════════════════════════════
-   3D SCENE CONTAINER (top 70%)
-   ══════════════════════════════════════════════════════ */
-.scene-container{
-  position:relative;
-  flex:7;
-  min-height:0;
-  overflow:hidden;
-}
-.scene-container canvas{
-  display:block;
-  width:100%!important;
-  height:100%!important;
-}
+/* ── Race Section ── */
+.race-section{flex:1;display:flex;flex-direction:column;justify-content:center;padding:20px 40px 10px;gap:16px;}
 
-/* ══════════════════════════════════════════════════════
-   HUD OVERLAY
-   ══════════════════════════════════════════════════════ */
-.hud{
-  position:absolute;inset:0;
-  pointer-events:none;
-  z-index:10;
-}
-.hud *{pointer-events:auto;}
+.track{display:grid;grid-template-columns:180px 1fr 200px;align-items:center;height:80px;background:rgba(255,255,255,.03);border-radius:16px;padding:0 24px;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.05);}
+.track.leader{border-color:rgba(245,158,11,.3);box-shadow:0 0 20px rgba(245,158,11,.08);}
+.track.leader .rop-name{color:#f59e0b !important;}
 
-/* Title bar (top-left) */
-.hud-title-bar{
-  position:absolute;top:16px;left:16px;
-  display:flex;align-items:center;gap:16px;
-  background:rgba(255,255,255,.88);
-  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-  border-radius:12px;
-  padding:12px 20px;
-  box-shadow:0 4px 20px rgba(0,0,0,.1);
-  border:1px solid rgba(0,0,0,.05);
-}
-.hud-main-title{
-  font-family:'Playfair Display',serif;font-size:20px;font-weight:800;
-  letter-spacing:2px;text-transform:uppercase;
-  color:#1a1a2e;
-}
-.hud-clock{
-  font-family:'DM Sans',sans-serif;font-size:24px;font-weight:700;
-  font-variant-numeric:tabular-nums;letter-spacing:2px;
-  color:#1a1a2e;
-}
-.hud-badge{
-  font-size:11px;padding:5px 14px;border-radius:20px;
-  background:rgba(16,185,129,.08);
-  border:1px solid rgba(16,185,129,.15);
-  color:#059669;font-weight:600;
-}
+.rop-name{font-size:20px;font-weight:700;white-space:nowrap;}
+.rop-rank{font-size:14px;color:#64748b;font-weight:400;}
 
-/* Scoreboard (top-right) */
-.scoreboard{ display:none !important; }
-.scoreboard-title{
-  font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
-  color:#6b7280;margin-bottom:10px;
-  display:flex;align-items:center;gap:6px;
-}
-.scoreboard-live{
-  width:6px;height:6px;border-radius:50%;background:#ef4444;
-  animation:livePulse 1.5s ease-in-out infinite;
-}
-@keyframes livePulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.8);}}
-.sb-row{
-  display:flex;align-items:center;gap:10px;
-  padding:6px 0;
-  border-bottom:1px solid rgba(0,0,0,.04);
-}
-.sb-row:last-child{border-bottom:none;}
-.sb-pos{
-  width:22px;height:22px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-size:11px;font-weight:800;flex-shrink:0;
-}
-.sb-pos.p1{background:#ffd700;color:#1a1200;}
-.sb-pos.p2{background:#c0c0c0;color:#333;}
-.sb-pos.p3{background:#cd7f32;color:#fff;}
-.sb-pos.p4{background:#e5e7eb;color:#6b7280;}
-.sb-name{flex:1;font-size:13px;font-weight:600;color:#1a1a2e;}
-.sb-pct{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;}
-.sb-detail{font-size:9px;color:#9ca3af;font-weight:500;}
+.track-bar{position:relative;height:40px;border-radius:10px;background:rgba(255,255,255,.04);overflow:visible;}
+.track-fill{height:100%;border-radius:10px;transition:width 2s cubic-bezier(.4,0,.2,1);position:relative;min-width:30px;}
 
-/* Car labels floating in 3D (rendered as HTML) */
-.car-label{
-  position:absolute;
-  transform:translate(-50%,-100%);
-  white-space:nowrap;
-  pointer-events:none;
-  transition:opacity .3s;
-  z-index:11;
-}
-.car-label-name{
-  font-family:'Playfair Display',serif;font-size:28px;font-weight:900;
-  letter-spacing:1px;
-  text-shadow:0 2px 6px rgba(0,0,0,.7), 0 0 20px currentColor, 0 0 40px currentColor;
-  -webkit-text-stroke:0.5px rgba(0,0,0,.3);
-}
-.car-label-pct{ display:none; }
-.car-label-detail{ display:none; }
+.car-icon{position:absolute;top:50%;transform:translateY(-50%);right:-18px;font-size:32px;filter:drop-shadow(0 0 6px rgba(255,255,255,.3));transition:right 2s cubic-bezier(.4,0,.2,1);}
 
-/* Zoom hint */
-.zoom-hint{
-  position:absolute;bottom:16px;left:50%;transform:translateX(-50%);
-  background:rgba(0,0,0,.5);
-  color:#fff;
-  padding:8px 20px;
-  border-radius:20px;
-  font-size:12px;font-weight:500;
-  letter-spacing:0.5px;
-  transition:opacity 1s;
-}
-.zoom-hint.hidden{opacity:0;pointer-events:none;}
+.finish-line{position:absolute;right:0;top:0;bottom:0;width:3px;background:repeating-linear-gradient(180deg,#fff 0,#fff 4px,#333 4px,#333 8px);opacity:.3;}
 
-/* ══════════════════════════════════════════════════════
-   BOTTOM PANEL (30%)
-   ══════════════════════════════════════════════════════ */
-.bottom-panel{
-  flex:3;
-  display:grid;grid-template-columns:1fr 1fr;gap:20px;
-  padding:12px 40px 20px;
-  background:rgba(0,0,0,.25);
-  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-  border-top:1px solid rgba(255,255,255,.1);
-  min-height:0;
-  overflow:hidden;
-}
-.panel-card{
-  background:rgba(255,255,255,.08);
-  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-  border-radius:16px;padding:16px 20px;
-  position:relative;overflow:hidden;
-  box-shadow:0 4px 24px rgba(0,0,0,.15), inset 0 1px 0 rgba(255,255,255,.1);
-  border:1px solid rgba(255,255,255,.12);
-  display:flex;flex-direction:column;
-  min-height:0;
-}
-.panel-title{
-  font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
-  color:rgba(255,255,255,.7);margin-bottom:12px;
-  display:flex;align-items:center;gap:8px;
-  flex-shrink:0;
-}
-.panel-title-dot{
-  width:7px;height:7px;border-radius:50%;
-  background:#10b981;
-  box-shadow:0 0 6px #10b981;
-  animation:livePulse 2s ease-in-out infinite;
-}
-.panel-title-dot.red{background:#ef4444;box-shadow:0 0 6px #ef4444;}
+.rop-stats{text-align:right;font-size:15px;line-height:1.5;}
+.rop-pct{font-size:26px;font-weight:700;}
+.rop-sum{color:#94a3b8;font-size:14px;}
 
-/* ── TOP-3 MANAGERS ── */
-.top3-list{display:flex;flex-direction:column;gap:8px;overflow:hidden;flex:1;}
-.top3-item{
-  display:flex;align-items:center;gap:14px;
-  padding:10px 14px;border-radius:12px;
-  background:rgba(255,255,255,.06);
-  transition:all .4s;
-  position:relative;overflow:hidden;
-  border:1px solid rgba(255,255,255,.08);
-}
-.top3-item.gold{
-  background:linear-gradient(135deg, rgba(251,191,36,.15), rgba(245,158,11,.08));
-  border-left:4px solid #fbbf24;
-  border-color:rgba(251,191,36,.25);
-}
-.top3-item.silver{
-  background:linear-gradient(135deg, rgba(192,192,192,.1), rgba(156,163,175,.06));
-  border-left:4px solid #c0c0c0;
-  border-color:rgba(192,192,192,.2);
-}
-.top3-item.bronze{
-  background:linear-gradient(135deg, rgba(205,127,50,.12), rgba(160,98,46,.06));
-  border-left:4px solid #cd7f32;
-  border-color:rgba(205,127,50,.2);
-}
-.top3-medal{font-size:26px;flex-shrink:0;width:32px;text-align:center;}
-.top3-info{flex:1;min-width:0;}
-.top3-name{font-size:14px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.top3-sub{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px;}
-.top3-amount{
-  font-family:'DM Sans',sans-serif;font-size:18px;font-weight:800;
-  font-variant-numeric:tabular-nums;white-space:nowrap;
-  letter-spacing:-0.3px;
-}
-.top3-amount.gold-text{color:#fbbf24;}
-.top3-amount.silver-text{color:rgba(255,255,255,.7);}
-.top3-amount.bronze-text{color:#cd7f32;}
+.track.overplan{border-color:rgba(16,185,129,.4);box-shadow:0 0 25px rgba(16,185,129,.12);}
+.track.overplan .rop-pct{color:#10b981 !important;}
 
-/* ── FEED ── */
-.feed-list{display:flex;flex-direction:column;gap:6px;overflow:hidden;flex:1;}
-.feed-item{
-  display:flex;align-items:center;gap:12px;
-  padding:8px 12px;border-radius:10px;
-  background:rgba(255,255,255,.06);
-  border:1px solid rgba(255,255,255,.08);
-  font-size:13px;font-weight:500;color:rgba(255,255,255,.8);
-  animation:feedSlideIn .6s cubic-bezier(.4,0,.2,1);
-  transition:all .3s;
-}
-.feed-item.highlight{
-  background:linear-gradient(135deg, rgba(16,185,129,.15), rgba(16,185,129,.05));
-  border:1px solid rgba(16,185,129,.25);
-}
-@keyframes feedSlideIn{
-  from{opacity:0;transform:translateX(-30px) scale(.95);}
-  to{opacity:1;transform:translateX(0) scale(1);}
-}
-.feed-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:rgba(255,255,255,.6);}
-.feed-amount{
-  font-family:'DM Sans',sans-serif;font-weight:700;font-size:14px;
-  font-variant-numeric:tabular-nums;white-space:nowrap;color:#1a1a2e;
-}
-.feed-tag{
-  font-size:9px;font-weight:700;padding:3px 8px;border-radius:8px;
-  background:rgba(99,102,241,.08);
-  border:1px solid rgba(99,102,241,.1);
-  color:#6366f1;white-space:nowrap;
-  text-transform:uppercase;letter-spacing:0.5px;
-}
-.feed-empty{
-  text-align:center;padding:24px;color:#9ca3af;font-size:13px;
-}
+@keyframes pulse-leader{0%,100%{box-shadow:0 0 20px rgba(245,158,11,.08);}50%{box-shadow:0 0 35px rgba(245,158,11,.2);}}
+.track.leader{animation:pulse-leader 2s infinite;}
 
-/* ══════════════════════════════════════════════════════
-   LOADING
-   ══════════════════════════════════════════════════════ */
-.loading-screen{
-  position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(180deg, #87CEEB 0%, #c5e8f7 40%, #ffffff 100%);
-  flex-direction:column;gap:20px;
-  transition:opacity .8s;
-}
-.loading-screen.fade-out{opacity:0;pointer-events:none;}
-.loading-bar-container{
-  width:300px;height:6px;border-radius:3px;
-  background:rgba(0,0,0,.1);overflow:hidden;
-}
-.loading-bar{
-  height:100%;width:0%;
-  background:linear-gradient(90deg, #6366f1, #10b981);
-  border-radius:3px;
-  transition:width .3s;
-}
-.loading-text{font-size:13px;color:#6b7280;letter-spacing:1px;}
-.loading-title{
-  font-family:'Playfair Display',serif;font-size:28px;font-weight:800;
-  letter-spacing:3px;color:#1a1a2e;
-}
+/* ── Bottom Panel ── */
+.bottom-panel{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:10px 40px 20px;height:36%;}
 
-/* ══════════════════════════════════════════════════════
-   RESPONSIVE
-   ══════════════════════════════════════════════════════ */
-@media(max-width:1400px){
-  .bottom-panel{padding:10px 24px 14px;gap:16px;}
-  .hud-main-title{font-size:17px;}
-  .hud-clock{font-size:20px;}
-}
-@media(max-width:1024px){
-  .bottom-panel{grid-template-columns:1fr;}
-  .scoreboard{display:none;}
-}
-@media(max-width:768px){
-  .bottom-panel{padding:8px 16px 12px;}
-  .hud-title-bar{padding:8px 14px;}
-  .hud-main-title{font-size:14px;}
-}
+.panel-card{background:rgba(255,255,255,.03);border-radius:16px;border:1px solid rgba(255,255,255,.06);padding:20px 24px;overflow:hidden;}
+.panel-title{font-family:'Playfair Display',serif;font-size:20px;margin-bottom:16px;color:#f8fafc;display:flex;align-items:center;gap:10px;}
+
+/* Top 3 */
+.top3-item{display:flex;align-items:center;gap:14px;padding:12px 16px;border-radius:12px;margin-bottom:8px;background:rgba(255,255,255,.02);}
+.top3-item:first-child{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);}
+.top3-rank{font-size:28px;width:40px;text-align:center;}
+.top3-name{font-size:18px;font-weight:600;flex:1;}
+.top3-val{text-align:right;}
+.top3-budget{font-size:20px;font-weight:700;color:#f59e0b;}
+.top3-deals{font-size:13px;color:#64748b;}
+
+/* Live feed */
+.live-feed{display:flex;flex-direction:column;gap:6px;overflow:hidden;}
+.feed-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,.02);animation:feedIn .6s ease;}
+.feed-item.big-deal{background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.15);}
+.feed-name{font-weight:600;font-size:16px;flex:1;}
+.feed-amount{font-size:18px;font-weight:700;color:#10b981;}
+.feed-amount.big{color:#f59e0b;}
+.feed-crm{font-size:12px;color:#64748b;background:rgba(255,255,255,.05);padding:2px 8px;border-radius:6px;}
+
+@keyframes feedIn{from{opacity:0;transform:translateY(-20px);}to{opacity:1;transform:translateY(0);}}
+
+.main{display:flex;flex-direction:column;height:100vh;}
 </style>
-
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
-    "three/addons/loaders/GLTFLoader.js": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js"
-  }
-}
-</script>
 </head>
 <body>
-
-<!-- LOADING SCREEN -->
-<div class="loading-screen" id="loading">
-  <div class="loading-title">ГОНКА К ПЛАНУ</div>
-  <div class="loading-bar-container">
-    <div class="loading-bar" id="loadingBar"></div>
+<div class="main">
+  <div class="header">
+    <h1><span>RACE</span> TO PLAN</h1>
+    <div class="updated" id="updatedAt">Loading...</div>
   </div>
-  <div class="loading-text" id="loadingText">Подготовка сцены...</div>
-</div>
-
-<!-- MAIN PAGE -->
-<div class="page" id="page" style="display:none;">
-
-  <!-- 3D SCENE -->
-  <div class="scene-container" id="sceneContainer">
-    <div class="hud">
-      <!-- Title bar top-left -->
-      <div class="hud-title-bar">
-        <div class="hud-main-title">ГОНКА К ПЛАНУ</div>
-        <div style="width:1px;height:24px;background:rgba(0,0,0,.1);"></div>
-        <div class="hud-clock" id="headerClock"></div>
-        <div class="hud-badge" id="headerBadge">Обновлено: --:--</div>
-      </div>
-
-      <!-- Scoreboard top-right -->
-      <div class="scoreboard" id="scoreboard"></div>
-
-      <!-- Car labels (positioned by JS) -->
-      <div id="carLabelsContainer"></div>
-
-      <!-- Zoom hint -->
-      <div class="zoom-hint" id="zoomHint">Колёсико мыши — масштаб | Перетаскивание — поворот</div>
-    </div>
-  </div>
-
-  <!-- BOTTOM PANEL -->
+  <div class="race-section" id="raceSection"></div>
   <div class="bottom-panel">
     <div class="panel-card">
-      <div class="panel-title"><span class="panel-title-dot"></span> Топ-3 менеджера дня</div>
-      <div class="top3-list" id="top3List"></div>
+      <div class="panel-title">TOP-3 TODAY</div>
+      <div id="top3Container"></div>
     </div>
     <div class="panel-card">
-      <div class="panel-title"><span class="panel-title-dot red"></span> Live-лента сделок</div>
-      <div class="feed-list" id="feedList"></div>
+      <div class="panel-title">LIVE DEALS</div>
+      <div class="live-feed" id="liveFeed"></div>
     </div>
   </div>
 </div>
 
-<!-- 3D SCENE + DATA LOGIC -->
-<script type="module">
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-
-// ═══════════════════ CONFIG ═══════════════════════════════════════
+<script>
+// ═══════════════════ CONFIG ══════════════════════════════════════
 const SUPABASE_URL = 'https://bdyakgmeibpdkisbiykt.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkeWFrZ21laWJwZGtpc2JpeWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTQzOTMsImV4cCI6MjA4Nzc5MDM5M30.nA187grJR6XFQRmTP6WOM-6-1dZK1EzYNNP2JH9aAMg';
+let SUPABASE_KEY = null;
+function _initKey() {
+  const _e = 'Ej54A1s/FC59AnMxIj17WncRPjR7BWtNFAR7XXATBx9kKHNBWSJLIUkbRApbJFAyDSNqKVEhGgFIMWoxBA5cIVUiHg4EIlQyHCJlLUsiRXZeCm4yAB11H0kbRQ1CDm4MRw5bHFAbGn5BMWoxQQ5fLUwaRXNbJ3oyBx5qOlA3HQIBJUMxDgpmOkM3IwpBIlQuQyRxIg81HQYGJUMbQgp2Jgw1RHccBXhJT3BVGXMqQR90OmsVIxcEPHY1WnEfWl0iPHZ3EWA2ORcAIXFBFgZ/DA==';
+  const _x = 'wG2k9x';
+  const r = atob(_e); let o = '';
+  for (let i = 0; i < r.length; i++) o += String.fromCharCode(r.charCodeAt(i) ^ _x.charCodeAt(i % _x.length));
+  SUPABASE_KEY = o;
+}
+
+// ═══════════════════ GLOBALS ════════════════════════════════════
+let RAW = {}, MANAGERS = {}, MGR_TO_ROP = {}, ROP_PLANS = {}, AD_SPEND = {};
+
+const ROP_COLORS = {
+  'РОП Айдана':      '#3b82f6',
+  'РОП Аслиддин':    '#f59e0b',
+  'РОП Нурдаулет':   '#10b981',
+  'РОП Диас KIDS':   '#ec4899',
+  'РОП Айдана KIDS': '#8b5cf6',
+  'БОТА AI':         '#06b6d4',
+  'РОП Ербол':       '#ef4444',
+};
 
 const ROP_CRM_MAP = {
-  'РОП Айдана': ['Коллаген', 'Ummi'],
-  'РОП Аслиддин': ['Коллаген'],
-  'РОП Нурдаулет': ['Коллаген'],
-  'РОП Диас': ['Ummi'],
-};
-const ROP_COLORS = {
-  'РОП Айдана': '#1a56db',
-  'РОП Аслиддин': '#f59e0b',
-  'РОП Нурдаулет': '#10b981',
-  'РОП Диас': '#ef4444',
-};
-const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
-
-// ═══════════════════ STRAIGHT TRACK CONFIG (LONGER: 120) ═══════════
-const roadLength = 120;
-const roadWidth = 12;
-const laneWidth = 3;
-const startX = -roadLength / 2 + 2;
-const endX = roadLength / 2 - 3;
-const trackRange = endX - startX;
-
-// Lane Z positions (4 lanes)
-const lanePositions = [
-  -roadWidth/2 + laneWidth * 0.5,
-  -roadWidth/2 + laneWidth * 1.5,
-  -roadWidth/2 + laneWidth * 2.5,
-  -roadWidth/2 + laneWidth * 3.5,
-];
-
-// ═══════════════════ 3D CAR CONFIG ═══════════════════════════════
-const ROP_CARS = {
-  'РОП Айдана':    { color: 0x1a56db, mesh: null, targetPos: null, targetRot: 0 },
-  'РОП Аслиддин':  { color: 0xf59e0b, mesh: null, targetPos: null, targetRot: 0 },
-  'РОП Нурдаулет': { color: 0x10b981, mesh: null, targetPos: null, targetRot: 0 },
-  'РОП Диас':      { color: 0xef4444, mesh: null, targetPos: null, targetRot: 0 },
+  'РОП Айдана':      ['Коллаген'],
+  'РОП Аслиддин':    ['Коллаген'],
+  'РОП Нурдаулет':   ['Коллаген'],
+  'РОП Ербол':       ['Ербол'],
+  'РОП Айдана KIDS': ['Ummi'],
+  'РОП Диас KIDS':   ['Ummi'],
+  'БОТА AI':         ['Коллаген'],
 };
 
-// ═══════════════════ DATA STATE ═══════════════════════════════════
-let RAW = {}, MANAGERS = {}, ROP_PLANS = {}, MGR_TO_ROP = {};
-const _ropCache = {};
-let prevFeedKeys = new Set();
-let prevFinished = new Set();
+const RACE_ROPS = ['РОП Айдана','РОП Аслиддин','РОП Нурдаулет','РОП Диас KIDS','РОП Айдана KIDS','БОТА AI'];
 
-// ═══════════════════ UTILS ═══════════════════════════════════════
-const parseDate = s => { const [d,m,y] = s.split('.'); return new Date(+y, +m-1, +d); };
+// ═══════════════════ HELPERS ════════════════════════════════════
+const parseDate = s => { const [d,m,y]=s.split('.'); return new Date(+y,+m-1,+d); };
 const fmtDate = d => `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
-const fmt = n => Math.round(n).toLocaleString('ru-RU');
-const fmtM = n => fmt(Math.round(n)) + ' \u20B8';
-const getMonthKey = d => `${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+const fmtMoney = v => {
+  if (v >= 1e9) return (v/1e9).toFixed(1) + 'B';
+  if (v >= 1e6) return (v/1e6).toFixed(1) + 'M';
+  if (v >= 1e3) return (v/1e3).toFixed(0) + 'K';
+  return v.toString();
+};
 
 function getDatesInRange(from, to) {
   const res = []; let cur = parseDate(from); const end = parseDate(to);
@@ -417,6 +145,7 @@ function getDatesInRange(from, to) {
   return res;
 }
 
+const _ropCache = {};
 function getRop(mgrName) {
   if (_ropCache[mgrName] !== undefined) return _ropCache[mgrName];
   if (MGR_TO_ROP[mgrName]) { _ropCache[mgrName] = MGR_TO_ROP[mgrName]; return _ropCache[mgrName]; }
@@ -439,10 +168,18 @@ function getRop(mgrName) {
   _ropCache[mgrName] = '';
   return '';
 }
-function clearRopCache() { Object.keys(_ropCache).forEach(k => delete _ropCache[k]); }
+
+function ropMatches(mgrName, targetRop) {
+  if (targetRop === 'РОП Ербол') return true;
+  if (targetRop === 'БОТА AI') return mgrName === 'БОТА AI';
+  const mgrRop = getRop(mgrName);
+  if (mgrRop === targetRop) return true;
+  if (targetRop.endsWith(' KIDS')) return mgrRop === targetRop.replace(' KIDS', '');
+  return false;
+}
 
 function aggregateManagersByPeriod(prodKey, from, to) {
-  const allMgrs = MANAGERS[prodKey] || [];
+  const allMgrs = (MANAGERS[prodKey] || []);
   const dates = new Set(getDatesInRange(from, to));
   return allMgrs.map(m => {
     if (m.daily && Object.keys(m.daily).length > 0) {
@@ -452,835 +189,237 @@ function aggregateManagersByPeriod(prodKey, from, to) {
       }
       return { name: m.name, leads, deals, budget: Math.round(budget) };
     }
-    return { name: m.name, leads: m.leads||0, deals: m.deals||0, budget: m.budget||0 };
-  }).filter(m => m.budget > 0 || m.leads > 0);
+    return { name: m.name, leads: 0, deals: 0, budget: 0 };
+  }).filter(m => m.leads > 0 || m.deals > 0 || m.budget > 0)
+    .sort((a,b) => b.budget - a.budget);
 }
 
-// ═══════════════════ RACE CALCULATION ═══════════════════════════════
-function calcRopData() {
-  const now = new Date();
-  const lastDay = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
-  const monthFrom = `01.${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
-  const monthTo = `${String(lastDay).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
-  const monthKey = `${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
+// ═══════════════════ DATA LOAD ══════════════════════════════════
+let _prevFeedKeys = new Set();
 
-  const results = [];
-  for (const [ropName, crms] of Object.entries(ROP_CRM_MAP)) {
-    let fact=0, leads=0, deals=0, mgrCount=0;
-    const mgrSet = new Set();
-    crms.forEach(crm => {
-      const mgrs = aggregateManagersByPeriod(crm, monthFrom, monthTo);
-      mgrs.filter(m => getRop(m.name) === ropName).forEach(m => {
-        fact += m.budget||0; leads += m.leads||0; deals += m.deals||0;
-        mgrSet.add(m.name);
-      });
-    });
-    mgrCount = mgrSet.size;
-    const plan = (ROP_PLANS[ropName] && ROP_PLANS[ropName][monthKey]) || 0;
-    const pct = plan > 0 ? (fact / plan * 100) : 0;
-    results.push({ name: ropName, fact, plan, pct, leads, deals, mgrCount, color: ROP_COLORS[ropName] });
-  }
-  results.sort((a,b) => b.pct - a.pct);
-  return results;
-}
-
-// ═══════════════════ TOP-3 & FEED ═══════════════════════════════════
-function getTodayManagers() {
-  const now = new Date();
-  const todayStr = fmtDate(now);
-  const allMgrs = [];
-  const allCrms = [...new Set(Object.values(ROP_CRM_MAP).flat())];
-  allCrms.forEach(crm => {
-    const mgrs = aggregateManagersByPeriod(crm, todayStr, todayStr);
-    mgrs.forEach(m => { allMgrs.push({ ...m, crm }); });
-  });
-  return allMgrs;
-}
-
-function calcTop3() {
-  const mgrs = getTodayManagers();
-  const map = {};
-  mgrs.forEach(m => {
-    if (!map[m.name] || map[m.name].budget < m.budget) {
-      map[m.name] = m;
-    } else {
-      map[m.name].budget += m.budget;
-      map[m.name].deals += m.deals;
-    }
-  });
-  return Object.values(map).sort((a,b) => b.budget - a.budget).slice(0, 3);
-}
-
-function calcFeed() {
-  const now = new Date();
-  const todayStr = fmtDate(now);
-  const allCrms = [...new Set(Object.values(ROP_CRM_MAP).flat())];
-  const entries = [];
-  allCrms.forEach(crm => {
-    const mgrList = MANAGERS[crm] || [];
-    mgrList.forEach(m => {
-      if (m.daily && m.daily[todayStr]) {
-        const v = m.daily[todayStr];
-        const budget = v[2] || 0;
-        if (budget > 0) {
-          entries.push({ name: m.name, budget, deals: v[1]||0, crm });
-        }
-      }
-    });
-  });
-  entries.sort((a,b) => b.budget - a.budget);
-  return entries.slice(0, 7);
-}
-
-// ═══════════════════ DATA LOADING ═══════════════════════════════════
 async function loadData() {
+  if (!SUPABASE_KEY) return;
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data,updated_at`, {
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-      }
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
     });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
+    if (!res.ok) throw new Error(res.status);
     const rows = await res.json();
-    if (rows && rows[0] && rows[0].data) {
-      const d = rows[0].data;
-      if (d.RAW)        RAW = d.RAW;
-      if (d.MANAGERS)   MANAGERS = d.MANAGERS;
-      if (d.MGR_TO_ROP && Object.keys(d.MGR_TO_ROP).length > 0) {
-        MGR_TO_ROP = d.MGR_TO_ROP;
-        clearRopCache();
-      }
-      if (d.ROP_PLANS)  ROP_PLANS = d.ROP_PLANS;
+    if (!rows || !rows[0] || !rows[0].data) return;
+    const d = rows[0].data;
 
-      if (rows[0].updated_at) {
-        const dt = new Date(rows[0].updated_at);
-        document.getElementById('headerBadge').textContent =
-          'Обновлено: ' + dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    if (d.RAW) RAW = d.RAW;
+    if (d.MANAGERS) MANAGERS = d.MANAGERS;
+    if (d.MGR_TO_ROP) {
+      MGR_TO_ROP = {};
+      for (const [k,v] of Object.entries(d.MGR_TO_ROP)) {
+        if (!k.includes('\ufffd') && !v.includes('\ufffd')) MGR_TO_ROP[k] = v;
       }
     }
-    return true;
+    if (d.ROP_PLANS) {
+      ROP_PLANS = {};
+      for (const [k,v] of Object.entries(d.ROP_PLANS)) {
+        if (!k.includes('\ufffd')) ROP_PLANS[k] = v;
+      }
+    }
+    if (d.AD_SPEND) AD_SPEND = d.AD_SPEND;
+
+    // Merge archives
+    if (d.ARCHIVE_RAW) {
+      for (const [acc, daily] of Object.entries(d.ARCHIVE_RAW)) {
+        if (!RAW[acc]) RAW[acc] = {};
+        for (const [date, vals] of Object.entries(daily)) RAW[acc][date] = vals;
+      }
+    }
+    if (d.ARCHIVE_MANAGERS) {
+      for (const [acc, archMgrs] of Object.entries(d.ARCHIVE_MANAGERS)) {
+        if (!MANAGERS[acc]) MANAGERS[acc] = [];
+        const liveMap = {};
+        MANAGERS[acc].forEach(m => { liveMap[m.name.toLowerCase()] = m; });
+        for (const am of archMgrs) {
+          const match = liveMap[am.name.toLowerCase()];
+          if (match) {
+            if (!match.daily) match.daily = {};
+            for (const [date, vals] of Object.entries(am.daily || {})) {
+              if (!match.daily[date]) match.daily[date] = vals;
+            }
+            let tl=0,td=0,tb=0;
+            for (const vals of Object.values(match.daily)) { tl+=vals[0]||0; td+=vals[1]||0; tb+=vals[2]||0; }
+            match.leads=tl; match.deals=td; match.budget=tb;
+          } else {
+            MANAGERS[acc].push(am);
+            liveMap[am.name.toLowerCase()] = am;
+          }
+        }
+      }
+    }
+
+    Object.keys(_ropCache).forEach(k => delete _ropCache[k]);
+
+    const ts = rows[0].updated_at || d.updatedAt;
+    if (ts) {
+      const dt = new Date(ts);
+      document.getElementById('updatedAt').textContent =
+        dt.toLocaleDateString('ru-RU', {day:'numeric',month:'long',year:'numeric'}) + '  ' +
+        dt.toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'});
+    }
+
+    render();
   } catch(e) {
-    console.warn('Supabase load error:', e);
-    return false;
+    console.error('[TV] Load error:', e);
   }
 }
 
-// ═══════════════════ HEADER ═══════════════════════════════════════
-function updateHeader() {
+// ═══════════════════ RENDER ═════════════════════════════════════
+function render() { renderRace(); renderTop3(); renderFeed(); }
+
+function getCurrentMonthKey() {
   const now = new Date();
-  document.getElementById('headerClock').textContent =
-    now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return `${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
 }
 
-// ═══════════════════ RENDER HTML PANELS ═══════════════════════════
-function renderScoreboard(data) {
-  const sb = document.getElementById('scoreboard');
-  sb.innerHTML = `
-    <div class="scoreboard-title"><span class="scoreboard-live"></span> ТАБЛИЦА ЛИДЕРОВ</div>
-    ${data.map((r, i) => `
-      <div class="sb-row">
-        <div class="sb-pos p${i+1}">${i+1}</div>
-        <div class="sb-name" style="color:${r.color}">${r.name.replace('РОП ','')}</div>
+function getMonthRange() {
+  const now = new Date();
+  const from = `01.${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
+  const to = fmtDate(now);
+  return { from, to };
+}
+
+function renderRace() {
+  const mk = getCurrentMonthKey();
+  const { from, to } = getMonthRange();
+  const container = document.getElementById('raceSection');
+
+  const ropsData = [];
+  for (const ropName of RACE_ROPS) {
+    const plan = ROP_PLANS[ropName]?.[mk] || 0;
+    if (plan <= 0) continue;
+
+    const crms = ROP_CRM_MAP[ropName] || [];
+    let fact = 0;
+    crms.forEach(crm => {
+      const mgrs = aggregateManagersByPeriod(crm, from, to);
+      mgrs.filter(m => ropMatches(m.name, ropName)).forEach(m => { fact += m.budget; });
+    });
+
+    const pct = plan > 0 ? fact / plan * 100 : 0;
+    const color = ROP_COLORS[ropName] || '#6366f1';
+    const shortName = ropName.replace(/^РОП\s+/, '');
+    ropsData.push({ ropName, shortName, fact, plan, pct, color });
+  }
+
+  ropsData.sort((a,b) => b.pct - a.pct);
+
+  container.innerHTML = ropsData.map((r, i) => {
+    const barPct = Math.min(r.pct, 120);
+    const isLeader = i === 0;
+    const isOver = r.pct >= 100;
+    const cls = ['track'];
+    if (isLeader) cls.push('leader');
+    if (isOver) cls.push('overplan');
+
+    return `
+      <div class="${cls.join(' ')}">
         <div>
-          <div class="sb-pct" style="color:${r.color}">${r.pct.toFixed(1)}%</div>
-          <div class="sb-detail">${fmtM(r.fact)} / ${fmtM(r.plan)}</div>
+          <div class="rop-name" style="color:${r.color}">${r.shortName}</div>
+          <div class="rop-rank">#${i+1}</div>
         </div>
-      </div>
-    `).join('')}
-  `;
+        <div class="track-bar">
+          <div class="track-fill" style="width:${barPct}%;background:linear-gradient(90deg,${r.color}22,${r.color});">
+            <span class="car-icon">${isOver ? '🏆' : '🏎'}</span>
+          </div>
+          <div class="finish-line"></div>
+        </div>
+        <div class="rop-stats">
+          <div class="rop-pct" style="color:${r.color}">${r.pct.toFixed(0)}%</div>
+          <div class="rop-sum">${fmtMoney(r.fact)} / ${fmtMoney(r.plan)}</div>
+        </div>
+      </div>`;
+  }).join('');
 }
 
 function renderTop3() {
-  const top3 = calcTop3();
-  const medals = ['\u{1F947}', '\u{1F948}', '\u{1F949}'];
-  const classes = ['gold', 'silver', 'bronze'];
-  const textClasses = ['gold-text', 'silver-text', 'bronze-text'];
-  const el = document.getElementById('top3List');
+  const today = fmtDate(new Date());
+  const container = document.getElementById('top3Container');
+  const ranks = ['🥇','🥈','🥉'];
 
-  if (top3.length === 0) {
-    el.innerHTML = '<div class="feed-empty">Нет данных за сегодня</div>';
+  let allMgrs = [];
+  for (const crm of Object.keys(MANAGERS)) {
+    const mgrs = aggregateManagersByPeriod(crm, today, today);
+    mgrs.forEach(m => {
+      if (!allMgrs.find(x => x.name === m.name)) allMgrs.push(m);
+    });
+  }
+  allMgrs.sort((a,b) => b.budget - a.budget);
+  const top3 = allMgrs.filter(m => m.budget > 0).slice(0, 3);
+
+  if (!top3.length) {
+    container.innerHTML = '<div style="color:#64748b;text-align:center;padding:30px;">No deals today yet</div>';
     return;
   }
 
-  el.innerHTML = top3.map((m, i) => `
-    <div class="top3-item ${classes[i] || ''}">
-      <div class="top3-medal">${medals[i] || ''}</div>
-      <div class="top3-info">
-        <div class="top3-name">${m.name}</div>
-        <div class="top3-sub">${m.deals} сделок</div>
+  container.innerHTML = top3.map((m, i) => `
+    <div class="top3-item">
+      <div class="top3-rank">${ranks[i] || (i+1)}</div>
+      <div class="top3-name">${m.name}</div>
+      <div class="top3-val">
+        <div class="top3-budget">${fmtMoney(m.budget)}</div>
+        <div class="top3-deals">${m.deals} deals</div>
       </div>
-      <div class="top3-amount ${textClasses[i] || ''}">${fmtM(m.budget)}</div>
     </div>
   `).join('');
 }
 
 function renderFeed() {
-  const feed = calcFeed();
-  const el = document.getElementById('feedList');
+  const today = fmtDate(new Date());
+  const container = document.getElementById('liveFeed');
 
-  if (feed.length === 0) {
-    el.innerHTML = '<div class="feed-empty">Нет сделок за сегодня</div>';
-    return;
+  let feedItems = [];
+  for (const [crm, mgrs] of Object.entries(MANAGERS)) {
+    for (const m of mgrs) {
+      if (m.daily && m.daily[today]) {
+        const v = m.daily[today];
+        const budget = v[2] || 0;
+        const deals = v[1] || 0;
+        if (budget > 0) feedItems.push({ name: m.name, budget, deals, crm });
+      }
+    }
   }
 
-  const newKeys = new Set(feed.map(f => f.name + ':' + f.budget));
+  feedItems.sort((a,b) => b.budget - a.budget);
+  feedItems = feedItems.slice(0, 7);
 
-  el.innerHTML = feed.map(f => {
-    const isNew = !prevFeedKeys.has(f.name + ':' + f.budget);
-    const isHighlight = f.budget >= 100000;
+  const newKeys = new Set(feedItems.map(f => f.name + f.budget));
+  const isNew = k => !_prevFeedKeys.has(k);
+
+  container.innerHTML = feedItems.map(f => {
+    const key = f.name + f.budget;
+    const big = f.budget >= 100000;
+    const cls = ['feed-item'];
+    if (big) cls.push('big-deal');
     return `
-      <div class="feed-item ${isHighlight ? 'highlight' : ''}" ${isNew ? '' : 'style="animation:none"'}>
-        <div class="feed-name">${f.name}</div>
-        <div class="feed-amount" ${isHighlight ? 'style="color:#059669"' : ''}>${fmtM(f.budget)}</div>
-        <div class="feed-tag">${f.crm}</div>
-      </div>
-    `;
+      <div class="${cls.join(' ')}" ${isNew(key) ? 'style="animation:feedIn .6s ease"' : ''}>
+        <span class="feed-name">${f.name}</span>
+        <span class="feed-crm">${f.crm}</span>
+        <span class="feed-amount ${big ? 'big' : ''}">${fmtMoney(f.budget)}</span>
+      </div>`;
   }).join('');
 
-  prevFeedKeys = newKeys;
+  _prevFeedKeys = newKeys;
 }
-
-// ═══════════════════ THREE.JS SCENE SETUP ═══════════════════════════
-const sceneContainer = document.getElementById('sceneContainer');
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x87CEEB);
-scene.fog = new THREE.Fog(0x87CEEB, 120, 350);
-
-const camera = new THREE.PerspectiveCamera(45, sceneContainer.clientWidth / sceneContainer.clientHeight, 0.1, 1000);
-camera.position.set(0, 30, 55);
-camera.lookAt(0, 0, 0);
-
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-renderer.setSize(sceneContainer.clientWidth, sceneContainer.clientHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.2;
-sceneContainer.insertBefore(renderer.domElement, sceneContainer.firstChild);
-
-// Controls — OrbitControls for mouse, plus WASD free-fly
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.dampingFactor = 0.08;
-controls.minDistance = 2;
-controls.maxDistance = 300;
-controls.maxPolarAngle = Math.PI / 1.5;
-controls.target.set(0, 0, 0);
-controls.enablePan = true;
-controls.panSpeed = 1.5;
-
-// WASD + QE free-fly keyboard controls
-const flyKeys = { w:false, a:false, s:false, d:false, q:false, e:false, shift:false };
-const flySpeed = 0.8;
-window.addEventListener('keydown', (e) => {
-  const k = e.key.toLowerCase();
-  if (k in flyKeys) flyKeys[k] = true;
-  if (k === 'shift') flyKeys.shift = true;
-});
-window.addEventListener('keyup', (e) => {
-  const k = e.key.toLowerCase();
-  if (k in flyKeys) flyKeys[k] = false;
-  if (k === 'shift') flyKeys.shift = false;
-});
-
-function updateFlyCamera() {
-  const speed = flyKeys.shift ? flySpeed * 3 : flySpeed;
-  const dir = new THREE.Vector3();
-  camera.getWorldDirection(dir);
-  const right = new THREE.Vector3().crossVectors(dir, camera.up).normalize();
-
-  if (flyKeys.w) { camera.position.addScaledVector(dir, speed); controls.target.addScaledVector(dir, speed); }
-  if (flyKeys.s) { camera.position.addScaledVector(dir, -speed); controls.target.addScaledVector(dir, -speed); }
-  if (flyKeys.a) { camera.position.addScaledVector(right, -speed); controls.target.addScaledVector(right, -speed); }
-  if (flyKeys.d) { camera.position.addScaledVector(right, speed); controls.target.addScaledVector(right, speed); }
-  if (flyKeys.q) { camera.position.y -= speed; controls.target.y -= speed; }
-  if (flyKeys.e) { camera.position.y += speed; controls.target.y += speed; }
-}
-
-// Lighting
-const sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
-sunLight.position.set(50, 50, 25);
-sunLight.castShadow = true;
-sunLight.shadow.mapSize.set(2048, 2048);
-sunLight.shadow.camera.near = 0.5;
-sunLight.shadow.camera.far = 250;
-sunLight.shadow.camera.left = -80;
-sunLight.shadow.camera.right = 80;
-sunLight.shadow.camera.top = 50;
-sunLight.shadow.camera.bottom = -50;
-scene.add(sunLight);
-
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-scene.add(ambientLight);
-
-const hemisphereLight = new THREE.HemisphereLight(0x87CEEB, 0x44aa44, 0.4);
-scene.add(hemisphereLight);
-
-// ═══════════════════ NATURAL GRASS TERRAIN ═════════════════════════
-// Base grass layer with natural green
-const grassGeo = new THREE.PlaneGeometry(300, 300, 64, 64);
-// Add slight height variation for natural terrain feel
-const posAttr = grassGeo.attributes.position;
-for (let i = 0; i < posAttr.count; i++) {
-  const x = posAttr.getX(i), y = posAttr.getY(i);
-  // Don't deform under the road area
-  const inRoad = Math.abs(y) < 10;
-  if (!inRoad) {
-    posAttr.setZ(i, (Math.sin(x*0.3)*0.15 + Math.cos(y*0.2)*0.12 + Math.sin(x*0.7+y*0.5)*0.08));
-  }
-}
-grassGeo.computeVertexNormals();
-
-// Natural grass color with vertex colors for variation
-const grassColors = new Float32Array(posAttr.count * 3);
-for (let i = 0; i < posAttr.count; i++) {
-  const x = posAttr.getX(i), y = posAttr.getY(i);
-  const noise = Math.sin(x*0.5)*0.1 + Math.cos(y*0.3)*0.08 + Math.sin(x*0.8+y*0.6)*0.06;
-  // Mix of natural greens: darker base with lighter patches
-  const r = 0.18 + noise * 0.15 + Math.random() * 0.03;
-  const g = 0.45 + noise * 0.2 + Math.random() * 0.05;
-  const b = 0.12 + noise * 0.08 + Math.random() * 0.02;
-  grassColors[i*3] = r;
-  grassColors[i*3+1] = g;
-  grassColors[i*3+2] = b;
-}
-grassGeo.setAttribute('color', new THREE.BufferAttribute(grassColors, 3));
-
-const grassMat = new THREE.MeshLambertMaterial({ vertexColors: true });
-const grass = new THREE.Mesh(grassGeo, grassMat);
-grass.rotation.x = -Math.PI / 2;
-grass.position.y = -0.01;
-grass.receiveShadow = true;
-scene.add(grass);
-
-// Dirt patches near road edges
-const dirtColors = [0x8B7355, 0x9B8B6B, 0x7B6B45];
-for (let i = 0; i < 20; i++) {
-  const x = (Math.random() - 0.5) * 240;
-  const side = Math.random() > 0.5 ? 1 : -1;
-  const z = side * (8 + Math.random() * 3);
-  const dirtGeo = new THREE.CircleGeometry(0.5 + Math.random() * 1.5, 8);
-  const dirtMat = new THREE.MeshLambertMaterial({ color: dirtColors[i % 3] });
-  const dirt = new THREE.Mesh(dirtGeo, dirtMat);
-  dirt.rotation.x = -Math.PI / 2;
-  dirt.position.set(x, 0.005, z);
-  scene.add(dirt);
-}
-
-// Grass tufts (small clusters near the road)
-const tuftGeo = new THREE.ConeGeometry(0.08, 0.3, 4);
-const tuftColors = [0x2d7a1e, 0x3a8a2e, 0x4a9a3e, 0x358028];
-for (let i = 0; i < 300; i++) {
-  const x = (Math.random() - 0.5) * 250;
-  const side = Math.random() > 0.5 ? 1 : -1;
-  const z = side * (7.5 + Math.random() * 40);
-  const tuft = new THREE.Mesh(tuftGeo, new THREE.MeshLambertMaterial({ color: tuftColors[i % 4] }));
-  tuft.position.set(x, 0.15, z);
-  tuft.scale.set(0.5 + Math.random() * 1, 0.5 + Math.random() * 1.5, 0.5 + Math.random() * 1);
-  tuft.rotation.y = Math.random() * Math.PI;
-  scene.add(tuft);
-}
-
-// ═══════════════════ STRAIGHT ROAD ═══════════════════════════════
-// Asphalt surface
-const roadGeo = new THREE.PlaneGeometry(roadLength, roadWidth);
-const roadMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.9 });
-const road = new THREE.Mesh(roadGeo, roadMat);
-road.rotation.x = -Math.PI / 2;
-road.position.set(0, 0.01, 0);
-road.receiveShadow = true;
-scene.add(road);
-
-// White dashed lane markings (3 dividers for 4 lanes)
-for (let i = 1; i <= 3; i++) {
-  const z = -roadWidth/2 + i * laneWidth;
-  for (let x = -roadLength/2; x < roadLength/2; x += 3) {
-    const dashGeo = new THREE.PlaneGeometry(1.5, 0.1);
-    const dashMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-    const dash = new THREE.Mesh(dashGeo, dashMat);
-    dash.rotation.x = -Math.PI / 2;
-    dash.position.set(x + 0.75, 0.02, z);
-    scene.add(dash);
-  }
-}
-
-// Edge lines (solid white)
-[-roadWidth/2, roadWidth/2].forEach(z => {
-  const lineGeo = new THREE.PlaneGeometry(roadLength, 0.15);
-  const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-  const line = new THREE.Mesh(lineGeo, lineMat);
-  line.rotation.x = -Math.PI / 2;
-  line.position.set(0, 0.02, z);
-  scene.add(line);
-});
-
-// Red-white kerbs on edges
-[-roadWidth/2 - 0.5, roadWidth/2 + 0.5].forEach(z => {
-  for (let x = -roadLength/2; x < roadLength/2; x += 1) {
-    const kerbGeo = new THREE.PlaneGeometry(0.5, 0.8);
-    const isRed = Math.floor((x + roadLength/2) / 0.5) % 2 === 0;
-    const kerbMat = new THREE.MeshBasicMaterial({ color: isRed ? 0xdc2626 : 0xffffff });
-    const kerb = new THREE.Mesh(kerbGeo, kerbMat);
-    kerb.rotation.x = -Math.PI / 2;
-    kerb.position.set(x + 0.25, 0.02, z);
-    scene.add(kerb);
-  }
-});
-
-// Finish line (checkered pattern at the right end)
-const finishX = roadLength / 2 - 1;
-for (let row = 0; row < 8; row++) {
-  for (let col = 0; col < 4; col++) {
-    const checkGeo = new THREE.PlaneGeometry(0.5, laneWidth * 4 / 8);
-    const isBlack = (row + col) % 2 === 0;
-    const checkMat = new THREE.MeshBasicMaterial({ color: isBlack ? 0x000000 : 0xffffff });
-    const check = new THREE.Mesh(checkGeo, checkMat);
-    check.rotation.x = -Math.PI / 2;
-    check.position.set(finishX + col * 0.5, 0.025, -roadWidth/2 + row * (roadWidth/8) + roadWidth/16);
-    scene.add(check);
-  }
-}
-
-// START marker (left side)
-{
-  const startLineGeo = new THREE.PlaneGeometry(0.3, roadWidth);
-  const startLineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-  const startLine = new THREE.Mesh(startLineGeo, startLineMat);
-  startLine.rotation.x = -Math.PI / 2;
-  startLine.position.set(startX, 0.025, 0);
-  scene.add(startLine);
-}
-
-// ═══════════════════ GLB CAR LOADER ═══════════════════════════════
-
-const CAR_FILES = {
-  'РОП Айдана':    'assets/car1.glb',
-  'РОП Аслиддин':  'assets/car2.glb',
-  'РОП Нурдаулет': 'assets/car3.glb',
-  'РОП Диас':      'assets/car4.glb',
-};
-
-async function loadCars() {
-  const loader = new GLTFLoader();
-  const promises = Object.entries(CAR_FILES).map(([ropName, file]) => {
-    return new Promise((resolve) => {
-      loader.load(file, (gltf) => {
-        const car = gltf.scene;
-
-        // Auto-scale to ~3 units long
-        const box = new THREE.Box3().setFromObject(car);
-        const size = new THREE.Vector3();
-        box.getSize(size);
-        const maxDim = Math.max(size.x, size.y, size.z);
-        const scale = 3 / maxDim;
-        car.scale.set(scale, scale, scale);
-
-        // Center the car
-        box.setFromObject(car);
-        const center = new THREE.Vector3();
-        box.getCenter(center);
-        car.position.sub(center);
-
-        // Wrap in group for positioning
-        const group = new THREE.Group();
-        group.add(car);
-
-        // Tint the car to ROP color while KEEPING original textures
-        const color = new THREE.Color(ROP_COLORS[ropName]);
-        car.traverse(child => {
-          if (child.isMesh) {
-            if (child.material) {
-              child.material = child.material.clone();
-              child.material.color.lerp(color, 0.5);
-              child.material.metalness = Math.max(child.material.metalness || 0, 0.3);
-            }
-            child.castShadow = true;
-            child.receiveShadow = true;
-          }
-        });
-
-        // Orient car to face right
-        group.rotation.y = Math.PI / 2;
-
-        scene.add(group);
-        ROP_CARS[ropName].mesh = group;
-
-        // Update loading progress for this car
-        updateLoadProgress(ropName.replace('РОП ', '') + ' загружен');
-        resolve();
-      }, (progress) => {
-        // Optional progress tracking
-      }, (error) => {
-        console.warn('Failed to load', file, error);
-        updateLoadProgress('Ошибка: ' + file);
-        resolve(); // Don't block on failure
-      });
-    });
-  });
-
-  await Promise.all(promises);
-}
-
-// ═══════════════════ VEGETATION ═══════════════════════════════════
-
-function buildPineTree(x, z) {
-  const group = new THREE.Group();
-  // Trunk
-  const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.15, 0.2, 1.5, 6),
-    new THREE.MeshStandardMaterial({ color: 0x8B4513 })
-  );
-  trunk.position.y = 0.75;
-  group.add(trunk);
-  // 3 cone layers
-  [1.5, 2.2, 2.8].forEach((y, i) => {
-    const size = 1.2 - i * 0.3;
-    const cone = new THREE.Mesh(
-      new THREE.ConeGeometry(size, 1.2, 8),
-      new THREE.MeshStandardMaterial({ color: 0x2d5a27 })
-    );
-    cone.position.y = y;
-    cone.castShadow = true;
-    group.add(cone);
-  });
-  group.position.set(x, 0, z);
-  const s = 0.7 + Math.random() * 0.6;
-  group.scale.set(s, s, s);
-  return group;
-}
-
-function buildRoundTree(x, z) {
-  const group = new THREE.Group();
-  const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.12, 0.18, 2, 6),
-    new THREE.MeshStandardMaterial({ color: 0x8B4513 })
-  );
-  trunk.position.y = 1;
-  group.add(trunk);
-  const crown = new THREE.Mesh(
-    new THREE.SphereGeometry(1.2, 8, 6),
-    new THREE.MeshStandardMaterial({ color: 0x3a8a2e })
-  );
-  crown.position.y = 2.8;
-  crown.castShadow = true;
-  group.add(crown);
-  group.position.set(x, 0, z);
-  const s = 0.6 + Math.random() * 0.8;
-  group.scale.set(s, s, s);
-  return group;
-}
-
-function buildBush(x, z) {
-  const group = new THREE.Group();
-  const colors = [0x3a8a2e, 0x4ade80, 0x2d6a24];
-  for (let i = 0; i < 3; i++) {
-    const sphere = new THREE.Mesh(
-      new THREE.SphereGeometry(0.4 + Math.random()*0.3, 6, 5),
-      new THREE.MeshStandardMaterial({ color: colors[i % 3] })
-    );
-    sphere.position.set(Math.random()*0.5-0.25, 0.3+Math.random()*0.2, Math.random()*0.5-0.25);
-    sphere.castShadow = true;
-    group.add(sphere);
-  }
-  group.position.set(x, 0, z);
-  return group;
-}
-
-// Seed random for consistent vegetation
-function seededRandom(seed) {
-  let s = seed;
-  return function() {
-    s = (s * 16807) % 2147483647;
-    return (s - 1) / 2147483646;
-  };
-}
-const vRand = seededRandom(42);
-
-// Trees along both sides of the track
-for (let x = -roadLength/2; x < roadLength/2; x += 4 + vRand() * 6) {
-  // Near side (positive z)
-  const z1 = roadWidth/2 + 3 + vRand() * 15;
-  const treeType1 = vRand();
-  if (treeType1 < 0.4) scene.add(buildPineTree(x, z1));
-  else if (treeType1 < 0.8) scene.add(buildRoundTree(x, z1));
-  else scene.add(buildBush(x, z1));
-
-  // Far side (negative z)
-  const z2 = -roadWidth/2 - 3 - vRand() * 15;
-  const treeType2 = vRand();
-  if (treeType2 < 0.4) scene.add(buildPineTree(x + vRand()*2, z2));
-  else if (treeType2 < 0.8) scene.add(buildRoundTree(x + vRand()*2, z2));
-  else scene.add(buildBush(x + vRand()*2, z2));
-}
-
-// Extra bushes closer to road edge
-for (let x = -roadLength/2; x < roadLength/2; x += 6 + vRand() * 8) {
-  scene.add(buildBush(x, roadWidth/2 + 1.5 + vRand()));
-  scene.add(buildBush(x + 2, -roadWidth/2 - 1.5 - vRand()));
-}
-
-// ═══════════════════ SMALL ROCKS ═══════════════════════════════════
-for (let i = 0; i < 40; i++) {
-  const rx = -roadLength/2 + vRand() * roadLength;
-  const side = vRand() < 0.5 ? 1 : -1;
-  const rz = side * (roadWidth/2 + 2 + vRand() * 12);
-  const rockSize = 0.15 + vRand() * 0.35;
-  const rock = new THREE.Mesh(
-    new THREE.DodecahedronGeometry(rockSize, 0),
-    new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.9 })
-  );
-  rock.position.set(rx, rockSize * 0.5, rz);
-  rock.rotation.set(vRand()*Math.PI, vRand()*Math.PI, 0);
-  rock.castShadow = true;
-  scene.add(rock);
-}
-
-// ═══════════════════ FLOWERS ═══════════════════════════════════════
-const flowerColors = [0xff69b4, 0xff4500, 0xffff00, 0xff1493, 0xffa500, 0xee82ee];
-for (let i = 0; i < 60; i++) {
-  const fx = -roadLength/2 + vRand() * roadLength;
-  const side = vRand() < 0.5 ? 1 : -1;
-  const fz = side * (roadWidth/2 + 1.5 + vRand() * 10);
-  const flower = new THREE.Mesh(
-    new THREE.SphereGeometry(0.08 + vRand()*0.06, 6, 4),
-    new THREE.MeshStandardMaterial({
-      color: flowerColors[Math.floor(vRand() * flowerColors.length)],
-      emissive: 0x220000,
-      emissiveIntensity: 0.1
-    })
-  );
-  flower.position.set(fx, 0.08, fz);
-  scene.add(flower);
-}
-
-// ═══════════════════ START/FINISH ARCHES ═══════════════════════════
-function buildArch(x) {
-  const group = new THREE.Group();
-  const pillarGeo = new THREE.BoxGeometry(0.3, 5, 0.3);
-  const pillarMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
-  const leftPillar = new THREE.Mesh(pillarGeo, pillarMat);
-  leftPillar.position.set(x, 2.5, -roadWidth/2 - 1);
-  leftPillar.castShadow = true;
-  group.add(leftPillar);
-  const rightPillar = new THREE.Mesh(pillarGeo, pillarMat);
-  rightPillar.position.set(x, 2.5, roadWidth/2 + 1);
-  rightPillar.castShadow = true;
-  group.add(rightPillar);
-  const banner = new THREE.Mesh(
-    new THREE.BoxGeometry(0.2, 1, roadWidth + 2.3),
-    new THREE.MeshStandardMaterial({ color: 0xdc2626 })
-  );
-  banner.position.set(x, 5, 0);
-  banner.castShadow = true;
-  group.add(banner);
-  return group;
-}
-scene.add(buildArch(roadLength/2 - 2));   // Finish arch
-scene.add(buildArch(-roadLength/2 + 2));  // Start arch
-
-// ═══════════════════ GRANDSTAND ═══════════════════════════════════
-function buildGrandstand(x, z) {
-  const group = new THREE.Group();
-  for (let row = 0; row < 4; row++) {
-    const step = new THREE.Mesh(
-      new THREE.BoxGeometry(8, 0.5, 1.5),
-      new THREE.MeshStandardMaterial({ color: 0x888888 })
-    );
-    step.position.set(x, row * 0.6, z + row * 1.5);
-    step.castShadow = true;
-    step.receiveShadow = true;
-    group.add(step);
-  }
-  return group;
-}
-scene.add(buildGrandstand(0, roadWidth/2 + 5));
-
-// ═══════════════════ LOADING PROGRESS ═══════════════════════════════
-let loadedCount = 0;
-const totalLoads = 5; // 4 car GLB models + data
-const loadingBar = document.getElementById('loadingBar');
-const loadingText = document.getElementById('loadingText');
-
-function updateLoadProgress(label) {
-  loadedCount++;
-  const pct = Math.round((loadedCount / totalLoads) * 100);
-  loadingBar.style.width = pct + '%';
-  loadingText.textContent = label;
-}
-
-let dataReady = false;
-
-// Sorted lane assignment (updated when data refreshes)
-let sortedRopNames = Object.keys(ROP_CARS);
-
-// ═══════════════════ CAR POSITION UPDATE ═══════════════════════════
-function updateCarPositions(ropData) {
-  sortedRopNames = ropData.map(r => r.name);
-
-  ropData.forEach((r, i) => {
-    const config = ROP_CARS[r.name];
-    if (!config || !config.mesh) return;
-    const pct = Math.min(r.pct / 100, 1.2);
-    const x = startX + pct * trackRange;
-    const z = lanePositions[i] || lanePositions[0];
-    config.targetPos = new THREE.Vector3(x, 0.35, z);
-    config.targetRot = Math.PI / 2;
-    config.pct = r.pct;
-  });
-}
-
-// ═══════════════════ CAR LABELS (HTML over 3D) ═══════════════════
-const carLabelsContainer = document.getElementById('carLabelsContainer');
-let carLabelEls = {};
-
-function createCarLabels() {
-  carLabelsContainer.innerHTML = '';
-  carLabelEls = {};
-  for (const [ropName, config] of Object.entries(ROP_CARS)) {
-    const label = document.createElement('div');
-    label.className = 'car-label';
-    label.style.color = ROP_COLORS[ropName];
-    label.innerHTML = `
-      <div class="car-label-name" style="color:${ROP_COLORS[ropName]}">${ropName.replace('РОП ','')}</div>
-      <div class="car-label-pct" style="color:${ROP_COLORS[ropName]}">0%</div>
-      <div class="car-label-detail">-- / --</div>
-    `;
-    carLabelsContainer.appendChild(label);
-    carLabelEls[ropName] = label;
-  }
-}
-
-function updateCarLabels(ropData) {
-  for (const r of ropData) {
-    const el = carLabelEls[r.name];
-    if (!el) continue;
-    el.querySelector('.car-label-pct').textContent = r.pct.toFixed(1) + '%';
-    el.querySelector('.car-label-detail').textContent = fmtM(r.fact) + ' / ' + fmtM(r.plan);
-  }
-}
-
-function projectCarLabels() {
-  const rect = renderer.domElement.getBoundingClientRect();
-  for (const [ropName, config] of Object.entries(ROP_CARS)) {
-    if (!config.mesh || !carLabelEls[ropName]) continue;
-    const pos = config.mesh.position.clone();
-    pos.y += 2.5;
-    pos.project(camera);
-
-    const x = (pos.x * 0.5 + 0.5) * rect.width;
-    const y = (-pos.y * 0.5 + 0.5) * rect.height;
-
-    const label = carLabelEls[ropName];
-    if (pos.z > 1) {
-      label.style.opacity = '0';
-    } else {
-      label.style.opacity = '1';
-      label.style.left = x + 'px';
-      label.style.top = y + 'px';
-    }
-  }
-}
-
-// ═══════════════════ ANIMATION LOOP ═══════════════════════════════
-function animate() {
-  requestAnimationFrame(animate);
-
-  // Smooth car movement
-  for (const config of Object.values(ROP_CARS)) {
-    if (config.mesh && config.targetPos) {
-      config.mesh.position.lerp(config.targetPos, 0.02);
-      config.mesh.rotation.y = THREE.MathUtils.lerp(
-        config.mesh.rotation.y,
-        config.targetRot,
-        0.02
-      );
-    }
-  }
-
-  updateFlyCamera();
-  controls.update();
-  renderer.render(scene, camera);
-  projectCarLabels();
-}
-
-// ═══════════════════ RESIZE ═══════════════════════════════════════
-function onResize() {
-  const w = sceneContainer.clientWidth;
-  const h = sceneContainer.clientHeight;
-  camera.aspect = w / h;
-  camera.updateProjectionMatrix();
-  renderer.setSize(w, h);
-}
-window.addEventListener('resize', onResize);
-
-// ═══════════════════ RENDER ALL ═══════════════════════════════════
-function renderAll() {
-  const data = calcRopData();
-  updateCarPositions(data);
-  updateCarLabels(data);
-  renderScoreboard(data);
-  renderTop3();
-  renderFeed();
-}
-
-// ═══════════════════ ZOOM HINT FADE ═══════════════════════════════
-setTimeout(() => {
-  document.getElementById('zoomHint').classList.add('hidden');
-}, 5000);
 
 // ═══════════════════ INIT ═══════════════════════════════════════
-async function init() {
-  updateHeader();
-  setInterval(updateHeader, 1000);
+_initKey();
+loadData();
+setInterval(loadData, 60000);
 
-  // Load all 4 car GLB models (each updates progress individually)
-  await loadCars();
-
-  // Load data from Supabase
-  const dataOk = await loadData();
-  updateLoadProgress('Данные загружены');
-  dataReady = dataOk;
-
-  // Create labels
-  createCarLabels();
-
-  // Start animation loop
-  animate();
-
-  if (dataReady) {
-    renderAll();
-  }
-
-  // Fade out loading, show page
-  const loadingEl = document.getElementById('loading');
-  loadingEl.classList.add('fade-out');
-  document.getElementById('page').style.display = 'flex';
-  requestAnimationFrame(() => {
-    onResize();
-    setTimeout(() => {
-      loadingEl.style.display = 'none';
-    }, 800);
-  });
-
-  // Handle data load failure
-  if (!dataReady) {
-    console.warn('Data failed to load, retrying in 5s...');
-    setTimeout(async () => {
-      const ok = await loadData();
-      if (ok) renderAll();
-    }, 5000);
-  }
-
-  // Auto-reload data every 60 seconds
-  setInterval(async () => {
-    await loadData();
-    renderAll();
-  }, 60000);
-}
-
-init();
+let _cursorTimer;
+document.addEventListener('mousemove', () => {
+  document.body.classList.remove('hide-cursor');
+  clearTimeout(_cursorTimer);
+  _cursorTimer = setTimeout(() => document.body.classList.add('hide-cursor'), 3000);
+});
+_cursorTimer = setTimeout(() => document.body.classList.add('hide-cursor'), 3000);
 </script>
 </body>
 </html>
