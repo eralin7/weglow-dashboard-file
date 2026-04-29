@@ -3891,16 +3891,31 @@ function renderProdByRop() {
     ? Object.keys(PRODUCTS || {})
     : [_prodDonutFilter];
 
-  // Aggregate quantities per product name
+  // Aggregate quantities per product name + revenue from deal facts
+  // Revenue split per CRM: each product gets (qty/totalQtyInCrm) * totalDealBudgetInCrm for the period
   const prodTotals = {};
+  const prodRevenue = {};
   for (const crm of crmKeys) {
     const prods = PRODUCTS?.[crm];
     if (!prods) continue;
+    // Per-product qty for this CRM in period
+    const crmProdQty = {};
+    let crmTotalQty = 0;
     for (const [name, info] of Object.entries(prods)) {
       if (!info.daily) continue;
       let total = 0;
       for (const d of dates) { total += info.daily[d] || 0; }
-      if (total > 0) prodTotals[name] = (prodTotals[name] || 0) + total;
+      if (total > 0) { crmProdQty[name] = total; crmTotalQty += total; }
+    }
+    // CRM deal budget for period from RAW (daily[d][2])
+    const raw = _mergedRaw(crm);
+    let crmBudget = 0;
+    for (const d of dates) { const v = raw[d]; if (v) crmBudget += v[2] || 0; }
+    // Distribute
+    for (const [name, qty] of Object.entries(crmProdQty)) {
+      prodTotals[name] = (prodTotals[name] || 0) + qty;
+      const rev = crmTotalQty > 0 ? crmBudget * (qty / crmTotalQty) : 0;
+      prodRevenue[name] = (prodRevenue[name] || 0) + rev;
     }
   }
 
@@ -3908,8 +3923,10 @@ function renderProdByRop() {
   const sorted = Object.entries(prodTotals).sort((a,b) => b[1] - a[1]);
   const labels = sorted.map(e => e[0]);
   const values = sorted.map(e => e[1]);
+  const revenues = labels.map(name => prodRevenue[name] || 0);
   const colors = labels.map((_, i) => _PROD_COLORS[i % _PROD_COLORS.length]);
   const grandTotal = values.reduce((a, b) => a + b, 0);
+  const grandRevenue = revenues.reduce((a, b) => a + b, 0);
 
   if (_prodByRopChart) _prodByRopChart.destroy();
 
@@ -3929,7 +3946,8 @@ function renderProdByRop() {
         legend: { display: false },
         tooltip: { callbacks: { label: ctx => {
           const pct = grandTotal > 0 ? (ctx.raw / grandTotal * 100).toFixed(1) : 0;
-          return ` ${ctx.label}: ${ctx.raw.toLocaleString('ru-RU')} шт (${pct}%)`;
+          const rev = revenues[ctx.dataIndex] || 0;
+          return ` ${ctx.label}: ${ctx.raw.toLocaleString('ru-RU')} шт · ${Math.round(rev).toLocaleString('ru-RU')} ₸ (${pct}%)`;
         }}}
       }
     }
@@ -3937,13 +3955,15 @@ function renderProdByRop() {
 
   legendEl.innerHTML = labels.map((name, i) => {
     const pct = (values[i] / grandTotal * 100).toFixed(1);
+    const rev = Math.round(revenues[i] || 0).toLocaleString('ru-RU');
     return `<div style="display:flex;align-items:center;gap:6px">
       <div style="width:10px;height:10px;border-radius:50%;background:${colors[i]};flex-shrink:0"></div>
       <span style="color:var(--ink);font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</span>
-      <span style="color:var(--muted);white-space:nowrap">${values[i].toLocaleString('ru-RU')} шт · ${pct}%</span>
+      <span style="color:var(--muted);white-space:nowrap;text-align:right">${values[i].toLocaleString('ru-RU')} шт · ${pct}%<br><span style="color:#10b981;font-weight:600">${rev} ₸</span></span>
     </div>`;
-  }).join('') + `<div style="border-top:1px solid var(--line);margin-top:6px;padding-top:6px;font-weight:700;color:var(--ink);font-size:13px">
-    Итого: ${grandTotal.toLocaleString('ru-RU')} шт
+  }).join('') + `<div style="border-top:1px solid var(--line);margin-top:6px;padding-top:6px;font-weight:700;color:var(--ink);font-size:13px;display:flex;justify-content:space-between;gap:8px">
+    <span>Итого: ${grandTotal.toLocaleString('ru-RU')} шт</span>
+    <span style="color:#10b981">${Math.round(grandRevenue).toLocaleString('ru-RU')} ₸</span>
   </div>`;
 }
 
