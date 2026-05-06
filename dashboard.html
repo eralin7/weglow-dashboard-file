@@ -1244,6 +1244,9 @@ const _authGuard = new MutationObserver(() => {
     </div>
   </nav>
   <button class="logout-btn" onclick="doLogout()">🚪 <span>Выйти</span></button>
+  <button class="logout-btn" onclick="downloadDataSnapshot()" style="background:rgba(99,102,241,.15);color:#a5b4fc;margin-top:6px" title="Скачать JSON-снимок текущих данных дашборда — для бэкапа или интеграции в era CRM">
+    📥 <span>Снимок данных</span>
+  </button>
   <div class="sb-progress">
     <div class="sp-label" id="sb-month-label">—</div>
     <div class="sp-bar"><div class="sp-fill" id="sb-fill" style="width:0%"></div></div>
@@ -1917,6 +1920,55 @@ function aggregateAll(from,to){
     monthBudget,remain,perDay,daysLeft,isCurrentMonth,planToday:planTodayAll,monthAdTotal,monthLeads,cplMonth,rpl,
     conv:leads?+(deals/leads*100).toFixed(1):0,avgCheck:deals?Math.round(budget/deals):0};
 }
+
+// ═══════════════════ DATA SNAPSHOT ════════════════════════════════
+// Скачать JSON-снимок всех текущих данных дашборда. Используется для:
+// 1) разового бэкапа исторических данных (≤ 30.04.2026) перед переходом
+//    на era CRM как единственный источник.
+// 2) интеграции в era CRM, чтобы CRM-дашборд мог показывать данные за
+//    исторические даты без обращения к старой Supabase.
+// Только admin-роль (viewer не может).
+function downloadDataSnapshot(){
+  const role = sessionStorage.getItem('wg_role');
+  if (role !== 'admin') {
+    alert('Только администратор может скачивать снимок данных.');
+    return;
+  }
+  if (!RAW || Object.keys(RAW).length === 0) {
+    alert('Данные ещё не загружены — подожди пару секунд после входа и попробуй снова.');
+    return;
+  }
+  const snapshot = {
+    schemaVersion: 1,
+    snapshotAt: new Date().toISOString(),
+    RAW,
+    MANAGERS,
+    AD_SPEND,
+    PLANS,
+    ROP_PLANS,
+    CROSS_SALES,
+    PRODUCTS,
+    MGR_TO_ROP,
+    ROP_GROUPS,
+    ARCHIVE_RAW: (typeof ARCHIVE_RAW !== 'undefined') ? ARCHIVE_RAW : null,
+    ARCHIVE_MANAGERS: (typeof ARCHIVE_MANAGERS !== 'undefined') ? ARCHIVE_MANAGERS : null,
+    KIDS_ARCHIVE_MGRS,
+    KIDS_ARCHIVE_RAW,
+    RNP_EXCEL,
+  };
+  const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
+  a.href = url;
+  a.download = `weglow-dashboard-snapshot-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  console.log('[snapshot] Downloaded', Object.keys(snapshot).length, 'top-level keys, size:', blob.size, 'bytes');
+}
+window.downloadDataSnapshot = downloadDataSnapshot;
 
 // ═══════════════════ VIEW SWITCH ══════════════════════════════════
 function switchView(v,el){
