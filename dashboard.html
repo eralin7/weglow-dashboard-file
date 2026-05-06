@@ -3268,19 +3268,19 @@ function renderAdSpend(){
 }
 
 // ═══════════════════ LOAD FROM SUPABASE ══════════════════════════
+// Раньше тянули данные из старой Supabase (bdyakgmeibpdkisbiykt) — теперь
+// данные захардкожены в dashboard-snapshot.json (рядом с этим файлом),
+// снимок от 06.05.2026. Это покрывает все исторические даты ≤ 30.04.2026
+// (а также апрель/начало мая до момента снимка). С 01.05.2026 в дальнейшем
+// данные будут приходить из era CRM поверх — отдельным мерж-слоем.
+//
+// Оставил имя функции `loadFromSupabase` чтобы не править все call-sites.
 async function loadFromSupabase() {
-  if (!SUPABASE_KEY) { console.warn('[auth] No key, skipping load'); return; }
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/weglow_data?id=eq.1&select=data,updated_at`, {
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-      }
-    });
-    if (!res.ok) throw new Error(res.status);
-    const rows = await res.json();
-    if (rows && rows[0] && rows[0].data) {
-      const d = rows[0].data;
+    const res = await fetch('dashboard-snapshot.json', { cache: 'no-cache' });
+    if (!res.ok) throw new Error('snapshot http ' + res.status);
+    const d = await res.json();
+    if (d) {
 
       // Reassign mutable globals
       if (d.RAW)      RAW      = d.RAW;
@@ -4724,10 +4724,11 @@ async function pingRender() {
 // Ping Render every 10 min to prevent sleep
 setInterval(pingRender, 10 * 60 * 1000);
 
-// Reload data from Supabase every 60s (only if authenticated)
+// Reload snapshot every 5 min — на случай если файл обновили (новый снимок
+// или мердж era CRM поверх). SUPABASE_KEY-гейт убран, ключ больше не нужен.
 setInterval(() => {
-  if (sessionStorage.getItem('wg_auth') === '1' && SUPABASE_KEY) loadFromSupabase();
-}, 60 * 1000);
+  if (sessionStorage.getItem('wg_auth') === '1') loadFromSupabase();
+}, 5 * 60 * 1000);
 
 // First ping immediately
 pingRender();
