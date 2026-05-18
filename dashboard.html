@@ -1619,6 +1619,8 @@ let CROSS_SALES = (_loaded && _loaded.CROSS_SALES) ? _loaded.CROSS_SALES : {};
 let PRODUCTS    = (_loaded && _loaded.PRODUCTS)    ? _loaded.PRODUCTS    : {};
 let PLANS = _loaded && _loaded.PLANS ? _loaded.PLANS : {'col':{'03.2026':86000000,'02.2026':60000000,'01.2026':60000000,'12.2025':60000000,'11.2025':60000000,'10.2025':60000000}};
 let ROP_PLANS = (_loaded && _loaded.ROP_PLANS) ? _loaded.ROP_PLANS : {};
+let ROP_SPRINT_PLANS = (_loaded && _loaded.ROP_SPRINT_PLANS) ? _loaded.ROP_SPRINT_PLANS : {};
+let SPRINTS = (_loaded && _loaded.SPRINTS) ? _loaded.SPRINTS : {};
 let RNP_EXCEL = (_loaded && _loaded.RNP_EXCEL) ? _loaded.RNP_EXCEL : {};
 
 const PROD_CFG = {
@@ -1764,6 +1766,7 @@ function _makeMonthPreset(y, m) {
   const key   = `m_${y}_${m}`;
   return { from, to, label, key };
 }
+function _isoToDispDate(iso){ const [y,m,d]=iso.split('-'); return `${d}.${m}.${y}`; }
 function buildPresets() {
   const now = _now();
   const todayStr = _fmt(now);
@@ -1780,7 +1783,33 @@ function buildPresets() {
   // Current month only
   const p = _makeMonthPreset(now.getFullYear(), now.getMonth() + 1);
   presets[p.key] = p;
+
+  // Sprint presets — добавляем рядом с месячным, если в SPRINTS заданы даты.
+  const curMk = `${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
+  const sp = (typeof SPRINTS !== 'undefined' && SPRINTS[curMk]) ? SPRINTS[curMk] : null;
+  if (sp) {
+    [1,2].forEach(n => {
+      if (sp[n] && sp[n].start && sp[n].end) {
+        presets[`${p.key}_s${n}`] = {
+          from: _isoToDispDate(sp[n].start),
+          to:   _isoToDispDate(sp[n].end),
+          label: `Спринт ${n}`
+        };
+      }
+    });
+  }
   return presets;
+}
+
+// Sprint-aware plan для конкретного РОПа.
+function getRopPlan(ropName, mk){
+  const sm = activePeriod && activePeriod.preset && activePeriod.preset.match(/_s([12])$/);
+  if (sm) {
+    const n = +sm[1];
+    const v = ROP_SPRINT_PLANS[ropName] && ROP_SPRINT_PLANS[ropName][mk] && ROP_SPRINT_PLANS[ropName][mk][n];
+    return v || 0;
+  }
+  return (ROP_PLANS[ropName] && ROP_PLANS[ropName][mk]) || 0;
 }
 let PRESETS = buildPresets();
 
@@ -1813,6 +1842,17 @@ function getDatesInRange(from,to){
   return res;
 }
 function getPlan(p,mk){
+  // Sprint-aware: при активном спринт-пресете план = сумма ROP_SPRINT_PLANS для этого спринта.
+  const sm = activePeriod && activePeriod.preset && activePeriod.preset.match(/_s([12])$/);
+  if (sm) {
+    const n = +sm[1];
+    let sum = 0;
+    for (const [k, rp] of Object.entries(ROP_SPRINT_PLANS || {})) {
+      if (k.includes('\ufffd')) continue;
+      if (rp[mk] && rp[mk][n]) sum += rp[mk][n];
+    }
+    return sum;
+  }
   if(PLANS[p]&&PLANS[p][mk]) return PLANS[p][mk];
   // Fallback: sum all ROP_PLANS for this month (skip corrupted keys)
   if(p==='col'||!PLANS[p]){
@@ -2233,7 +2273,7 @@ function renderPlanTable(stats){
       const months = new Set();
       for (let d = new Date(_fromD); d <= _toD; d.setDate(d.getDate()+1)) months.add(getMonthKey(d));
       for (const mk of months) {
-        const mp = (ROP_PLANS[ropName]&&ROP_PLANS[ropName][mk])||0;
+        const mp = getRopPlan(ropName, mk);
         if (!mp) continue;
         const [mm,yy] = mk.split('.');
         const ms = new Date(parseInt(yy),parseInt(mm)-1,1);
@@ -2250,7 +2290,7 @@ function renderPlanTable(stats){
     // Full month plan for forecast
     function _getRopMonthPlan(ropName) {
       const mk = `${String(_now.getMonth()+1).padStart(2,'0')}.${_now.getFullYear()}`;
-      return (ROP_PLANS[ropName]&&ROP_PLANS[ropName][mk])||0;
+      return getRopPlan(ropName, mk);
     }
 
     let rTotPlan=0,rTotFullPlan=0,rTotFact=0,rTotLeads=0,rTotDeals=0,rTotAd=0,rTotFcFact=0;
@@ -2435,7 +2475,7 @@ function renderRopKPI(stats) {
       months.add(getMonthKey(d));
     }
     for (const mk of months) {
-      const monthPlan = (ROP_PLANS[ropName] && ROP_PLANS[ropName][mk]) || 0;
+      const monthPlan = getRopPlan(ropName, mk);
       if (!monthPlan) continue;
       // How many days of this month fall within the period?
       const [mm, yy] = mk.split('.');
@@ -3481,6 +3521,8 @@ async function loadFromSupabase() {
       rebuildRopGroups();
 
       if (d.ROP_PLANS) ROP_PLANS = d.ROP_PLANS;
+      if (d.ROP_SPRINT_PLANS) ROP_SPRINT_PLANS = d.ROP_SPRINT_PLANS;
+      if (d.SPRINTS) SPRINTS = d.SPRINTS;
       if (d.RNP_EXCEL) RNP_EXCEL = d.RNP_EXCEL;
 
       if (d.AI_ADVICE) { _aiAdviceData = d.AI_ADVICE; renderSectionAdvice(); }
@@ -3953,7 +3995,13 @@ async function loadEraCrmConfig() {
   if (cfg.ROP_PLANS && typeof cfg.ROP_PLANS === 'object' && Object.keys(cfg.ROP_PLANS).length) {
     ROP_PLANS = cfg.ROP_PLANS; _changed++;
   }
-  console.log('[era-crm config] applied:', _changed, 'sections (AD_SPEND/PLANS/ROP_PLANS)');
+  if (cfg.ROP_SPRINT_PLANS && typeof cfg.ROP_SPRINT_PLANS === 'object' && Object.keys(cfg.ROP_SPRINT_PLANS).length) {
+    ROP_SPRINT_PLANS = cfg.ROP_SPRINT_PLANS; _changed++;
+  }
+  if (cfg.SPRINTS && typeof cfg.SPRINTS === 'object' && Object.keys(cfg.SPRINTS).length) {
+    SPRINTS = cfg.SPRINTS; _changed++;
+  }
+  console.log('[era-crm config] applied:', _changed, 'sections (AD_SPEND/PLANS/ROP_PLANS/SPRINTS)');
 }
 window.loadEraCrmConfig = loadEraCrmConfig;
 
@@ -4136,11 +4184,14 @@ function initDynamicUI() {
   // Render plan/fact/remain KPI block
   renderSidebarKPI(now, dayOfMonth, totalDays);
 
-  // Build month pills dynamically for all 3 filter groups
-  const monthKeys = Object.keys(PRESETS).filter(k => k.startsWith('m_'));
+  // Build month pills (+ matching sprint pills) dynamically for all filter groups.
+  const allKeys = Object.keys(PRESETS).filter(k => k.startsWith('m_'));
+  const monthKeys  = allKeys.filter(k => !/_s[12]$/.test(k));
+  const sprintKeys = allKeys.filter(k =>  /_s[12]$/.test(k));
   [['main','setPreset'],['mgr','setMgrPreset'],['ad','setAdPreset'],['prod','setProdPreset']].forEach(([prefix, fn]) => {
     const container = document.getElementById(`${prefix}-month-pills`);
     if (!container) return;
+    container.innerHTML = '';
     monthKeys.forEach(key => {
       const p = PRESETS[key];
       const btn = document.createElement('button');
@@ -4148,6 +4199,16 @@ function initDynamicUI() {
       btn.textContent = p.label;
       btn.onclick = function() { window[fn](key, this); };
       container.appendChild(btn);
+      // Спринты этого месяца — сразу после месячной пилюли.
+      sprintKeys.filter(sk => sk.startsWith(key + '_s')).forEach(sk => {
+        const sp = PRESETS[sk];
+        const sb = document.createElement('button');
+        sb.className = 'pill period-pill';
+        sb.textContent = sp.label;
+        sb.title = `${sp.from} — ${sp.to}`;
+        sb.onclick = function() { window[fn](sk, this); };
+        container.appendChild(sb);
+      });
     });
   });
 }
