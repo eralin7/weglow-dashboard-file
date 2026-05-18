@@ -3508,24 +3508,59 @@ async function loadFromSupabase() {
 
 // ═══════════════════ ERA CRM OVERLAY ════════════════════════════════
 // Подмешивает live-данные из era CRM (Supabase cbylqiuksjmqyptokfqj)
-// поверх снимка для дат ≥ 01.05.2026. Снимок содержит данные до момента
-// его создания; era CRM перетирает их актуальными цифрами начиная с мая.
+// поверх снимка для дат ≥ 01.05.2026. Снимок «захардкорен» по 30.04.2026
+// включительно; всё, что с 01.05, приходит из era CRM (единственный источник).
 //
-// Маппинг pipeline → snapshot account:
-//   "Коллаген" → "Коллаген"
-//   "KIDS"     → "Ummi"
-//   остальные  → пропускаются (B1 Partners пока не нужен)
+// Маппинг pipeline → bucket на дашборде:
+//   "Коллаген"    → "Коллаген"     (сшивается с историей)
+//   "KIDS"        → "Ummi"          (сшивается с историей)
+//   "B1 Partners" → "B1 Partners"   (новый бакет, истории нет)
 //
-// Менеджеры матчатся по точному совпадению name. Если в era CRM появился
-// новый менеджер — он добавится в MANAGERS[acc] с daily только за май+.
+// Маппинг group → ROP: groups.title из era CRM мапится на дашборд-имя
+// РОПа (чтобы сшивалось с историческим МGR_TO_ROP). Новые группы → fallback
+// «РОП <title>». Группа «Админ» пропускается (системные аккаунты).
+//
+// Семантика чисел (см. миграцию 2026-05-18-dashboard-metrics-v2.sql):
+//   leads  — сделки с created_at в окне (Asia/Almaty).
+//   deals  — сделки в won-стадиях (Заказ/Заказ на подтверждение/Курьерская
+//            доставка/Успешно реализовано) с «Датой заказа» в окне.
+//   new/base — split по 24ч между created_at и order_at.
+//
+// Автообновление: setInterval раз в 5 мин. Перед каждым merge'ем чистим
+// все даты ≥ 01.05.2026 из RAW/MANAGERS, чтобы исчезнувшие сделки не
+// «прилипали» с предыдущего цикла.
 const ERA_CRM_URL = 'https://cbylqiuksjmqyptokfqj.supabase.co';
 const ERA_CRM_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNieWxxaXVrc2ptcXlwdG9rZnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY2MTk5NzcsImV4cCI6MjA5MjE5NTk3N30.2p07fXhYCF5bYdG27sR1lIvNeuoqF8vF-OBfGLX7zDQ';
-const ERA_CRM_OVERLAY_FROM = '2026-05-01T00:00:00+00:00';
+const ERA_CRM_OVERLAY_FROM = '2026-05-01T00:00:00+05:00'; // Asia/Almaty
+const ERA_CRM_REFRESH_MS   = 5 * 60 * 1000;
 
-function _eraCrmAlias(pipelineTitle) {
-  if (pipelineTitle === 'Коллаген') return 'Коллаген';
-  if (pipelineTitle === 'KIDS')     return 'Ummi';
-  return null; // skip others (B1 Partners, etc.)
+// Pipeline.title → имя бакета на дашборде.
+const ERA_PIPELINE_TO_BUCKET = {
+  'Коллаген':    'Коллаген',
+  'KIDS':        'Ummi',
+  'B1 Partners': 'B1 Partners',
+};
+
+// Group.title → имя РОПа на дашборде. Старые названия из истории
+// (РОП Аслиддин/Диас/Нурдаулет) сшиваются 1-в-1. «Аяулым» и «B1 Partners» —
+// новые. «Админ» пропускается (системные/нерелевантные аккаунты).
+const ERA_GROUP_TO_ROP = {
+  'Аслиддин':    'РОП Аслиддин',
+  'Диас':        'РОП Диас',
+  'Нурдаулет':   'РОП Нурдаулет',
+  'Аяулым':      'РОП Аяулым',
+  'B1 Partners': 'РОП B1 Partners',
+  'Админ':       null, // skip
+};
+
+function _eraCrmBucket(pipelineTitle) {
+  return ERA_PIPELINE_TO_BUCKET[pipelineTitle] || null;
+}
+
+function _eraCrmRopName(groupTitle) {
+  if (!groupTitle) return null;
+  if (groupTitle in ERA_GROUP_TO_ROP) return ERA_GROUP_TO_ROP[groupTitle];
+  return 'РОП ' + groupTitle; // sane fallback for future groups
 }
 
 function _ddmmyyyy(isoDate) {
@@ -3536,9 +3571,32 @@ function _ddmmyyyy(isoDate) {
   return `${d}.${m}.${y}`;
 }
 
+// 01.05.2026 — граница «хардкор/era CRM». Всё, что ≥ этой даты, при каждом
+// refresh-цикле сначала чистится из RAW/MANAGERS, потом перезаливается.
+function _isEraDate(ddmmyyyy) {
+  const [dd, mm, yy] = String(ddmmyyyy).split('.').map(Number);
+  return yy > 2026 || (yy === 2026 && mm >= 5);
+}
+
+function _purgeEraDates() {
+  for (const acc of Object.keys(RAW)) {
+    for (const date of Object.keys(RAW[acc])) {
+      if (_isEraDate(date)) delete RAW[acc][date];
+    }
+  }
+  for (const acc of Object.keys(MANAGERS)) {
+    for (const m of MANAGERS[acc]) {
+      if (!m.daily) continue;
+      for (const date of Object.keys(m.daily)) {
+        if (_isEraDate(date)) delete m.daily[date];
+      }
+    }
+  }
+}
+
 async function loadEraCrmOverlay() {
   const dateTo = new Date();
-  dateTo.setDate(dateTo.getDate() + 1); // +1 день запас на UTC
+  dateTo.setDate(dateTo.getDate() + 1); // +1 день запас, чтобы окно покрыло «сегодня» по UTC
   const url = `${ERA_CRM_URL}/rest/v1/rpc/get_dashboard_metrics`;
   const res = await fetch(url, {
     method: 'POST',
@@ -3554,36 +3612,50 @@ async function loadEraCrmOverlay() {
   });
   if (!res.ok) throw new Error('era-crm rpc http ' + res.status);
   const rows = await res.json();
-  if (!Array.isArray(rows) || rows.length === 0) {
-    console.log('[era-crm overlay] empty');
+  if (!Array.isArray(rows)) {
+    console.warn('[era-crm overlay] unexpected response shape');
     return;
   }
 
-  // Aggregate per-pipeline (sum across managers).
-  const pipeRoll = {}; // {acc: {date: [l,d,b]}}
-  // Per-manager daily.
-  const mgrRoll = {};  // {acc: {name: {date: [l,d,b]}}}
+  // Чистим RAW/MANAGERS от era-дат перед мерджем — иначе исчезнувшие
+  // строки с прошлого цикла останутся «прилипшими».
+  _purgeEraDates();
+
+  // pipeRoll[acc][date] = [l,d,b,nd,nb,bd,bb]
+  const pipeRoll = {};
+  // mgrRoll[acc][name] = { daily: {date:[7]}, group: title }
+  const mgrRoll  = {};
+
   for (const r of rows) {
-    const acc = _eraCrmAlias(r.pipeline_title);
+    const acc  = _eraCrmBucket(r.pipeline_title);
     if (!acc) continue;
     const date = _ddmmyyyy(r.day);
     if (!date) continue;
-    const l = Number(r.leads)  || 0;
-    const d = Number(r.deals)  || 0;
-    const b = Number(r.budget) || 0;
+
+    const l  = Number(r.leads)       || 0;
+    const d  = Number(r.deals)       || 0;
+    const b  = Number(r.budget)      || 0;
+    const nd = Number(r.new_deals)   || 0;
+    const nb = Number(r.new_budget)  || 0;
+    const bd = Number(r.base_deals)  || 0;
+    const bb = Number(r.base_budget) || 0;
 
     pipeRoll[acc] = pipeRoll[acc] || {};
-    const cur = pipeRoll[acc][date] = pipeRoll[acc][date] || [0,0,0];
+    const cur = pipeRoll[acc][date] = pipeRoll[acc][date] || [0,0,0,0,0,0,0];
     cur[0] += l; cur[1] += d; cur[2] += b;
+    cur[3] += nd; cur[4] += nb; cur[5] += bd; cur[6] += bb;
 
     if (r.manager_name) {
       mgrRoll[acc] = mgrRoll[acc] || {};
-      mgrRoll[acc][r.manager_name] = mgrRoll[acc][r.manager_name] || {};
-      mgrRoll[acc][r.manager_name][date] = [l, d, b];
+      const slot = mgrRoll[acc][r.manager_name] = mgrRoll[acc][r.manager_name] || { daily: {}, group: r.group_title || null };
+      // Если разные строки за один день (не должно быть, но на всякий) — суммируем.
+      const day = slot.daily[date] = slot.daily[date] || [0,0,0,0,0,0,0];
+      day[0]+=l; day[1]+=d; day[2]+=b; day[3]+=nd; day[4]+=nb; day[5]+=bd; day[6]+=bb;
+      if (!slot.group && r.group_title) slot.group = r.group_title;
     }
   }
 
-  // Merge into RAW: era CRM перетирает snapshot для дат ≥ 01.05.2026.
+  // Merge into RAW.
   let _rawTouched = 0;
   for (const [acc, daily] of Object.entries(pipeRoll)) {
     RAW[acc] = RAW[acc] || {};
@@ -3593,36 +3665,78 @@ async function loadEraCrmOverlay() {
     }
   }
 
-  // Merge into MANAGERS: matching by exact name; новые добавляются.
-  let _mgrMatched = 0, _mgrAdded = 0;
+  // Merge into MANAGERS + populate MGR_TO_ROP from group_title.
+  let _mgrMatched = 0, _mgrAdded = 0, _ropMapped = 0;
   for (const [acc, mgrs] of Object.entries(mgrRoll)) {
     MANAGERS[acc] = MANAGERS[acc] || [];
-    for (const [name, daily] of Object.entries(mgrs)) {
+    for (const [name, slot] of Object.entries(mgrs)) {
       let mgr = MANAGERS[acc].find((m) => m.name === name);
       if (!mgr) {
-        mgr = { name, leads: 0, deals: 0, budget: 0, conv: 0, avgCheck: 0, daily: {} };
+        mgr = { name, leads:0, deals:0, budget:0, newDeals:0, newBudget:0, baseDeals:0, baseBudget:0, conv:0, newConv:0, baseConv:0, avgCheck:0, daily:{} };
         MANAGERS[acc].push(mgr);
         _mgrAdded++;
       } else {
         _mgrMatched++;
+        mgr.daily = mgr.daily || {};
       }
-      mgr.daily = mgr.daily || {};
-      for (const [date, vals] of Object.entries(daily)) {
+      for (const [date, vals] of Object.entries(slot.daily)) {
         mgr.daily[date] = vals;
       }
-      // Recalc totals from merged daily.
-      let l=0, d=0, b=0;
-      for (const v of Object.values(mgr.daily)) { l+=v[0]||0; d+=v[1]||0; b+=v[2]||0; }
+      // Пересчёт totals из всего mgr.daily (включая исторический snapshot ≤ 30.04).
+      let l=0, d=0, b=0, nd=0, nb=0, bd=0, bb=0;
+      for (const v of Object.values(mgr.daily)) {
+        l  += v[0]||0; d  += v[1]||0; b  += v[2]||0;
+        nd += v[3]||0; nb += v[4]||0; bd += v[5]||0; bb += v[6]||0;
+      }
       mgr.leads = l; mgr.deals = d; mgr.budget = b;
-      mgr.conv = l>0 ? +(d/l*100).toFixed(1) : 0;
-      mgr.avgCheck = d>0 ? Math.round(b/d) : 0;
+      mgr.newDeals = nd; mgr.newBudget = nb;
+      mgr.baseDeals = bd; mgr.baseBudget = bb;
+      mgr.conv     = l>0 ? +(d/l*100).toFixed(1)  : 0;
+      mgr.newConv  = l>0 ? +(nd/l*100).toFixed(1) : 0;
+      mgr.baseConv = l>0 ? +(bd/l*100).toFixed(1) : 0;
+      mgr.avgCheck = d>0 ? Math.round(b/d)        : 0;
+
+      // ROP mapping (нужно только если у этого менеджера ещё нет записи).
+      const ropName = _eraCrmRopName(slot.group);
+      if (ropName && !MGR_TO_ROP[name]) {
+        MGR_TO_ROP[name] = ropName;
+        _ropMapped++;
+      }
     }
     MANAGERS[acc].sort((a,b) => b.budget - a.budget);
   }
 
-  console.log('[era-crm overlay] applied:', _rawTouched, 'date-cells,', _mgrMatched, 'mgrs matched,', _mgrAdded, 'mgrs new');
+  // Пересчитать ROP-кеши/группы — иначе новые маппинги не подхватятся.
+  if (typeof clearRopCache === 'function') clearRopCache();
+  if (typeof rebuildRopGroups === 'function') rebuildRopGroups();
+
+  console.log('[era-crm overlay] applied:', _rawTouched, 'date-cells,', _mgrMatched, 'mgrs matched,', _mgrAdded, 'mgrs new,', _ropMapped, 'rops mapped');
 }
 window.loadEraCrmOverlay = loadEraCrmOverlay;
+
+// Автообновление: каждые 5 мин перетягиваем era CRM и перерисовываем.
+// Только когда вкладка активна — иначе тихо ждём фокуса.
+async function _eraCrmRefreshTick() {
+  if (document.hidden) return;
+  try {
+    await loadEraCrmOverlay();
+    // Пересобираем пресеты (диапазоны дат могут меняться) и рендерим.
+    if (typeof buildPresets === 'function') PRESETS = buildPresets();
+    if (typeof render === 'function') render();
+    if (typeof renderManagers === 'function' && activeView === 'managers') renderManagers();
+    if (typeof renderAdSpend  === 'function' && activeView === 'adspend')  renderAdSpend();
+    if (typeof renderProducts === 'function' && activeView === 'products') renderProducts();
+    if (typeof renderRnp      === 'function' && activeView === 'rnp')      renderRnp();
+    const badge = document.getElementById('data-badge');
+    if (badge) {
+      const dt = new Date();
+      badge.textContent = 'Обновлено: ' + dt.toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+    }
+  } catch (e) {
+    console.warn('[era-crm refresh]', e);
+  }
+}
+setInterval(_eraCrmRefreshTick, ERA_CRM_REFRESH_MS);
 
 // ═══════════════════ SIDEBAR KPI ═════════════════════════════════
 function renderSidebarKPI(now, dayOfMonth, totalDays){
