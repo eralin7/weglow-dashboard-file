@@ -947,19 +947,23 @@ function defaultSprintDates(monthKey){
 }
 
 async function loadRopPlans(){
+  // UI строим в любом случае, чтобы карточки и подписи появились даже
+  // при ошибке загрузки конфига.
   try {
-    // Прямой доступ к _dashCfg (заполняется в sbGetConfig). Минуем шим
-    // sbGet(/weglow_data), потому что он не возвращает SPRINTS / ROP_SPRINT_PLANS.
     await sbGetConfig();
+  } catch(e){
+    console.error('loadRopPlans sbGetConfig error:', e);
+  }
+  try {
     ropPlans       = _dashCfg.ROP_PLANS         || {};
     ropSprintPlans = _dashCfg.ROP_SPRINT_PLANS  || {};
     sprints        = _dashCfg.SPRINTS           || {};
-    buildRopCards();
-    fillRopForm();
-    renderRopPlanHistory();
   } catch(e){
-    console.error('loadRopPlans error:', e);
+    console.error('loadRopPlans parse error:', e);
   }
+  buildRopCards();
+  fillRopForm();
+  try { renderRopPlanHistory(); } catch(e){ console.error('renderRopPlanHistory error:', e); }
 }
 
 function updateRopTotal(slug){
