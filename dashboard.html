@@ -1667,25 +1667,36 @@ let ROP_GROUPS = {
 };
 const ROP_COLORS = {'РОП Айдана':'#1a56db','РОП Аслиддин':'#b45309','РОП Нурдаулет':'#0a7c5c','РОП Ербол':'#e11d48','РОП Айдана KIDS':'#7c3aed','РОП Диас KIDS':'#db2777','Кофе (Архив)':'#b45309','БОТА AI':'#0ea5e9'};
 const ROP_CRM_MAP = {
+  // Active ROPs (Era CRM с 01.05.2026): managers могут иметь сделки в любом
+  // из 3 пайплайнов, поэтому смотрим во все 3 бакета.
+  'РОП Аслиддин':     ['Коллаген', 'Ummi', 'B1 Partners'],
+  'РОП Диас':         ['Коллаген', 'Ummi', 'B1 Partners'],
+  'РОП Нурдаулет':    ['Коллаген', 'Ummi', 'B1 Partners'],
+  'РОП Аяулым':       ['Коллаген', 'Ummi', 'B1 Partners'],
+  'РОП B1 Partners':  ['Коллаген', 'Ummi', 'B1 Partners'],
+  'БОТА AI':          ['Коллаген', 'Ummi'],  // AI bot manager (Админ-группа Era CRM)
+
+  // Legacy ROPs (AmoCRM ≤ 30.04.2026). Их строки спрятаны через ERA_HIDE_ROPS,
+  // но маппинг оставлен для обратной совместимости при просмотре истории
+  // (если кто-то снимет hide).
   'РОП Айдана':       ['Коллаген'],
-  'РОП Аслиддин':     ['Коллаген'],
-  'РОП Нурдаулет':    ['Коллаген'],
-  'РОП Ербол':        ['Ербол'],   // Ummi data ≤ 23.03.2026 (split at load time)
-  'РОП Айдана KIDS':  ['Ummi'],    // Ummi data ≥ 24.03.2026
-  'РОП Диас KIDS':    ['Ummi'],    // KIDS pipeline (weglow.amocrm.ru) ≥ 24.03.2026
-  'Кофе (Архив)':     ['Кофе (Архив)'], // mushrooms.amocrm.ru data < 23.03.2026
-  'БОТА AI':          ['Коллаген'],    // AI bot manager in Коллаген CRM
+  'РОП Ербол':        ['Ербол'],
+  'РОП Айдана KIDS':  ['Ummi'],
+  'Кофе (Архив)':     ['Кофе (Архив)'],
 };
 function rebuildRopGroups() {
   // Rebuild ROP_GROUPS from MGR_TO_ROP data + always include fixed groups
   const ropSet = new Set(Object.values(MGR_TO_ROP));
-  // Always include these groups even if not in MGR_TO_ROP
-  ['РОП Ербол', 'РОП Айдана KIDS', 'РОП Диас KIDS', 'Кофе (Архив)', 'БОТА AI'].forEach(r => ropSet.add(r));
+  // Старые AmoCRM-РОПы (Ербол / Айдана KIDS / Диас KIDS / Кофе) теперь скрыты
+  // через ERA_HIDE_ROPS (constant выше). Force-add только для БОТА AI —
+  // system-аккаунт Era CRM (Админ-группа): за ним есть лиды/сделки, строка
+  // должна быть видна даже без явного MGR_TO_ROP.
+  ropSet.add('БОТА AI');
   ROP_GROUPS = { 'all': { label: 'Все', color: '#6366f1' } };
-  const _hiddenRops = new Set(['РОП Диас']); // removed group, data goes to РОП Диас KIDS
+  // (Старое локальное _hiddenRops перенесено в ERA_HIDE_ROPS — constant в overlay-блоке.)
   for (const rop of [...ropSet].sort()) {
-    if (rop.includes('\ufffd')) continue; // skip corrupted entries
-    if (_hiddenRops.has(rop)) continue;
+    if (!rop || rop.includes('\ufffd')) continue; // skip corrupted entries
+    if (typeof ERA_HIDE_ROPS !== 'undefined' && ERA_HIDE_ROPS.has(rop)) continue;
     ROP_GROUPS[rop] = { label: rop, color: ROP_COLORS[rop] || '#6366f1' };
   }
 }
@@ -3545,17 +3556,43 @@ const ERA_PIPELINE_TO_BUCKET = {
   'B1 Partners': 'B1 Partners',
 };
 
-// Group.title → имя РОПа на дашборде. Старые названия из истории
-// (РОП Аслиддин/Диас/Нурдаулет) сшиваются 1-в-1. «Аяулым» и «B1 Partners» —
-// новые. «Админ» пропускается (системные/нерелевантные аккаунты).
+// Group.title → имя РОПа на дашборде. Era CRM пишет название группы как
+// сотрудники их назвали — там есть казахская «ұ» (U+04B1), которую визуально
+// не отличить от русской «у» (U+0443). Ниже — оба варианта обязательно
+// перечислены, иначе fallback создаёт дубликат-бакет «РОП Нұрдаулет».
+//
+// Маппинг сшивает с историческим snapshot:
+//   «РОП Аслиддин» / «РОП Нурдаулет» — совпадают 1-в-1 с историей.
+//   «РОП Диас» — заменяет старое «РОП Диас KIDS» (см. _OLD_ROP_RENAME ниже),
+//                чтобы исторические Диас-данные сшились в одну строку.
+//   «РОП Аяулым» / «РОП B1 Partners» — новые, истории нет.
+//   «Админ»     — системные аккаунты (Admin, БОТА AI), РОПа нет.
 const ERA_GROUP_TO_ROP = {
   'Аслиддин':    'РОП Аслиддин',
   'Диас':        'РОП Диас',
-  'Нурдаулет':   'РОП Нурдаулет',
+  'Нурдаулет':   'РОП Нурдаулет',  // на случай если Era CRM нормализуется на русскую «у»
+  'Нұрдаулет':   'РОП Нурдаулет',  // фактический вариант в БД сейчас — казахская «ұ»
   'Аяулым':      'РОП Аяулым',
   'B1 Partners': 'РОП B1 Partners',
-  'Админ':       null, // skip
+  'Админ':       null, // skip — Admin/БОТА AI/Бухгалтерия и т.п.
 };
+
+// Старое имя РОПа → новое. Применяется к ВСЕМ записям MGR_TO_ROP (включая
+// snapshot ≤ 30.04), чтобы исторические данные сшились с майскими в одну
+// строку «РОП Диас», а не висели отдельно как «РОП Диас KIDS».
+const _OLD_ROP_RENAME = {
+  'РОП Диас KIDS': 'РОП Диас',
+};
+
+// Старые РОПы из AmoCRM, которых больше нет в Era CRM. Прячем строки на
+// дашборде, чтобы не висели нулями. Их исторические данные остаются в
+// MANAGERS, но не выводятся как отдельная группа.
+const ERA_HIDE_ROPS = new Set([
+  'РОП Айдана',
+  'РОП Айдана KIDS',
+  'РОП Ербол',
+  'Кофе (Архив)',
+]);
 
 function _eraCrmBucket(pipelineTitle) {
   return ERA_PIPELINE_TO_BUCKET[pipelineTitle] || null;
@@ -3700,15 +3737,30 @@ async function loadEraCrmOverlay() {
       mgr.baseConv = l>0 ? +(bd/l*100).toFixed(1) : 0;
       mgr.avgCheck = d>0 ? Math.round(b/d)        : 0;
 
-      // ROP mapping (нужно только если у этого менеджера ещё нет записи).
+      // ROP mapping — Era CRM авторитетен для группы менеджера. Перетираем
+      // снапшотовый MGR_TO_ROP (там старые «РОП Диас KIDS» и т.п.).
       const ropName = _eraCrmRopName(slot.group);
-      if (ropName && !MGR_TO_ROP[name]) {
-        MGR_TO_ROP[name] = ropName;
-        _ropMapped++;
+      if (ropName) {
+        if (MGR_TO_ROP[name] !== ropName) {
+          MGR_TO_ROP[name] = ropName;
+          _ropMapped++;
+        }
       }
     }
     MANAGERS[acc].sort((a,b) => b.budget - a.budget);
   }
+
+  // Применяем переименования (РОП Диас KIDS → РОП Диас и т.п.) ко всему
+  // MGR_TO_ROP — это сшивает исторические записи (≤ 30.04) с новыми
+  // в одну строку под актуальным именем РОПа.
+  let _renamed = 0;
+  for (const [mgr, oldRop] of Object.entries(MGR_TO_ROP)) {
+    if (_OLD_ROP_RENAME[oldRop]) {
+      MGR_TO_ROP[mgr] = _OLD_ROP_RENAME[oldRop];
+      _renamed++;
+    }
+  }
+  if (_renamed) console.log('[era-crm overlay] renamed', _renamed, 'mgr→rop entries via _OLD_ROP_RENAME');
 
   // Пересчитать ROP-кеши/группы — иначе новые маппинги не подхватятся.
   if (typeof clearRopCache === 'function') clearRopCache();
