@@ -1829,8 +1829,11 @@ function convCls(v){return v>=12?'txt-g':v>=8?'txt-y':'txt-r';}
 function pctBg(v){return v>=80?'bg-g':v>=50?'bg-y':'bg-r';}
 
 // ═══════════════════ AGGREGATE ════════════════════════════════════
-// Virtual CRM siblings: aggregate() merges these with the main CRM RAW
-const _VIRTUAL_CRMS = { 'Коллаген': ['Ummi', 'Ербол', 'Кофе (Архив)'] };
+// Virtual CRM siblings: aggregate() merges these with the main CRM RAW.
+// «Коллаген» виртуально включает все бакеты, чтобы топ-KPI «Все продукты»
+// и итог по РОП-таблице совпадали. B1 Partners добавлен с 18.05.2026
+// (после переезда на Era CRM) — раньше его не было.
+const _VIRTUAL_CRMS = { 'Коллаген': ['Ummi', 'Ербол', 'Кофе (Архив)', 'B1 Partners'] };
 function _mergedRaw(mainKey) {
   const main = RAW[mainKey] || {};
   const siblings = _VIRTUAL_CRMS[mainKey] || [];
