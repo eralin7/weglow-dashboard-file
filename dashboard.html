@@ -3501,6 +3501,7 @@ async function loadFromSupabase() {
       try { await loadEraCrmOverlay();  } catch (e) { console.warn('[era-crm overlay]', e); }
       try { await loadEraCrmProducts(); } catch (e) { console.warn('[era-crm products]', e); }
       try { await loadEraCrmCities();   } catch (e) { console.warn('[era-crm cities]', e); }
+      try { await loadEraCrmConfig();   } catch (e) { console.warn('[era-crm config]', e); }
 
       // Rebuild presets but keep current filter selection
       PRESETS = buildPresets();
@@ -3913,6 +3914,45 @@ async function loadEraCrmCities() {
 }
 window.loadEraCrmCities = loadEraCrmCities;
 
+// Era CRM → editable-настройки дашборда (AD_SPEND / PLANS / ROP_PLANS),
+// которые редактируются из кабинетов (ad.html / director.html / rop.html).
+// Раньше эти поля жили в snapshot; теперь кабинеты пишут в era-crm
+// public.dashboard_config, и дашборд читает через public RPC
+// get_dashboard_config_public (SECURITY DEFINER, grant anon). Так правки
+// появляются на главном дашборде без F5/пересборки snapshot.
+//
+// Семантика merge'а: era-crm перетирает snapshot — если в кабинете
+// что-то отредактировали, эти значения побеждают. Если в era-crm пусто
+// (никто пока не сохранял), остаются исторические из snapshot.
+async function loadEraCrmConfig() {
+  const url = `${ERA_CRM_URL}/rest/v1/rpc/get_dashboard_config_public`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'apikey': ERA_CRM_ANON,
+      'Authorization': `Bearer ${ERA_CRM_ANON}`,
+      'Content-Type': 'application/json',
+    },
+    body: '{}',
+  });
+  if (!res.ok) throw new Error('era-crm config rpc http ' + res.status);
+  const cfg = await res.json();
+  if (!cfg || typeof cfg !== 'object') return;
+
+  let _changed = 0;
+  if (cfg.AD_SPEND && typeof cfg.AD_SPEND === 'object' && Object.keys(cfg.AD_SPEND).length) {
+    AD_SPEND = cfg.AD_SPEND; _changed++;
+  }
+  if (cfg.PLANS && typeof cfg.PLANS === 'object' && Object.keys(cfg.PLANS).length) {
+    PLANS = cfg.PLANS; _changed++;
+  }
+  if (cfg.ROP_PLANS && typeof cfg.ROP_PLANS === 'object' && Object.keys(cfg.ROP_PLANS).length) {
+    ROP_PLANS = cfg.ROP_PLANS; _changed++;
+  }
+  console.log('[era-crm config] applied:', _changed, 'sections (AD_SPEND/PLANS/ROP_PLANS)');
+}
+window.loadEraCrmConfig = loadEraCrmConfig;
+
 // Автообновление: каждые 5 мин перетягиваем era CRM и перерисовываем.
 // Только когда вкладка активна — иначе тихо ждём фокуса.
 async function _eraCrmRefreshTick() {
@@ -3921,6 +3961,7 @@ async function _eraCrmRefreshTick() {
     await loadEraCrmOverlay();
     try { await loadEraCrmProducts(); } catch (e) { console.warn('[era-crm products refresh]', e); }
     try { await loadEraCrmCities();   } catch (e) { console.warn('[era-crm cities refresh]', e); }
+    try { await loadEraCrmConfig();   } catch (e) { console.warn('[era-crm config refresh]', e); }
     // Пересобираем пресеты (диапазоны дат могут меняться) и рендерим.
     if (typeof buildPresets === 'function') PRESETS = buildPresets();
     if (typeof render === 'function') render();
