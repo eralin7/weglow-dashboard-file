@@ -126,37 +126,25 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 </head>
 <body>
 
-<!-- PASSWORD SCREEN -->
+<!-- LOGIN SCREEN -->
 <div id="pw-screen">
   <div class="pw-box">
     <div class="logo">WeGlow</div>
     <div class="logo-sub">ROP Cabinet</div>
-    <div id="step-select">
-      <div class="pw-title">Выберите группу</div>
-      <div class="pw-sub">Войдите в свой кабинет РОП</div>
-      <div class="rop-select-wrap">
-        <button class="rop-btn rop-a" onclick="selectRop('РОП Айдана')">
-          <div class="dot"></div> РОП Айдана
-        </button>
-        <button class="rop-btn rop-n" onclick="selectRop('РОП Нурдаулет')">
-          <div class="dot"></div> РОП Нурдаулет
-        </button>
-        <button class="rop-btn rop-s" onclick="selectRop('РОП Аслиддин')">
-          <div class="dot"></div> РОП Аслиддин
-        </button>
-        <button class="rop-btn" style="border-color:#e11d48;color:#e11d48" onclick="selectRop('РОП Диас')">
-          <div class="dot" style="background:#e11d48"></div> РОП Диас
-        </button>
-      </div>
-    </div>
-    <div id="step-pw" style="display:none">
-      <div class="pw-title" id="pw-step-title">Пароль</div>
-      <div class="pw-sub" id="pw-step-sub">Введите пароль для доступа</div>
-      <input class="pw-inp" type="password" id="pw-input" placeholder="Пароль"
-             onkeydown="if(event.key==='Enter')checkPw()">
-      <button class="pw-login-btn" id="pw-login-btn" onclick="checkPw()">Войти</button>
-      <div class="pw-err" id="pw-err">Неверный пароль</div>
-      <button class="pw-back" onclick="backToSelect()">← Назад</button>
+    <div class="pw-title">Кабинет РОП</div>
+    <div class="pw-sub">Войдите аккаунтом Era CRM — система определит вашу группу автоматически</div>
+    <input class="pw-inp" type="email" id="pw-email" placeholder="Email"
+           style="margin-bottom:8px" autocomplete="email"
+           onkeydown="if(event.key==='Enter')document.getElementById('pw-input').focus()">
+    <input class="pw-inp" type="password" id="pw-input" placeholder="Пароль"
+           autocomplete="current-password"
+           onkeydown="if(event.key==='Enter')checkPw()">
+    <button class="pw-login-btn" id="pw-login-btn" onclick="checkPw()" style="background:#6366f1">Войти</button>
+    <div class="pw-err" id="pw-err"></div>
+    <!-- Селектор группы — показывается только админу/директору после логина -->
+    <div id="rop-picker" style="display:none;margin-top:14px">
+      <div class="pw-sub" style="margin-bottom:8px">Вы admin/director — выберите кабинет:</div>
+      <div class="rop-select-wrap" id="rop-picker-buttons"></div>
     </div>
   </div>
 </div>
@@ -239,23 +227,28 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 // ══════════════════════════════════════════════
-// CONFIG
+// CONFIG — Era CRM Supabase
 // ══════════════════════════════════════════════
-const SUPABASE_URL = 'https://bdyakgmeibpdkisbiykt.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkeWFrZ21laWJwZGtpc2JpeWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTQzOTMsImV4cCI6MjA4Nzc5MDM5M30.nA187grJR6XFQRmTP6WOM-6-1dZK1EzYNNP2JH9aAMg';
+const SUPABASE_URL = 'https://cbylqiuksjmqyptokfqj.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNieWxxaXVrc2ptcXlwdG9rZnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY2MTk5NzcsImV4cCI6MjA5MjE5NTk3N30.2p07fXhYCF5bYdG27sR1lIvNeuoqF8vF-OBfGLX7zDQ';
 
-const ROP_PASSWORDS = {
-  'РОП Айдана':    'weglow123',
-  'РОП Нурдаулет': 'weglow123',
-  'РОП Аслиддин':  'weglow123',
-  'РОП Диас':      'weglow123',
+// Era CRM groups → дашборд-имя РОПа (синхронно с dashboard.html).
+const _ERA_GROUP_TO_ROP = {
+  'Аслиддин':    'РОП Аслиддин',
+  'Диас':        'РОП Диас',
+  'Нурдаулет':   'РОП Нурдаулет',
+  'Нұрдаулет':   'РОП Нурдаулет',  // казахская «ұ»
+  'Аяулым':      'РОП Аяулым',
+  'B1 Partners': 'РОП B1 Partners',
 };
 const ROP_COLORS = {
-  'РОП Айдана':    '#1a56db',
-  'РОП Нурдаулет': '#0a7c5c',
-  'РОП Аслиддин':  '#b45309',
-  'РОП Диас':      '#e11d48',
+  'РОП Аслиддин':    '#b45309',
+  'РОП Диас':        '#db2777',
+  'РОП Нурдаулет':   '#0a7c5c',
+  'РОП Аяулым':      '#1a56db',
+  'РОП B1 Partners': '#7c3aed',
 };
+const _OLD_ROP_RENAME = { 'РОП Диас KIDS': 'РОП Диас' };
 const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 
 // ══════════════════════════════════════════════
@@ -266,56 +259,309 @@ let ropColor = '#6366f1';
 let managers = [];       // list of manager names for this ROP
 let planData = {};       // { managerName: { 'MM.YYYY': plan } }
 let selectedPlanMonth = null;
-let _wgManagers = {};    // stored MANAGERS data from weglow_data
+let _wgManagers = {};
+
+let _accessToken  = sessionStorage.getItem('rop_token') || null;
+let _refreshToken = sessionStorage.getItem('rop_refresh') || null;
+let _userId       = sessionStorage.getItem('rop_uid') || null;
+let _userRole     = sessionStorage.getItem('rop_role') || null;
+let _userGroupRop = sessionStorage.getItem('rop_groupRop') || null; // дашборд-имя РОПа группы юзера
+
+function _showErr(text){
+  const el = document.getElementById('pw-err');
+  el.textContent = text;
+  el.style.display = 'block';
+}
 
 // ══════════════════════════════════════════════
-// PASSWORD FLOW
+// LOGIN — Era CRM Supabase Auth
+//   role='rop' → currentRop = их group → группа определяется автоматически.
+//   role∈{admin,director} → показываем селектор группы.
 // ══════════════════════════════════════════════
-function selectRop(rop){
-  currentRop = rop;
-  ropColor = ROP_COLORS[rop];
-  document.getElementById('step-select').style.display='none';
-  document.getElementById('step-pw').style.display='block';
-  document.getElementById('pw-step-title').textContent = rop;
-  document.getElementById('pw-step-sub').innerHTML = `<span style="color:${ropColor};font-weight:600">${rop}</span> — введите пароль`;
-  document.getElementById('pw-login-btn').style.background = ropColor;
-  setTimeout(()=>document.getElementById('pw-input').focus(),100);
-}
-function backToSelect(){
-  document.getElementById('step-select').style.display='block';
-  document.getElementById('step-pw').style.display='none';
-  document.getElementById('pw-input').value='';
-  document.getElementById('pw-err').style.display='none';
-  currentRop=null;
-}
-function checkPw(){
-  if(document.getElementById('pw-input').value === ROP_PASSWORDS[currentRop]){
-    document.getElementById('pw-screen').style.display='none';
-    document.getElementById('app').style.display='block';
-    sessionStorage.setItem('rop_auth', currentRop);
-    startApp();
-  } else {
-    document.getElementById('pw-err').style.display='block';
-    document.getElementById('pw-input').value='';
+async function checkPw(){
+  const email = document.getElementById('pw-email').value.trim();
+  const password = document.getElementById('pw-input').value;
+  if (!email || !password) { _showErr('Введите email и пароль'); return; }
+  document.getElementById('pw-err').style.display = 'none';
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!r.ok) {
+      const j = await r.json().catch(()=>({}));
+      throw new Error(j.error_description || j.msg || ('http '+r.status));
+    }
+    const j = await r.json();
+    _accessToken  = j.access_token;
+    _refreshToken = j.refresh_token;
+    _userId       = j.user?.id;
+
+    // Резолвим роль + группу юзера.
+    const pr = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?id=eq.${_userId}&select=team_role,group_id`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${_accessToken}` } }
+    );
+    const arr = await pr.json();
+    _userRole = arr[0]?.team_role || null;
+    const groupId = arr[0]?.group_id || null;
+
+    if (_userRole === 'rop') {
+      // Узнаём название группы → ROP-имя на дашборде.
+      if (!groupId) { _showErr('Ваша роль РОП, но группа не назначена. Обратитесь к admin.'); return; }
+      const gr = await fetch(
+        `${SUPABASE_URL}/rest/v1/groups?id=eq.${groupId}&select=title`,
+        { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${_accessToken}` } }
+      );
+      const garr = await gr.json();
+      const groupTitle = garr[0]?.title;
+      _userGroupRop = _ERA_GROUP_TO_ROP[groupTitle] || ('РОП ' + (groupTitle || '?'));
+      _saveSession();
+      _enterCabinet(_userGroupRop);
+      return;
+    }
+    if (['admin','director'].includes(_userRole)) {
+      _saveSession();
+      // Показываем селектор группы.
+      const wrap = document.getElementById('rop-picker-buttons');
+      wrap.innerHTML = Object.keys(ROP_COLORS).map(rop => {
+        const c = ROP_COLORS[rop];
+        return `<button class="rop-btn" style="border-color:${c};color:${c}" onclick="_enterCabinet('${rop.replace(/'/g,"\\'")}')">
+          <div class="dot" style="background:${c}"></div> ${rop}
+        </button>`;
+      }).join('');
+      document.getElementById('rop-picker').style.display = 'block';
+      return;
+    }
+    _showErr(`Доступ запрещён — роль "${_userRole || 'нет'}" не подходит для кабинета РОП`);
+    _accessToken = _refreshToken = _userId = _userRole = null;
+  } catch(e) {
+    _showErr('Ошибка входа: ' + e.message);
   }
 }
 
-// Auto-login
-const _savedRop = sessionStorage.getItem('rop_auth');
-if(_savedRop && ROP_PASSWORDS[_savedRop]){
-  currentRop = _savedRop;
-  ropColor = ROP_COLORS[_savedRop];
-  document.getElementById('pw-screen').style.display='none';
-  document.getElementById('app').style.display='block';
+function _saveSession(){
+  sessionStorage.setItem('rop_token',    _accessToken);
+  sessionStorage.setItem('rop_refresh',  _refreshToken);
+  sessionStorage.setItem('rop_uid',      _userId);
+  sessionStorage.setItem('rop_role',     _userRole);
+  if (_userGroupRop) sessionStorage.setItem('rop_groupRop', _userGroupRop);
+}
+
+function _enterCabinet(rop){
+  currentRop = rop;
+  ropColor = ROP_COLORS[rop] || '#6366f1';
+  sessionStorage.setItem('rop_current', rop);
+  document.getElementById('pw-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('pw-input').value = '';
+  startApp();
+}
+
+// Auto-login если в sessionStorage есть валидная сессия.
+const _savedCurrent = sessionStorage.getItem('rop_current');
+if (_accessToken && _userRole && _savedCurrent) {
+  // Для rop роли — должен совпадать с их группой.
+  if (_userRole === 'rop' && _userGroupRop && _userGroupRop !== _savedCurrent) {
+    // Сессия от РОП-юзера, но кабинет сохранён другой — игнорим, требуем релогин.
+  } else {
+    currentRop = _savedCurrent;
+    ropColor = ROP_COLORS[currentRop] || '#6366f1';
+    document.getElementById('pw-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+  }
 }
 
 // ══════════════════════════════════════════════
-// SUPABASE
+// SUPABASE helpers + shim под старые вызовы (weglow_data, weglow_mgr_plans)
 // ══════════════════════════════════════════════
-const SB_H = {'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Content-Type':'application/json; charset=utf-8'};
-async function sbGet(path){ const r=await fetch(`${SUPABASE_URL}/rest/v1/${path}`,{headers:SB_H}); if(!r.ok)throw new Error(r.status); return r.json(); }
-async function sbUpsert(table,data){ const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}`,{method:'POST',headers:{...SB_H,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(data)}); if(!r.ok){const t=await r.text();throw new Error(t);} }
-async function sbDelete(table,filter){ const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}${filter}`,{method:'DELETE',headers:SB_H}); if(!r.ok)throw new Error(r.status); }
+function _authHeaders(){
+  return {
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${_accessToken || SUPABASE_KEY}`,
+    'Content-Type': 'application/json',
+  };
+}
+let _dashCfg = {};
+
+async function _onAuthExpired(){
+  ['rop_token','rop_refresh','rop_uid','rop_role','rop_groupRop','rop_current'].forEach(k=>sessionStorage.removeItem(k));
+  _accessToken = _refreshToken = _userId = _userRole = _userGroupRop = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('pw-screen').style.display = 'flex';
+  _showErr('Сессия истекла — войдите снова');
+}
+
+async function _sbGetConfig(){
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/dashboard_config?id=eq.1&select=data`, {
+    headers: _authHeaders(),
+  });
+  if (r.status === 401) { _onAuthExpired(); throw new Error('AUTH_EXPIRED'); }
+  if (!r.ok) throw new Error('config load http ' + r.status);
+  const rows = await r.json();
+  _dashCfg = rows[0]?.data || {};
+  return _dashCfg;
+}
+
+async function _sbSaveConfig(){
+  _dashCfg.updatedAt = new Date().toISOString();
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/dashboard_config`, {
+    method: 'POST',
+    headers: { ..._authHeaders(), 'Prefer': 'resolution=merge-duplicates' },
+    body: JSON.stringify({ id: 1, data: _dashCfg, updated_at: new Date().toISOString() }),
+  });
+  if (r.status === 401) { _onAuthExpired(); throw new Error('AUTH_EXPIRED'); }
+  if (!r.ok) { const t = await r.text(); throw new Error(t.slice(0,200)); }
+}
+
+// Шим: старые URL роутятся к dashboard_config + dashboard-snapshot.json + Era CRM RPC.
+async function sbGet(path){
+  if (path.includes('weglow_mgr_plans')) {
+    await _sbGetConfig();
+    const MGR_PLANS = _dashCfg.MGR_PLANS || {};
+    // URL может содержать ?rop=eq.... — фильтр по rop игнорируем (плейн структура без rop column).
+    const out = [];
+    for (const [manager, byMonth] of Object.entries(MGR_PLANS)) {
+      for (const [month, plan] of Object.entries(byMonth)) {
+        out.push({ manager, month, plan });
+      }
+    }
+    return out;
+  }
+  if (path.includes('weglow_data')) {
+    try { await _sbGetConfig(); } catch(e){ console.warn('cfg in shim:', e); }
+    let snap = window._snapData;
+    if (!snap) {
+      try {
+        const r = await fetch('dashboard-snapshot.json', { cache: 'no-cache' });
+        if (r.ok) snap = window._snapData = await r.json();
+      } catch(e) { console.warn('snapshot load:', e); snap = {}; }
+    }
+    const RAW        = JSON.parse(JSON.stringify(snap?.RAW        || {}));
+    const MANAGERS   = JSON.parse(JSON.stringify(snap?.MANAGERS   || {}));
+    const MGR_TO_ROP = { ...(snap?.MGR_TO_ROP || {}) };
+    try { await _eraCrmMergeForFact(RAW, MANAGERS, MGR_TO_ROP); }
+    catch(e) { console.warn('era-crm merge:', e); }
+    return [{
+      data: {
+        RAW, MANAGERS, MGR_TO_ROP,
+        PLANS:     _dashCfg.PLANS     || snap?.PLANS     || {},
+        ROP_PLANS: _dashCfg.ROP_PLANS || snap?.ROP_PLANS || {},
+        MGR_PLANS: _dashCfg.MGR_PLANS || snap?.MGR_PLANS || {},
+      }
+    }];
+  }
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: _authHeaders() });
+  if (r.status === 401) { _onAuthExpired(); throw new Error('AUTH_EXPIRED'); }
+  if (!r.ok) throw new Error('http ' + r.status);
+  return r.json();
+}
+
+async function sbUpsert(table, data){
+  if (table === 'weglow_mgr_plans') {
+    // data — массив [{rop, manager, month, plan}, ...]
+    if (!_dashCfg.MGR_PLANS) _dashCfg.MGR_PLANS = {};
+    for (const row of data) {
+      if (!_dashCfg.MGR_PLANS[row.manager]) _dashCfg.MGR_PLANS[row.manager] = {};
+      if (row.plan) _dashCfg.MGR_PLANS[row.manager][row.month] = row.plan;
+      else delete _dashCfg.MGR_PLANS[row.manager][row.month];
+    }
+    await _sbSaveConfig();
+    return;
+  }
+  if (table === 'weglow_data') {
+    const p = data?.data || {};
+    if (p.MGR_PLANS) _dashCfg.MGR_PLANS = p.MGR_PLANS;
+    if (p.PLANS)     _dashCfg.PLANS     = p.PLANS;
+    if (p.ROP_PLANS) _dashCfg.ROP_PLANS = p.ROP_PLANS;
+    await _sbSaveConfig();
+    return;
+  }
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+    method: 'POST',
+    headers: { ..._authHeaders(), 'Prefer': 'resolution=merge-duplicates' },
+    body: JSON.stringify(data),
+  });
+  if (r.status === 401) { _onAuthExpired(); throw new Error('AUTH_EXPIRED'); }
+  if (!r.ok) { const t = await r.text(); throw new Error(t.slice(0,200)); }
+}
+
+async function sbDelete(){ /* not used after refactor */ }
+
+// ══════════════════════════════════════════════
+// ERA CRM MERGE (синхронно с dashboard.html / director.html)
+// ══════════════════════════════════════════════
+const ERA_CRM_OVERLAY_FROM = '2026-05-01T00:00:00+05:00';
+const _ERA_PIPELINE_TO_BUCKET = {
+  'Коллаген': 'Коллаген', 'KIDS': 'Ummi', 'B1 Partners': 'B1 Partners',
+};
+function _ddmmyyyy(s){ if(!s)return null; const [y,m,d]=String(s).slice(0,10).split('-'); return `${d}.${m}.${y}`; }
+function _isEraDate(s){ const [dd,mm,yy]=String(s).split('.').map(Number); return yy>2026||(yy===2026&&mm>=5); }
+function _ropFromGroup(g){ if(!g) return null; return (g in _ERA_GROUP_TO_ROP) ? _ERA_GROUP_TO_ROP[g] : ('РОП '+g); }
+
+async function _eraCrmMergeForFact(RAW, MANAGERS, MGR_TO_ROP){
+  for (const acc of Object.keys(RAW))
+    for (const date of Object.keys(RAW[acc]))
+      if (_isEraDate(date)) delete RAW[acc][date];
+  for (const acc of Object.keys(MANAGERS))
+    for (const m of MANAGERS[acc])
+      if (m.daily) for (const date of Object.keys(m.daily))
+        if (_isEraDate(date)) delete m.daily[date];
+
+  const dateTo = new Date(); dateTo.setDate(dateTo.getDate()+1);
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_dashboard_metrics`, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_date_from: ERA_CRM_OVERLAY_FROM, p_date_to: dateTo.toISOString() }),
+  });
+  if (!r.ok) throw new Error('rpc http ' + r.status);
+  const rows = await r.json();
+  if (!Array.isArray(rows)) return;
+
+  const pipeRoll = {}, mgrRoll = {};
+  for (const row of rows) {
+    const acc = _ERA_PIPELINE_TO_BUCKET[row.pipeline_title];
+    if (!acc) continue;
+    const date = _ddmmyyyy(row.day);
+    if (!date) continue;
+    const l = Number(row.leads)||0, d = Number(row.deals)||0, b = Number(row.budget)||0;
+    pipeRoll[acc] = pipeRoll[acc] || {};
+    const cur = pipeRoll[acc][date] = pipeRoll[acc][date] || [0,0,0];
+    cur[0]+=l; cur[1]+=d; cur[2]+=b;
+    if (row.manager_name) {
+      mgrRoll[acc] = mgrRoll[acc] || {};
+      const slot = mgrRoll[acc][row.manager_name] = mgrRoll[acc][row.manager_name] || { daily:{}, group: row.group_title || null };
+      const day = slot.daily[date] = slot.daily[date] || [0,0,0];
+      day[0]+=l; day[1]+=d; day[2]+=b;
+      if (!slot.group && row.group_title) slot.group = row.group_title;
+    }
+  }
+  for (const [acc, daily] of Object.entries(pipeRoll)) {
+    RAW[acc] = RAW[acc] || {};
+    for (const [date, vals] of Object.entries(daily)) RAW[acc][date] = vals;
+  }
+  for (const [acc, mgrs] of Object.entries(mgrRoll)) {
+    MANAGERS[acc] = MANAGERS[acc] || [];
+    for (const [name, slot] of Object.entries(mgrs)) {
+      let mgr = MANAGERS[acc].find(m => m.name === name);
+      if (!mgr) { mgr = { name, leads:0, deals:0, budget:0, conv:0, avgCheck:0, daily:{} }; MANAGERS[acc].push(mgr); }
+      mgr.daily = mgr.daily || {};
+      for (const [date, vals] of Object.entries(slot.daily)) mgr.daily[date] = vals;
+      let l=0,d=0,b=0;
+      for (const v of Object.values(mgr.daily)) { l+=v[0]||0; d+=v[1]||0; b+=v[2]||0; }
+      mgr.leads=l; mgr.deals=d; mgr.budget=b;
+      mgr.conv = l>0 ? +(d/l*100).toFixed(1) : 0;
+      mgr.avgCheck = d>0 ? Math.round(b/d) : 0;
+      const ropName = _ropFromGroup(slot.group);
+      if (ropName) MGR_TO_ROP[name] = ropName;
+    }
+    MANAGERS[acc].sort((a,b)=>b.budget-a.budget);
+  }
+  for (const [mgr, oldRop] of Object.entries(MGR_TO_ROP)) {
+    if (_OLD_ROP_RENAME[oldRop]) MGR_TO_ROP[mgr] = _OLD_ROP_RENAME[oldRop];
+  }
+}
 
 function setBadge(t,type){
   const b=document.getElementById('sync-badge');
@@ -374,7 +620,8 @@ function startApp(){
   document.getElementById('app-title').textContent = `Кабинет ${currentRop}`;
   loadAll();
 }
-if(_savedRop && ROP_PASSWORDS[_savedRop]) startApp();
+// Auto-start app если сессия восстановлена (currentRop уже установлен выше).
+if (currentRop) startApp();
 
 // ══════════════════════════════════════════════
 // TABS
@@ -517,14 +764,9 @@ function renderPlanFact(){
   const totalDays = monthEnd.getDate();
   const passedDays = isCurrentMonth ? now.getDate() : totalDays;
 
-  // Determine which CRMs this ROP covers
-  const ROP_CRM = {
-    'РОП Айдана': ['Коллаген','Ummi'],
-    'РОП Аслиддин': ['Коллаген'],
-    'РОП Нурдаулет': ['Коллаген'],
-    'РОП Диас': ['Ummi'],
-  };
-  const crms = ROP_CRM[currentRop] || ['Коллаген'];
+  // В Era CRM менеджеры одной группы могут иметь сделки в любом из 3
+  // пайплайнов (Коллаген / Ummi=KIDS / B1 Partners). Смотрим во всех.
+  const crms = ['Коллаген','Ummi','B1 Partners'];
 
   const mgrList = managers.filter(m => !m.toLowerCase().startsWith('роп'));
   let rows = [];
