@@ -3500,6 +3500,7 @@ async function loadFromSupabase() {
       // подходе era CRM данных. Если era CRM упал — рендерим без него.
       try { await loadEraCrmOverlay();  } catch (e) { console.warn('[era-crm overlay]', e); }
       try { await loadEraCrmProducts(); } catch (e) { console.warn('[era-crm products]', e); }
+      try { await loadEraCrmCities();   } catch (e) { console.warn('[era-crm cities]', e); }
 
       // Rebuild presets but keep current filter selection
       PRESETS = buildPresets();
@@ -3663,6 +3664,16 @@ function _purgeEraDates() {
       if (!info || !info.daily) continue;
       for (const date of Object.keys(info.daily)) {
         if (_isEraDate(date)) delete info.daily[date];
+      }
+    }
+  }
+  // _cityData: { cityName: { 'DD.MM.YYYY': [deals, budget] } } — то же самое.
+  if (typeof _cityData === 'object' && _cityData) {
+    for (const city of Object.keys(_cityData)) {
+      const daily = _cityData[city];
+      if (!daily || typeof daily !== 'object' || Array.isArray(daily)) continue;
+      for (const date of Object.keys(daily)) {
+        if (_isEraDate(date)) delete daily[date];
       }
     }
   }
@@ -3856,6 +3867,52 @@ async function loadEraCrmProducts() {
 }
 window.loadEraCrmProducts = loadEraCrmProducts;
 
+// Era CRM → виджет «География заказов»: per-city per-day deals/budget из
+// custom-поля «АДРЕС ДОСТАВКИ». RPC get_city_metrics возвращает первую
+// часть адреса до запятой (например «г. Караганда»), клиентский
+// _findCityCoords уже умеет вытащить из неё имя города и резолвить
+// координаты по KZ_CITIES.
+async function loadEraCrmCities() {
+  const dateTo = new Date();
+  dateTo.setDate(dateTo.getDate() + 1);
+  const url = `${ERA_CRM_URL}/rest/v1/rpc/get_city_metrics`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'apikey': ERA_CRM_ANON,
+      'Authorization': `Bearer ${ERA_CRM_ANON}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      p_date_from: ERA_CRM_OVERLAY_FROM,
+      p_date_to:   dateTo.toISOString(),
+    }),
+  });
+  if (!res.ok) throw new Error('era-crm city rpc http ' + res.status);
+  const rows = await res.json();
+  if (!Array.isArray(rows)) {
+    console.warn('[era-crm cities] unexpected response shape');
+    return;
+  }
+
+  let _cells = 0, _newCities = 0;
+  for (const r of rows) {
+    const city = String(r.city || '').trim();
+    if (!city) continue;
+    const date = _ddmmyyyy(r.day);
+    if (!date) continue;
+    const deals  = Number(r.deals)  || 0;
+    const budget = Number(r.budget) || 0;
+    if (deals === 0 && budget === 0) continue;
+
+    if (!_cityData[city]) { _cityData[city] = {}; _newCities++; }
+    _cityData[city][date] = [deals, budget];
+    _cells++;
+  }
+  console.log('[era-crm cities] applied:', _cells, 'date-cells across', _newCities, 'new cities');
+}
+window.loadEraCrmCities = loadEraCrmCities;
+
 // Автообновление: каждые 5 мин перетягиваем era CRM и перерисовываем.
 // Только когда вкладка активна — иначе тихо ждём фокуса.
 async function _eraCrmRefreshTick() {
@@ -3863,6 +3920,7 @@ async function _eraCrmRefreshTick() {
   try {
     await loadEraCrmOverlay();
     try { await loadEraCrmProducts(); } catch (e) { console.warn('[era-crm products refresh]', e); }
+    try { await loadEraCrmCities();   } catch (e) { console.warn('[era-crm cities refresh]', e); }
     // Пересобираем пресеты (диапазоны дат могут меняться) и рендерим.
     if (typeof buildPresets === 'function') PRESETS = buildPresets();
     if (typeof render === 'function') render();
@@ -3870,6 +3928,10 @@ async function _eraCrmRefreshTick() {
     if (typeof renderAdSpend  === 'function' && activeView === 'adspend')  renderAdSpend();
     if (typeof renderProducts === 'function' && activeView === 'products') renderProducts();
     if (typeof renderRnp      === 'function' && activeView === 'rnp')      renderRnp();
+    // Карта городов — рендерим всегда (виджет на главной), если функция доступна.
+    if (typeof renderCityMap === 'function') {
+      try { renderCityMap(); } catch (e) { console.warn('[cityMap refresh]', e); }
+    }
     const badge = document.getElementById('data-badge');
     if (badge) {
       const dt = new Date();
