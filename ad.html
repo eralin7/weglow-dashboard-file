@@ -117,17 +117,21 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 </head>
 <body>
 
-<!-- PASSWORD SCREEN -->
+<!-- LOGIN SCREEN -->
 <div id="pw-screen">
   <div class="pw-box">
     <div class="logo">WeGlow</div>
     <div class="logo-sub">Advertising Cabinet</div>
     <div class="pw-title">Рекламный кабинет</div>
-    <div class="pw-sub">Введите пароль для доступа</div>
+    <div class="pw-sub">Войдите аккаунтом Era CRM (роль admin или director)</div>
+    <input class="pw-inp" type="email" id="pw-email" placeholder="Email"
+           style="margin-bottom:8px" autocomplete="email"
+           onkeydown="if(event.key==='Enter')document.getElementById('pw-input').focus()">
     <input class="pw-inp" type="password" id="pw-input" placeholder="Пароль"
+           autocomplete="current-password"
            onkeydown="if(event.key==='Enter')checkPw()">
     <button class="pw-btn" onclick="checkPw()">Войти</button>
-    <div class="pw-err" id="pw-err">Неверный пароль</div>
+    <div class="pw-err" id="pw-err"></div>
   </div>
 </div>
 
@@ -252,32 +256,76 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 // ══════════════════════════════════════════════
-// CONFIG
+// CONFIG — Era CRM Supabase (раньше ходили в orphan bdyakgmeibpdkisbiykt).
+// Данные кабинета (AD_SPEND / AD_REQUESTS) лежат в jsonb-поле
+// public.dashboard_config.data, RLS пускает на write только admin/director.
 // ══════════════════════════════════════════════
-const AD_PASSWORD = 'reklama2026';
-const SUPABASE_URL = 'https://bdyakgmeibpdkisbiykt.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkeWFrZ21laWJwZGtpc2JpeWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTQzOTMsImV4cCI6MjA4Nzc5MDM5M30.nA187grJR6XFQRmTP6WOM-6-1dZK1EzYNNP2JH9aAMg';
+const SUPABASE_URL = 'https://cbylqiuksjmqyptokfqj.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNieWxxaXVrc2ptcXlwdG9rZnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY2MTk5NzcsImV4cCI6MjA5MjE5NTk3N30.2p07fXhYCF5bYdG27sR1lIvNeuoqF8vF-OBfGLX7zDQ';
+
+let _accessToken   = sessionStorage.getItem('ad_token') || null;
+let _refreshToken  = sessionStorage.getItem('ad_refresh') || null;
+let _userId        = sessionStorage.getItem('ad_uid') || null;
+let _userRole      = sessionStorage.getItem('ad_role') || null;
+
+function _showErr(text){
+  const el = document.getElementById('pw-err');
+  el.textContent = text;
+  el.style.display = 'block';
+}
 
 // ══════════════════════════════════════════════
-// PASSWORD
+// LOGIN — Era CRM Supabase Auth (email/password) + проверка роли
 // ══════════════════════════════════════════════
-function checkPw(){
-  const v = document.getElementById('pw-input').value;
-  if(v === AD_PASSWORD){
+async function checkPw(){
+  const email = document.getElementById('pw-email').value.trim();
+  const password = document.getElementById('pw-input').value;
+  if (!email || !password) { _showErr('Введите email и пароль'); return; }
+  document.getElementById('pw-err').style.display = 'none';
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!r.ok) {
+      const j = await r.json().catch(()=>({}));
+      throw new Error(j.error_description || j.msg || ('http '+r.status));
+    }
+    const j = await r.json();
+    _accessToken  = j.access_token;
+    _refreshToken = j.refresh_token;
+    _userId       = j.user?.id;
+
+    // Проверяем роль (только admin/director могут редактировать AD_SPEND).
+    const pr = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${_userId}&select=team_role`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${_accessToken}` }
+    });
+    const arr = await pr.json();
+    _userRole = arr[0]?.team_role || null;
+    if (!['admin','director'].includes(_userRole)) {
+      _showErr(`Доступ запрещён — нужна роль admin или director (у вас: ${_userRole||'нет'})`);
+      _accessToken = _refreshToken = _userId = _userRole = null;
+      return;
+    }
+    sessionStorage.setItem('ad_token',   _accessToken);
+    sessionStorage.setItem('ad_refresh', _refreshToken);
+    sessionStorage.setItem('ad_uid',     _userId);
+    sessionStorage.setItem('ad_role',    _userRole);
     document.getElementById('pw-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
-    sessionStorage.setItem('ad_auth','1');
-    init();
-  } else {
-    document.getElementById('pw-err').style.display = 'block';
     document.getElementById('pw-input').value = '';
-    document.getElementById('pw-input').focus();
+    init();
+  } catch(e) {
+    _showErr('Ошибка входа: ' + e.message);
   }
 }
-// Auto-login if already authed
-if(sessionStorage.getItem('ad_auth')==='1'){
-  document.getElementById('pw-screen').style.display='none';
-  document.getElementById('app').style.display='block';
+
+// Auto-login if token in sessionStorage looks valid — реальная проверка
+// произойдёт при первом загрузке данных (если 401 — попросим логиниться снова).
+if (_accessToken && _userRole && ['admin','director'].includes(_userRole)) {
+  document.getElementById('pw-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
 }
 
 // ══════════════════════════════════════════════
@@ -287,32 +335,52 @@ let adData = {}; // {date: {col, ummi, bota}} format: DD.MM.YYYY
 let activeMonth = null; // "MM.YYYY"
 
 // ══════════════════════════════════════════════
-// SUPABASE HELPERS
+// SUPABASE HELPERS — Era CRM dashboard_config (jsonb)
 // ══════════════════════════════════════════════
-const SB_HEADERS = {
-  'apikey': SUPABASE_KEY,
-  'Authorization': `Bearer ${SUPABASE_KEY}`,
-  'Content-Type': 'application/json; charset=utf-8'
-};
+function _authHeaders(){
+  return {
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${_accessToken || SUPABASE_KEY}`,
+    'Content-Type': 'application/json',
+  };
+}
 
-async function sbGet(table, filter=''){
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}${filter}`, {headers: SB_HEADERS});
-  if(!r.ok) throw new Error(r.status);
-  return r.json();
-}
-async function sbUpsert(table, data){
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
-    method:'POST',
-    headers:{...SB_HEADERS, 'Prefer':'resolution=merge-duplicates'},
-    body: JSON.stringify(data)
+// Локальный кэш payload'а dashboard_config — мерджимся в него, а не перетираем
+// всё (там же лежат PLANS, ROP_PLANS, ARCHIVE_RAW и т.п., которые трогать
+// нельзя из кабинета рекламы).
+let _dashCfg = {};
+
+async function sbGetConfig(){
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/dashboard_config?id=eq.1&select=data`, {
+    headers: _authHeaders(),
   });
-  if(!r.ok){ const t=await r.text(); throw new Error(t); }
+  if (r.status === 401) throw new Error('AUTH_EXPIRED');
+  if (!r.ok) throw new Error('config load http ' + r.status);
+  const rows = await r.json();
+  _dashCfg = rows[0]?.data || {};
+  return _dashCfg;
 }
-async function sbDelete(table, filter){
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}${filter}`, {
-    method:'DELETE', headers: SB_HEADERS
+
+async function sbSaveConfig(){
+  _dashCfg.updatedAt = new Date().toISOString();
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/dashboard_config`, {
+    method: 'POST',
+    headers: { ..._authHeaders(), 'Prefer': 'resolution=merge-duplicates' },
+    body: JSON.stringify({ id: 1, data: _dashCfg, updated_at: new Date().toISOString() }),
   });
-  if(!r.ok) throw new Error(r.status);
+  if (r.status === 401) throw new Error('AUTH_EXPIRED');
+  if (!r.ok) { const t = await r.text(); throw new Error(t.slice(0,200)); }
+}
+
+function _onAuthExpired(){
+  sessionStorage.removeItem('ad_token');
+  sessionStorage.removeItem('ad_refresh');
+  sessionStorage.removeItem('ad_uid');
+  sessionStorage.removeItem('ad_role');
+  _accessToken = _refreshToken = _userId = _userRole = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('pw-screen').style.display = 'flex';
+  _showErr('Сессия истекла — войдите снова');
 }
 
 // ══════════════════════════════════════════════
@@ -321,59 +389,73 @@ async function sbDelete(table, filter){
 async function loadAdData(){
   setBadge('Загрузка...', 'load');
   try {
-    const rows = await sbGet('weglow_ad_spend', '?select=date,col,ummi,coffee&order=date.desc');
+    await sbGetConfig();
+    // Convert AD_SPEND {product:{date:amount}} → adData {date:{col,ummi,bota}}.
     adData = {};
-    for(const r of rows){
-      adData[r.date] = {col: r.col||0, ummi: r.ummi||0, bota: r.coffee||0};
-    }
+    const ad = _dashCfg.AD_SPEND || {};
+    const collect = (prod, key) => {
+      for (const [date, amt] of Object.entries(ad[prod] || {})) {
+        if (!adData[date]) adData[date] = { col:0, ummi:0, bota:0 };
+        adData[date][key] = Number(amt) || 0;
+      }
+    };
+    collect('Коллаген',  'col');
+    collect('Ummi',      'ummi');
+    collect('БОТА AI',   'bota');
     setBadge('Синхронизировано ✓', 'ok');
-    // Also load revenue data for ROI/CPL calculations
+    // Для ROI/CPL — выручка берётся из dashboard-snapshot.json (захардкорена
+    // по 30.04.2026). Май+ можно подмешать из Era CRM RPC, но для аналитики
+    // расходов это второстепенно — оставим snapshot пока.
     try {
-      const wgRows = await sbGet('weglow_data?id=eq.1&select=data');
-      if(wgRows&&wgRows[0]) window._adWgData = wgRows[0].data;
-    } catch(e2) { console.warn('wgData load skipped:', e2); }
+      const ss = await fetch('dashboard-snapshot.json', { cache: 'no-cache' });
+      if (ss.ok) {
+        const snap = await ss.json();
+        window._adWgData = { RAW: snap.RAW || {} };
+      }
+    } catch(e2) { console.warn('snapshot load skipped:', e2); }
     renderMonthTabs();
     renderTable();
   } catch(e){
-    setBadge('Ошибка загрузки', 'err');
+    if (e.message === 'AUTH_EXPIRED') { _onAuthExpired(); return; }
+    setBadge('Ошибка загрузки: ' + e.message, 'err');
     console.error(e);
   }
 }
 
+// Перестроить AD_SPEND из adData (текущее состояние UI) и сохранить.
+async function _syncAdSpend(){
+  const AD_SPEND = { 'Коллаген': {}, 'Ummi': {}, 'БОТА AI': {} };
+  for (const [date, v] of Object.entries(adData)) {
+    if (v.col)  AD_SPEND['Коллаген'][date] = v.col;
+    if (v.ummi) AD_SPEND['Ummi'][date]     = v.ummi;
+    if (v.bota) AD_SPEND['БОТА AI'][date]  = v.bota;
+  }
+  _dashCfg.AD_SPEND = AD_SPEND;
+  await sbSaveConfig();
+}
+
 async function saveAdEntry(date, col, ummi, bota){
-  await sbUpsert('weglow_ad_spend', {date, col, ummi, coffee: bota});
-  // Also update weglow_data AD_SPEND field
-  await syncToDashboard();
+  // adData уже обновлён вызывающим.
+  try { await _syncAdSpend(); setBadge('Сохранено ✓', 'ok'); }
+  catch(e) {
+    if (e.message === 'AUTH_EXPIRED') { _onAuthExpired(); throw e; }
+    setBadge('Ошибка сохранения', 'err');
+    throw e;
+  }
 }
 
 async function deleteAdEntry(date){
-  await sbDelete('weglow_ad_spend', `?date=eq.${encodeURIComponent(date)}`);
   delete adData[date];
-  await syncToDashboard();
-}
-
-// Sync adData → weglow_data table so dashboard sees it
-async function syncToDashboard(){
-  try {
-    // Build AD_SPEND in format {product: {DD.MM.YYYY: amount}}
-    const AD_SPEND = {'Коллаген':{}, 'Ummi':{}, 'БОТА AI':{}};
-    for(const [date, v] of Object.entries(adData)){
-      if(v.col)    AD_SPEND['Коллаген'][date] = v.col;
-      if(v.ummi)   AD_SPEND['Ummi'][date]     = v.ummi;
-      if(v.bota)   AD_SPEND['БОТА AI'][date]  = v.bota;
-    }
-    // Get existing weglow_data and update just AD_SPEND
-    const rows = await sbGet('weglow_data', '?id=eq.1&select=data');
-    let payload = rows && rows[0] ? rows[0].data : {};
-    payload.AD_SPEND = AD_SPEND;
-    payload.updatedAt = new Date().toISOString();
-    await sbUpsert('weglow_data', {id:1, data:payload, updated_at:new Date().toISOString()});
-    setBadge('Синхронизировано ✓', 'ok');
-  } catch(e){
-    console.error('Sync error:', e);
-    setBadge('Ошибка синхронизации', 'err');
+  try { await _syncAdSpend(); setBadge('Удалено ✓', 'ok'); }
+  catch(e) {
+    if (e.message === 'AUTH_EXPIRED') { _onAuthExpired(); throw e; }
+    setBadge('Ошибка удаления', 'err');
+    throw e;
   }
 }
+
+// Алиас под старое имя (некоторые вызовы могут остаться в коде).
+async function syncToDashboard(){ return _syncAdSpend(); }
 
 function setBadge(text, type){
   const b = document.getElementById('sync-badge');
@@ -764,13 +846,13 @@ function renderAdAnalytics() {
 }
 
 // ══════════════════════════════════════════════
-// REQUESTS (stored in weglow_data.AD_REQUESTS)
+// REQUESTS — хранятся в dashboard_config.data.AD_REQUESTS (era-crm)
 // ══════════════════════════════════════════════
 async function loadRequests(){
   const el=document.getElementById('req-history');
   try {
-    const rows=await sbGet('weglow_data','?id=eq.1&select=data');
-    const reqs=(rows&&rows[0]&&rows[0].data&&rows[0].data.AD_REQUESTS)||[];
+    await sbGetConfig();
+    const reqs = (_dashCfg && _dashCfg.AD_REQUESTS) || [];
     if(!reqs.length){ el.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">Пока нет запросов</div>'; return; }
     el.innerHTML=reqs.slice().reverse().map(r=>{
       const statusClr=r.status==='done'?'#16a34a':r.status==='in-progress'?'#ca8a04':'#6366f1';
@@ -829,22 +911,21 @@ async function sendRequest(){
       files.push({name:f.name, type:f.type, size:f.size, data});
     }
 
-    const rows=await sbGet('weglow_data','?id=eq.1&select=data');
-    let payload=rows&&rows[0]?rows[0].data:{};
-    if(!payload.AD_REQUESTS) payload.AD_REQUESTS=[];
+    await sbGetConfig();
+    if (!_dashCfg.AD_REQUESTS) _dashCfg.AD_REQUESTS = [];
 
     const now=new Date();
-    payload.AD_REQUESTS.push({
+    _dashCfg.AD_REQUESTS.push({
       id: Date.now(),
       date: `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
+      author_id: _userId || null,
       message: text||'(файл без описания)',
       files,
       status: 'new',
       reply: ''
     });
 
-    payload.updatedAt=new Date().toISOString();
-    await sbUpsert('weglow_data',{id:1, data:payload, updated_at:new Date().toISOString()});
+    await sbSaveConfig();
 
     document.getElementById('req-text').value='';
     fileInp.value='';
