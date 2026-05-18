@@ -1337,6 +1337,7 @@ const _authGuard = new MutationObserver(() => {
       </div>
       <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px">
         <div style="flex:1;min-width:0">
+          <div class="kpi-3col" id="kpi-sprints" style="display:none;grid-template-columns:1fr 1fr;margin-bottom:16px"></div>
           <div class="kpi-3col" id="kpi-3col" style="margin-bottom:0"></div>
         </div>
         <div class="ai-side" style="border-left-color:#7c3aed">
@@ -2217,6 +2218,26 @@ function _kpiColHTML(label, badge, kd, borderColor, periodType) {
     </div>
   </div>`;
 }
+// Агрегация под выбранный спринт. Временно подменяет activePeriod, чтобы
+// getPlan/getRopPlan вернули sprint-плановые значения.
+function _aggregateForKpiSprint(n) {
+  const now = _now();
+  const curMk = `${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
+  const sp = SPRINTS[curMk] && SPRINTS[curMk][n];
+  if (!sp || !sp.start || !sp.end) return null;
+  const from = _isoToDispDate(sp.start);
+  const to   = _isoToDispDate(sp.end);
+  const saved = activePeriod;
+  activePeriod = { ...saved, preset: `m_${now.getFullYear()}_${now.getMonth()+1}_s${n}`, from, to };
+  let data;
+  try {
+    data = _aggregateForKpi({ from, to });
+  } finally {
+    activePeriod = saved;
+  }
+  return { data, from, to };
+}
+
 function renderKPI(d){
   const prodName = activeProd==='all' ? 'Все продукты' : PROD_CFG[activeProd].name;
   document.getElementById('main-title').textContent = 'Ключевые показатели';
@@ -2231,6 +2252,22 @@ function renderKPI(d){
     _kpiColHTML('Месяц', activePeriod.label, monthData, clr, 'month') +
     _kpiColHTML('Вчера', _getKpiPeriod('yesterday').from, yesterdayData, '#ca8a04', 'day') +
     _kpiColHTML('Сегодня', _getKpiPeriod('today').from, todayData, '#16a34a', 'day');
+
+  // Карточки спринтов — только если в SPRINTS есть даты на текущий месяц.
+  const spWrap = document.getElementById('kpi-sprints');
+  if (!spWrap) return;
+  const s1 = _aggregateForKpiSprint(1);
+  const s2 = _aggregateForKpiSprint(2);
+  if (s1 || s2) {
+    let html = '';
+    if (s1) html += _kpiColHTML('Спринт 1', `${s1.from} — ${s1.to}`, s1.data, '#6366f1', 'sprint');
+    if (s2) html += _kpiColHTML('Спринт 2', `${s2.from} — ${s2.to}`, s2.data, '#a855f7', 'sprint');
+    spWrap.innerHTML = html;
+    spWrap.style.display = 'grid';
+  } else {
+    spWrap.innerHTML = '';
+    spWrap.style.display = 'none';
+  }
 }
 
 // ═══════════════════ FORECAST HELPER ══════════════════════════════
@@ -3551,6 +3588,7 @@ async function loadFromSupabase() {
 
       // Rebuild presets but keep current filter selection
       PRESETS = buildPresets();
+      if (typeof renderPeriodPills === 'function') renderPeriodPills();
 
       // Re-render with fresh data
       render();
@@ -4016,6 +4054,7 @@ async function _eraCrmRefreshTick() {
     try { await loadEraCrmConfig();   } catch (e) { console.warn('[era-crm config refresh]', e); }
     // Пересобираем пресеты (диапазоны дат могут меняться) и рендерим.
     if (typeof buildPresets === 'function') PRESETS = buildPresets();
+    if (typeof renderPeriodPills === 'function') renderPeriodPills();
     if (typeof render === 'function') render();
     if (typeof renderManagers === 'function' && activeView === 'managers') renderManagers();
     if (typeof renderAdSpend  === 'function' && activeView === 'adspend')  renderAdSpend();
@@ -4184,26 +4223,33 @@ function initDynamicUI() {
   // Render plan/fact/remain KPI block
   renderSidebarKPI(now, dayOfMonth, totalDays);
 
-  // Build month pills (+ matching sprint pills) dynamically for all filter groups.
+  renderPeriodPills();
+}
+
+// Перерисовка пилюль периода — отдельная функция, чтобы её можно было
+// вызвать после прихода SPRINTS из era-crm (initDynamicUI запускается
+// один раз при загрузке, тогда SPRINTS ещё пуст).
+function renderPeriodPills() {
   const allKeys = Object.keys(PRESETS).filter(k => k.startsWith('m_'));
   const monthKeys  = allKeys.filter(k => !/_s[12]$/.test(k));
   const sprintKeys = allKeys.filter(k =>  /_s[12]$/.test(k));
   [['main','setPreset'],['mgr','setMgrPreset'],['ad','setAdPreset'],['prod','setProdPreset']].forEach(([prefix, fn]) => {
     const container = document.getElementById(`${prefix}-month-pills`);
     if (!container) return;
+    // Сохраняем активный preset, чтобы вернуть .active после ребилда.
+    const activePreset = (prefix === 'main' && activePeriod) ? activePeriod.preset : null;
     container.innerHTML = '';
     monthKeys.forEach(key => {
       const p = PRESETS[key];
       const btn = document.createElement('button');
-      btn.className = 'pill period-pill' + (key === _defaultKey ? ' active' : '');
+      btn.className = 'pill period-pill' + (key === (activePreset || _defaultKey) ? ' active' : '');
       btn.textContent = p.label;
       btn.onclick = function() { window[fn](key, this); };
       container.appendChild(btn);
-      // Спринты этого месяца — сразу после месячной пилюли.
       sprintKeys.filter(sk => sk.startsWith(key + '_s')).forEach(sk => {
         const sp = PRESETS[sk];
         const sb = document.createElement('button');
-        sb.className = 'pill period-pill';
+        sb.className = 'pill period-pill' + (sk === activePreset ? ' active' : '');
         sb.textContent = sp.label;
         sb.title = `${sp.from} — ${sp.to}`;
         sb.onclick = function() { window[fn](sk, this); };
@@ -4212,6 +4258,7 @@ function initDynamicUI() {
     });
   });
 }
+window.renderPeriodPills = renderPeriodPills;
 var _prodByRopChart = null;
 initDynamicUI();
 render(); // render shell (empty until auth)
