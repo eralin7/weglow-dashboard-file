@@ -1066,6 +1066,11 @@ async function saveRopPlans(){
     toast(`✓ Планы РОП и спринты на ${MONTH_NAMES[+mm-1]} ${yy} сохранены`, 'ok');
     showRopStatus('');
   } catch(e){
+    if(e.message === 'AUTH_EXPIRED'){
+      showRopStatus('Сессия истекла — войдите снова', 'err');
+      _onAuthExpired();
+      return;
+    }
     showRopStatus('Ошибка: '+e.message, 'err');
     toast('Ошибка сохранения РОП', 'err');
   } finally {
