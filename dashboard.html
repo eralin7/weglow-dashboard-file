@@ -3006,7 +3006,8 @@ function renderFtTotal() {
 function aggregateManagersByRop(ropKey, prodFilter, from, to) {
   let crmKeys;
   if (ropKey === 'all') {
-    crmKeys = ['Коллаген', 'Ummi', 'Ербол', 'Кофе (Архив)'];
+    // Все бакеты, известные дашборду + Era CRM (B1 Partners).
+    crmKeys = ['Коллаген', 'Ummi', 'Ербол', 'Кофе (Архив)', 'B1 Partners'];
   } else if (prodFilter !== 'all') {
     crmKeys = [prodFilter];
   } else {
@@ -4251,8 +4252,9 @@ function renderProducts() {
     pillsEl.dataset.built = '1';
     const defs = [
       ['today','Сегодня'], ['yesterday','Вчера'], ['all','Всё время'],
-      ['03.2026','Мар 26'], ['02.2026','Фев 26'], ['01.2026','Янв 26'],
-      ['12.2025','Дек 25'], ['11.2025','Ноя 25'], ['10.2025','Окт 25'],
+      ['05.2026','Май 26'], ['04.2026','Апр 26'], ['03.2026','Мар 26'],
+      ['02.2026','Фев 26'], ['01.2026','Янв 26'], ['12.2025','Дек 25'],
+      ['11.2025','Ноя 25'], ['10.2025','Окт 25'],
     ];
     defs.forEach(([key, label]) => {
       const btn = document.createElement('button');
@@ -4298,14 +4300,18 @@ function renderProducts() {
 
   let html = `<div style="font-size:12px;color:rgba(255,255,255,.35);margin-bottom:16px">${periodLabel}</div>`;
 
-  // Group products by ROP department
-  for (const [ropName, ropCrms] of Object.entries(ROP_CRM_MAP)) {
-    const ropColor = ROP_COLORS[ropName] || '#6366f1';
-
-    ropCrms.forEach(comp => {
+  // Группируем по бакету (Коллаген / Ummi / B1 Partners / ...).
+  // Раньше шла группировка по РОП, но с Era CRM все РОПы покрывают все
+  // 3 бакета, поэтому одни и те же товары дублировались по 5 раз —
+  // вместо этого показываем по одному блоку на бакет.
+  const _shownComps = new Set();
+  for (const comp of Object.keys(PRODUCTS || {})) {
+    if (_shownComps.has(comp)) continue;
+    _shownComps.add(comp);
+    {
       const { color, prods } = _getProdsForComp(comp);
       const entries = Object.entries(prods);
-      if (!entries.length) return;
+      if (!entries.length) continue;
 
       const qtys = entries.map(([,p]) => _prodTotal(p.daily, dates));
       const total = qtys.reduce((a,b)=>a+b,0);
@@ -4357,9 +4363,7 @@ function renderProducts() {
 
       html += `<div style="margin-bottom:20px;background:#111827;border-radius:16px;border:1px solid rgba(255,255,255,.07);overflow:hidden">
         <div style="padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:10px">
-          <div style="width:8px;height:8px;border-radius:50%;background:${ropColor};box-shadow:0 0 8px ${ropColor}77"></div>
-          <div style="font-size:13px;font-weight:700;color:${ropColor}">${ropName}</div>
-          <div style="font-size:11px;color:rgba(255,255,255,.2)">→</div>
+          <div style="width:8px;height:8px;border-radius:50%;background:${color};box-shadow:0 0 8px ${color}77"></div>
           <div style="font-size:15px;font-weight:800;color:${color}">${comp}</div>
           <div style="font-size:12px;color:rgba(255,255,255,.3);margin-left:auto">${fmt(total)} ед. итого</div>
         </div>
@@ -4370,7 +4374,7 @@ function renderProducts() {
           ${bars ? `<div style="border-top:1px solid rgba(255,255,255,.06);padding-top:12px">${bars}</div>` : ''}
         </div>
       </div>`;
-    });
+    }
   }
 
   document.getElementById('prod-content').innerHTML = html;
@@ -4804,7 +4808,7 @@ function renderFunnel() {
   // Aggregate across selected ROP / product
   let crmKeys;
   if (activeMgrRop === 'all') {
-    crmKeys = ['Коллаген', 'Ummi', 'Ербол', 'Кофе (Архив)'];
+    crmKeys = ['Коллаген', 'Ummi', 'Ербол', 'Кофе (Архив)', 'B1 Partners'];
   } else if (activeMgrProdSub !== 'all') {
     crmKeys = [activeMgrProdSub];
   } else {
