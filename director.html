@@ -173,17 +173,21 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 </head>
 <body>
 
-<!-- PASSWORD -->
+<!-- LOGIN -->
 <div id="pw-screen">
   <div class="pw-box">
     <div class="logo">WeGlow</div>
     <div class="logo-sub">Director Cabinet</div>
     <div class="pw-title">Кабинет директора</div>
-    <div class="pw-sub">Управление планами продаж по месяцам</div>
+    <div class="pw-sub">Войдите аккаунтом Era CRM (роль admin или director)</div>
+    <input class="pw-inp" type="email" id="pw-email" placeholder="Email"
+           style="margin-bottom:8px" autocomplete="email"
+           onkeydown="if(event.key==='Enter')document.getElementById('pw-input').focus()">
     <input class="pw-inp" type="password" id="pw-input" placeholder="Пароль"
+           autocomplete="current-password"
            onkeydown="if(event.key==='Enter')checkPw()">
     <button class="pw-btn" onclick="checkPw()">Войти</button>
-    <div class="pw-err" id="pw-err">Неверный пароль</div>
+    <div class="pw-err" id="pw-err"></div>
   </div>
 </div>
 
@@ -261,17 +265,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
       <div class="plan-grid" style="grid-template-columns:repeat(2,1fr)">
         <div class="plan-card">
           <div class="pc-head">
-            <div class="pc-dot" style="background:#1a56db"></div>
-            <div class="pc-name">РОП Айдана</div>
-          </div>
-          <div class="pc-field">
-            <div class="pc-label">План ₸</div>
-            <input class="pc-inp" type="number" id="rop-plan-aidana" placeholder="30 000 000" min="0" step="1000000">
-          </div>
-          <div class="pc-current" id="cur-rop-aidana">Текущий: —</div>
-        </div>
-        <div class="plan-card">
-          <div class="pc-head">
             <div class="pc-dot" style="background:#b45309"></div>
             <div class="pc-name">РОП Аслиддин</div>
           </div>
@@ -280,6 +273,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
             <input class="pc-inp" type="number" id="rop-plan-asliddin" placeholder="20 000 000" min="0" step="1000000">
           </div>
           <div class="pc-current" id="cur-rop-asliddin">Текущий: —</div>
+        </div>
+        <div class="plan-card">
+          <div class="pc-head">
+            <div class="pc-dot" style="background:#db2777"></div>
+            <div class="pc-name">РОП Диас</div>
+          </div>
+          <div class="pc-field">
+            <div class="pc-label">План ₸</div>
+            <input class="pc-inp" type="number" id="rop-plan-dias" placeholder="20 000 000" min="0" step="1000000">
+          </div>
+          <div class="pc-current" id="cur-rop-dias">Текущий: —</div>
         </div>
         <div class="plan-card">
           <div class="pc-head">
@@ -294,25 +298,25 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
         </div>
         <div class="plan-card">
           <div class="pc-head">
-            <div class="pc-dot" style="background:#7c3aed"></div>
-            <div class="pc-name">РОП Айдана KIDS</div>
+            <div class="pc-dot" style="background:#1a56db"></div>
+            <div class="pc-name">РОП Аяулым</div>
           </div>
           <div class="pc-field">
             <div class="pc-label">План ₸</div>
-            <input class="pc-inp" type="number" id="rop-plan-aidana-kids" placeholder="10 000 000" min="0" step="1000000">
+            <input class="pc-inp" type="number" id="rop-plan-ayaulym" placeholder="15 000 000" min="0" step="1000000">
           </div>
-          <div class="pc-current" id="cur-rop-aidana-kids">Текущий: —</div>
+          <div class="pc-current" id="cur-rop-ayaulym">Текущий: —</div>
         </div>
         <div class="plan-card">
           <div class="pc-head">
-            <div class="pc-dot" style="background:#db2777"></div>
-            <div class="pc-name">РОП Диас KIDS</div>
+            <div class="pc-dot" style="background:#7c3aed"></div>
+            <div class="pc-name">РОП B1 Partners</div>
           </div>
           <div class="pc-field">
             <div class="pc-label">План ₸</div>
-            <input class="pc-inp" type="number" id="rop-plan-dias-kids" placeholder="10 000 000" min="0" step="1000000">
+            <input class="pc-inp" type="number" id="rop-plan-b1" placeholder="5 000 000" min="0" step="1000000">
           </div>
-          <div class="pc-current" id="cur-rop-dias-kids">Текущий: —</div>
+          <div class="pc-current" id="cur-rop-b1">Текущий: —</div>
         </div>
         <div class="plan-card">
           <div class="pc-head">
@@ -362,44 +366,326 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 
 <script>
 // ══════════════════════════════════════════════
-// CONFIG
+// CONFIG — Era CRM Supabase (раньше ходили в orphan bdyakgmeibpdkisbiykt).
+// PLANS / ROP_PLANS лежат jsonb-строкой в public.dashboard_config,
+// RLS на запись — только admin/director.
 // ══════════════════════════════════════════════
-const DIR_PASSWORD = 'director2026';
-const SUPABASE_URL = 'https://bdyakgmeibpdkisbiykt.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkeWFrZ21laWJwZGtpc2JpeWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTQzOTMsImV4cCI6MjA4Nzc5MDM5M30.nA187grJR6XFQRmTP6WOM-6-1dZK1EzYNNP2JH9aAMg';
+const SUPABASE_URL = 'https://cbylqiuksjmqyptokfqj.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNieWxxaXVrc2ptcXlwdG9rZnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY2MTk5NzcsImV4cCI6MjA5MjE5NTk3N30.2p07fXhYCF5bYdG27sR1lIvNeuoqF8vF-OBfGLX7zDQ';
 
 const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 
 // ══════════════════════════════════════════════
-// PASSWORD
+// LOGIN — Era CRM Supabase Auth (email/password) + проверка роли
 // ══════════════════════════════════════════════
-function checkPw(){
-  if(document.getElementById('pw-input').value === DIR_PASSWORD){
-    document.getElementById('pw-screen').style.display='none';
-    document.getElementById('app').style.display='block';
-    sessionStorage.setItem('dir_auth','1');
+let _accessToken  = sessionStorage.getItem('dir_token') || null;
+let _refreshToken = sessionStorage.getItem('dir_refresh') || null;
+let _userId       = sessionStorage.getItem('dir_uid') || null;
+let _userRole     = sessionStorage.getItem('dir_role') || null;
+
+function _showErr(text){
+  const el = document.getElementById('pw-err');
+  el.textContent = text;
+  el.style.display = 'block';
+}
+
+async function checkPw(){
+  const email = document.getElementById('pw-email').value.trim();
+  const password = document.getElementById('pw-input').value;
+  if (!email || !password) { _showErr('Введите email и пароль'); return; }
+  document.getElementById('pw-err').style.display = 'none';
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!r.ok) {
+      const j = await r.json().catch(()=>({}));
+      throw new Error(j.error_description || j.msg || ('http '+r.status));
+    }
+    const j = await r.json();
+    _accessToken  = j.access_token;
+    _refreshToken = j.refresh_token;
+    _userId       = j.user?.id;
+    const pr = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${_userId}&select=team_role`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${_accessToken}` }
+    });
+    const arr = await pr.json();
+    _userRole = arr[0]?.team_role || null;
+    if (!['admin','director'].includes(_userRole)) {
+      _showErr(`Доступ запрещён — нужна роль admin или director (у вас: ${_userRole||'нет'})`);
+      _accessToken = _refreshToken = _userId = _userRole = null;
+      return;
+    }
+    sessionStorage.setItem('dir_token',   _accessToken);
+    sessionStorage.setItem('dir_refresh', _refreshToken);
+    sessionStorage.setItem('dir_uid',     _userId);
+    sessionStorage.setItem('dir_role',    _userRole);
+    document.getElementById('pw-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('pw-input').value = '';
     init();
-  } else {
-    document.getElementById('pw-err').style.display='block';
-    document.getElementById('pw-input').value='';
-    document.getElementById('pw-input').focus();
+  } catch(e) {
+    _showErr('Ошибка входа: ' + e.message);
   }
 }
-if(sessionStorage.getItem('dir_auth')==='1'){
-  document.getElementById('pw-screen').style.display='none';
-  document.getElementById('app').style.display='block';
+
+if (_accessToken && _userRole && ['admin','director'].includes(_userRole)) {
+  document.getElementById('pw-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
 }
 
 // ══════════════════════════════════════════════
-// SUPABASE
+// ERA CRM MERGE — подмешиваем майские+ факты в RAW/MANAGERS/MGR_TO_ROP,
+// которые приходят из исторического snapshot. Логика синхронна с
+// dashboard.html (loadEraCrmOverlay + ERA_GROUP_TO_ROP + _OLD_ROP_RENAME).
 // ══════════════════════════════════════════════
-const SB_H = {
-  'apikey': SUPABASE_KEY,
-  'Authorization': `Bearer ${SUPABASE_KEY}`,
-  'Content-Type': 'application/json; charset=utf-8'
+const ERA_CRM_OVERLAY_FROM = '2026-05-01T00:00:00+05:00';
+const _ERA_PIPELINE_TO_BUCKET = {
+  'Коллаген':    'Коллаген',
+  'KIDS':        'Ummi',
+  'B1 Partners': 'B1 Partners',
 };
-async function sbGet(url){ const r=await fetch(url,{headers:SB_H}); if(!r.ok)throw new Error(r.status); return r.json(); }
-async function sbPost(url,body,method='POST'){ const r=await fetch(url,{method,headers:{...SB_H,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(body)}); if(!r.ok){const t=await r.text();throw new Error(t);} }
+const _ERA_GROUP_TO_ROP = {
+  'Аслиддин':    'РОП Аслиддин',
+  'Диас':        'РОП Диас',
+  'Нурдаулет':   'РОП Нурдаулет',
+  'Нұрдаулет':   'РОП Нурдаулет',  // в Era CRM группа набрана с казахской «ұ»
+  'Аяулым':      'РОП Аяулым',
+  'B1 Partners': 'РОП B1 Partners',
+  'Админ':       null,
+};
+const _OLD_ROP_RENAME_DIR = { 'РОП Диас KIDS': 'РОП Диас' };
+
+function _ropFromGroup(groupTitle){
+  if (!groupTitle) return null;
+  if (groupTitle in _ERA_GROUP_TO_ROP) return _ERA_GROUP_TO_ROP[groupTitle];
+  return 'РОП ' + groupTitle;
+}
+function _ddmmyyyy(isoDate){
+  if (!isoDate) return null;
+  const [y,m,d] = String(isoDate).slice(0,10).split('-');
+  return `${d}.${m}.${y}`;
+}
+function _isEraDate(s){
+  const [dd,mm,yy] = String(s).split('.').map(Number);
+  return yy > 2026 || (yy === 2026 && mm >= 5);
+}
+
+async function _eraCrmMergeForFact(RAW, MANAGERS, MGR_TO_ROP){
+  // 1) Сначала чистим даты ≥ 01.05.2026 из snapshot — Era CRM источник истины.
+  for (const acc of Object.keys(RAW)) {
+    for (const date of Object.keys(RAW[acc])) {
+      if (_isEraDate(date)) delete RAW[acc][date];
+    }
+  }
+  for (const acc of Object.keys(MANAGERS)) {
+    for (const m of MANAGERS[acc]) {
+      if (!m.daily) continue;
+      for (const date of Object.keys(m.daily)) {
+        if (_isEraDate(date)) delete m.daily[date];
+      }
+    }
+  }
+  // 2) Тянем Era CRM RPC.
+  const dateTo = new Date(); dateTo.setDate(dateTo.getDate() + 1);
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_dashboard_metrics`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,  // anon ok — RPC SECURITY DEFINER
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ p_date_from: ERA_CRM_OVERLAY_FROM, p_date_to: dateTo.toISOString() }),
+  });
+  if (!r.ok) throw new Error('era-crm rpc http ' + r.status);
+  const rows = await r.json();
+  if (!Array.isArray(rows)) return;
+
+  // 3) Сворачиваем по бакету+менеджеру.
+  const pipeRoll = {}, mgrRoll = {};
+  for (const row of rows) {
+    const acc = _ERA_PIPELINE_TO_BUCKET[row.pipeline_title];
+    if (!acc) continue;
+    const date = _ddmmyyyy(row.day);
+    if (!date) continue;
+    const l = Number(row.leads)||0, d = Number(row.deals)||0, b = Number(row.budget)||0;
+    const nd = Number(row.new_deals)||0,  nb = Number(row.new_budget)||0;
+    const bd = Number(row.base_deals)||0, bb = Number(row.base_budget)||0;
+    pipeRoll[acc] = pipeRoll[acc] || {};
+    const cur = pipeRoll[acc][date] = pipeRoll[acc][date] || [0,0,0,0,0,0,0];
+    cur[0]+=l; cur[1]+=d; cur[2]+=b; cur[3]+=nd; cur[4]+=nb; cur[5]+=bd; cur[6]+=bb;
+    if (row.manager_name) {
+      mgrRoll[acc] = mgrRoll[acc] || {};
+      const slot = mgrRoll[acc][row.manager_name] = mgrRoll[acc][row.manager_name] || { daily:{}, group: row.group_title || null };
+      const day = slot.daily[date] = slot.daily[date] || [0,0,0,0,0,0,0];
+      day[0]+=l; day[1]+=d; day[2]+=b; day[3]+=nd; day[4]+=nb; day[5]+=bd; day[6]+=bb;
+      if (!slot.group && row.group_title) slot.group = row.group_title;
+    }
+  }
+
+  // 4) Применяем в RAW.
+  for (const [acc, daily] of Object.entries(pipeRoll)) {
+    RAW[acc] = RAW[acc] || {};
+    for (const [date, vals] of Object.entries(daily)) RAW[acc][date] = vals;
+  }
+  // 5) MANAGERS + MGR_TO_ROP (Era CRM — авторитет для group→ROP).
+  for (const [acc, mgrs] of Object.entries(mgrRoll)) {
+    MANAGERS[acc] = MANAGERS[acc] || [];
+    for (const [name, slot] of Object.entries(mgrs)) {
+      let mgr = MANAGERS[acc].find(m => m.name === name);
+      if (!mgr) {
+        mgr = { name, leads:0, deals:0, budget:0, conv:0, avgCheck:0, daily:{} };
+        MANAGERS[acc].push(mgr);
+      }
+      mgr.daily = mgr.daily || {};
+      for (const [date, vals] of Object.entries(slot.daily)) mgr.daily[date] = vals;
+      let l=0,d=0,b=0;
+      for (const v of Object.values(mgr.daily)) { l+=v[0]||0; d+=v[1]||0; b+=v[2]||0; }
+      mgr.leads=l; mgr.deals=d; mgr.budget=b;
+      mgr.conv = l>0 ? +(d/l*100).toFixed(1) : 0;
+      mgr.avgCheck = d>0 ? Math.round(b/d) : 0;
+      const ropName = _ropFromGroup(slot.group);
+      if (ropName) MGR_TO_ROP[name] = ropName;
+    }
+    MANAGERS[acc].sort((a,b)=>b.budget-a.budget);
+  }
+  // 6) Renames старых имён в MGR_TO_ROP (РОП Диас KIDS → РОП Диас и т.п.).
+  for (const [mgr, oldRop] of Object.entries(MGR_TO_ROP)) {
+    if (_OLD_ROP_RENAME_DIR[oldRop]) MGR_TO_ROP[mgr] = _OLD_ROP_RENAME_DIR[oldRop];
+  }
+}
+
+// ══════════════════════════════════════════════
+// SUPABASE HELPERS — dashboard_config (jsonb)
+// ══════════════════════════════════════════════
+function _authHeaders(){
+  return {
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${_accessToken || SUPABASE_KEY}`,
+    'Content-Type': 'application/json',
+  };
+}
+
+// Локальный кэш payload'а dashboard_config — мерджимся в него, чтобы
+// не сбить AD_SPEND (его пишет кабинет рекламы).
+let _dashCfg = {};
+
+async function sbGetConfig(){
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/dashboard_config?id=eq.1&select=data`, {
+    headers: _authHeaders(),
+  });
+  if (r.status === 401) throw new Error('AUTH_EXPIRED');
+  if (!r.ok) throw new Error('config load http ' + r.status);
+  const rows = await r.json();
+  _dashCfg = rows[0]?.data || {};
+  return _dashCfg;
+}
+
+async function sbSaveConfig(){
+  _dashCfg.updatedAt = new Date().toISOString();
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/dashboard_config`, {
+    method: 'POST',
+    headers: { ..._authHeaders(), 'Prefer': 'resolution=merge-duplicates' },
+    body: JSON.stringify({ id: 1, data: _dashCfg, updated_at: new Date().toISOString() }),
+  });
+  if (r.status === 401) throw new Error('AUTH_EXPIRED');
+  if (!r.ok) { const t = await r.text(); throw new Error(t.slice(0,200)); }
+}
+
+function _onAuthExpired(){
+  ['dir_token','dir_refresh','dir_uid','dir_role'].forEach(k=>sessionStorage.removeItem(k));
+  _accessToken = _refreshToken = _userId = _userRole = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('pw-screen').style.display = 'flex';
+  _showErr('Сессия истекла — войдите снова');
+}
+
+// Шим: старые вызовы sbGet/sbPost оставлены, но теперь работают через
+// dashboard_config / dashboard-snapshot.json для read-only «фактических»
+// данных (RAW/MANAGERS). Используется только в loadRopFact и
+// renderRopPlanHistory (исторические агрегаты).
+async function sbGet(url){
+  // Эта функция теперь принимает старые URL и роутит:
+  //   weglow_plans     → строим из _dashCfg.PLANS
+  //   weglow_data...   → возвращаем массив [{data: snapshot|_dashCfg}]
+  // Старые вызовы остаются работать без переписывания каждой строчки.
+  if (url.includes('/weglow_plans')) {
+    await sbGetConfig();
+    const P = (_dashCfg.PLANS) || {};
+    const months = new Set([...Object.keys(P.col||{}), ...Object.keys(P.ummi||{})]);
+    return [...months].sort().reverse().map(month => ({
+      month,
+      col:  (P.col  && P.col[month])  || 0,
+      ummi: (P.ummi && P.ummi[month]) || 0,
+    }));
+  }
+  if (url.includes('/weglow_data')) {
+    // Подмешиваем snapshot для исторических RAW/MANAGERS/MGR_TO_ROP +
+    // dashboard_config для PLANS/ROP_PLANS + Era CRM RPC для майских+
+    // фактов. Era CRM перезаписывает snapshot для дат ≥ 01.05.2026
+    // (как и на главном дашборде).
+    try { await sbGetConfig(); } catch(e) { console.warn('sbGetConfig in shim:', e); }
+    let snap = window._snapData;
+    if (!snap) {
+      try {
+        const r = await fetch('dashboard-snapshot.json', { cache: 'no-cache' });
+        if (r.ok) snap = window._snapData = await r.json();
+      } catch(e) { console.warn('snapshot load:', e); snap = {}; }
+    }
+    // Глубокая копия snapshot RAW/MANAGERS/MGR_TO_ROP — Era CRM overlay
+    // мутирует структуру, исходный snapshot оставляем чистым.
+    const RAW        = JSON.parse(JSON.stringify(snap?.RAW        || {}));
+    const MANAGERS   = JSON.parse(JSON.stringify(snap?.MANAGERS   || {}));
+    const MGR_TO_ROP = { ...(snap?.MGR_TO_ROP || {}) };
+    try {
+      await _eraCrmMergeForFact(RAW, MANAGERS, MGR_TO_ROP);
+    } catch(e) { console.warn('era-crm merge for fact:', e); }
+    const merged = {
+      RAW, MANAGERS, MGR_TO_ROP,
+      PLANS:      _dashCfg.PLANS      || snap?.PLANS      || {},
+      ROP_PLANS:  _dashCfg.ROP_PLANS  || snap?.ROP_PLANS  || {},
+    };
+    return [{ data: merged }];
+  }
+  // Default — просто прокидываем (с auth-header).
+  const r = await fetch(url, { headers: _authHeaders() });
+  if (r.status === 401) throw new Error('AUTH_EXPIRED');
+  if (!r.ok) throw new Error('http ' + r.status);
+  return r.json();
+}
+
+async function sbPost(url, body, method = 'POST') {
+  if (url.includes('/weglow_plans')) {
+    // {month, col, ummi} → перекладываем в _dashCfg.PLANS
+    if (!_dashCfg.PLANS) _dashCfg.PLANS = { col:{}, ummi:{} };
+    if (!_dashCfg.PLANS.col)  _dashCfg.PLANS.col  = {};
+    if (!_dashCfg.PLANS.ummi) _dashCfg.PLANS.ummi = {};
+    if (body.col)  _dashCfg.PLANS.col[body.month]  = body.col;
+    else delete _dashCfg.PLANS.col[body.month];
+    if (body.ummi) _dashCfg.PLANS.ummi[body.month] = body.ummi;
+    else delete _dashCfg.PLANS.ummi[body.month];
+    await sbSaveConfig();
+    return;
+  }
+  if (url.includes('/weglow_data')) {
+    // body — это {id:1, data: payload}. Переносим интересующие нас поля
+    // в _dashCfg (PLANS / ROP_PLANS) и записываем dashboard_config.
+    const p = body?.data || {};
+    if (p.PLANS)     _dashCfg.PLANS     = p.PLANS;
+    if (p.ROP_PLANS) _dashCfg.ROP_PLANS = p.ROP_PLANS;
+    await sbSaveConfig();
+    return;
+  }
+  const r = await fetch(url, {
+    method,
+    headers: { ..._authHeaders(), 'Prefer': 'resolution=merge-duplicates' },
+    body: JSON.stringify(body),
+  });
+  if (r.status === 401) throw new Error('AUTH_EXPIRED');
+  if (!r.ok) { const t = await r.text(); throw new Error(t.slice(0,200)); }
+}
 
 // ══════════════════════════════════════════════
 // STATE
@@ -661,19 +947,22 @@ function toast(text, type='ok'){
 // INIT
 // ══════════════════════════════════════════════
 function init(){ loadPlans(); }
-if(sessionStorage.getItem('dir_auth')==='1') init();
+if (_accessToken && _userRole && ['admin','director'].includes(_userRole)) init();
 
 
 // ══════════════════════════════════════════════
-// ROP GROUP PLANS
+// ROP GROUP PLANS — Era CRM-РОПы. Старые AmoCRM-имена (РОП Айдана /
+// Айдана KIDS / Диас KIDS) убраны: они спрятаны на главном дашборде
+// через ERA_HIDE_ROPS. РОП Диас (без " KIDS") сшит с историческими
+// данными через _OLD_ROP_RENAME.
 // ══════════════════════════════════════════════
 const ROP_DEFS = [
-  {name:'РОП Айдана',      inputId:'rop-plan-aidana',      curId:'cur-rop-aidana',      color:'#1a56db'},
-  {name:'РОП Аслиддин',    inputId:'rop-plan-asliddin',    curId:'cur-rop-asliddin',    color:'#b45309'},
-  {name:'РОП Нурдаулет',   inputId:'rop-plan-nurdaulet',   curId:'cur-rop-nurdaulet',   color:'#0a7c5c'},
-  {name:'РОП Айдана KIDS', inputId:'rop-plan-aidana-kids', curId:'cur-rop-aidana-kids', color:'#7c3aed'},
-  {name:'РОП Диас KIDS',   inputId:'rop-plan-dias-kids',   curId:'cur-rop-dias-kids',   color:'#db2777'},
-  {name:'БОТА AI',         inputId:'rop-plan-bota-ai',     curId:'cur-rop-bota-ai',     color:'#0ea5e9'},
+  {name:'РОП Аслиддин',    inputId:'rop-plan-asliddin',  curId:'cur-rop-asliddin',  color:'#b45309'},
+  {name:'РОП Диас',        inputId:'rop-plan-dias',      curId:'cur-rop-dias',      color:'#db2777'},
+  {name:'РОП Нурдаулет',   inputId:'rop-plan-nurdaulet', curId:'cur-rop-nurdaulet', color:'#0a7c5c'},
+  {name:'РОП Аяулым',      inputId:'rop-plan-ayaulym',   curId:'cur-rop-ayaulym',   color:'#1a56db'},
+  {name:'РОП B1 Partners', inputId:'rop-plan-b1',        curId:'cur-rop-b1',        color:'#7c3aed'},
+  {name:'БОТА AI',         inputId:'rop-plan-bota-ai',   curId:'cur-rop-bota-ai',   color:'#0ea5e9'},
 ];
 
 let ropPlans = {}; // { 'РОП Айдана': {'03.2026': 30000000, ...}, ... }
@@ -828,12 +1117,16 @@ function editRopMonth(month){
 }
 
 // ═══════════════════ ROP PLAN / FACT ═══════════════════════════
+// Era CRM: менеджеры одной группы могут иметь сделки в любом из 3
+// пайплайнов (Коллаген / Ummi=KIDS / B1 Partners), поэтому ищем во всех.
+// БОТА AI — Админ-группа Era CRM, отдельной воронки нет.
 const ROP_FACT_DEFS = [
-  {name:'РОП Айдана',      color:'#1a56db', crms:['Коллаген']},
-  {name:'РОП Аслиддин',    color:'#b45309', crms:['Коллаген']},
-  {name:'РОП Нурдаулет',   color:'#0a7c5c', crms:['Коллаген']},
-  {name:'РОП Айдана KIDS', color:'#7c3aed', crms:['Ummi']},
-  {name:'РОП Диас KIDS',   color:'#db2777', crms:['Ummi']},
+  {name:'РОП Аслиддин',    color:'#b45309', crms:['Коллаген','Ummi','B1 Partners']},
+  {name:'РОП Диас',        color:'#db2777', crms:['Коллаген','Ummi','B1 Partners']},
+  {name:'РОП Нурдаулет',   color:'#0a7c5c', crms:['Коллаген','Ummi','B1 Partners']},
+  {name:'РОП Аяулым',      color:'#1a56db', crms:['Коллаген','Ummi','B1 Partners']},
+  {name:'РОП B1 Partners', color:'#7c3aed', crms:['Коллаген','Ummi','B1 Partners']},
+  {name:'БОТА AI',         color:'#0ea5e9', crms:['Коллаген','Ummi']},
 ];
 
 function initRopFactMonth(){
