@@ -3586,14 +3586,17 @@ const _OLD_ROP_RENAME = {
 };
 
 // Era CRM custom-field label → имя товара на дашборде (ключ в PRODUCTS[comp]).
-// Снапшот использует уже устоявшиеся имена с кавычками — сохраняем 1-в-1,
+// Снапшот использует устоявшиеся имена с кавычками — сохраняем 1-в-1,
 // чтобы исторические дни и Era CRM-дни сошлись в одну строку.
+// Ключи в lower-case, lookup идёт через label.toLowerCase() — в Era CRM поля
+// набраны в каком-то регистре («Коллаген Синий» / «коллаген синий»), а UI
+// показывает их UPPERCASE через CSS. Поэтому не привязываемся к регистру.
 const ERA_PRODUCT_LABEL_TO_NAME = {
-  'КОЛЛАГЕН СИНИЙ':       'Количество "Синий"',
-  'КОЛЛАГЕН КРАСНЫЙ':     'Количество "Красный"',
-  'КОЛЛАГЕН КОФЕ':        'Коллаген "Кофе"',
-  'УММИ':                 'Детский "Умми"',
-  'МИНИ КОЛЛАГЕН КОФЕ':   'Мини Коллаген "Кофе"',
+  'коллаген синий':       'Количество "Синий"',
+  'коллаген красный':     'Количество "Красный"',
+  'коллаген кофе':        'Коллаген "Кофе"',
+  'умми':                 'Детский "Умми"',
+  'мини коллаген кофе':   'Мини Коллаген "Кофе"',
 };
 
 // pipeline_title в Era CRM → имя бакета (comp) в PRODUCTS. B1 Partners не
@@ -3832,7 +3835,7 @@ async function loadEraCrmProducts() {
   for (const r of rows) {
     const comp = ERA_PIPELINE_TO_PRODUCT_COMP[r.pipeline_title];
     if (!comp) continue; // skip B1 Partners
-    const prodName = ERA_PRODUCT_LABEL_TO_NAME[r.product_label];
+    const prodName = ERA_PRODUCT_LABEL_TO_NAME[String(r.product_label || '').toLowerCase().trim()];
     if (!prodName) continue;
     const date = _ddmmyyyy(r.day);
     if (!date) continue;
