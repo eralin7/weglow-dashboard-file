@@ -3498,7 +3498,8 @@ async function loadFromSupabase() {
       // ВАЖНО: ждём результата синхронно, чтобы первый render показывал уже
       // мерженные цифры — иначе после snapshot-render будет «прыжок» при
       // подходе era CRM данных. Если era CRM упал — рендерим без него.
-      try { await loadEraCrmOverlay(); } catch (e) { console.warn('[era-crm overlay]', e); }
+      try { await loadEraCrmOverlay();  } catch (e) { console.warn('[era-crm overlay]', e); }
+      try { await loadEraCrmProducts(); } catch (e) { console.warn('[era-crm products]', e); }
 
       // Rebuild presets but keep current filter selection
       PRESETS = buildPresets();
@@ -3584,6 +3585,24 @@ const _OLD_ROP_RENAME = {
   'РОП Диас KIDS': 'РОП Диас',
 };
 
+// Era CRM custom-field label → имя товара на дашборде (ключ в PRODUCTS[comp]).
+// Снапшот использует уже устоявшиеся имена с кавычками — сохраняем 1-в-1,
+// чтобы исторические дни и Era CRM-дни сошлись в одну строку.
+const ERA_PRODUCT_LABEL_TO_NAME = {
+  'КОЛЛАГЕН СИНИЙ':       'Количество "Синий"',
+  'КОЛЛАГЕН КРАСНЫЙ':     'Количество "Красный"',
+  'КОЛЛАГЕН КОФЕ':        'Коллаген "Кофе"',
+  'УММИ':                 'Детский "Умми"',
+  'МИНИ КОЛЛАГЕН КОФЕ':   'Мини Коллаген "Кофе"',
+};
+
+// pipeline_title в Era CRM → имя бакета (comp) в PRODUCTS. B1 Partners не
+// трекается в виджете «Товары» (старая структура была Коллаген + Ummi).
+const ERA_PIPELINE_TO_PRODUCT_COMP = {
+  'Коллаген': 'Коллаген',
+  'KIDS':     'Ummi',
+};
+
 // Старые РОПы из AmoCRM, которых больше нет в Era CRM. Прячем строки на
 // дашборде, чтобы не висели нулями. Их исторические данные остаются в
 // MANAGERS, но не выводятся как отдельная группа.
@@ -3630,6 +3649,17 @@ function _purgeEraDates() {
       if (!m.daily) continue;
       for (const date of Object.keys(m.daily)) {
         if (_isEraDate(date)) delete m.daily[date];
+      }
+    }
+  }
+  // PRODUCTS — тот же принцип: даты ≥ 01.05.2026 каждый refresh-цикл
+  // приходят из Era CRM заново.
+  for (const comp of Object.keys(PRODUCTS || {})) {
+    for (const prodName of Object.keys(PRODUCTS[comp] || {})) {
+      const info = PRODUCTS[comp][prodName];
+      if (!info || !info.daily) continue;
+      for (const date of Object.keys(info.daily)) {
+        if (_isEraDate(date)) delete info.daily[date];
       }
     }
   }
@@ -3770,12 +3800,66 @@ async function loadEraCrmOverlay() {
 }
 window.loadEraCrmOverlay = loadEraCrmOverlay;
 
+// Era CRM → виджет «Товары»: подмешиваем количества по продуктам поверх
+// PRODUCTS для дат ≥ 01.05.2026. Использует RPC get_product_metrics
+// (миграция 2026-05-18-product-metrics-rpc.sql), та же модель: won-стадии +
+// «Дата заказа» в окне. Маппинг label → имя товара через
+// ERA_PRODUCT_LABEL_TO_NAME, pipeline → comp через ERA_PIPELINE_TO_PRODUCT_COMP.
+async function loadEraCrmProducts() {
+  const dateTo = new Date();
+  dateTo.setDate(dateTo.getDate() + 1);
+  const url = `${ERA_CRM_URL}/rest/v1/rpc/get_product_metrics`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'apikey': ERA_CRM_ANON,
+      'Authorization': `Bearer ${ERA_CRM_ANON}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      p_date_from: ERA_CRM_OVERLAY_FROM,
+      p_date_to:   dateTo.toISOString(),
+    }),
+  });
+  if (!res.ok) throw new Error('era-crm product rpc http ' + res.status);
+  const rows = await res.json();
+  if (!Array.isArray(rows)) {
+    console.warn('[era-crm products] unexpected response shape');
+    return;
+  }
+
+  let _cells = 0, _newProds = 0;
+  for (const r of rows) {
+    const comp = ERA_PIPELINE_TO_PRODUCT_COMP[r.pipeline_title];
+    if (!comp) continue; // skip B1 Partners
+    const prodName = ERA_PRODUCT_LABEL_TO_NAME[r.product_label];
+    if (!prodName) continue;
+    const date = _ddmmyyyy(r.day);
+    if (!date) continue;
+    const qty = Number(r.qty) || 0;
+    if (qty === 0) continue;
+
+    PRODUCTS[comp] = PRODUCTS[comp] || {};
+    if (!PRODUCTS[comp][prodName]) {
+      PRODUCTS[comp][prodName] = { own: true, daily: {} };
+      _newProds++;
+    }
+    PRODUCTS[comp][prodName].daily = PRODUCTS[comp][prodName].daily || {};
+    PRODUCTS[comp][prodName].daily[date] = qty;
+    _cells++;
+  }
+
+  console.log('[era-crm products] applied:', _cells, 'date-cells,', _newProds, 'new product entries');
+}
+window.loadEraCrmProducts = loadEraCrmProducts;
+
 // Автообновление: каждые 5 мин перетягиваем era CRM и перерисовываем.
 // Только когда вкладка активна — иначе тихо ждём фокуса.
 async function _eraCrmRefreshTick() {
   if (document.hidden) return;
   try {
     await loadEraCrmOverlay();
+    try { await loadEraCrmProducts(); } catch (e) { console.warn('[era-crm products refresh]', e); }
     // Пересобираем пресеты (диапазоны дат могут меняться) и рендерим.
     if (typeof buildPresets === 'function') PRESETS = buildPresets();
     if (typeof render === 'function') render();
