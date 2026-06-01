@@ -1781,6 +1781,11 @@ function buildPresets() {
   presets.yesterday = { from: yesterdayStr, to: yesterdayStr, label: `Вчера, ${yest.getDate()} ${MONTH_NAMES_GEN[yest.getMonth()]}` };
   presets.week = { from: week7Str, to: todayStr, label: '7 дней' };
 
+  // Previous month (рендерится слева от текущего; корректно через границу года)
+  const prevD = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const pm = _makeMonthPreset(prevD.getFullYear(), prevD.getMonth() + 1);
+  presets[pm.key] = pm;
+
   // Current month only
   const p = _makeMonthPreset(now.getFullYear(), now.getMonth() + 1);
   presets[p.key] = p;
