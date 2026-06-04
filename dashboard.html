@@ -1271,6 +1271,7 @@ const _authGuard = new MutationObserver(() => {
       <div class="pill-sep"></div>
       <span class="tb-label">Группа:</span>
       <button class="pill mainrop-pill active" onclick="setMainRop('all',this)">Все</button>
+      <button class="pill mainrop-pill" onclick="setMainRop('main4',this)">4 РОПа</button>
       <button class="pill mainrop-pill" onclick="setMainRop('РОП Нурдаулет',this)">Нурдаулет</button>
       <button class="pill mainrop-pill" onclick="setMainRop('РОП Аслиддин',this)">Аслиддин</button>
       <button class="pill mainrop-pill" onclick="setMainRop('РОП Диас',this)">Диас</button>
@@ -1891,15 +1892,27 @@ function pctBg(v){return v>=80?'bg-g':v>=50?'bg-y':'bg-r';}
 // (после переезда на Era CRM) — раньше его не было.
 const _VIRTUAL_CRMS = { 'Коллаген': ['Ummi', 'Ербол', 'Кофе (Архив)', 'B1 Partners'] };
 // ── ROP-фильтр главного вида ──────────────────────────────────────
-// Дневной «RAW» (по датам [leads,deals,budget]) только по менеджерам
-// выбранного РОПа, собранный по всем его бакетам. Идентичен логике
+// Набор РОПов под кнопкой «4 РОПа» (без B1 Partners и БОТА AI).
+const MAIN_ROP4 = ['РОП Нурдаулет','РОП Аслиддин','РОП Диас','РОП Аяулым'];
+// Список РОПов, которые покрывает текущий фильтр главного вида.
+function _mainRopNames() { return activeMainRop==='main4' ? MAIN_ROP4.slice() : [activeMainRop]; }
+// Принадлежит ли менеджер активному фильтру (одиночный РОП или 4 РОПа).
+function _mainRopMatch(mgrName) { return _mainRopNames().some(r => ropMatches(mgrName, r)); }
+// План активного фильтра за месяц mk (сумма планов входящих РОПов).
+function _mainRopPlan(mk) { return _mainRopNames().reduce((s,r)=>s+(getRopPlan(r,mk)||0),0); }
+// Рекламный расход активного фильтра за период (сумма по входящим РОПам).
+function _mainRopAd(from,to) { return _mainRopNames().reduce((s,r)=>s+_ropAdSpend(r,from,to),0); }
+// Дневной «RAW» ([leads,deals,budget]) только по менеджерам активного
+// фильтра, собранный по всем релевантным бакетам. Идентичен логике
 // renderPlanTable/renderLine, поэтому цифры KPI сходятся с таблицей групп.
-function _ropDailyRaw(ropName) {
+function _mainRopDailyRaw() {
   const out = {};
-  const crms = ROP_CRM_MAP[ropName] || Object.keys(MANAGERS);
+  const buckets = new Set();
+  _mainRopNames().forEach(n => (ROP_CRM_MAP[n] || []).forEach(c => buckets.add(c)));
+  const crms = buckets.size ? [...buckets] : Object.keys(MANAGERS);
   crms.forEach(crm => {
     (MANAGERS[crm] || []).forEach(m => {
-      if (!ropMatches(m.name, ropName)) return;
+      if (!_mainRopMatch(m.name)) return;
       const daily = m.daily || {};
       for (const [d, v] of Object.entries(daily)) {
         const cur = out[d] || (out[d] = [0, 0, 0]);
@@ -1933,8 +1946,8 @@ function _ropAdSpend(ropName, from, to) {
   return adSpend;
 }
 function _mergedRaw(mainKey) {
-  // Активен фильтр по РОПу — отдаём дневные данные только этого РОПа.
-  if (activeMainRop !== 'all') return _ropDailyRaw(activeMainRop);
+  // Активен фильтр по РОПу — отдаём дневные данные только этого фильтра.
+  if (activeMainRop !== 'all') return _mainRopDailyRaw();
   const main = RAW[mainKey] || {};
   const siblings = _VIRTUAL_CRMS[mainKey] || [];
   if (!siblings.length) return main;
@@ -1963,8 +1976,8 @@ function aggregate(pk,from,to){
   const fromD=parseDate(from);
   const mk=getMonthKey(fromD);
   // Always use FULL monthly plan — never prorate.
-  // При активном РОП-фильтре берём план самого РОПа, а не продукта.
-  const plan = activeMainRop!=='all' ? getRopPlan(activeMainRop, mk) : getPlan(pk,mk);
+  // При активном РОП-фильтре берём план РОПа(ов), а не продукта.
+  const plan = activeMainRop!=='all' ? _mainRopPlan(mk) : getPlan(pk,mk);
 
   // Full month accumulated fact (for остаток/нужно-в-день regardless of period filter)
   const now=new Date();
@@ -1990,7 +2003,7 @@ function aggregate(pk,from,to){
   const adData=AD_SPEND[PROD_CFG[pk].rawKey]||{};
   const fD=parseDate(from),tD=parseDate(to);
   const adTotal = activeMainRop!=='all'
-    ? _ropAdSpend(activeMainRop, from, to)
+    ? _mainRopAd(from, to)
     : Object.entries(adData).filter(([d])=>{try{const dd=parseDate(d);return dd>=fD&&dd<=tD;}catch(e){return false;}}).reduce((a,[,v])=>a+v,0);
 
   // ad spend + leads for full current month (for CPL)
@@ -2001,7 +2014,7 @@ function aggregate(pk,from,to){
     const _mFrom=`01.${curMK}`, _mTo=`${String(now.getDate()).padStart(2,'0')}.${curMK}`;
     const mfD=parseDate(_mFrom), mtD=parseDate(_mTo);
     monthAdTotal = activeMainRop!=='all'
-      ? _ropAdSpend(activeMainRop, _mFrom, _mTo)
+      ? _mainRopAd(_mFrom, _mTo)
       : Object.entries(adData).filter(([d])=>{try{const dd=parseDate(d);return dd>=mfD&&dd<=mtD;}catch(e){return false;}}).reduce((a,[,v])=>a+v,0);
   }
   const cplMonth = monthLeads ? Math.round(monthAdTotal/monthLeads) : 0;
@@ -2314,7 +2327,8 @@ function _aggregateForKpiSprint(n) {
 function renderKPI(d){
   const prodName = activeProd==='all' ? 'Все продукты' : PROD_CFG[activeProd].name;
   document.getElementById('main-title').textContent = 'Ключевые показатели';
-  const _ropSub = activeMainRop!=='all' ? ` · ${ROP_GROUPS[activeMainRop]?.label || activeMainRop}` : '';
+  const _ropSub = activeMainRop==='main4' ? ' · 4 РОПа'
+    : (activeMainRop!=='all' ? ` · ${ROP_GROUPS[activeMainRop]?.label || activeMainRop}` : '');
   document.getElementById('main-sub').textContent = `${activePeriod.label} · ${prodName}${_ropSub}`;
   const clr = activeProd==='all' ? '#6366f1' : PROD_CFG[activeProd].color;
 
@@ -2419,7 +2433,7 @@ function renderPlanTable(stats){
     const _ropRows = [];
     for (const [ropName, ropCfg] of Object.entries(ROP_GROUPS)) {
       if (ropName === 'all') continue;
-      if (activeMainRop !== 'all' && ropName !== activeMainRop) continue; // фильтр по РОПу
+      if (activeMainRop !== 'all' && !_mainRopNames().includes(ropName)) continue; // фильтр по РОПу
       if (_historyGroups.has(ropName) && _fromD > _historyCutoff) continue;
       const ropCrms = ROP_CRM_MAP[ropName] || [];
       if (selectedProdName && !ropCrms.includes(selectedProdName)) continue;
@@ -2744,7 +2758,7 @@ function renderLine(stats){
 
   for(const [ropName,ropCfg] of Object.entries(ROP_GROUPS)){
     if(ropName==='all') continue;
-    if(activeMainRop!=='all' && ropName!==activeMainRop) continue; // фильтр по РОПу
+    if(activeMainRop!=='all' && !_mainRopNames().includes(ropName)) continue; // фильтр по РОПу
     if(_chGroups.has(ropName) && _chFromD > _chCutoff) continue;
     const ropCrms = ROP_CRM_MAP[ropName]||[];
     const selectedProdName = activeProd==='all'?null:(PROD_CFG[activeProd]?.rawKey||null);
@@ -2798,19 +2812,23 @@ function renderLeadsDeals(stats){
   // Aggregate leads/deals by filter.
   // Глобальный РОП-фильтр главного вида имеет приоритет над собственным
   // фильтром графика (activeLeadsDealsFilter).
-  const _effFilter = activeMainRop!=='all' ? activeMainRop : activeLeadsDealsFilter;
+  // Предикат принадлежности менеджера фильтру: глобальный РОП-фильтр
+  // (одиночный РОП или 4 РОПа) приоритетнее собственного фильтра графика.
+  const _useMain = activeMainRop!=='all';
+  const _isFiltered = _useMain || activeLeadsDealsFilter!=='all';
+  const _mgrPass = m => _useMain ? _mainRopMatch(m.name) : ropMatches(m.name, activeLeadsDealsFilter);
   const leadsData=[], dealsData=[];
   dateList.forEach(date=>{
     let dayLeads=0,dayDeals=0;
     const crms=activeProd==='all'?['Коллаген','Ummi','Ербол','Кофе (Архив)','B1 Partners']:[PROD_CFG[activeProd]?.rawKey].filter(Boolean);
     crms.forEach(crm=>{
-      if(_effFilter==='all'){
+      if(!_isFiltered){
         const v=(RAW[crm]||{})[date]||[0,0,0];
         dayLeads+=v[0]; dayDeals+=v[1];
       } else {
-        // Filter by ROP — sum managers in that ROP
+        // Filter by ROP — sum managers matching the active filter
         (MANAGERS[crm]||[]).forEach(m=>{
-          if(!ropMatches(m.name,_effFilter)) return;
+          if(!_mgrPass(m)) return;
           if(m.daily&&m.daily[date]){
             dayLeads+=m.daily[date][0]||0; dayDeals+=m.daily[date][1]||0;
           }
