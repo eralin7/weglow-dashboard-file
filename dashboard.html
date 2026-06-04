@@ -1269,6 +1269,13 @@ const _authGuard = new MutationObserver(() => {
       <button class="pill prod-pill active" onclick="setProd('all',this)"><div class="prod-dot" style="background:#6366f1"></div>Все</button>
       <button class="pill prod-pill" onclick="setProd('col',this)"><div class="prod-dot" style="background:#1a56db"></div>Коллаген</button>
       <div class="pill-sep"></div>
+      <span class="tb-label">Группа:</span>
+      <button class="pill mainrop-pill active" onclick="setMainRop('all',this)">Все</button>
+      <button class="pill mainrop-pill" onclick="setMainRop('РОП Нурдаулет',this)">Нурдаулет</button>
+      <button class="pill mainrop-pill" onclick="setMainRop('РОП Аслиддин',this)">Аслиддин</button>
+      <button class="pill mainrop-pill" onclick="setMainRop('РОП Диас',this)">Диас</button>
+      <button class="pill mainrop-pill" onclick="setMainRop('РОП Аяулым',this)">Аяулым</button>
+      <div class="pill-sep"></div>
       <span class="tb-label">Период:</span>
       <button class="pill period-pill" onclick="setPreset('today',this)">Сегодня</button>
       <button class="pill period-pill" onclick="setPreset('yesterday',this)">Вчера</button>
@@ -1753,6 +1760,9 @@ function ropMatches(mgrName, targetRop) {
 }
 let activeMgrRop = 'all';
 let activeMgrProdSub = 'all';
+// Главный дашборд: фильтр по РОП-группе (Все/Нурдаулет/Аслиддин/Диас/Аяулым).
+// Влияет на весь главный вид через _mergedRaw/aggregate (KPI, графики, таблица).
+let activeMainRop = 'all';
 // ═══════════════════ DYNAMIC DATES ═══════════════════════════════
 const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 const MONTH_NAMES_GEN = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
@@ -1880,7 +1890,51 @@ function pctBg(v){return v>=80?'bg-g':v>=50?'bg-y':'bg-r';}
 // и итог по РОП-таблице совпадали. B1 Partners добавлен с 18.05.2026
 // (после переезда на Era CRM) — раньше его не было.
 const _VIRTUAL_CRMS = { 'Коллаген': ['Ummi', 'Ербол', 'Кофе (Архив)', 'B1 Partners'] };
+// ── ROP-фильтр главного вида ──────────────────────────────────────
+// Дневной «RAW» (по датам [leads,deals,budget]) только по менеджерам
+// выбранного РОПа, собранный по всем его бакетам. Идентичен логике
+// renderPlanTable/renderLine, поэтому цифры KPI сходятся с таблицей групп.
+function _ropDailyRaw(ropName) {
+  const out = {};
+  const crms = ROP_CRM_MAP[ropName] || Object.keys(MANAGERS);
+  crms.forEach(crm => {
+    (MANAGERS[crm] || []).forEach(m => {
+      if (!ropMatches(m.name, ropName)) return;
+      const daily = m.daily || {};
+      for (const [d, v] of Object.entries(daily)) {
+        const cur = out[d] || (out[d] = [0, 0, 0]);
+        cur[0] += v[0] || 0; cur[1] += v[1] || 0; cur[2] += v[2] || 0;
+      }
+    });
+  });
+  return out;
+}
+// Рекламный расход РОПа за период — пропорционально доле лидов РОПа в
+// каждом бакете (точная копия логики renderPlanTable, чтобы ДРР сходился).
+function _ropAdSpend(ropName, from, to) {
+  const fromD = parseDate(from), toD = parseDate(to);
+  if (AD_SPEND[ropName]) {
+    let s = 0;
+    Object.entries(AD_SPEND[ropName]).forEach(([d, v]) => { try { const dd = parseDate(d); if (dd >= fromD && dd <= toD) s += v; } catch (e) {} });
+    return s;
+  }
+  const crms = ROP_CRM_MAP[ropName] || [];
+  let adSpend = 0;
+  crms.forEach(crm => {
+    let crmAdTotal = 0;
+    Object.entries(AD_SPEND[crm] || {}).forEach(([d, v]) => { try { const dd = parseDate(d); if (dd >= fromD && dd <= toD) crmAdTotal += v; } catch (e) {} });
+    if (crmAdTotal > 0) {
+      const allMgrs = aggregateManagersByPeriod(crm, from, to);
+      let crmTotalLeads = 0; allMgrs.forEach(m => { crmTotalLeads += m.leads || 0; });
+      let ropCrmLeads = 0; allMgrs.filter(m => ropMatches(m.name, ropName)).forEach(m => { ropCrmLeads += m.leads || 0; });
+      adSpend += crmTotalLeads > 0 ? Math.round(crmAdTotal * ropCrmLeads / crmTotalLeads) : 0;
+    }
+  });
+  return adSpend;
+}
 function _mergedRaw(mainKey) {
+  // Активен фильтр по РОПу — отдаём дневные данные только этого РОПа.
+  if (activeMainRop !== 'all') return _ropDailyRaw(activeMainRop);
   const main = RAW[mainKey] || {};
   const siblings = _VIRTUAL_CRMS[mainKey] || [];
   if (!siblings.length) return main;
@@ -1908,8 +1962,9 @@ function aggregate(pk,from,to){
   }
   const fromD=parseDate(from);
   const mk=getMonthKey(fromD);
-  // Always use FULL monthly plan — never prorate
-  const plan=getPlan(pk,mk);
+  // Always use FULL monthly plan — never prorate.
+  // При активном РОП-фильтре берём план самого РОПа, а не продукта.
+  const plan = activeMainRop!=='all' ? getRopPlan(activeMainRop, mk) : getPlan(pk,mk);
 
   // Full month accumulated fact (for остаток/нужно-в-день regardless of period filter)
   const now=new Date();
@@ -1931,18 +1986,23 @@ function aggregate(pk,from,to){
   const passedDays  = mk===curMK ? now.getDate() : (mk < curMK ? totalDaysM2 : 0);
   const planToday   = plan && mk===curMK ? Math.round(plan / totalDaysM2 * passedDays) : plan;
 
-  // ad spend for period
+  // ad spend for period (при РОП-фильтре — пропорционально доле лидов РОПа)
   const adData=AD_SPEND[PROD_CFG[pk].rawKey]||{};
   const fD=parseDate(from),tD=parseDate(to);
-  const adTotal=Object.entries(adData).filter(([d])=>{try{const dd=parseDate(d);return dd>=fD&&dd<=tD;}catch(e){return false;}}).reduce((a,[,v])=>a+v,0);
+  const adTotal = activeMainRop!=='all'
+    ? _ropAdSpend(activeMainRop, from, to)
+    : Object.entries(adData).filter(([d])=>{try{const dd=parseDate(d);return dd>=fD&&dd<=tD;}catch(e){return false;}}).reduce((a,[,v])=>a+v,0);
 
   // ad spend + leads for full current month (for CPL)
   let monthAdTotal=adTotal, monthLeads=leads;
   if(mk===curMK){
     const allDatesM=getDatesInRange(`01.${curMK}`,`${String(now.getDate()).padStart(2,'0')}.${curMK}`);
     monthLeads=allDatesM.reduce((s,d)=>s+((raw[d]&&raw[d][0])||0),0);
-    const mfD=parseDate(`01.${curMK}`), mtD=parseDate(`${String(now.getDate()).padStart(2,'0')}.${curMK}`);
-    monthAdTotal=Object.entries(adData).filter(([d])=>{try{const dd=parseDate(d);return dd>=mfD&&dd<=mtD;}catch(e){return false;}}).reduce((a,[,v])=>a+v,0);
+    const _mFrom=`01.${curMK}`, _mTo=`${String(now.getDate()).padStart(2,'0')}.${curMK}`;
+    const mfD=parseDate(_mFrom), mtD=parseDate(_mTo);
+    monthAdTotal = activeMainRop!=='all'
+      ? _ropAdSpend(activeMainRop, _mFrom, _mTo)
+      : Object.entries(adData).filter(([d])=>{try{const dd=parseDate(d);return dd>=mfD&&dd<=mtD;}catch(e){return false;}}).reduce((a,[,v])=>a+v,0);
   }
   const cplMonth = monthLeads ? Math.round(monthAdTotal/monthLeads) : 0;
   const rpl = monthLeads ? Math.round(monthBudget/monthLeads) : 0; // выручка/лид
@@ -2113,6 +2173,14 @@ function setProd(p,el){
   markActive('[onclick^="setProd"]',el);
   render();
 }
+// Фильтр главного вида по РОП-группе. Перерисовывает весь главный дашборд
+// (KPI, графики, таблица групп) только по выбранному РОПу.
+function setMainRop(rop,el){
+  activeMainRop=rop;
+  document.querySelectorAll('#global-filters .mainrop-pill').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  render();
+}
 function setMetric(m,el){
   activeMetric=m;
   markActive('[onclick^="setMetric"]',el);
@@ -2246,7 +2314,8 @@ function _aggregateForKpiSprint(n) {
 function renderKPI(d){
   const prodName = activeProd==='all' ? 'Все продукты' : PROD_CFG[activeProd].name;
   document.getElementById('main-title').textContent = 'Ключевые показатели';
-  document.getElementById('main-sub').textContent = `${activePeriod.label} · ${prodName}`;
+  const _ropSub = activeMainRop!=='all' ? ` · ${ROP_GROUPS[activeMainRop]?.label || activeMainRop}` : '';
+  document.getElementById('main-sub').textContent = `${activePeriod.label} · ${prodName}${_ropSub}`;
   const clr = activeProd==='all' ? '#6366f1' : PROD_CFG[activeProd].color;
 
   const monthData = _aggregateForKpi(_getKpiPeriod('month'));
@@ -2350,6 +2419,7 @@ function renderPlanTable(stats){
     const _ropRows = [];
     for (const [ropName, ropCfg] of Object.entries(ROP_GROUPS)) {
       if (ropName === 'all') continue;
+      if (activeMainRop !== 'all' && ropName !== activeMainRop) continue; // фильтр по РОПу
       if (_historyGroups.has(ropName) && _fromD > _historyCutoff) continue;
       const ropCrms = ROP_CRM_MAP[ropName] || [];
       if (selectedProdName && !ropCrms.includes(selectedProdName)) continue;
@@ -2674,6 +2744,7 @@ function renderLine(stats){
 
   for(const [ropName,ropCfg] of Object.entries(ROP_GROUPS)){
     if(ropName==='all') continue;
+    if(activeMainRop!=='all' && ropName!==activeMainRop) continue; // фильтр по РОПу
     if(_chGroups.has(ropName) && _chFromD > _chCutoff) continue;
     const ropCrms = ROP_CRM_MAP[ropName]||[];
     const selectedProdName = activeProd==='all'?null:(PROD_CFG[activeProd]?.rawKey||null);
@@ -2724,19 +2795,22 @@ function renderLeadsDeals(stats){
   const dateList=getDatesInRange(from,to);
   const labels=dateList.map(d=>d.slice(0,5));
 
-  // Aggregate leads/deals by filter
+  // Aggregate leads/deals by filter.
+  // Глобальный РОП-фильтр главного вида имеет приоритет над собственным
+  // фильтром графика (activeLeadsDealsFilter).
+  const _effFilter = activeMainRop!=='all' ? activeMainRop : activeLeadsDealsFilter;
   const leadsData=[], dealsData=[];
   dateList.forEach(date=>{
     let dayLeads=0,dayDeals=0;
-    const crms=activeProd==='all'?['Коллаген','Ummi','Ербол','Кофе (Архив)']:[PROD_CFG[activeProd]?.rawKey].filter(Boolean);
+    const crms=activeProd==='all'?['Коллаген','Ummi','Ербол','Кофе (Архив)','B1 Partners']:[PROD_CFG[activeProd]?.rawKey].filter(Boolean);
     crms.forEach(crm=>{
-      if(activeLeadsDealsFilter==='all'){
+      if(_effFilter==='all'){
         const v=(RAW[crm]||{})[date]||[0,0,0];
         dayLeads+=v[0]; dayDeals+=v[1];
       } else {
         // Filter by ROP — sum managers in that ROP
         (MANAGERS[crm]||[]).forEach(m=>{
-          if(getRop(m.name)!==activeLeadsDealsFilter) return;
+          if(!ropMatches(m.name,_effFilter)) return;
           if(m.daily&&m.daily[date]){
             dayLeads+=m.daily[date][0]||0; dayDeals+=m.daily[date][1]||0;
           }
@@ -3638,7 +3712,7 @@ async function loadFromSupabase() {
 // «прилипали» с предыдущего цикла.
 const ERA_CRM_URL = 'https://cbylqiuksjmqyptokfqj.supabase.co';
 const ERA_CRM_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNieWxxaXVrc2ptcXlwdG9rZnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY2MTk5NzcsImV4cCI6MjA5MjE5NTk3N30.2p07fXhYCF5bYdG27sR1lIvNeuoqF8vF-OBfGLX7zDQ';
-const ERA_CRM_OVERLAY_FROM = '2026-05-01T00:00:00+05:00'; // Asia/Almaty
+const ERA_CRM_OVERLAY_FROM = '2026-06-01T00:00:00+05:00'; // Asia/Almaty — май и раньше заморожены в snapshot
 const ERA_CRM_REFRESH_MS   = 5 * 60 * 1000;
 
 // Pipeline.title → имя бакета на дашборде.
@@ -3725,11 +3799,13 @@ function _ddmmyyyy(isoDate) {
   return `${d}.${m}.${y}`;
 }
 
-// 01.05.2026 — граница «хардкор/era CRM». Всё, что ≥ этой даты, при каждом
+// 01.06.2026 — граница «хардкор/era CRM». Всё, что ≥ этой даты, при каждом
 // refresh-цикле сначала чистится из RAW/MANAGERS, потом перезаливается.
+// Май-2026 и раньше заморожены в dashboard-snapshot.json (см. mayFrozenAt) —
+// правки в CRM их больше не меняют.
 function _isEraDate(ddmmyyyy) {
   const [dd, mm, yy] = String(ddmmyyyy).split('.').map(Number);
-  return yy > 2026 || (yy === 2026 && mm >= 5);
+  return yy > 2026 || (yy === 2026 && mm >= 6);
 }
 
 function _purgeEraDates() {
