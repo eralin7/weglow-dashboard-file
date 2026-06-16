@@ -487,6 +487,29 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
 .prod-pill { display:flex; align-items:center; gap:6px; }
 .prod-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
 .custom-wrap { display:none; align-items:center; gap:6px; }
+/* ─── SPRINT dropdown ────────────────────────────────── */
+.sprint-wrap { position:relative; display:inline-flex; }
+.sprint-menu {
+  display:none; position:absolute; top:calc(100% + 6px); right:0; left:auto;
+  min-width:220px; max-height:340px; overflow-y:auto;
+  background:var(--white); border:1.5px solid var(--line); border-radius:12px;
+  box-shadow:var(--shadow2); padding:6px; z-index:200;
+}
+.sprint-menu.open { display:block; }
+.sprint-item {
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  padding:8px 11px; border-radius:8px; cursor:pointer; white-space:nowrap;
+  font-size:12.5px; font-weight:500; color:var(--slate); transition:all .12s;
+}
+.sprint-item:hover { background:var(--acc-l); color:var(--acc); }
+.sprint-item.active { background:var(--acc-l); color:var(--acc); font-weight:600; }
+.sprint-item .s-range { font-size:11px; color:var(--muted); font-weight:400; }
+.sprint-item:hover .s-range, .sprint-item.active .s-range { color:var(--acc); }
+.sprint-item .s-badge {
+  font-size:9px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
+  color:var(--green); background:var(--green-l);
+  padding:1px 5px; border-radius:6px; margin-left:6px;
+}
 .date-in {
   background:var(--bg); border:1.5px solid var(--line); border-radius:8px;
   color:var(--ink); font-family:'DM Sans',sans-serif; font-size:12px;
@@ -1282,6 +1305,10 @@ const _authGuard = new MutationObserver(() => {
       <button class="pill period-pill" onclick="setPreset('yesterday',this)">Вчера</button>
       <button class="pill period-pill" onclick="setPreset('week',this)">7 дней</button>
       <div id="main-month-pills" style="display:contents"></div>
+      <div class="sprint-wrap" id="sprint-wrap">
+        <button class="pill period-pill" id="sprint-btn" onclick="toggleSprintMenu(this)">🏃 Спринт ▾</button>
+        <div class="sprint-menu" id="sprint-menu"></div>
+      </div>
       <button class="pill period-pill" onclick="setPreset('custom',this)">📅 Диапазон</button>
       <div class="custom-wrap" id="custom-wrap">
         <input type="date" class="date-in" id="d-from" value="2026-02-01">
@@ -2135,6 +2162,12 @@ function setPreset(p,el){
 function markActivePeriod(el){
   document.querySelectorAll('#global-filters .period-pill').forEach(b=>b.classList.remove('active'));
   if(el) el.classList.add('active');
+  // Выбрали другой период — сбрасываем подпись/выделение кнопки «Спринт».
+  const sb=document.getElementById('sprint-btn');
+  if(sb && el!==sb){
+    sb.textContent='🏃 Спринт ▾';
+    document.querySelectorAll('#sprint-menu .sprint-item').forEach(i=>i.classList.remove('active'));
+  }
 }
 function markActiveMain(el){ markActivePeriod(el); }
 function applyCustom(){
@@ -2143,6 +2176,74 @@ function applyCustom(){
   activePeriod={from,to,label:`${from} — ${to}`,preset:'custom'};
   render();
 }
+// ═══════════════════ SPRINTS (сквозные, по 2 недели) ══════════════
+// Глобальная сквозная нумерация спринтов. Спринт 1 — особый
+// (01.05–17.05, 17 дней); с 18.05.2026 каждый спринт длится ровно 14 дней:
+//   1: 01.05–17.05   2: 18.05–31.05   3: 01.06–14.06   4: 15.06–28.06
+//   5: 29.06–12.07   6: 13.07–26.07 … и так далее.
+const _SPR_EPOCH = '2026-05-18';            // старт спринта №2 (шаг 14 дней)
+function _sprAddDays(iso, n){
+  const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function _sprDisp(iso){ const [y,m,d] = iso.split('-'); return `${d}.${m}.${y}`; }
+function _sprShort(iso){ const [y,m,d] = iso.split('-'); return `${d}.${m}`; }
+// Границы спринта по его номеру (n ≥ 1).
+function sprintByNum(n){
+  if (n <= 1) return { n:1, fromISO:'2026-05-01', toISO:'2026-05-17' };
+  const fromISO = _sprAddDays(_SPR_EPOCH, (n-2)*14);
+  return { n, fromISO, toISO: _sprAddDays(fromISO, 13) };
+}
+// Номер спринта, в который попадает дата (или null, если раньше старта).
+function sprintNumForDate(dt){
+  const iso = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+  if (iso < '2026-05-01') return null;
+  if (iso <= '2026-05-17') return 1;
+  const days = Math.floor((new Date(iso+'T00:00:00') - new Date(_SPR_EPOCH+'T00:00:00')) / 86400000);
+  return 2 + Math.floor(days / 14);
+}
+function buildSprintMenu(){
+  const menu = document.getElementById('sprint-menu');
+  if (!menu) return;
+  const curN = sprintNumForDate(_now()) || 1;
+  const maxN = curN + 1;                     // показываем и следующий спринт
+  const sel  = (activePeriod && /^sprint_\d+$/.test(activePeriod.preset||''))
+             ? +activePeriod.preset.split('_')[1] : null;
+  let html = '';
+  for (let n = 1; n <= maxN; n++){
+    const s = sprintByNum(n);
+    html += `<div class="sprint-item${n===sel?' active':''}" data-n="${n}" onclick="pickSprint(${n})">`
+          +   `<span>Спринт ${n}${n===curN?' <span class="s-badge">сейчас</span>':''}</span>`
+          +   `<span class="s-range">${_sprShort(s.fromISO)}–${_sprShort(s.toISO)}</span>`
+          + `</div>`;
+  }
+  menu.innerHTML = html;
+}
+function toggleSprintMenu(){
+  const menu = document.getElementById('sprint-menu');
+  if (!menu) return;
+  buildSprintMenu();                          // ребилд: «сейчас»/выбранный
+  menu.classList.toggle('open');
+}
+function pickSprint(n){
+  const s = sprintByNum(n);
+  const from = _sprDisp(s.fromISO), to = _sprDisp(s.toISO);
+  activePeriod = { from, to, label:`Спринт ${n} · ${_sprShort(s.fromISO)}–${_sprShort(s.toISO)}`, preset:`sprint_${n}` };
+  document.querySelectorAll('#global-filters .period-pill').forEach(b=>b.classList.remove('active'));
+  const btn = document.getElementById('sprint-btn');
+  if (btn){ btn.classList.add('active'); btn.textContent = `🏃 Спринт ${n} ▾`; }
+  document.querySelectorAll('#sprint-menu .sprint-item').forEach(it=>it.classList.toggle('active', +it.dataset.n===n));
+  const menu = document.getElementById('sprint-menu'); if (menu) menu.classList.remove('open');
+  const cw = document.getElementById('custom-wrap'); if (cw) cw.style.display='none';
+  render();
+}
+// Закрытие меню по клику вне виджета.
+document.addEventListener('click', e=>{
+  const wrap = document.getElementById('sprint-wrap');
+  const menu = document.getElementById('sprint-menu');
+  if (wrap && menu && !wrap.contains(e.target)) menu.classList.remove('open');
+});
+
 function setMgrPreset(p,el){
   document.getElementById('mgr-custom-wrap').style.display='none';
   if(p==='mgr_custom'){document.getElementById('mgr-custom-wrap').style.display='flex';markActiveMgr(el);return;}
