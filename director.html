@@ -259,17 +259,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
       </div>
     </div>
 
-    <!-- ROP MONTHLY PLANS -->
-    <div class="section" style="margin-top:32px">
-      <div class="section-title">Планы по группам (РОП) на месяц — <span id="rop-plan-month-label">—</span></div>
-      <div class="plan-grid" style="grid-template-columns:repeat(2,1fr)" id="rop-cards-wrap"></div>
-
-      <div class="save-wrap">
-        <button class="save-btn" id="save-rop-btn" onclick="saveRopPlans()">Сохранить месячные планы</button>
-        <span class="save-status" id="save-rop-status"></span>
-      </div>
-    </div>
-
     <!-- ROP SPRINT PLANS -->
     <div class="section" style="margin-top:32px">
       <div class="section-title" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
@@ -304,14 +293,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
     <div class="history-card" style="margin-bottom:24px">
       <div class="history-title">🏃 Планы РОП по спринтам</div>
       <div id="sprint-plan-history-wrap">
-        <div style="color:var(--muted);padding:24px;text-align:center;">Загрузка...</div>
-      </div>
-    </div>
-
-    <!-- ROP PLANS HISTORY -->
-    <div class="history-card" style="margin-bottom:24px">
-      <div class="history-title">📋 Планы РОП по месяцам</div>
-      <div id="rop-plan-history-wrap">
         <div style="color:var(--muted);padding:24px;text-align:center;">Загрузка...</div>
       </div>
     </div>
@@ -561,8 +542,7 @@ function _onAuthExpired(){
 
 // Шим: старые вызовы sbGet/sbPost оставлены, но теперь работают через
 // dashboard_config / dashboard-snapshot.json для read-only «фактических»
-// данных (RAW/MANAGERS). Используется только в loadRopFact и
-// renderRopPlanHistory (исторические агрегаты).
+// данных (RAW/MANAGERS). Используется в loadRopFact (план/факт по РОП).
 async function sbGet(url){
   // Эта функция теперь принимает старые URL и роутит:
   //   weglow_plans     → строим из _dashCfg.PLANS
@@ -724,7 +704,6 @@ function onMonthChange(){
   selectedMonth = document.getElementById('month-sel').value;
   updateMonthLabel();
   fillForm();
-  fillRopForm();
 }
 
 function updateMonthLabel(){
@@ -878,7 +857,6 @@ function editMonth(month){
   document.getElementById('month-sel').value = month;
   updateMonthLabel();
   fillForm();
-  fillRopForm();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -948,28 +926,8 @@ function sprintNumForDate(dt){
   return 2 + Math.floor(days / 14);
 }
 
-// ═══════════════ МЕСЯЧНЫЕ ПЛАНЫ РОП ════════════════════════════════
-function buildRopCards(){
-  const wrap = document.getElementById('rop-cards-wrap');
-  if(!wrap) return;
-  wrap.innerHTML = ROP_DEFS.map(r => `
-    <div class="plan-card">
-      <div class="pc-head"><div class="pc-dot" style="background:${r.color}"></div><div class="pc-name">${r.name}</div></div>
-      <div class="pc-field"><div class="pc-label">План на месяц ₸</div>
-        <input class="pc-inp" type="number" id="rop-plan-${r.slug}" placeholder="0" min="0" step="1000000" oninput="updateRopCur('${r.slug}')"></div>
-      <div class="pc-current" id="cur-rop-${r.slug}"><span style="color:var(--muted)">Не задан</span></div>
-    </div>
-  `).join('');
-}
-
-function updateRopCur(slug){
-  const v = parseInt(document.getElementById(`rop-plan-${slug}`).value)||0;
-  const el = document.getElementById(`cur-rop-${slug}`);
-  if(el) el.innerHTML = v
-    ? `На месяц: <strong>${fmtM(v)}</strong>`
-    : `<span style="color:var(--muted)">Не задан</span>`;
-}
-
+// ═══════════════ ЗАГРУЗКА КОНФИГА + СПРИНТ-РЕДАКТОР ════════════════
+// ropPlans грузим для секции «РОП — план / факт» (только чтение плана).
 async function loadRopPlans(){
   // UI строим в любом случае, чтобы карточки и подписи появились даже
   // при ошибке загрузки конфига.
@@ -984,76 +942,12 @@ async function loadRopPlans(){
   } catch(e){
     console.error('loadRopPlans parse error:', e);
   }
-  buildRopCards();
-  fillRopForm();
   // Спринт-редактор (независим от выбора месяца)
   if(!selectedSprint) selectedSprint = sprintNumForDate(new Date()) || 1;
   buildSprintCards();
   buildSprintSelector();
   fillSprintForm();
-  try { renderRopPlanHistory();   } catch(e){ console.error('renderRopPlanHistory error:', e); }
   try { renderSprintPlanHistory();} catch(e){ console.error('renderSprintPlanHistory error:', e); }
-}
-
-function fillRopForm(){
-  if(!selectedMonth) return;
-  const [mm,yy] = selectedMonth.split('.');
-  const lbl = document.getElementById('rop-plan-month-label');
-  if(lbl) lbl.textContent = `${MONTH_NAMES[+mm-1]} ${yy}`;
-  for(const rop of ROP_DEFS){
-    const v = (ropPlans[rop.name] && ropPlans[rop.name][selectedMonth]) || 0;
-    document.getElementById(`rop-plan-${rop.slug}`).value = v || '';
-    updateRopCur(rop.slug);
-  }
-}
-
-async function saveRopPlans(){
-  const vals = {};
-  let anySet = false;
-  for(const rop of ROP_DEFS){
-    const v = parseInt(document.getElementById(`rop-plan-${rop.slug}`).value) || 0;
-    vals[rop.name] = v;
-    if(v) anySet = true;
-  }
-  if(!anySet){ showRopStatus('Введите хотя бы один план', 'err'); return; }
-
-  document.getElementById('save-rop-btn').disabled = true;
-  showRopStatus('Сохранение...', 'load');
-
-  try {
-    // Свежий снимок dashboard_config (другие кабинеты могли писать)
-    await sbGetConfig();
-    if(!_dashCfg.ROP_PLANS) _dashCfg.ROP_PLANS = {};
-    for(const rop of ROP_DEFS){
-      if(!_dashCfg.ROP_PLANS[rop.name]) _dashCfg.ROP_PLANS[rop.name] = {};
-      _dashCfg.ROP_PLANS[rop.name][selectedMonth] = vals[rop.name];
-    }
-    await sbSaveConfig();
-
-    ropPlans = _dashCfg.ROP_PLANS;
-    fillRopForm();
-    renderRopPlanHistory();
-
-    const [mm,yy] = selectedMonth.split('.');
-    toast(`✓ Месячные планы РОП на ${MONTH_NAMES[+mm-1]} ${yy} сохранены`, 'ok');
-    showRopStatus('');
-  } catch(e){
-    if(e.message === 'AUTH_EXPIRED'){
-      showRopStatus('Сессия истекла — войдите снова', 'err');
-      _onAuthExpired();
-      return;
-    }
-    showRopStatus('Ошибка: '+e.message, 'err');
-    toast('Ошибка сохранения РОП', 'err');
-  } finally {
-    document.getElementById('save-rop-btn').disabled = false;
-  }
-}
-
-function showRopStatus(text, type){
-  const el = document.getElementById('save-rop-status');
-  el.textContent = text;
-  el.className = 'save-status' + (type==='ok'?' save-ok':type==='err'?' save-err':'');
 }
 
 // ═══════════════ ПЛАНЫ РОП ПО СПРИНТАМ ═════════════════════════════
@@ -1217,72 +1111,6 @@ function editSprint(n){
   fillSprintForm();
   const sel = document.getElementById('sprint-sel');
   if(sel) sel.scrollIntoView({behavior:'smooth', block:'center'});
-}
-
-function renderRopPlanHistory(){
-  const wrap = document.getElementById('rop-plan-history-wrap');
-  const now = new Date();
-  const curMK = `${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
-
-  // Collect all months across all ROPs
-  const monthSet = new Set();
-  for(const rop of ROP_DEFS){
-    const rp = ropPlans[rop.name] || {};
-    Object.keys(rp).forEach(m => monthSet.add(m));
-  }
-
-  if(!monthSet.size){
-    wrap.innerHTML = '<div style="color:var(--muted);padding:24px;text-align:center">Нет данных</div>';
-    return;
-  }
-
-  const sorted = [...monthSet].sort((a,b)=>{
-    const [am,ay]=a.split('.'); const [bm,by]=b.split('.');
-    return (+by*12+ +bm)-(+ay*12+ +am);
-  });
-
-  const headerCols = ROP_DEFS.map(r =>
-    `<th style="color:${r.color}">${r.name.replace('РОП ','')}</th>`
-  ).join('');
-
-  const rows = sorted.map(month => {
-    const [mm,yy] = month.split('.');
-    const label = `${MONTH_NAMES[+mm-1]} ${yy}`;
-    const isCur = month === curMK;
-    const isSel = month === selectedMonth;
-    let total = 0;
-    const cells = ROP_DEFS.map(r => {
-      const v = (ropPlans[r.name] && ropPlans[r.name][month]) || 0;
-      total += v;
-      return `<td style="color:${r.color};font-weight:600">${fmtM(v)}</td>`;
-    }).join('');
-    return `<tr class="${isCur?'cur-row':''}">
-      <td style="font-weight:600">${label} ${isCur?'<span class="tag-cur">текущий</span>':''}</td>
-      ${cells}
-      <td style="font-weight:700">${fmtM(total)}</td>
-      <td><button class="edit-btn" onclick="editRopMonth('${month}')">✏️ Изменить</button></td>
-    </tr>`;
-  }).join('');
-
-  wrap.innerHTML = `
-    <table class="dt">
-      <thead><tr>
-        <th>Месяц</th>
-        ${headerCols}
-        <th>Итого</th>
-        <th></th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
-}
-
-function editRopMonth(month){
-  selectedMonth = month;
-  document.getElementById('month-sel').value = month;
-  updateMonthLabel();
-  fillForm();
-  fillRopForm();
-  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 // ═══════════════════ ROP PLAN / FACT ═══════════════════════════
