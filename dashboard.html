@@ -2477,10 +2477,12 @@ function renderKPI(d){
 
   // Карточки спринтов — текущий + следующий сквозной спринт, для которых
   // директор задал план (SPRINT_PLANS). Если планов нет — блок скрыт.
+  // Выбранный в выпадашке спринт не дублируем (он уже основная колонка).
   const spWrap = document.getElementById('kpi-sprints');
   if (!spWrap) return;
   const curN = sprintNumForDate(_now()) || 1;
-  const spNums = [curN, curN+1].filter(n => sprintPlanTotal(n) > 0);
+  const _selN = activeSprintNum();
+  const spNums = [curN, curN+1].filter(n => sprintPlanTotal(n) > 0 && n !== _selN);
   if (spNums.length) {
     const spColors = ['#6366f1', '#a855f7'];
     let html = '';
