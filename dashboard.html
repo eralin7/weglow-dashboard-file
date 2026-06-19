@@ -4519,6 +4519,27 @@ function renderPeriodPills() {
 }
 window.renderPeriodPills = renderPeriodPills;
 var _prodByRopChart = null;
+
+// По умолчанию дашборд открывается на ТЕКУЩЕМ сквозном спринте (а не месяце).
+// Вызываем здесь, а не при объявлении activePeriod: спринт-функции опираются
+// на const _SPR_EPOCH (TDZ), который к этому моменту уже инициализирован.
+function _applyDefaultSprint(){
+  try{
+    const n = sprintNumForDate(_now()) || 1;
+    const s = sprintByNum(n);
+    activePeriod = {
+      from: _sprDisp(s.fromISO),
+      to:   _sprDisp(s.toISO),
+      label: `Спринт ${n} · ${_sprShort(s.fromISO)}–${_sprShort(s.toISO)}`,
+      preset: `sprint_${n}`
+    };
+    document.querySelectorAll('#global-filters .period-pill').forEach(b=>b.classList.remove('active'));
+    const btn = document.getElementById('sprint-btn');
+    if (btn){ btn.classList.add('active'); btn.textContent = `🏃 Спринт ${n} ▾`; }
+  }catch(e){ console.warn('default sprint init failed', e); }
+}
+_applyDefaultSprint();
+
 initDynamicUI();
 render(); // render shell (empty until auth)
 // Load data only if already authenticated (returning session)
