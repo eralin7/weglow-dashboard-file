@@ -2529,7 +2529,11 @@ function renderPlanTable(stats){
     const _curMEnd = new Date(_now.getFullYear(), _now.getMonth()+1, 0);
     const _curTotalDays = _curMEnd.getDate();
     const _curPassedDays = _now.getDate();
-    const _daysLeft = _curTotalDays - _curPassedDays;
+    // Дней до конца периода для «нужно/день»: в режиме спринта — до конца
+    // спринта, иначе — до конца месяца.
+    const _daysLeft = activeSprintNum()
+      ? Math.max(0, Math.round((_toD - _now) / 86400000))
+      : _curTotalDays - _curPassedDays;
 
     // Calculate proportional plan for period (may span multiple months)
     function _getRopPlanPeriod(ropName) {
@@ -2554,8 +2558,11 @@ function renderPlanTable(stats){
       return total;
     }
 
-    // Full month plan for forecast
+    // Колонка «ПЛАН ₸»: в режиме спринта — план спринта, иначе — полный
+    // месячный план (он же база для прогноза в месячном режиме).
     function _getRopMonthPlan(ropName) {
+      const _spN = activeSprintNum();
+      if (_spN) return sprintPlanFor(ropName, _spN);
       const mk = `${String(_now.getMonth()+1).padStart(2,'0')}.${_now.getFullYear()}`;
       return getRopPlan(ropName, mk);
     }
@@ -2601,7 +2608,9 @@ function renderPlanTable(stats){
         fcMgrs.filter(m => ropMatches(m.name, ropName)).forEach(m => { _fcFact += m.budget || 0; });
       });
       const dailyRate = _forecastDays > 0 ? _fcFact / _forecastDays : 0;
-      const forecast = dailyRate > 0 && fullMonthPlan > 0 ? Math.round(dailyRate * _curTotalDays) : 0;
+      // Прогноз — только в месячном режиме (месячная проекция против плана
+      // спринта бессмысленна). В режиме спринта показываем «—».
+      const forecast = !activeSprintNum() && dailyRate > 0 && fullMonthPlan > 0 ? Math.round(dailyRate * _curTotalDays) : 0;
 
       const conv = ropLeads>0?(ropDeals/ropLeads*100).toFixed(1):'0.0';
 
