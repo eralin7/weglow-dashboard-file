@@ -259,33 +259,30 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
       </div>
     </div>
 
-    <!-- SPRINT DATES -->
+    <!-- ROP MONTHLY PLANS -->
     <div class="section" style="margin-top:32px">
-      <div class="section-title">Даты спринтов на <span id="sprint-month-label">—</span></div>
-      <div class="plan-grid" style="grid-template-columns:repeat(2,1fr)">
-        <div class="plan-card">
-          <div class="pc-head"><div class="pc-dot" style="background:#6366f1"></div><div class="pc-name">Спринт 1</div></div>
-          <div class="pc-field"><div class="pc-label">Начало</div><input class="pc-inp" type="date" id="sprint1-start"></div>
-          <div class="pc-field"><div class="pc-label">Окончание</div><input class="pc-inp" type="date" id="sprint1-end"></div>
-          <div class="pc-current" id="cur-sprint1"><span style="color:var(--muted)">Не задан</span></div>
-        </div>
-        <div class="plan-card">
-          <div class="pc-head"><div class="pc-dot" style="background:#a855f7"></div><div class="pc-name">Спринт 2</div></div>
-          <div class="pc-field"><div class="pc-label">Начало</div><input class="pc-inp" type="date" id="sprint2-start"></div>
-          <div class="pc-field"><div class="pc-label">Окончание</div><input class="pc-inp" type="date" id="sprint2-end"></div>
-          <div class="pc-current" id="cur-sprint2"><span style="color:var(--muted)">Не задан</span></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ROP GROUP PLANS -->
-    <div class="section" style="margin-top:32px">
-      <div class="section-title">Планы по группам (РОП) на <span id="rop-plan-month-label">—</span> <span style="font-size:12px;color:var(--muted);font-weight:400">(по спринтам)</span></div>
+      <div class="section-title">Планы по группам (РОП) на месяц — <span id="rop-plan-month-label">—</span></div>
       <div class="plan-grid" style="grid-template-columns:repeat(2,1fr)" id="rop-cards-wrap"></div>
 
       <div class="save-wrap">
-        <button class="save-btn" id="save-rop-btn" onclick="saveRopPlans()">Сохранить планы РОП</button>
+        <button class="save-btn" id="save-rop-btn" onclick="saveRopPlans()">Сохранить месячные планы</button>
         <span class="save-status" id="save-rop-status"></span>
+      </div>
+    </div>
+
+    <!-- ROP SPRINT PLANS -->
+    <div class="section" style="margin-top:32px">
+      <div class="section-title" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span>🏃 Планы по группам (РОП) на спринт</span>
+        <select class="month-sel" id="sprint-sel" onchange="onSprintChange()" style="font-size:13px;padding:7px 12px"></select>
+        <span id="sprint-range-label" style="font-size:13px;color:var(--muted);font-weight:400"></span>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin:-8px 0 14px">Сквозные 14-дневные спринты (как в дашборде). Даты считаются автоматически — выберите спринт и задайте план по каждому РОПу.</div>
+      <div class="plan-grid" style="grid-template-columns:repeat(2,1fr)" id="sprint-cards-wrap"></div>
+
+      <div class="save-wrap">
+        <button class="save-btn" id="save-sprint-btn" onclick="saveSprintPlans()">Сохранить планы спринта</button>
+        <span class="save-status" id="save-sprint-status"></span>
       </div>
     </div>
 
@@ -299,6 +296,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
         </div>
       </div>
       <div id="rop-fact-wrap" style="margin-top:16px">
+        <div style="color:var(--muted);padding:24px;text-align:center;">Загрузка...</div>
+      </div>
+    </div>
+
+    <!-- ROP SPRINT PLANS HISTORY -->
+    <div class="history-card" style="margin-bottom:24px">
+      <div class="history-title">🏃 Планы РОП по спринтам</div>
+      <div id="sprint-plan-history-wrap">
         <div style="color:var(--muted);padding:24px;text-align:center;">Загрузка...</div>
       </div>
     </div>
@@ -917,33 +922,52 @@ const ROP_DEFS = [
   {name:'БОТА AI',         slug:'bota-ai',   color:'#0ea5e9'},
 ];
 
-let ropPlans = {};        // legacy monthly: { 'РОП X': {'03.2026': N} }
-let ropSprintPlans = {};  // { 'РОП X': {'03.2026': {1:N, 2:N}} }
-let sprints = {};         // { '03.2026': {1:{start,end}, 2:{start,end}} }
+let ropPlans   = {};      // месячные планы РОП: { 'РОП X': {'06.2026': N} }
+let sprintPlans = {};     // спринт-планы РОП:  { 'РОП X': {'<глоб.№ спринта>': N} }
+let selectedSprint = null;// выбранный сквозной спринт в редакторе
 
+// ── Сквозные спринты (по 14 дней, как в дашборде) ──────────────────
+// Спринт 1: 01.05–17.05 (особый), далее каждый по 14 дней от 18.05.2026.
+const _SPR_EPOCH = '2026-05-18';
+function _sprAddDays(iso, n){
+  const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function _sprDisp(iso){ const [y,m,d] = iso.split('-'); return `${d}.${m}.${y}`; }
+function _sprShort(iso){ const [y,m,d] = iso.split('-'); return `${d}.${m}`; }
+function sprintByNum(n){
+  if (n <= 1) return { n:1, fromISO:'2026-05-01', toISO:'2026-05-17' };
+  const fromISO = _sprAddDays(_SPR_EPOCH, (n-2)*14);
+  return { n, fromISO, toISO: _sprAddDays(fromISO, 13) };
+}
+function sprintNumForDate(dt){
+  const iso = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+  if (iso < '2026-05-01') return null;
+  if (iso <= '2026-05-17') return 1;
+  const days = Math.floor((new Date(iso+'T00:00:00') - new Date(_SPR_EPOCH+'T00:00:00')) / 86400000);
+  return 2 + Math.floor(days / 14);
+}
+
+// ═══════════════ МЕСЯЧНЫЕ ПЛАНЫ РОП ════════════════════════════════
 function buildRopCards(){
   const wrap = document.getElementById('rop-cards-wrap');
   if(!wrap) return;
   wrap.innerHTML = ROP_DEFS.map(r => `
     <div class="plan-card">
       <div class="pc-head"><div class="pc-dot" style="background:${r.color}"></div><div class="pc-name">${r.name}</div></div>
-      <div class="pc-field"><div class="pc-label">Спринт 1 ₸</div>
-        <input class="pc-inp" type="number" id="rop-plan-${r.slug}-s1" placeholder="0" min="0" step="1000000" oninput="updateRopTotal('${r.slug}')"></div>
-      <div class="pc-field"><div class="pc-label">Спринт 2 ₸</div>
-        <input class="pc-inp" type="number" id="rop-plan-${r.slug}-s2" placeholder="0" min="0" step="1000000" oninput="updateRopTotal('${r.slug}')"></div>
+      <div class="pc-field"><div class="pc-label">План на месяц ₸</div>
+        <input class="pc-inp" type="number" id="rop-plan-${r.slug}" placeholder="0" min="0" step="1000000" oninput="updateRopCur('${r.slug}')"></div>
       <div class="pc-current" id="cur-rop-${r.slug}"><span style="color:var(--muted)">Не задан</span></div>
     </div>
   `).join('');
 }
 
-function defaultSprintDates(monthKey){
-  const [mm,yy] = monthKey.split('.').map(Number);
-  const last = new Date(yy, mm, 0).getDate();
-  const iso = (d) => `${yy}-${String(mm).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-  return {
-    1: { start: iso(1),  end: iso(15) },
-    2: { start: iso(16), end: iso(last) }
-  };
+function updateRopCur(slug){
+  const v = parseInt(document.getElementById(`rop-plan-${slug}`).value)||0;
+  const el = document.getElementById(`cur-rop-${slug}`);
+  if(el) el.innerHTML = v
+    ? `На месяц: <strong>${fmtM(v)}</strong>`
+    : `<span style="color:var(--muted)">Не задан</span>`;
 }
 
 async function loadRopPlans(){
@@ -955,62 +979,31 @@ async function loadRopPlans(){
     console.error('loadRopPlans sbGetConfig error:', e);
   }
   try {
-    ropPlans       = _dashCfg.ROP_PLANS         || {};
-    ropSprintPlans = _dashCfg.ROP_SPRINT_PLANS  || {};
-    sprints        = _dashCfg.SPRINTS           || {};
+    ropPlans    = _dashCfg.ROP_PLANS    || {};
+    sprintPlans = _dashCfg.SPRINT_PLANS || {};
   } catch(e){
     console.error('loadRopPlans parse error:', e);
   }
   buildRopCards();
   fillRopForm();
-  try { renderRopPlanHistory(); } catch(e){ console.error('renderRopPlanHistory error:', e); }
-}
-
-function updateRopTotal(slug){
-  const s1 = parseInt(document.getElementById(`rop-plan-${slug}-s1`).value)||0;
-  const s2 = parseInt(document.getElementById(`rop-plan-${slug}-s2`).value)||0;
-  const total = s1+s2;
-  const el = document.getElementById(`cur-rop-${slug}`);
-  if(el) el.innerHTML = total
-    ? `На месяц: <strong>${fmtM(total)}</strong>`
-    : `<span style="color:var(--muted)">Не задан</span>`;
+  // Спринт-редактор (независим от выбора месяца)
+  if(!selectedSprint) selectedSprint = sprintNumForDate(new Date()) || 1;
+  buildSprintCards();
+  buildSprintSelector();
+  fillSprintForm();
+  try { renderRopPlanHistory();   } catch(e){ console.error('renderRopPlanHistory error:', e); }
+  try { renderSprintPlanHistory();} catch(e){ console.error('renderSprintPlanHistory error:', e); }
 }
 
 function fillRopForm(){
   if(!selectedMonth) return;
   const [mm,yy] = selectedMonth.split('.');
-  const monthLabel = `${MONTH_NAMES[+mm-1]} ${yy}`;
   const lbl = document.getElementById('rop-plan-month-label');
-  if(lbl) lbl.textContent = monthLabel;
-  const slbl = document.getElementById('sprint-month-label');
-  if(slbl) slbl.textContent = monthLabel;
-
-  // Sprint dates
-  const saved = sprints[selectedMonth];
-  const sp = saved || defaultSprintDates(selectedMonth);
-  document.getElementById('sprint1-start').value = sp[1].start;
-  document.getElementById('sprint1-end').value   = sp[1].end;
-  document.getElementById('sprint2-start').value = sp[2].start;
-  document.getElementById('sprint2-end').value   = sp[2].end;
-  document.getElementById('cur-sprint1').innerHTML = saved
-    ? `Сохранён: <strong>${sp[1].start} → ${sp[1].end}</strong>`
-    : `<span style="color:var(--muted)">По умолчанию: ${sp[1].start} → ${sp[1].end}</span>`;
-  document.getElementById('cur-sprint2').innerHTML = saved
-    ? `Сохранён: <strong>${sp[2].start} → ${sp[2].end}</strong>`
-    : `<span style="color:var(--muted)">По умолчанию: ${sp[2].start} → ${sp[2].end}</span>`;
-
-  // ROP sprint plans (50/50 backfill from legacy)
+  if(lbl) lbl.textContent = `${MONTH_NAMES[+mm-1]} ${yy}`;
   for(const rop of ROP_DEFS){
-    const spv = (ropSprintPlans[rop.name] && ropSprintPlans[rop.name][selectedMonth]) || {};
-    let v1 = spv[1] || 0;
-    let v2 = spv[2] || 0;
-    if(!v1 && !v2){
-      const legacy = (ropPlans[rop.name] && ropPlans[rop.name][selectedMonth]) || 0;
-      if(legacy){ v1 = Math.round(legacy/2); v2 = legacy - v1; }
-    }
-    document.getElementById(`rop-plan-${rop.slug}-s1`).value = v1 || '';
-    document.getElementById(`rop-plan-${rop.slug}-s2`).value = v2 || '';
-    updateRopTotal(rop.slug);
+    const v = (ropPlans[rop.name] && ropPlans[rop.name][selectedMonth]) || 0;
+    document.getElementById(`rop-plan-${rop.slug}`).value = v || '';
+    updateRopCur(rop.slug);
   }
 }
 
@@ -1018,17 +1011,10 @@ async function saveRopPlans(){
   const vals = {};
   let anySet = false;
   for(const rop of ROP_DEFS){
-    const v1 = parseInt(document.getElementById(`rop-plan-${rop.slug}-s1`).value) || 0;
-    const v2 = parseInt(document.getElementById(`rop-plan-${rop.slug}-s2`).value) || 0;
-    vals[rop.name] = {1:v1, 2:v2};
-    if(v1||v2) anySet = true;
+    const v = parseInt(document.getElementById(`rop-plan-${rop.slug}`).value) || 0;
+    vals[rop.name] = v;
+    if(v) anySet = true;
   }
-
-  const s1s = document.getElementById('sprint1-start').value;
-  const s1e = document.getElementById('sprint1-end').value;
-  const s2s = document.getElementById('sprint2-start').value;
-  const s2e = document.getElementById('sprint2-end').value;
-  if(!s1s||!s1e||!s2s||!s2e){ showRopStatus('Заполните даты обоих спринтов','err'); return; }
   if(!anySet){ showRopStatus('Введите хотя бы один план', 'err'); return; }
 
   document.getElementById('save-rop-btn').disabled = true;
@@ -1038,32 +1024,18 @@ async function saveRopPlans(){
     // Свежий снимок dashboard_config (другие кабинеты могли писать)
     await sbGetConfig();
     if(!_dashCfg.ROP_PLANS) _dashCfg.ROP_PLANS = {};
-    if(!_dashCfg.ROP_SPRINT_PLANS) _dashCfg.ROP_SPRINT_PLANS = {};
-    if(!_dashCfg.SPRINTS) _dashCfg.SPRINTS = {};
-
-    _dashCfg.SPRINTS[selectedMonth] = {
-      1: {start:s1s, end:s1e},
-      2: {start:s2s, end:s2e}
-    };
-
     for(const rop of ROP_DEFS){
-      if(!_dashCfg.ROP_SPRINT_PLANS[rop.name]) _dashCfg.ROP_SPRINT_PLANS[rop.name] = {};
       if(!_dashCfg.ROP_PLANS[rop.name]) _dashCfg.ROP_PLANS[rop.name] = {};
-      _dashCfg.ROP_SPRINT_PLANS[rop.name][selectedMonth] = vals[rop.name];
-      // Зеркалим месячный план для обратной совместимости
-      _dashCfg.ROP_PLANS[rop.name][selectedMonth] = vals[rop.name][1] + vals[rop.name][2];
+      _dashCfg.ROP_PLANS[rop.name][selectedMonth] = vals[rop.name];
     }
-
     await sbSaveConfig();
 
-    ropPlans       = _dashCfg.ROP_PLANS;
-    ropSprintPlans = _dashCfg.ROP_SPRINT_PLANS;
-    sprints        = _dashCfg.SPRINTS;
+    ropPlans = _dashCfg.ROP_PLANS;
     fillRopForm();
     renderRopPlanHistory();
 
     const [mm,yy] = selectedMonth.split('.');
-    toast(`✓ Планы РОП и спринты на ${MONTH_NAMES[+mm-1]} ${yy} сохранены`, 'ok');
+    toast(`✓ Месячные планы РОП на ${MONTH_NAMES[+mm-1]} ${yy} сохранены`, 'ok');
     showRopStatus('');
   } catch(e){
     if(e.message === 'AUTH_EXPIRED'){
@@ -1082,6 +1054,169 @@ function showRopStatus(text, type){
   const el = document.getElementById('save-rop-status');
   el.textContent = text;
   el.className = 'save-status' + (type==='ok'?' save-ok':type==='err'?' save-err':'');
+}
+
+// ═══════════════ ПЛАНЫ РОП ПО СПРИНТАМ ═════════════════════════════
+function buildSprintSelector(){
+  const sel = document.getElementById('sprint-sel');
+  if(!sel) return;
+  const curN = sprintNumForDate(new Date()) || 1;
+  const startN = Math.max(1, curN - 2);
+  const endN = curN + 3;
+  let html = '';
+  for(let n = startN; n <= endN; n++){
+    const s = sprintByNum(n);
+    const range = `${_sprShort(s.fromISO)}–${_sprShort(s.toISO)}`;
+    html += `<option value="${n}" ${n===selectedSprint?'selected':''}>Спринт ${n} (${range})${n===curN?' — сейчас':''}</option>`;
+  }
+  sel.innerHTML = html;
+  sel.value = String(selectedSprint);
+}
+
+function onSprintChange(){
+  selectedSprint = +document.getElementById('sprint-sel').value;
+  fillSprintForm();
+}
+
+function buildSprintCards(){
+  const wrap = document.getElementById('sprint-cards-wrap');
+  if(!wrap) return;
+  wrap.innerHTML = ROP_DEFS.map(r => `
+    <div class="plan-card">
+      <div class="pc-head"><div class="pc-dot" style="background:${r.color}"></div><div class="pc-name">${r.name}</div></div>
+      <div class="pc-field"><div class="pc-label">План на спринт ₸</div>
+        <input class="pc-inp" type="number" id="sprint-rop-${r.slug}" placeholder="0" min="0" step="1000000" oninput="updateSprintCur('${r.slug}')"></div>
+      <div class="pc-current" id="cur-sprint-rop-${r.slug}"><span style="color:var(--muted)">Не задан</span></div>
+    </div>
+  `).join('');
+}
+
+function updateSprintCur(slug){
+  const v = parseInt(document.getElementById(`sprint-rop-${slug}`).value)||0;
+  const el = document.getElementById(`cur-sprint-rop-${slug}`);
+  if(el) el.innerHTML = v
+    ? `На спринт: <strong>${fmtM(v)}</strong>`
+    : `<span style="color:var(--muted)">Не задан</span>`;
+}
+
+function fillSprintForm(){
+  if(!selectedSprint) return;
+  const s = sprintByNum(selectedSprint);
+  const lbl = document.getElementById('sprint-range-label');
+  const days = selectedSprint<=1 ? 17 : 14;
+  if(lbl) lbl.textContent = `${_sprDisp(s.fromISO)} → ${_sprDisp(s.toISO)} · ${days} дней`;
+  for(const rop of ROP_DEFS){
+    const v = (sprintPlans[rop.name] && sprintPlans[rop.name][selectedSprint]) || 0;
+    document.getElementById(`sprint-rop-${rop.slug}`).value = v || '';
+    updateSprintCur(rop.slug);
+  }
+}
+
+async function saveSprintPlans(){
+  if(!selectedSprint){ showSprintStatus('Выберите спринт', 'err'); return; }
+  const vals = {};
+  let anySet = false;
+  for(const rop of ROP_DEFS){
+    const v = parseInt(document.getElementById(`sprint-rop-${rop.slug}`).value) || 0;
+    vals[rop.name] = v;
+    if(v) anySet = true;
+  }
+  if(!anySet){ showSprintStatus('Введите хотя бы один план', 'err'); return; }
+
+  document.getElementById('save-sprint-btn').disabled = true;
+  showSprintStatus('Сохранение...', 'load');
+
+  try {
+    await sbGetConfig();
+    if(!_dashCfg.SPRINT_PLANS) _dashCfg.SPRINT_PLANS = {};
+    for(const rop of ROP_DEFS){
+      if(!_dashCfg.SPRINT_PLANS[rop.name]) _dashCfg.SPRINT_PLANS[rop.name] = {};
+      _dashCfg.SPRINT_PLANS[rop.name][selectedSprint] = vals[rop.name];
+    }
+    await sbSaveConfig();
+
+    sprintPlans = _dashCfg.SPRINT_PLANS;
+    fillSprintForm();
+    renderSprintPlanHistory();
+
+    toast(`✓ Планы на Спринт ${selectedSprint} сохранены`, 'ok');
+    showSprintStatus('');
+  } catch(e){
+    if(e.message === 'AUTH_EXPIRED'){
+      showSprintStatus('Сессия истекла — войдите снова', 'err');
+      _onAuthExpired();
+      return;
+    }
+    showSprintStatus('Ошибка: '+e.message, 'err');
+    toast('Ошибка сохранения спринта', 'err');
+  } finally {
+    document.getElementById('save-sprint-btn').disabled = false;
+  }
+}
+
+function showSprintStatus(text, type){
+  const el = document.getElementById('save-sprint-status');
+  if(!el) return;
+  el.textContent = text;
+  el.className = 'save-status' + (type==='ok'?' save-ok':type==='err'?' save-err':'');
+}
+
+function renderSprintPlanHistory(){
+  const wrap = document.getElementById('sprint-plan-history-wrap');
+  if(!wrap) return;
+  const curN = sprintNumForDate(new Date()) || 1;
+
+  const numSet = new Set();
+  for(const rop of ROP_DEFS){
+    const sp = sprintPlans[rop.name] || {};
+    Object.keys(sp).forEach(n => numSet.add(+n));
+  }
+  if(!numSet.size){
+    wrap.innerHTML = '<div style="color:var(--muted);padding:24px;text-align:center">Нет данных</div>';
+    return;
+  }
+
+  const sorted = [...numSet].sort((a,b)=>b-a);
+  const headerCols = ROP_DEFS.map(r =>
+    `<th style="color:${r.color}">${r.name.replace('РОП ','')}</th>`
+  ).join('');
+
+  const rows = sorted.map(n => {
+    const s = sprintByNum(n);
+    const range = `${_sprShort(s.fromISO)}–${_sprShort(s.toISO)}`;
+    const isCur = n === curN;
+    let total = 0;
+    const cells = ROP_DEFS.map(r => {
+      const v = (sprintPlans[r.name] && sprintPlans[r.name][n]) || 0;
+      total += v;
+      return `<td style="color:${r.color};font-weight:600">${fmtM(v)}</td>`;
+    }).join('');
+    return `<tr class="${isCur?'cur-row':''}">
+      <td style="font-weight:600">Спринт ${n} ${isCur?'<span class="tag-cur">сейчас</span>':''}<div style="font-size:11px;color:var(--muted);font-weight:400">${range}</div></td>
+      ${cells}
+      <td style="font-weight:700">${fmtM(total)}</td>
+      <td><button class="edit-btn" onclick="editSprint(${n})">✏️ Изменить</button></td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <table class="dt">
+      <thead><tr>
+        <th>Спринт</th>
+        ${headerCols}
+        <th>Итого</th>
+        <th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function editSprint(n){
+  selectedSprint = n;
+  buildSprintSelector();
+  fillSprintForm();
+  const sel = document.getElementById('sprint-sel');
+  if(sel) sel.scrollIntoView({behavior:'smooth', block:'center'});
 }
 
 function renderRopPlanHistory(){

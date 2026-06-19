@@ -1657,6 +1657,9 @@ let PLANS = _loaded && _loaded.PLANS ? _loaded.PLANS : {'col':{'03.2026':8600000
 let ROP_PLANS = (_loaded && _loaded.ROP_PLANS) ? _loaded.ROP_PLANS : {};
 let ROP_SPRINT_PLANS = (_loaded && _loaded.ROP_SPRINT_PLANS) ? _loaded.ROP_SPRINT_PLANS : {};
 let SPRINTS = (_loaded && _loaded.SPRINTS) ? _loaded.SPRINTS : {};
+// Сквозные спринт-планы: { '<РОП>': { '<глобальный№ спринта>': сумма } }.
+// Источник истины для плана при выборе спринта в выпадашке (sprint_N).
+let SPRINT_PLANS = (_loaded && _loaded.SPRINT_PLANS) ? _loaded.SPRINT_PLANS : {};
 let RNP_EXCEL = (_loaded && _loaded.RNP_EXCEL) ? _loaded.RNP_EXCEL : {};
 
 const PROD_CFG = {
@@ -1845,6 +1848,26 @@ function buildPresets() {
   return presets;
 }
 
+// ── Сквозные спринт-планы (SPRINT_PLANS[rop][globalN]) ─────────────
+// Номер активного сквозного спринта (выбран в выпадашке) или null.
+function activeSprintNum(){
+  const m = activePeriod && activePeriod.preset && String(activePeriod.preset).match(/^sprint_(\d+)$/);
+  return m ? +m[1] : null;
+}
+// План конкретного РОПа на сквозной спринт n.
+function sprintPlanFor(ropName, n){
+  return (SPRINT_PLANS[ropName] && SPRINT_PLANS[ropName][n]) || 0;
+}
+// Суммарный план всех РОПов на спринт n (битые юникод-ключи пропускаем).
+function sprintPlanTotal(n){
+  let sum = 0;
+  for (const [k, sp] of Object.entries(SPRINT_PLANS || {})){
+    if (k.includes('�')) continue;
+    if (sp && sp[n]) sum += sp[n];
+  }
+  return sum;
+}
+
 // Sprint-aware plan для конкретного РОПа.
 function getRopPlan(ropName, mk){
   const sm = activePeriod && activePeriod.preset && activePeriod.preset.match(/_s([12])$/);
@@ -2002,16 +2025,23 @@ function aggregate(pk,from,to){
   }
   const fromD=parseDate(from);
   const mk=getMonthKey(fromD);
+  // Активный сквозной спринт (из выпадашки) — план берём из SPRINT_PLANS,
+  // период считаем закрытым (без месячной пропорции и forecast-логики).
+  const _spN = activeSprintNum();
   // Always use FULL monthly plan — never prorate.
   // При активном РОП-фильтре берём план РОПа(ов), а не продукта.
-  const plan = activeMainRop!=='all' ? _mainRopPlan(mk) : getPlan(pk,mk);
+  const plan = _spN
+    ? (activeMainRop!=='all'
+        ? _mainRopNames().reduce((s,r)=>s+sprintPlanFor(r,_spN),0)
+        : sprintPlanTotal(_spN))
+    : (activeMainRop!=='all' ? _mainRopPlan(mk) : getPlan(pk,mk));
 
   // Full month accumulated fact (for остаток/нужно-в-день regardless of period filter)
   const now=new Date();
   const curMK=`${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
   let monthBudget=budget; // default: use period budget
   let daysLeftMonth=1;
-  if(mk===curMK){
+  if(mk===curMK && !_spN){
     // Sum ALL days in current month from raw data
     const allDates=getDatesInRange(`01.${curMK}`,`${String(now.getDate()).padStart(2,'0')}.${curMK}`);
     monthBudget=allDates.reduce((s,d)=>s+((raw[d]&&raw[d][2])||0),0);
@@ -2024,7 +2054,7 @@ function aggregate(pk,from,to){
   // Plan-to-today: plan * passedDays / totalDaysInMonth
   const totalDaysM2 = _lastDay(now.getFullYear(), now.getMonth()+1);
   const passedDays  = mk===curMK ? now.getDate() : (mk < curMK ? totalDaysM2 : 0);
-  const planToday   = plan && mk===curMK ? Math.round(plan / totalDaysM2 * passedDays) : plan;
+  const planToday   = plan && mk===curMK && !_spN ? Math.round(plan / totalDaysM2 * passedDays) : plan;
 
   // ad spend for period (при РОП-фильтре — пропорционально доле лидов РОПа)
   const adData=AD_SPEND[PROD_CFG[pk].rawKey]||{};
@@ -2035,7 +2065,7 @@ function aggregate(pk,from,to){
 
   // ad spend + leads for full current month (for CPL)
   let monthAdTotal=adTotal, monthLeads=leads;
-  if(mk===curMK){
+  if(mk===curMK && !_spN){
     const allDatesM=getDatesInRange(`01.${curMK}`,`${String(now.getDate()).padStart(2,'0')}.${curMK}`);
     monthLeads=allDatesM.reduce((s,d)=>s+((raw[d]&&raw[d][0])||0),0);
     const _mFrom=`01.${curMK}`, _mTo=`${String(now.getDate()).padStart(2,'0')}.${curMK}`;
@@ -2050,7 +2080,7 @@ function aggregate(pk,from,to){
   return{leads,deals,budget,daily:dl,plan:Math.round(plan),monthKey:mk,
     monthBudget:Math.round(monthBudget),remain:Math.round(remain),perDay,daysLeft:daysLeftMonth,
     planToday:Math.round(planToday),
-    isCurrentMonth:mk===curMK,
+    isCurrentMonth:mk===curMK && !_spN,
     adTotal,monthAdTotal,monthLeads,cplMonth,rpl,
     conv:leads?+(deals/leads*100).toFixed(1):0,avgCheck:deals?Math.round(budget/deals):0};
 }
@@ -2405,24 +2435,21 @@ function _kpiColHTML(label, badge, kd, borderColor, periodType) {
     </div>
   </div>`;
 }
-// Агрегация под выбранный спринт. Временно подменяет activePeriod, чтобы
-// getPlan/getRopPlan вернули sprint-плановые значения.
-function _aggregateForKpiSprint(n) {
-  const now = _now();
-  const curMk = `${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
-  const sp = SPRINTS[curMk] && SPRINTS[curMk][n];
-  if (!sp || !sp.start || !sp.end) return null;
-  const from = _isoToDispDate(sp.start);
-  const to   = _isoToDispDate(sp.end);
+// Агрегация под сквозной спринт n. Временно подменяет activePeriod на
+// `sprint_n`, чтобы aggregate() взял план из SPRINT_PLANS и посчитал
+// период закрытым (выполнение = факт спринта / план спринта).
+function _aggregateForKpiSprintG(n) {
+  const s = sprintByNum(n);
+  const from = _sprDisp(s.fromISO), to = _sprDisp(s.toISO);
   const saved = activePeriod;
-  activePeriod = { ...saved, preset: `m_${now.getFullYear()}_${now.getMonth()+1}_s${n}`, from, to };
+  activePeriod = { ...saved, preset: `sprint_${n}`, from, to };
   let data;
   try {
     data = _aggregateForKpi({ from, to });
   } finally {
     activePeriod = saved;
   }
-  return { data, from, to };
+  return { data, from, to, n };
 }
 
 function renderKPI(d){
@@ -2437,20 +2464,31 @@ function renderKPI(d){
   const yesterdayData = _aggregateForKpi(_getKpiPeriod('yesterday'));
   const todayData = _aggregateForKpi(_getKpiPeriod('today'));
 
+  // Заголовок первой колонки: «Спринт N» при выборе спринта, иначе «Месяц».
+  // В спринт-режиме бейдж — только даты (без дубля «Спринт N ·»).
+  const _kpiMainN = activeSprintNum();
+  const _kpiMainTitle = _kpiMainN ? `Спринт ${_kpiMainN}` : 'Месяц';
+  const _kpiMainBadge = _kpiMainN ? activePeriod.label.replace(/^Спринт\s*\d+\s*·\s*/, '') : activePeriod.label;
+
   document.getElementById('kpi-3col').innerHTML =
-    _kpiColHTML('Месяц', activePeriod.label, monthData, clr, 'month') +
+    _kpiColHTML(_kpiMainTitle, _kpiMainBadge, monthData, clr, 'month') +
     _kpiColHTML('Вчера', _getKpiPeriod('yesterday').from, yesterdayData, '#ca8a04', 'day') +
     _kpiColHTML('Сегодня', _getKpiPeriod('today').from, todayData, '#16a34a', 'day');
 
-  // Карточки спринтов — только если в SPRINTS есть даты на текущий месяц.
+  // Карточки спринтов — текущий + следующий сквозной спринт, для которых
+  // директор задал план (SPRINT_PLANS). Если планов нет — блок скрыт.
   const spWrap = document.getElementById('kpi-sprints');
   if (!spWrap) return;
-  const s1 = _aggregateForKpiSprint(1);
-  const s2 = _aggregateForKpiSprint(2);
-  if (s1 || s2) {
+  const curN = sprintNumForDate(_now()) || 1;
+  const spNums = [curN, curN+1].filter(n => sprintPlanTotal(n) > 0);
+  if (spNums.length) {
+    const spColors = ['#6366f1', '#a855f7'];
     let html = '';
-    if (s1) html += _kpiColHTML('Спринт 1', `${s1.from} — ${s1.to}`, s1.data, '#6366f1', 'sprint');
-    if (s2) html += _kpiColHTML('Спринт 2', `${s2.from} — ${s2.to}`, s2.data, '#a855f7', 'sprint');
+    spNums.forEach((n, i) => {
+      const sp = _aggregateForKpiSprintG(n);
+      const badge = `${sp.from} — ${sp.to}${n===curN ? ' · сейчас' : ''}`;
+      html += _kpiColHTML(`Спринт ${n}`, badge, sp.data, spColors[i % 2], 'sprint');
+    });
     spWrap.innerHTML = html;
     spWrap.style.display = 'grid';
   } else {
@@ -2495,6 +2533,9 @@ function renderPlanTable(stats){
 
     // Calculate proportional plan for period (may span multiple months)
     function _getRopPlanPeriod(ropName) {
+      // Спринт: план периода = полный план спринта (без пропорции по дням).
+      const _spN = activeSprintNum();
+      if (_spN) return sprintPlanFor(ropName, _spN);
       let total = 0;
       const months = new Set();
       for (let d = new Date(_fromD); d <= _toD; d.setDate(d.getDate()+1)) months.add(getMonthKey(d));
@@ -2695,6 +2736,9 @@ function renderRopKPI(stats) {
 
   // Collect plans across all months in the period
   function getRopPlanForPeriod(ropName) {
+    // Спринт: план периода = полный план спринта (без пропорции по дням).
+    const _spN = activeSprintNum();
+    if (_spN) return sprintPlanFor(ropName, _spN);
     let totalPlan = 0;
     // Get unique months in the selected period
     const months = new Set();
@@ -3758,6 +3802,7 @@ async function loadFromSupabase() {
       if (d.ROP_PLANS) ROP_PLANS = d.ROP_PLANS;
       if (d.ROP_SPRINT_PLANS) ROP_SPRINT_PLANS = d.ROP_SPRINT_PLANS;
       if (d.SPRINTS) SPRINTS = d.SPRINTS;
+      if (d.SPRINT_PLANS) SPRINT_PLANS = d.SPRINT_PLANS;
       if (d.RNP_EXCEL) RNP_EXCEL = d.RNP_EXCEL;
 
       if (d.AI_ADVICE) { _aiAdviceData = d.AI_ADVICE; renderSectionAdvice(); }
@@ -4239,7 +4284,10 @@ async function loadEraCrmConfig() {
   if (cfg.SPRINTS && typeof cfg.SPRINTS === 'object' && Object.keys(cfg.SPRINTS).length) {
     SPRINTS = cfg.SPRINTS; _changed++;
   }
-  console.log('[era-crm config] applied:', _changed, 'sections (AD_SPEND/PLANS/ROP_PLANS/SPRINTS)');
+  if (cfg.SPRINT_PLANS && typeof cfg.SPRINT_PLANS === 'object' && Object.keys(cfg.SPRINT_PLANS).length) {
+    SPRINT_PLANS = cfg.SPRINT_PLANS; _changed++;
+  }
+  console.log('[era-crm config] applied:', _changed, 'sections (AD_SPEND/PLANS/ROP_PLANS/SPRINTS/SPRINT_PLANS)');
 }
 window.loadEraCrmConfig = loadEraCrmConfig;
 
