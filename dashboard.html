@@ -1712,6 +1712,9 @@ const ROP_CRM_MAP = {
   // из 3 пайплайнов, поэтому смотрим во все 3 бакета.
   'РОП Аслиддин':     ['Коллаген', 'Ummi', 'B1 Partners'],
   'РОП Диас':         ['Коллаген', 'Ummi', 'B1 Partners'],
+  // Диас переименован в Era CRM в «Нурдаулет KIDS» (с 08.06.2026). Те же бакеты,
+  // что у Диаса — иначе строка группы не из чего суммировать (висит нулями).
+  'РОП Нурдаулет KIDS':['Коллаген', 'Ummi', 'B1 Partners'],
   'РОП Нурдаулет':    ['Коллаген', 'Ummi', 'B1 Partners'],
   'РОП Аяулым':       ['Коллаген', 'Ummi', 'B1 Partners'],
   'РОП B1 Partners':  ['Коллаген', 'Ummi', 'B1 Partners'],
@@ -1786,7 +1789,13 @@ function ropMatches(mgrName, targetRop) {
   if (targetRop === 'БОТА AI') return mgrName === 'БОТА AI';  // AI bot manager
   const mgrRop = getRop(mgrName);
   if (mgrRop === targetRop) return true;
-  if (targetRop.endsWith(' KIDS')) return mgrRop === targetRop.replace(' KIDS', '');
+  // Легаси KIDS-страйп: «РОП X KIDS» матчит менеджеров базового «РОП X»
+  // (под-пайплайн KIDS у того же РОПа). НО «РОП Нурдаулет KIDS» — это
+  // самостоятельный РОП (переименованный Диас), а не под-пайплайн Нурдаулета,
+  // иначе строка вобрала бы всю команду Нурдаулета. Его матчим только точно.
+  if (targetRop.endsWith(' KIDS') && targetRop !== 'РОП Нурдаулет KIDS') {
+    return mgrRop === targetRop.replace(' KIDS', '');
+  }
   return false;
 }
 let activeMgrRop = 'all';
@@ -4020,6 +4029,77 @@ function _purgeEraDates() {
   }
 }
 
+// ════════ DATE-SPLIT переименованного РОПа (Диас → Нурдаулет KIDS) ════════
+// В Era CRM группу «Диас» переименовали в «Нурдаулет KIDS». Нужно: данные
+// ≤ 07.06.2026 показывать под «РОП Диас», а с 08.06.2026 — под
+// «РОП Нурдаулет KIDS». Группировка в дашборде идёт по ИМЕНИ менеджера (без
+// учёта даты), поэтому разносим дни каждого менеджера обеих «личностей» этой
+// команды между двумя РОПами, при необходимости создавая виртуального
+// двойника. Это же чинит исторические (майские) данные, которые после
+// переименования утянуло в KIDS. Идемпотентно — вызывается в конце
+// loadEraCrmOverlay на каждом refresh.
+const ROP_DATE_SPLIT = {
+  oldRop:    'РОП Диас',            // дни ≤ cutoff
+  newRop:    'РОП Нурдаулет KIDS',  // дни ≥ cutoff + 1 день
+  cutoffISO: '2026-06-07',          // последний день oldRop (Диас по 07.06 включительно; KIDS с 08.06)
+};
+function _ropSplitISO(ddmmyyyy){
+  // 'DD.MM.YYYY' → 'YYYY-MM-DD' (zero-padded, лексикографически сравнимо с cutoffISO)
+  const [d,m,y] = String(ddmmyyyy).split('.');
+  return `${y}-${m}-${d}`;
+}
+function _ropSplitRecalc(m){
+  let l=0,d=0,b=0,nd=0,nb=0,bd=0,bb=0;
+  for (const v of Object.values(m.daily||{})){
+    l+=v[0]||0; d+=v[1]||0; b+=v[2]||0; nd+=v[3]||0; nb+=v[4]||0; bd+=v[5]||0; bb+=v[6]||0;
+  }
+  m.leads=l; m.deals=d; m.budget=b; m.newDeals=nd; m.newBudget=nb; m.baseDeals=bd; m.baseBudget=bb;
+  m.conv     = l>0 ? +(d/l*100).toFixed(1)  : 0;
+  m.newConv  = l>0 ? +(nd/l*100).toFixed(1) : 0;
+  m.baseConv = l>0 ? +(bd/l*100).toFixed(1) : 0;
+  m.avgCheck = d>0 ? Math.round(b/d)        : 0;
+}
+function _applyRopDateSplit(){
+  const { oldRop, newRop, cutoffISO } = ROP_DATE_SPLIT;
+  const SUF_OLD = ' (Диас)';   // двойник, несущий ≤cutoff-часть KIDS-менеджера
+  const SUF_NEW = ' (KIDS)';   // двойник, несущий >cutoff-часть Диас-менеджера (редкий случай)
+  if (typeof clearRopCache === 'function') clearRopCache();
+  let _split = 0;
+  for (const acc of Object.keys(MANAGERS)){
+    const list = MANAGERS[acc];
+    if (!Array.isArray(list)) continue;
+    const additions = [];
+    for (const m of list){
+      if (!m || !m.name) continue;
+      if (m.name.endsWith(SUF_OLD) || m.name.endsWith(SUF_NEW)) continue; // это уже двойник
+      const rop = getRop(m.name);
+      if (rop !== oldRop && rop !== newRop) continue;
+      const lo = {}, hi = {};                       // lo = ≤cutoff (Диас), hi = >cutoff (KIDS)
+      for (const [date, vals] of Object.entries(m.daily || {})){
+        (_ropSplitISO(date) <= cutoffISO ? lo : hi)[date] = vals;
+      }
+      const keepHi = (rop === newRop);              // KIDS-менеджер держит hi; Диас-менеджер держит lo
+      const keep   = keepHi ? hi : lo;
+      const spill  = keepHi ? lo : hi;
+      if (Object.keys(spill).length === 0) continue; // делить нечего — уже всё под своим РОПом
+      m.daily = keep; _ropSplitRecalc(m); MGR_TO_ROP[m.name] = rop;
+      // Отколовшаяся часть → двойник с противоположным РОПом.
+      const sibRop  = keepHi ? oldRop : newRop;
+      const sibName = m.name + (keepHi ? SUF_OLD : SUF_NEW);
+      let sib = list.find(x=>x.name===sibName) || additions.find(x=>x.name===sibName);
+      if (!sib){
+        sib = { name:sibName, leads:0,deals:0,budget:0,newDeals:0,newBudget:0,baseDeals:0,baseBudget:0,conv:0,newConv:0,baseConv:0,avgCheck:0, daily:{} };
+        additions.push(sib);
+      }
+      Object.assign(sib.daily, spill); _ropSplitRecalc(sib); MGR_TO_ROP[sibName] = sibRop;
+      _split++;
+    }
+    if (additions.length) list.push(...additions);
+  }
+  if (typeof clearRopCache === 'function') clearRopCache();
+  if (_split) console.log('[rop date-split] разнесено менеджеров:', _split, '→ ≤'+cutoffISO+' '+oldRop+' / далее '+newRop);
+}
+
 async function loadEraCrmOverlay() {
   const dateTo = new Date();
   dateTo.setDate(dateTo.getDate() + 1); // +1 день запас, чтобы окно покрыло «сегодня» по UTC
@@ -4146,6 +4226,10 @@ async function loadEraCrmOverlay() {
     }
   }
   if (_renamed) console.log('[era-crm overlay] renamed', _renamed, 'mgr→rop entries via _OLD_ROP_RENAME');
+
+  // Date-split переименованного РОПа (Диас ≤07.06 / Нурдаулет KIDS ≥08.06).
+  // Должен идти ДО rebuildRopGroups, чтобы новые маппинги попали в группы.
+  _applyRopDateSplit();
 
   // Пересчитать ROP-кеши/группы — иначе новые маппинги не подхватятся.
   if (typeof clearRopCache === 'function') clearRopCache();
