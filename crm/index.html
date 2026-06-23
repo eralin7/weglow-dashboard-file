@@ -13,12 +13,13 @@
          Поправь, если добавляешь новый внешний сервис (Stripe, Yandex Metrica и т.п.). -->
     <meta http-equiv="Content-Security-Policy" content="
       default-src 'self';
-      script-src 'self' 'unsafe-inline' https://stats.sipuni.com;
+      script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://stats.sipuni.com;
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
       font-src 'self' data: https://fonts.gstatic.com;
       img-src 'self' data: blob: https:;
       media-src 'self' blob: https:;
-      connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.wazzup24.com https://api.kaspi.kz https://kaspi.kz https://stats.sipuni.com wss://voip.sipuni.com:* https://voip.sipuni.com:*;
+      worker-src 'self' blob:;
+      connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.wazzup24.com https://api.kaspi.kz https://kaspi.kz https://stats.sipuni.com wss://voip.sipuni.com:* https://voip.sipuni.com:* https://prod.spline.design https://*.spline.design;
       frame-src https://app.wazzup24.com https://*.wazzup24.com;
       frame-ancestors 'none';
       base-uri 'self';
@@ -31,12 +32,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-    <script type="module" crossorigin src="/crm/assets/index-Df90uIgC.js"></script>
-    <link rel="modulepreload" crossorigin href="/crm/assets/icons-ChnhbxP7.js">
-    <link rel="modulepreload" crossorigin href="/crm/assets/motion-D8m83sYe.js">
-    <link rel="modulepreload" crossorigin href="/crm/assets/dnd-JVq3wAbA.js">
+    <script type="module" crossorigin src="/crm/assets/index-DJniLtjC.js"></script>
+    <link rel="modulepreload" crossorigin href="/crm/assets/icons-QqWhBwyC.js">
+    <link rel="modulepreload" crossorigin href="/crm/assets/motion-MsUSfgGN.js">
+    <link rel="modulepreload" crossorigin href="/crm/assets/dnd-BTvBUeJU.js">
+    <link rel="modulepreload" crossorigin href="/crm/assets/spline-NObjfZ3K.js">
     <link rel="modulepreload" crossorigin href="/crm/assets/supabase-D3Pb_Qvf.js">
-    <link rel="stylesheet" crossorigin href="/crm/assets/index-_2t2kTX1.css">
+    <link rel="stylesheet" crossorigin href="/crm/assets/index-DMlVDud8.css">
   </head>
   <body class="antialiased">
     <div id="root"></div>
