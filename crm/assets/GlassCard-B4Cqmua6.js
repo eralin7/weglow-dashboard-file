@@ -1,0 +1,1 @@
+import{j as s,m as t}from"./motion-MsUSfgGN.js";import{c as n}from"./index-mB7lyReH.js";function m({className:a,strong:o,children:r,...i}){return s.jsx(t.div,{initial:{opacity:0,y:6},animate:{opacity:1,y:0},transition:{duration:.4,ease:[.16,1,.3,1]},className:n("bg-surface border border-hairline rounded-lg shadow-card",o&&"shadow-pop",a),...i,children:r})}export{m as G};
