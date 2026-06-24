@@ -1336,6 +1336,10 @@ const _authGuard = new MutationObserver(() => {
       <button class="pill period-pill" onclick="setMgrPreset('yesterday',this)">Вчера</button>
       <button class="pill period-pill" onclick="setMgrPreset('week',this)">7 дней</button>
       <div id="mgr-month-pills" style="display:contents"></div>
+      <div class="sprint-wrap" id="mgr-sprint-wrap">
+        <button class="pill period-pill" id="mgr-sprint-btn" onclick="toggleMgrSprintMenu(this)">🏃 Спринт ▾</button>
+        <div class="sprint-menu" id="mgr-sprint-menu"></div>
+      </div>
       <button class="pill period-pill" onclick="setMgrPreset('mgr_custom',this)">📅 Диапазон</button>
       <div class="custom-wrap" id="mgr-custom-wrap">
         <input type="date" class="date-in" id="mgr-d-from" value="2026-02-01">
@@ -1952,7 +1956,11 @@ function pctBg(v){return v>=80?'bg-g':v>=50?'bg-y':'bg-r';}
 const _VIRTUAL_CRMS = { 'Коллаген': ['Ummi', 'Ербол', 'Кофе (Архив)', 'B1 Partners'] };
 // ── ROP-фильтр главного вида ──────────────────────────────────────
 // Набор РОПов под кнопкой «4 РОПа» (без B1 Partners и БОТА AI).
-const MAIN_ROP4 = ['РОП Нурдаулет','РОП Аслиддин','РОП Диас','РОП Аяулым'];
+// «РОП Нурдаулет KIDS» — это переименованный в Era CRM «Диас» (с 08.06.2026,
+// см. _applyRopDateSplit / ROP_DATE_SPLIT). Его дни ≥08.06 живут под этим РОПом
+// и без явного включения сюда выпадали бы из «4 РОПа» (дни ≤07.06 идут под
+// «РОП Диас», который уже в наборе). Двойного счёта нет — date-split разводит дни.
+const MAIN_ROP4 = ['РОП Нурдаулет','РОП Нурдаулет KIDS','РОП Аслиддин','РОП Диас','РОП Аяулым'];
 // Список РОПов, которые покрывает текущий фильтр главного вида.
 function _mainRopNames() { return activeMainRop==='main4' ? MAIN_ROP4.slice() : [activeMainRop]; }
 // Принадлежит ли менеджер активному фильтру (одиночный РОП или 4 РОПа).
@@ -2283,6 +2291,51 @@ document.addEventListener('click', e=>{
   if (wrap && menu && !wrap.contains(e.target)) menu.classList.remove('open');
 });
 
+// ── Спринт-фильтр вкладки «Менеджеры» (зеркало глобального) ─────────
+// Использует те же sprintByNum/_sprDisp/_sprShort, но пишет в activeMgrPeriod
+// и перерисовывает только таблицу менеджеров.
+function buildMgrSprintMenu(){
+  const menu = document.getElementById('mgr-sprint-menu');
+  if (!menu) return;
+  const curN = sprintNumForDate(_now()) || 1;
+  const maxN = curN + 1;                       // показываем и следующий спринт
+  const sel  = (activeMgrPeriod && /^sprint_\d+$/.test(activeMgrPeriod.preset||''))
+             ? +activeMgrPeriod.preset.split('_')[1] : null;
+  let html = '';
+  for (let n = 1; n <= maxN; n++){
+    const s = sprintByNum(n);
+    html += `<div class="sprint-item${n===sel?' active':''}" data-n="${n}" onclick="pickMgrSprint(${n})">`
+          +   `<span>Спринт ${n}${n===curN?' <span class="s-badge">сейчас</span>':''}</span>`
+          +   `<span class="s-range">${_sprShort(s.fromISO)}–${_sprShort(s.toISO)}</span>`
+          + `</div>`;
+  }
+  menu.innerHTML = html;
+}
+function toggleMgrSprintMenu(){
+  const menu = document.getElementById('mgr-sprint-menu');
+  if (!menu) return;
+  buildMgrSprintMenu();
+  menu.classList.toggle('open');
+}
+function pickMgrSprint(n){
+  const s = sprintByNum(n);
+  const from = _sprDisp(s.fromISO), to = _sprDisp(s.toISO);
+  activeMgrPeriod = { from, to, label:`Спринт ${n} · ${_sprShort(s.fromISO)}–${_sprShort(s.toISO)}`, preset:`sprint_${n}` };
+  document.querySelectorAll('#mgr-filters .period-pill').forEach(b=>b.classList.remove('active'));
+  const btn = document.getElementById('mgr-sprint-btn');
+  if (btn){ btn.classList.add('active'); btn.textContent = `🏃 Спринт ${n} ▾`; }
+  document.querySelectorAll('#mgr-sprint-menu .sprint-item').forEach(it=>it.classList.toggle('active', +it.dataset.n===n));
+  const menu = document.getElementById('mgr-sprint-menu'); if (menu) menu.classList.remove('open');
+  const cw = document.getElementById('mgr-custom-wrap'); if (cw) cw.style.display='none';
+  renderManagers();
+}
+// Закрытие mgr-меню по клику вне виджета.
+document.addEventListener('click', e=>{
+  const wrap = document.getElementById('mgr-sprint-wrap');
+  const menu = document.getElementById('mgr-sprint-menu');
+  if (wrap && menu && !wrap.contains(e.target)) menu.classList.remove('open');
+});
+
 function setMgrPreset(p,el){
   document.getElementById('mgr-custom-wrap').style.display='none';
   if(p==='mgr_custom'){document.getElementById('mgr-custom-wrap').style.display='flex';markActiveMgr(el);return;}
@@ -2293,6 +2346,12 @@ function setMgrPreset(p,el){
 function markActiveMgr(el){
   document.querySelectorAll('#mgr-filters .period-pill').forEach(b=>b.classList.remove('active'));
   if(el) el.classList.add('active');
+  // Выбрали другой период — сбрасываем подпись/выделение кнопки «Спринт».
+  const sb=document.getElementById('mgr-sprint-btn');
+  if(sb && el!==sb){
+    sb.textContent='🏃 Спринт ▾';
+    document.querySelectorAll('#mgr-sprint-menu .sprint-item').forEach(i=>i.classList.remove('active'));
+  }
 }
 function applyMgrCustom(){
   const from=isoToDisp(document.getElementById('mgr-d-from').value);
