@@ -1969,6 +1969,28 @@ function _mainRopMatch(mgrName) { return _mainRopNames().some(r => ropMatches(mg
 function _mainRopPlan(mk) { return _mainRopNames().reduce((s,r)=>s+(getRopPlan(r,mk)||0),0); }
 // Рекламный расход активного фильтра за период (сумма по входящим РОПам).
 function _mainRopAd(from,to) { return _mainRopNames().reduce((s,r)=>s+_ropAdSpend(r,from,to),0); }
+// Сумма рекламного расхода по списку каналов (ключей AD_SPEND) за период.
+function _sumAdChannels(channels, from, to) {
+  const fromD = parseDate(from), toD = parseDate(to);
+  let s = 0;
+  channels.forEach(ch => {
+    const ad = AD_SPEND[ch] || {};
+    for (const [d, v] of Object.entries(ad)) {
+      try { const dd = parseDate(d); if (dd >= fromD && dd <= toD) s += v || 0; } catch (e) {}
+    }
+  });
+  return s;
+}
+// Каналы рекламы для KPI «расход» в общем виде (ГРУППА=Все):
+//   ПРОДУКТ=Все      → Коллаген + Ummi + БОТА AI (вся реклама компании);
+//   ПРОДУКТ=Коллаген → только Коллаген.
+// БОТА AI учитываем только в общем виде; при РОП-фильтрах (4 РОПа / один РОП)
+// его расход к отделам не относим — там работает _mainRopAd (Коллаген+Ummi).
+function _allViewAdChannels() {
+  return activeProd === 'all'
+    ? ['Коллаген', 'Ummi', 'БОТА AI']
+    : [PROD_CFG[activeProd]?.rawKey || 'Коллаген'];
+}
 // Дневной «RAW» ([leads,deals,budget]) только по менеджерам активного
 // фильтра, собранный по всем релевантным бакетам. Идентичен логике
 // renderPlanTable/renderLine, поэтому цифры KPI сходятся с таблицей групп.
@@ -2073,12 +2095,14 @@ function aggregate(pk,from,to){
   const passedDays  = mk===curMK ? now.getDate() : (mk < curMK ? totalDaysM2 : 0);
   const planToday   = plan && mk===curMK && !_spN ? Math.round(plan / totalDaysM2 * passedDays) : plan;
 
-  // ad spend for period (при РОП-фильтре — пропорционально доле лидов РОПа)
-  const adData=AD_SPEND[PROD_CFG[pk].rawKey]||{};
-  const fD=parseDate(from),tD=parseDate(to);
+  // ad spend for period.
+  //  • РОП-фильтр (4 РОПа / один РОП) — пропорционально доле лидов РОПа по его
+  //    бакетам (Коллаген+Ummi), без БОТА AI.
+  //  • ГРУППА=Все — суммируем каналы целиком: ПРОДУКТ=Все → Коллаген+Ummi+
+  //    БОТА AI, ПРОДУКТ=Коллаген → только Коллаген (см. _allViewAdChannels).
   const adTotal = activeMainRop!=='all'
     ? _mainRopAd(from, to)
-    : Object.entries(adData).filter(([d])=>{try{const dd=parseDate(d);return dd>=fD&&dd<=tD;}catch(e){return false;}}).reduce((a,[,v])=>a+v,0);
+    : _sumAdChannels(_allViewAdChannels(), from, to);
 
   // ad spend + leads for full current month (for CPL)
   let monthAdTotal=adTotal, monthLeads=leads;
@@ -2086,10 +2110,9 @@ function aggregate(pk,from,to){
     const allDatesM=getDatesInRange(`01.${curMK}`,`${String(now.getDate()).padStart(2,'0')}.${curMK}`);
     monthLeads=allDatesM.reduce((s,d)=>s+((raw[d]&&raw[d][0])||0),0);
     const _mFrom=`01.${curMK}`, _mTo=`${String(now.getDate()).padStart(2,'0')}.${curMK}`;
-    const mfD=parseDate(_mFrom), mtD=parseDate(_mTo);
     monthAdTotal = activeMainRop!=='all'
       ? _mainRopAd(_mFrom, _mTo)
-      : Object.entries(adData).filter(([d])=>{try{const dd=parseDate(d);return dd>=mfD&&dd<=mtD;}catch(e){return false;}}).reduce((a,[,v])=>a+v,0);
+      : _sumAdChannels(_allViewAdChannels(), _mFrom, _mTo);
   }
   const cplMonth = monthLeads ? Math.round(monthAdTotal/monthLeads) : 0;
   const rpl = monthLeads ? Math.round(monthBudget/monthLeads) : 0; // выручка/лид
