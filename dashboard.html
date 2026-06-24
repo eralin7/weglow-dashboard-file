@@ -2672,10 +2672,11 @@ function renderPlanTable(stats){
     const _historyGroups = new Set(['РОП Ербол', 'Кофе (Архив)']);
 
     // «РОП Диас» переименован в Era CRM в «Нурдаулет KIDS» с 08.06.2026
-    // (см. ROP_DATE_SPLIT, cutoffISO='2026-06-07'). Скрываем строку Диаса, как
-    // только период заходит в эру KIDS (конец периода ≥ 08.06): иначе он висит
-    // со старым месячным планом и 0% факта — данные/команда ушли в KIDS.
-    // Для мая и периодов целиком ≤07.06 Диас по-прежнему показываем (его история).
+    // (см. ROP_DATE_SPLIT, cutoffISO='2026-06-07'). Прячем строку РОПа только
+    // когда период ЦЕЛИКОМ лежит в чужой эре, иначе у периодов на стыке
+    // (Спринт 3 = 01–14.06, Июнь целиком) пропадает половина данных:
+    //   • Диас прячем, если период целиком ≥08.06 (начало > 07.06);
+    //   • Нурдаулет KIDS прячем, если период целиком ≤07.06 (конец ≤ 07.06).
     const _diasLastDay = new Date(2026, 5, 7); // 07.06.2026 — последний день Диаса
 
     // Collect all ROP row data first
@@ -2684,7 +2685,8 @@ function renderPlanTable(stats){
       if (ropName === 'all') continue;
       if (activeMainRop !== 'all' && !_mainRopNames().includes(ropName)) continue; // фильтр по РОПу
       if (_historyGroups.has(ropName) && _fromD > _historyCutoff) continue;
-      if (ropName === 'РОП Диас' && _toD > _diasLastDay) continue; // c 08.06 → Диас стал Нурдаулет KIDS
+      if (ropName === 'РОП Диас' && _fromD > _diasLastDay) continue;           // период целиком ≥08.06 → Диаса нет
+      if (ropName === 'РОП Нурдаулет KIDS' && _toD <= _diasLastDay) continue;   // период целиком ≤07.06 → KIDS ещё не было
       const ropCrms = ROP_CRM_MAP[ropName] || [];
       if (selectedProdName && !ropCrms.includes(selectedProdName)) continue;
       const crms = selectedProdName ? ropCrms.filter(c=>c===selectedProdName) : ropCrms;
