@@ -2603,6 +2603,24 @@ function calcForecast(d) {
 }
 
 // ═══════════════════ RENDER PLAN TABLE ════════════════════════════
+// Сумма возвратов РОПа за ПРЕДЫДУЩИЙ спринт — для колонки «Возврат» (и
+// «План с возвр.»). Логика по запросу: возвраты спринта N−1 «переносятся» в
+// спринт N. Вне режима спринта (месяц/сегодня/диапазон) возвраты не
+// показываем — возвращаем 0 (колонка «—», план с возвратом = план).
+function _ropReturnPrevSprint(ropName){
+  const n = activeSprintNum();
+  if (!n || n <= 1) return 0;                 // спринт 1 — нет предыдущего
+  const s = sprintByNum(n - 1);
+  const fromD = parseDate(_sprDisp(s.fromISO));
+  const toD   = parseDate(_sprDisp(s.toISO));
+  const map = RETURNS_BY_ROP[ropName] || {};
+  let sum = 0;
+  for (const [d, v] of Object.entries(map)){
+    const dd = parseDate(d);
+    if (dd >= fromD && dd <= toD) sum += v;
+  }
+  return sum;
+}
 function renderPlanTable(stats){
   let rows = '';
 
@@ -2660,7 +2678,7 @@ function renderPlanTable(stats){
       return getRopPlan(ropName, mk);
     }
 
-    let rTotPlan=0,rTotFullPlan=0,rTotFact=0,rTotLeads=0,rTotDeals=0,rTotAd=0,rTotFcFact=0;
+    let rTotPlan=0,rTotFullPlan=0,rTotFact=0,rTotLeads=0,rTotDeals=0,rTotAd=0,rTotFcFact=0,rTotReturn=0;
 
     // Forecast: ALWAYS based on current month (1st → today), independent of selected period filter
     const _fcMonthStart = `01.${String(_now.getMonth()+1).padStart(2,'0')}.${_now.getFullYear()}`;
@@ -2701,6 +2719,8 @@ function renderPlanTable(stats){
 
       const planPeriod = _getRopPlanPeriod(ropName);
       const fullMonthPlan = _getRopMonthPlan(ropName);
+      const ropReturn = _ropReturnPrevSprint(ropName);     // возврат прошлого спринта
+      const planWithReturn = planPeriod + ropReturn;       // план периода + этот возврат
       const execPct = planPeriod>0 ? Math.round(ropFact/planPeriod*100) : (ropFact>0?100:0);
       const remain = planPeriod>0 ? Math.max(0, planPeriod-ropFact) : 0;
       const perDay = _daysLeft>0&&remain>0 ? Math.round(remain/_daysLeft) : 0;
@@ -2746,7 +2766,7 @@ function renderPlanTable(stats){
       crms.forEach(crm=>{ (MANAGERS[crm]||[]).filter(m=>ropMatches(m.name,ropName) && !m.name.toLowerCase().startsWith('роп ')).forEach(()=>ropMgrCount++); });
       const salesPerMgr = ropMgrCount>0?Math.round(ropFact/ropMgrCount):0;
 
-      _ropRows.push({ ropName, ropCfg, ropFact, ropLeads, ropDeals, planPeriod, fullMonthPlan, execPct, remain, perDay, forecast, conv, adSpend, cplM, rpl, ropDrr, salesPerMgr, _fcFact });
+      _ropRows.push({ ropName, ropCfg, ropFact, ropLeads, ropDeals, planPeriod, fullMonthPlan, ropReturn, planWithReturn, execPct, remain, perDay, forecast, conv, adSpend, cplM, rpl, ropDrr, salesPerMgr, _fcFact });
     }
 
     // Sort by fact descending
@@ -2754,8 +2774,8 @@ function renderPlanTable(stats){
 
     // Render sorted rows + accumulate totals
     for (const r of _ropRows) {
-      const {ropName,ropCfg,ropFact,ropLeads,ropDeals,planPeriod,fullMonthPlan,execPct,remain,perDay,forecast,conv,adSpend,cplM,rpl,ropDrr,salesPerMgr,_fcFact} = r;
-      rTotPlan+=planPeriod; rTotFullPlan+=fullMonthPlan; rTotFact+=ropFact; rTotLeads+=ropLeads; rTotDeals+=ropDeals; rTotAd+=adSpend; rTotFcFact+=_fcFact;
+      const {ropName,ropCfg,ropFact,ropLeads,ropDeals,planPeriod,fullMonthPlan,ropReturn,planWithReturn,execPct,remain,perDay,forecast,conv,adSpend,cplM,rpl,ropDrr,salesPerMgr,_fcFact} = r;
+      rTotPlan+=planPeriod; rTotFullPlan+=fullMonthPlan; rTotFact+=ropFact; rTotLeads+=ropLeads; rTotDeals+=ropDeals; rTotAd+=adSpend; rTotFcFact+=_fcFact; rTotReturn+=ropReturn;
 
       const remainCell = planPeriod>0
         ? remain===0
@@ -2770,6 +2790,8 @@ function renderPlanTable(stats){
         <td><div class="prod-name"><div class="prod-dot" style="background:${ropCfg.color}"></div>${ropName}</div></td>
         <td>${fmt(fullMonthPlan)}</td>
         <td style="color:var(--slate);font-weight:600">${fmt(planPeriod)}</td>
+        <td style="color:${ropReturn?'#dc2626':'var(--muted)'};font-weight:600">${ropReturn?fmt(ropReturn):'—'}</td>
+        <td style="color:var(--slate);font-weight:700">${planWithReturn?fmt(planWithReturn):'—'}</td>
         <td style="color:${ropCfg.color};font-weight:700">${fmt(ropFact)}</td>
         <td><div class="bar-wrap"><span style="font-weight:700;font-size:13px;min-width:36px;text-align:right;color:${execPct>=100?'#16a34a':execPct>=80?'#ca8a04':'#dc2626'}">${execPct}%</span></div></td>
         <td style="font-weight:700;color:${forecast?fcClr:'var(--muted)'}">${forecast?fmt(forecast):'—'}</td>
@@ -2785,6 +2807,7 @@ function renderPlanTable(stats){
     }
 
     // ROP totals row
+    const rTotPlanWithReturn = rTotPlan + rTotReturn;
     const rTotConv = rTotLeads>0?(rTotDeals/rTotLeads*100).toFixed(1):'0.0';
     const rTotCpl = rTotLeads>0&&rTotAd>0?Math.round(rTotAd/rTotLeads):0;
     const rTotRpl = rTotLeads>0&&rTotFact>0?Math.round(rTotFact/rTotLeads):0;
@@ -2804,6 +2827,8 @@ function renderPlanTable(stats){
       <td><div class="prod-name"><div class="prod-dot" style="background:#6366f1"></div><strong>ИТОГО РОП</strong></div></td>
       <td><strong>${fmt(rTotFullPlan)}</strong></td>
       <td style="color:var(--slate);font-weight:600"><strong>${fmt(rTotPlan)}</strong></td>
+      <td style="color:${rTotReturn?'#dc2626':'var(--muted)'};font-weight:700"><strong>${rTotReturn?fmt(rTotReturn):'—'}</strong></td>
+      <td style="color:var(--slate);font-weight:700"><strong>${rTotPlanWithReturn?fmt(rTotPlanWithReturn):'—'}</strong></td>
       <td style="color:#6366f1;font-weight:700"><strong>${fmt(rTotFact)}</strong></td>
       <td><div class="bar-wrap"><span style="font-weight:700;font-size:13px;color:${rTotExecPct>=100?'#16a34a':rTotExecPct>=80?'#ca8a04':'#dc2626'};min-width:36px;text-align:right">${rTotExecPct}%</span></div></td>
       <td style="font-weight:700;color:${rTotFc?rTotFcPct>=100?'#16a34a':rTotFcPct>=80?'#ca8a04':'#dc2626':'var(--muted)'}"><strong>${rTotFc?fmt(rTotFc):'—'}</strong></td>
@@ -2824,6 +2849,8 @@ function renderPlanTable(stats){
       <th>Группа</th>
       <th>План ₸</th>
       <th>План период ₸</th>
+      <th style="color:#dc2626">Возврат ₸</th>
+      <th style="color:var(--slate)">План с возвр. ₸</th>
       <th>Факт ₸</th>
       <th>Выполнение</th>
       <th style="color:${isCur?'#6366f1':'var(--muted)'}">Прогноз</th>
@@ -3939,6 +3966,7 @@ async function loadFromSupabase() {
       try { await loadEraCrmOverlay();  } catch (e) { console.warn('[era-crm overlay]', e); }
       try { await loadEraCrmProducts(); } catch (e) { console.warn('[era-crm products]', e); }
       try { await loadEraCrmCities();   } catch (e) { console.warn('[era-crm cities]', e); }
+      try { await loadEraCrmReturns();  } catch (e) { console.warn('[era-crm returns]', e); }
       try { await loadEraCrmConfig();   } catch (e) { console.warn('[era-crm config]', e); }
 
       // Rebuild presets but keep current filter selection
@@ -4430,6 +4458,51 @@ async function loadEraCrmCities() {
 }
 window.loadEraCrmCities = loadEraCrmCities;
 
+// ── Возвраты по РОПу и дню ──────────────────────────────────────────
+// RETURNS_BY_ROP[ropName][DD.MM.YYYY] = сумма возвратов (refund-чеки) за день.
+// Источник — RPC get_dashboard_returns (чеки deals.receipts с refund=true).
+// group_title из Era CRM мапим в имя РОПа теми же правилами, что overlay
+// (_eraCrmRopName + _OLD_ROP_RENAME), чтобы строки сошлись с таблицей групп.
+let RETURNS_BY_ROP = {};
+async function loadEraCrmReturns() {
+  const dateTo = new Date();
+  dateTo.setDate(dateTo.getDate() + 1);
+  const url = `${ERA_CRM_URL}/rest/v1/rpc/get_dashboard_returns`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'apikey': ERA_CRM_ANON,
+      'Authorization': `Bearer ${ERA_CRM_ANON}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      p_date_from: ERA_CRM_OVERLAY_FROM,
+      p_date_to:   dateTo.toISOString(),
+    }),
+  });
+  if (!res.ok) throw new Error('era-crm returns rpc http ' + res.status);
+  const rows = await res.json();
+  if (!Array.isArray(rows)) { console.warn('[era-crm returns] unexpected response shape'); return; }
+
+  const next = {};
+  let _cells = 0;
+  for (const r of rows) {
+    const rop0 = _eraCrmRopName(r.group_title);
+    if (!rop0) continue;
+    const rop = (typeof _OLD_ROP_RENAME !== 'undefined' && _OLD_ROP_RENAME[rop0]) || rop0;
+    const date = _ddmmyyyy(r.day);
+    if (!date) continue;
+    const amt = Number(r.returns_budget) || 0;
+    if (!amt) continue;
+    if (!next[rop]) next[rop] = {};
+    next[rop][date] = (next[rop][date] || 0) + amt;
+    _cells++;
+  }
+  RETURNS_BY_ROP = next;
+  console.log('[era-crm returns] applied:', _cells, 'date-cells across', Object.keys(RETURNS_BY_ROP).length, 'rops');
+}
+window.loadEraCrmReturns = loadEraCrmReturns;
+
 // Era CRM → editable-настройки дашборда (AD_SPEND / PLANS / ROP_PLANS),
 // которые редактируются из кабинетов (ad.html / director.html / rop.html).
 // Раньше эти поля жили в snapshot; теперь кабинеты пишут в era-crm
@@ -4486,6 +4559,7 @@ async function _eraCrmRefreshTick() {
     await loadEraCrmOverlay();
     try { await loadEraCrmProducts(); } catch (e) { console.warn('[era-crm products refresh]', e); }
     try { await loadEraCrmCities();   } catch (e) { console.warn('[era-crm cities refresh]', e); }
+    try { await loadEraCrmReturns();  } catch (e) { console.warn('[era-crm returns refresh]', e); }
     try { await loadEraCrmConfig();   } catch (e) { console.warn('[era-crm config refresh]', e); }
     // Пересобираем пресеты (диапазоны дат могут меняться) и рендерим.
     if (typeof buildPresets === 'function') PRESETS = buildPresets();
