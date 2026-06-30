@@ -1030,6 +1030,17 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
 /* ── KPI 3-COLUMN LAYOUT ─────────────── */
 .kpi-3col { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:20px; }
 @media(max-width:1100px){ .kpi-3col { grid-template-columns:1fr; } }
+/* История по спринтам — компактные карточки за каждый сквозной спринт */
+.sprint-hist-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:12px; }
+.sprint-hist-card { background:var(--white); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow); padding:12px 14px; }
+.sprint-hist-card.cur { border-color:var(--acc); box-shadow:0 0 0 1px var(--acc-l), var(--shadow); }
+.shc-head { display:flex; justify-content:space-between; align-items:baseline; gap:6px; margin-bottom:8px; }
+.shc-title { font-weight:600; font-size:13px; color:var(--ink); }
+.shc-now { font-size:10px; color:#fff; background:var(--acc); border-radius:6px; padding:1px 6px; font-weight:600; margin-left:4px; }
+.shc-range { font-size:11px; color:var(--muted); white-space:nowrap; }
+.shc-row { display:flex; justify-content:space-between; align-items:center; font-size:12px; padding:3px 0; }
+.shc-row > span { color:var(--muted); }
+.shc-row > b { font-variant-numeric:tabular-nums; color:var(--ink2); }
 
 /* AI advice side panels */
 .ai-side {
@@ -1383,6 +1394,12 @@ const _authGuard = new MutationObserver(() => {
           <div class="ai-side-hdr">🤖 КП <span id="ai-advisor-time" class="ai-side-ts"></span></div>
           <div id="ai-section-KPI" class="ai-side-body"><span style="color:var(--muted)">Загрузка...</span></div>
         </div>
+      </div>
+
+      <!-- ══ ИСТОРИЯ ПО СПРИНТАМ ══ -->
+      <div id="sprint-history-sec" style="display:none">
+        <div class="sec-label mb20">История по спринтам</div>
+        <div id="sprint-history" class="sprint-hist-grid" style="margin-bottom:24px"></div>
       </div>
 
       <div class="sec-label mb20">Выполнение плана по группам</div>
@@ -2543,6 +2560,70 @@ function _aggregateForKpiSprintG(n) {
   return { data, from, to, n };
 }
 
+// ═══════════════════ ИСТОРИЯ ПО СПРИНТАМ ══════════════════════════
+// Сумма возвратов за период [from,to] (DD.MM.YYYY) по активному РОП-фильтру.
+function _sprReturnsTotal(from, to){
+  const fromD = parseDate(from), toD = parseDate(to);
+  const rops = activeMainRop==='all' ? Object.keys(RETURNS_BY_ROP) : _mainRopNames();
+  let sum = 0;
+  for (const rop of rops){
+    const map = RETURNS_BY_ROP[rop] || {};
+    for (const [d, v] of Object.entries(map)){
+      const dd = parseDate(d);
+      if (dd >= fromD && dd <= toD) sum += v;
+    }
+  }
+  return sum;
+}
+// Кол-во менеджеров с минимум 1 сделкой за период [from,to] (по активному
+// РОП-фильтру). Один человек может вести сделки в нескольких пайплайнах —
+// считаем по уникальному имени (суммируем сделки, фильтруем >0).
+function _sprSellersWithDeal(from, to){
+  let mgrs;
+  if (activeMainRop === 'all'){
+    mgrs = aggregateManagersByRop('all', 'all', from, to);
+  } else {
+    mgrs = [];
+    _mainRopNames().forEach(r => { mgrs.push(...aggregateManagersByRop(r, 'all', from, to)); });
+  }
+  const byName = {};
+  for (const m of mgrs) byName[m.name] = (byName[m.name] || 0) + (m.deals || 0);
+  return Object.values(byName).filter(d => d > 0).length;
+}
+// Карточки за каждый сквозной спринт (1..текущий): план, факт (выполнение %),
+// возвраты, кол-во людей с ≥1 сделкой. Учитывает активный РОП/продукт-фильтр.
+function renderSprintHistory(){
+  const sec  = document.getElementById('sprint-history-sec');
+  const wrap = document.getElementById('sprint-history');
+  if (!sec || !wrap) return;
+  const curN = sprintNumForDate(_now()) || 1;
+  let html = '';
+  for (let n = 1; n <= curN; n++){
+    const sp   = _aggregateForKpiSprintG(n);     // {data, from, to, n}
+    const plan = sp.data.plan || 0;
+    const fact = sp.data.budget || 0;
+    const ret  = _sprReturnsTotal(sp.from, sp.to);
+    const ppl  = _sprSellersWithDeal(sp.from, sp.to);
+    const pct  = plan ? Math.round(fact / plan * 100) : 0;
+    const pctClr = !plan ? 'var(--muted)' : pct>=100 ? '#16a34a' : pct>=80 ? '#ca8a04' : '#c0392b';
+    const s     = sprintByNum(n);
+    const range = `${_sprShort(s.fromISO)}–${_sprShort(s.toISO)}`;
+    const isCur = n === curN;
+    html += `<div class="sprint-hist-card${isCur?' cur':''}">
+      <div class="shc-head">
+        <span class="shc-title">Спринт ${n}${isCur?' <span class="shc-now">сейчас</span>':''}</span>
+        <span class="shc-range">${range}</span>
+      </div>
+      <div class="shc-row"><span>План</span><b>${plan?fmtM(plan):'—'}</b></div>
+      <div class="shc-row"><span>Факт</span><b style="color:var(--acc)">${fmtM(fact)}${plan?` <span style="color:${pctClr};font-weight:600">${pct}%</span>`:''}</b></div>
+      <div class="shc-row"><span>Возвраты</span><b style="color:#dc2626">${ret?fmtM(ret):'—'}</b></div>
+      <div class="shc-row"><span title="Менеджеров, закрывших хотя бы 1 сделку">С ≥1 сделкой</span><b>${ppl}</b></div>
+    </div>`;
+  }
+  wrap.innerHTML = html;
+  sec.style.display = '';
+}
+
 function renderKPI(d){
   const prodName = activeProd==='all' ? 'Все продукты' : PROD_CFG[activeProd].name;
   document.getElementById('main-title').textContent = 'Ключевые показатели';
@@ -2565,6 +2646,9 @@ function renderKPI(d){
     _kpiColHTML(_kpiMainTitle, _kpiMainBadge, monthData, clr, 'month') +
     _kpiColHTML('Вчера', _getKpiPeriod('yesterday').from, yesterdayData, '#ca8a04', 'day') +
     _kpiColHTML('Сегодня', _getKpiPeriod('today').from, todayData, '#16a34a', 'day');
+
+  // История по спринтам (1..текущий) — карточки план/факт/возвраты/люди.
+  try { renderSprintHistory(); } catch(e){ console.error('renderSprintHistory error:', e); }
 
   // Карточки спринтов — текущий + следующий сквозной спринт, для которых
   // директор задал план (SPRINT_PLANS). Если планов нет — блок скрыт.
