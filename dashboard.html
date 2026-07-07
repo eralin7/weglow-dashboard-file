@@ -4308,23 +4308,39 @@ async function loadEraCrmOverlay() {
   const dateTo = new Date();
   dateTo.setDate(dateTo.getDate() + 1); // +1 день запас, чтобы окно покрыло «сегодня» по UTC
   const url = `${ERA_CRM_URL}/rest/v1/rpc/get_dashboard_metrics`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'apikey': ERA_CRM_ANON,
-      'Authorization': `Bearer ${ERA_CRM_ANON}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      p_date_from: ERA_CRM_OVERLAY_FROM,
-      p_date_to:   dateTo.toISOString(),
-    }),
-  });
-  if (!res.ok) throw new Error('era-crm rpc http ' + res.status);
-  const rows = await res.json();
-  if (!Array.isArray(rows)) {
-    console.warn('[era-crm overlay] unexpected response shape');
-    return;
+
+  // get_dashboard_metrics — тяжёлый запрос: на окне длиннее ~30 дней БД отменяет
+  // его по statement_timeout (HTTP 500, код 57014 «canceling statement due to
+  // statement timeout»), и весь overlay продаж не применяется — на дашборде
+  // остаётся только замороженный snapshot (≤ май), июнь+ висит нулями.
+  // Поэтому тянем диапазон [OVERLAY_FROM .. сегодня+1] кусками по 14 дней и
+  // склеиваем. Границы RPC полуоткрытые [from,to) — смежные куски не
+  // пересекаются (нет двойного счёта в pipeRoll) и не дают дыр. ~1–2с на кусок.
+  const CHUNK_MS = 14 * 86400000;
+  const _startMs = new Date(ERA_CRM_OVERLAY_FROM).getTime();
+  const _endMs   = dateTo.getTime();
+  let rows = [];
+  for (let cs = _startMs; cs < _endMs; cs += CHUNK_MS) {
+    const ceMs = Math.min(cs + CHUNK_MS, _endMs);
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'apikey': ERA_CRM_ANON,
+        'Authorization': `Bearer ${ERA_CRM_ANON}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        p_date_from: new Date(cs).toISOString(),
+        p_date_to:   new Date(ceMs).toISOString(),
+      }),
+    });
+    if (!res.ok) throw new Error('era-crm rpc http ' + res.status + ' (chunk ' + new Date(cs).toISOString().slice(0,10) + ')');
+    const part = await res.json();
+    if (!Array.isArray(part)) {
+      console.warn('[era-crm overlay] unexpected response shape for chunk', new Date(cs).toISOString().slice(0,10));
+      continue;
+    }
+    rows.push(...part);
   }
 
   // Чистим RAW/MANAGERS от era-дат перед мерджем — иначе исчезнувшие
