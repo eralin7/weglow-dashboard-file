@@ -123,7 +123,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
     <div class="logo">WeGlow</div>
     <div class="logo-sub">Advertising Cabinet</div>
     <div class="pw-title">Рекламный кабинет</div>
-    <div class="pw-sub">Войдите аккаунтом Era CRM (роль admin или director)</div>
+    <div class="pw-sub">Войдите аккаунтом Era CRM (роль admin, director или advertiser)</div>
     <input class="pw-inp" type="email" id="pw-email" placeholder="Email"
            style="margin-bottom:8px" autocomplete="email"
            onkeydown="if(event.key==='Enter')document.getElementById('pw-input').focus()">
@@ -303,8 +303,8 @@ async function checkPw(){
     });
     const arr = await pr.json();
     _userRole = arr[0]?.team_role || null;
-    if (!['admin','director'].includes(_userRole)) {
-      _showErr(`Доступ запрещён — нужна роль admin или director (у вас: ${_userRole||'нет'})`);
+    if (!['admin','director','advertiser'].includes(_userRole)) {
+      _showErr(`Доступ запрещён — нужна роль admin, director или advertiser (у вас: ${_userRole||'нет'})`);
       _accessToken = _refreshToken = _userId = _userRole = null;
       return;
     }
@@ -323,7 +323,7 @@ async function checkPw(){
 
 // Auto-login if token in sessionStorage looks valid — реальная проверка
 // произойдёт при первом загрузке данных (если 401 — попросим логиниться снова).
-if (_accessToken && _userRole && ['admin','director'].includes(_userRole)) {
+if (_accessToken && _userRole && ['admin','director','advertiser'].includes(_userRole)) {
   document.getElementById('pw-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
 }
