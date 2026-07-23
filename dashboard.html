@@ -4309,39 +4309,61 @@ async function loadEraCrmOverlay() {
   dateTo.setDate(dateTo.getDate() + 1); // +1 день запас, чтобы окно покрыло «сегодня» по UTC
   const url = `${ERA_CRM_URL}/rest/v1/rpc/get_dashboard_metrics`;
 
-  // get_dashboard_metrics — тяжёлый запрос: на окне длиннее ~30 дней БД отменяет
-  // его по statement_timeout (HTTP 500, код 57014 «canceling statement due to
-  // statement timeout»), и весь overlay продаж не применяется — на дашборде
-  // остаётся только замороженный snapshot (≤ май), июнь+ висит нулями.
-  // Поэтому тянем диапазон [OVERLAY_FROM .. сегодня+1] кусками по 14 дней и
-  // склеиваем. Границы RPC полуоткрытые [from,to) — смежные куски не
-  // пересекаются (нет двойного счёта в pipeRoll) и не дают дыр. ~1–2с на кусок.
-  const CHUNK_MS = 14 * 86400000;
-  const _startMs = new Date(ERA_CRM_OVERLAY_FROM).getTime();
-  const _endMs   = dateTo.getTime();
-  let rows = [];
-  for (let cs = _startMs; cs < _endMs; cs += CHUNK_MS) {
-    const ceMs = Math.min(cs + CHUNK_MS, _endMs);
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'apikey': ERA_CRM_ANON,
-        'Authorization': `Bearer ${ERA_CRM_ANON}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        p_date_from: new Date(cs).toISOString(),
-        p_date_to:   new Date(ceMs).toISOString(),
-      }),
+  // get_dashboard_metrics читает rollup era-crm, но на растущем окне [OVERLAY_FROM
+  // .. сегодня+1] чтение изредка превышает anon statement_timeout (~3с) → HTTP
+  // 500/57014. Раньше любой такой сбой ронял ВЕСЬ overlay (throw) — продажи
+  // июнь+ висели нулями поверх snapshot ≤ мая. Ниже — устойчивый adaptive-fetch.
+  const _headers = {
+    'apikey': ERA_CRM_ANON,
+    'Authorization': `Bearer ${ERA_CRM_ANON}`,
+    'Content-Type': 'application/json',
+  };
+  // Адаптивно: пробуем всё окно (быстрый путь ~1с при здоровой БД); при
+  // таймауте (500/57014) делим пополам по границе суток и повторяем; на «листе»
+  // (≤2 дня) — пара ретраев, иначе пропускаем этот день. Частичное применение
+  // лучше нулей; полный провал не затираем (throw ниже). Границы RPC
+  // полуоткрытые [from,to) на днях Almaty → деление строго по суткам не двоит.
+  const DAY_MS = 86400000;
+  let _skippedWindows = 0;
+  async function _fetchMetrics(fromMs, toMs) {
+    const body = JSON.stringify({
+      p_date_from: new Date(fromMs).toISOString(),
+      p_date_to:   new Date(toMs).toISOString(),
     });
-    if (!res.ok) throw new Error('era-crm rpc http ' + res.status + ' (chunk ' + new Date(cs).toISOString().slice(0,10) + ')');
-    const part = await res.json();
-    if (!Array.isArray(part)) {
-      console.warn('[era-crm overlay] unexpected response shape for chunk', new Date(cs).toISOString().slice(0,10));
-      continue;
+    const spanDays = (toMs - fromMs) / DAY_MS;
+    const leaf  = spanDays <= 2;           // ≤2 дня дальше не дробим
+    const tries = leaf ? 3 : 1;            // лист ретраим, крупное окно сразу в split
+    for (let i = 0; i < tries; i++) {
+      let res;
+      try { res = await fetch(url, { method: 'POST', headers: _headers, body }); }
+      catch (e) { continue; }              // сетевой сбой — ретрай
+      if (res.ok) {
+        const j = await res.json();
+        return Array.isArray(j) ? j : [];
+      }
+      if (res.status !== 500 && res.status !== 504 && res.status !== 408) {
+        console.warn('[era-crm overlay] metrics http', res.status);  // не таймаут — split не поможет
+        return [];
+      }
+      if (!leaf) break;                    // таймаут крупного окна → в split
     }
-    rows.push(...part);
+    if (!leaf) {
+      const midMs = fromMs + Math.floor(spanDays / 2) * DAY_MS;  // граница суток
+      const a = await _fetchMetrics(fromMs, midMs);
+      const b = await _fetchMetrics(midMs, toMs);
+      return a.concat(b);
+    }
+    _skippedWindows++;
+    console.warn('[era-crm overlay] окно пропущено (таймауты):',
+      new Date(fromMs).toISOString().slice(0, 10), '..', new Date(toMs).toISOString().slice(0, 10));
+    return [];
   }
+
+  const rows = await _fetchMetrics(new Date(ERA_CRM_OVERLAY_FROM).getTime(), dateTo.getTime());
+  // Полный провал (все окна упали) — не затираем прошлые данные нулями: бросаем,
+  // чтобы остался последний удачный overlay/snapshot.
+  if (!rows.length) throw new Error('era-crm overlay: пусто (все окна упали) — оставляем прошлые данные');
+  if (_skippedWindows) console.warn('[era-crm overlay] частичные данные: пропущено окон —', _skippedWindows);
 
   // Чистим RAW/MANAGERS от era-дат перед мерджем — иначе исчезнувшие
   // строки с прошлого цикла останутся «прилипшими».
