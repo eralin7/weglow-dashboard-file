@@ -1,4 +1,4 @@
-import{r as m,R as $}from"./icons-BKx9taBi.js";var Ca={exports:{}},Ie={},Da={exports:{}},Na={};/**
+import{r as m,R as $}from"./icons-sp0go2vz.js";var Ca={exports:{}},Ie={},Da={exports:{}},Na={};/**
  * @license React
  * scheduler.production.min.js
  *
