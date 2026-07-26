@@ -2853,8 +2853,12 @@ function renderPlanTable(stats){
       const rpl = ropLeads>0&&ropFact>0?Math.round(ropFact/ropLeads):0;
       const ropDrr = ropFact>0&&adSpend>0?(adSpend/ropFact*100).toFixed(1):'0.0';
 
-      let ropMgrCount=0;
-      crms.forEach(crm=>{ (MANAGERS[crm]||[]).filter(m=>ropMatches(m.name,ropName) && !m.name.toLowerCase().startsWith('роп ')).forEach(()=>ropMgrCount++); });
+      // Считаем ЛЮДЕЙ, а не записи: один менеджер лежит в MANAGERS отдельной
+      // записью в каждой воронке, где у него есть сделки, — без dedupe по
+      // имени «Прод./мен.» делилась на завышенное число и занижалась.
+      const _ropMgrNames = new Set();
+      crms.forEach(crm=>{ (MANAGERS[crm]||[]).filter(m=>ropMatches(m.name,ropName) && !m.name.toLowerCase().startsWith('роп ')).forEach(m=>_ropMgrNames.add(m.name)); });
+      const ropMgrCount = _ropMgrNames.size;
       const salesPerMgr = ropMgrCount>0?Math.round(ropFact/ropMgrCount):0;
 
       _ropRows.push({ ropName, ropCfg, ropFact, ropLeads, ropDeals, planPeriod, fullMonthPlan, ropReturn, planWithReturn, execPct, remain, perDay, forecast, conv, adSpend, cplM, rpl, ropDrr, salesPerMgr, _fcFact });
@@ -3017,14 +3021,17 @@ function renderRopKPI(stats) {
 
     // Use only filtered CRMs (if product selected, only that CRM)
     const crms = selectedProdName ? ropCrms.filter(c => c === selectedProdName) : ropCrms;
-    let leads=0, deals=0, budget=0, mgrCount=0;
+    let leads=0, deals=0, budget=0;
+    // Уникальные люди: один менеджер встречается в нескольких воронках.
+    const _mgrNames = new Set();
 
     crms.forEach(crm => {
       const mgrs = aggregateManagersByPeriod(crm, stats.from || activePeriod.from, stats.to || activePeriod.to);
       mgrs.filter(m => ropMatches(m.name, ropName)).forEach(m => {
-        leads += m.leads||0; deals += m.deals||0; budget += m.budget||0; mgrCount++;
+        leads += m.leads||0; deals += m.deals||0; budget += m.budget||0; _mgrNames.add(m.name);
       });
     });
+    const mgrCount = _mgrNames.size;
 
     const planPeriod = getRopPlanForPeriod(ropName);
     const fullMonthPlan = (ROP_PLANS[ropName] && ROP_PLANS[ropName][curMk]) || 0;
@@ -3574,7 +3581,43 @@ function aggregateManagersByRop(ropKey, prodFilter, from, to) {
     }
   });
 
-  return allMgrs.sort((a, b) => b.budget - a.budget);
+  // Сводим человека в ОДНУ строку: считаем по РОПу, а не по воронке.
+  return _mergeMgrsByName(allMgrs).sort((a, b) => b.budget - a.budget);
+}
+
+// Один менеджер продаёт сразу в нескольких воронках (Коллаген / KIDS /
+// B1 Partners / KAZ Коллаген), а в MANAGERS он лежит ОТДЕЛЬНОЙ записью в
+// каждом бакете. Без слияния человек двоился в таблице «Менеджеры», а
+// производные считались от куска: лиды в одной воронке, сделки в другой
+// давали 0% конверсии и пустой ср.чек. Складываем сырые счётчики и
+// пересчитываем производные ПОСЛЕ слияния.
+function _mergeMgrsByName(list) {
+  const out = new Map();
+  for (const m of list) {
+    const cur = out.get(m.name);
+    if (!cur) {
+      out.set(m.name, { ...m, _crms: m._crm ? [m._crm] : [], _topBudget: m.budget || 0 });
+      continue;
+    }
+    cur.leads      = (cur.leads      || 0) + (m.leads      || 0);
+    cur.deals      = (cur.deals      || 0) + (m.deals      || 0);
+    cur.budget     = (cur.budget     || 0) + (m.budget     || 0);
+    cur.newDeals   = (cur.newDeals   || 0) + (m.newDeals   || 0);
+    cur.newBudget  = (cur.newBudget  || 0) + (m.newBudget  || 0);
+    cur.baseDeals  = (cur.baseDeals  || 0) + (m.baseDeals  || 0);
+    cur.baseBudget = (cur.baseBudget || 0) + (m.baseBudget || 0);
+    if (m._crm && !cur._crms.includes(m._crm)) cur._crms.push(m._crm);
+    // для модалки оставляем бакет, где у человека больше выручки
+    if ((m.budget || 0) > cur._topBudget) { cur._topBudget = m.budget || 0; cur._crm = m._crm; }
+  }
+  for (const m of out.values()) {
+    m.conv     = m.leads > 0 ? +(m.deals / m.leads * 100).toFixed(1)            : 0;
+    m.newConv  = m.leads > 0 ? +((m.newDeals  || 0) / m.leads * 100).toFixed(1) : 0;
+    m.baseConv = m.leads > 0 ? +((m.baseDeals || 0) / m.leads * 100).toFixed(1) : 0;
+    m.avgCheck = m.deals > 0 ? Math.round(m.budget / m.deals)                   : 0;
+    delete m._topBudget;
+  }
+  return [...out.values()];
 }
 
 function aggregateManagersByPeriod(prodKey, from, to) {
@@ -5659,9 +5702,23 @@ function openMgrModal(mgrName, prodKey) {
 
   const cfg     = PROD_CFG[prodKey] || Object.values(PROD_CFG).find(p=>p.mgrKey===prodKey) || {color:'#6366f1'};
   const color   = cfg.color || '#6366f1';
-  const mgrList = MANAGERS[prodKey] || [];
-  const mgr     = mgrList.find(m => m.name === mgrName);
-  if (!mgr) { body.innerHTML = `<div style="padding:24px;color:var(--muted)">Нет данных по ${mgrName}</div>`; overlay.classList.add('open'); return; }
+  // Дни менеджера собираем из ВСЕХ воронок, а не только из prodKey: человек
+  // продаёт в нескольких (Коллаген / KIDS / B1 Partners / KAZ Коллаген), и
+  // раньше карточка показывала лишь часть его сделок.
+  const _mDaily = {};
+  let _mFound = false;
+  for (const list of Object.values(MANAGERS)) {
+    for (const m of (list || [])) {
+      if (m.name !== mgrName) continue;
+      _mFound = true;
+      for (const [d, v] of Object.entries(m.daily || {})) {
+        const cur = _mDaily[d] || (_mDaily[d] = [0,0,0,0,0,0,0]);
+        for (let i = 0; i < v.length; i++) cur[i] += v[i] || 0;
+      }
+    }
+  }
+  if (!_mFound) { body.innerHTML = `<div style="padding:24px;color:var(--muted)">Нет данных по ${mgrName}</div>`; overlay.classList.add('open'); return; }
+  const mgr = { name: mgrName, daily: _mDaily };
 
   // ── Period stats (active period) ──
   const {from, to} = activeMgrPeriod;
