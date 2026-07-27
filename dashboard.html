@@ -4360,6 +4360,49 @@ function _applyRopDateSplit(){
   if (_split) console.log('[rop date-split] разнесено менеджеров:', _split, '→ ≤'+cutoffISO+' '+oldRop+' / далее '+newRop);
 }
 
+// ── История переходов менеджеров между отделами ───────────────────────
+// Era CRM хранит только ТЕКУЩУЮ группу человека, поэтому после перехода в
+// другой отдел его ПРОШЛЫЕ продажи задним числом уезжают к новому РОПу.
+// Здесь фиксируем историю: дни ≤ untilISO остаются за прежним отделом.
+// Отколотая часть живёт двойником «Имя (Отдел)» — тот же приём, что в
+// ROP_DATE_SPLIT: в таблице менеджеров её видно отдельной строкой, а суммы
+// компании не меняются (переносится только принадлежность к РОПу).
+// Чтобы добавить ещё один переход — допишите строку в массив.
+const MGR_ROP_HISTORY = [
+  // Эльнара Юсупова: по 31.05.2026 работала в отделе Аяулым (Спринты 1-2,
+  // 1 787 000 + 1 765 000 ₸), с 01.06.2026 — у Аслиддина.
+  { name: 'Эльнара Юсупова', prevRop: 'РОП Аяулым', untilISO: '2026-05-31' },
+];
+function _applyMgrRopHistory(){
+  if (typeof clearRopCache === 'function') clearRopCache();
+  let _moved = 0;
+  for (const rule of MGR_ROP_HISTORY){
+    const sibName = rule.name + ' (' + rule.prevRop.replace(/^РОП\s+/, '') + ')';
+    for (const acc of Object.keys(MANAGERS)){
+      const list = MANAGERS[acc];
+      if (!Array.isArray(list)) continue;
+      const m = list.find(x => x && x.name === rule.name);   // строго точное имя
+      if (!m) continue;
+      const keep = {}, spill = {};                            // spill = дни прежнего отдела
+      for (const [date, vals] of Object.entries(m.daily || {})){
+        (_ropSplitISO(date) <= rule.untilISO ? spill : keep)[date] = vals;
+      }
+      if (!Object.keys(spill).length) continue;               // переносить нечего (идемпотентно)
+      m.daily = keep; _ropSplitRecalc(m);
+      let sib = list.find(x => x && x.name === sibName);
+      if (!sib){
+        sib = { name:sibName, leads:0,deals:0,budget:0,newDeals:0,newBudget:0,baseDeals:0,baseBudget:0,conv:0,newConv:0,baseConv:0,avgCheck:0, daily:{} };
+        list.push(sib);
+      }
+      Object.assign(sib.daily, spill); _ropSplitRecalc(sib);
+      MGR_TO_ROP[sibName] = rule.prevRop;
+      _moved++;
+    }
+  }
+  if (typeof clearRopCache === 'function') clearRopCache();
+  if (_moved) console.log('[mgr rop history] перенесено записей:', _moved);
+}
+
 async function loadEraCrmOverlay() {
   const dateTo = new Date();
   dateTo.setDate(dateTo.getDate() + 1); // +1 день запас, чтобы окно покрыло «сегодня» по UTC
@@ -4528,6 +4571,11 @@ async function loadEraCrmOverlay() {
   // Date-split переименованного РОПа (Диас ≤07.06 / Нурдаулет KIDS ≥08.06).
   // Должен идти ДО rebuildRopGroups, чтобы новые маппинги попали в группы.
   _applyRopDateSplit();
+
+  // История переходов между отделами (Era CRM знает только текущую группу).
+  // Строго ПОСЛЕ overlay/date-split: overlay перетирает MGR_TO_ROP текущей
+  // группой, и только теперь можно вернуть прошлые дни прежнему отделу.
+  _applyMgrRopHistory();
 
   // Пересчитать ROP-кеши/группы — иначе новые маппинги не подхватятся.
   if (typeof clearRopCache === 'function') clearRopCache();
