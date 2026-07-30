@@ -505,6 +505,11 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
 .sprint-item.active { background:var(--acc-l); color:var(--acc); font-weight:600; }
 .sprint-item .s-range { font-size:11px; color:var(--muted); font-weight:400; }
 .sprint-item:hover .s-range, .sprint-item.active .s-range { color:var(--acc); }
+.sprint-group {
+  padding:7px 14px 4px; font-size:10px; font-weight:700; letter-spacing:.8px;
+  text-transform:uppercase; color:var(--muted); border-top:1px solid var(--line2);
+}
+.sprint-menu > .sprint-group:first-child { border-top:none; }
 .sprint-item .s-badge {
   font-size:9px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
   color:var(--green); background:var(--green-l);
@@ -1034,6 +1039,14 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
 .sprint-hist-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:12px; }
 .sprint-hist-card { background:var(--white); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow); padding:12px 14px; }
 .sprint-hist-card.cur { border-color:var(--acc); box-shadow:0 0 0 1px var(--acc-l), var(--shadow); }
+/* Каникулы между марафонами — приглушённая карточка (плана нет) */
+.sprint-hist-card.hol { background:var(--bg); border-style:dashed; }
+/* Заголовок марафона — на всю ширину сетки */
+.shc-marathon {
+  grid-column:1/-1; margin:6px 0 -4px; font-size:11px; font-weight:700;
+  letter-spacing:1px; text-transform:uppercase; color:var(--muted);
+}
+.shc-marathon:first-child { margin-top:0; }
 .shc-head { display:flex; justify-content:space-between; align-items:baseline; gap:6px; margin-bottom:8px; }
 .shc-title { font-weight:600; font-size:13px; color:var(--ink); }
 .shc-now { font-size:10px; color:#fff; background:var(--acc); border-radius:6px; padding:1px 6px; font-weight:600; margin-left:4px; }
@@ -2270,48 +2283,133 @@ function applyCustom(){
   activePeriod={from,to,label:`${from} — ${to}`,preset:'custom'};
   render();
 }
-// ═══════════════════ SPRINTS (сквозные, по 2 недели) ══════════════
-// Глобальная сквозная нумерация спринтов. Спринт 1 — особый
-// (01.05–17.05, 17 дней); с 18.05.2026 каждый спринт длится ровно 14 дней:
-//   1: 01.05–17.05   2: 18.05–31.05   3: 01.06–14.06   4: 15.06–28.06
-//   5: 29.06–12.07   6: 13.07–26.07 … и так далее.
-const _SPR_EPOCH = '2026-05-18';            // старт спринта №2 (шаг 14 дней)
+// ═══════════════════ МАРАФОНЫ И СПРИНТЫ ═══════════════════════════
+// Марафон = серия спринтов; между марафонами — КАНИКУЛЫ (спринта нет).
+//   Марафон 1: спринты 1-6, 01.05–26.07 (первый спринт особый, 17 дней).
+//   Каникулы:  27.07–02.08.
+//   Марафон 2: спринты 1-6 по 14 дней, с 03.08 (03.08–25.10).
+//
+// ВАЖНО про нумерацию. Внутри кода номер спринта СКВОЗНОЙ (g): по нему
+// хранятся планы в SPRINT_PLANS и строятся ключи preset 'sprint_<g>'.
+// Поэтому марафон 2 — это g=7..12, и уже заданные планы (g=4,5,6) остаются
+// на своих спринтах. На ЭКРАНЕ показываем номер внутри марафона (s.i), т.е.
+// во втором марафоне нумерация снова с 1 — как и просил владелец.
+// Новый марафон = одна строка в MARATHONS (каникулы посчитаются сами как
+// промежуток между концом предыдущего марафона и стартом следующего).
+const MARATHONS = [
+  { n: 1, startISO: '2026-05-01', count: 6, firstLen: 17, len: 14 },
+  { n: 2, startISO: '2026-08-03', count: 6, firstLen: 14, len: 14 },
+];
 function _sprAddDays(iso, n){
   const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n);
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 function _sprDisp(iso){ const [y,m,d] = iso.split('-'); return `${d}.${m}.${y}`; }
 function _sprShort(iso){ const [y,m,d] = iso.split('-'); return `${d}.${m}`; }
-// Границы спринта по его номеру (n ≥ 1).
-function sprintByNum(n){
-  if (n <= 1) return { n:1, fromISO:'2026-05-01', toISO:'2026-05-17' };
-  const fromISO = _sprAddDays(_SPR_EPOCH, (n-2)*14);
-  return { n, fromISO, toISO: _sprAddDays(fromISO, 13) };
-}
-// Номер спринта, в который попадает дата (или null, если раньше старта).
+function _sprISOofDate(dt){ return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`; }
+// Плоский список всех спринтов: { g: сквозной №, m: марафон, i: № внутри
+// марафона, count: спринтов в марафоне, fromISO, toISO }.
+const _SPRINTS = (function(){
+  const out = []; let g = 0;
+  for (const M of MARATHONS){
+    let from = M.startISO;
+    for (let i = 1; i <= M.count; i++){
+      const len = (i === 1 ? M.firstLen : M.len);
+      const to  = _sprAddDays(from, len - 1);
+      out.push({ g: ++g, m: M.n, i, count: M.count, fromISO: from, toISO: to });
+      from = _sprAddDays(to, 1);
+    }
+  }
+  return out;
+})();
+// Каникулы между марафонами (промежутки, не покрытые спринтами).
+const _HOLIDAYS = (function(){
+  const out = [];
+  for (let k = 1; k < MARATHONS.length; k++){
+    const prevLast = _SPRINTS.filter(s => s.m === MARATHONS[k-1].n).slice(-1)[0];
+    if (!prevLast) continue;
+    const fromISO = _sprAddDays(prevLast.toISO, 1);
+    const toISO   = _sprAddDays(MARATHONS[k].startISO, -1);
+    if (fromISO <= toISO) out.push({ afterM: MARATHONS[k-1].n, beforeM: MARATHONS[k].n, fromISO, toISO });
+  }
+  return out;
+})();
+// Границы спринта по сквозному номеру (null — такого спринта нет).
+function sprintByNum(g){ return _SPRINTS.find(s => s.g === +g) || null; }
+// Сквозной номер спринта, в который попадает дата.
+// null — дата вне спринтов (каникулы, до старта или после конца марафонов).
 function sprintNumForDate(dt){
-  const iso = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
-  if (iso < '2026-05-01') return null;
-  if (iso <= '2026-05-17') return 1;
-  const days = Math.floor((new Date(iso+'T00:00:00') - new Date(_SPR_EPOCH+'T00:00:00')) / 86400000);
-  return 2 + Math.floor(days / 14);
+  const iso = _sprISOofDate(dt);
+  const s = _SPRINTS.find(x => iso >= x.fromISO && iso <= x.toISO);
+  return s ? s.g : null;
+}
+// Каникулы, в которые попадает дата (или null).
+function holidayForDate(dt){
+  const iso = _sprISOofDate(dt);
+  return _HOLIDAYS.find(h => iso >= h.fromISO && iso <= h.toISO) || null;
+}
+// Спринты, которые уже начались (для истории и меню). В каникулы это все
+// спринты завершённого марафона — следующий ещё не стартовал.
+function _sprintsStarted(){
+  const iso = _sprISOofDate(_now());
+  return _SPRINTS.filter(s => s.fromISO <= iso);
+}
+// Текущий спринт, а если сейчас каникулы (или всё ещё не начался) — ближайший
+// предстоящий. Нужно там, где показываем «текущий + следующий» спринт.
+function _sprintNowOrNextG(){
+  const g = sprintNumForDate(_now());
+  if (g) return g;
+  const iso  = _sprISOofDate(_now());
+  const next = _SPRINTS.find(s => s.fromISO > iso);
+  if (next) return next.g;
+  return _SPRINTS.length ? _SPRINTS[_SPRINTS.length - 1].g : 1;
+}
+// Подписи: марафон показываем только когда их больше одного.
+function _sprTitle(s){ return `Спринт ${s.i}`; }
+function _sprFull(s){
+  const range = `${_sprShort(s.fromISO)}–${_sprShort(s.toISO)}`;
+  return MARATHONS.length > 1
+    ? `Марафон ${s.m} · Спринт ${s.i} · ${range}`
+    : `Спринт ${s.i} · ${range}`;
+}
+function _sprBtn(s){ return MARATHONS.length > 1 ? `🏃 М${s.m} · Спринт ${s.i} ▾` : `🏃 Спринт ${s.i} ▾`; }
+function _holFull(h){ return `Каникулы · ${_sprShort(h.fromISO)}–${_sprShort(h.toISO)}`; }
+// Общий HTML выпадашки: спринты сгруппированы по марафонам, между марафонами —
+// пункт «Каникулы». Показываем все начавшиеся спринты + один следующий.
+function _sprMenuHTML(selPreset, pickFn, pickHolFn){
+  const started = _sprintsStarted();
+  const lastG   = started.length ? started[started.length-1].g : 0;
+  const shown   = _SPRINTS.filter(s => s.g <= lastG + 1);
+  const curG    = sprintNumForDate(_now());
+  const curHol  = holidayForDate(_now());
+  const selG    = /^sprint_(\d+)$/.test(selPreset||'') ? +String(selPreset).split('_')[1] : null;
+  const selHolM = /^holiday_(\d+)$/.test(selPreset||'') ? +String(selPreset).split('_')[1] : null;
+  let html = '', prevM = null;
+  for (const s of shown){
+    if (s.m !== prevM){
+      const hi  = _HOLIDAYS.findIndex(h => h.beforeM === s.m);
+      const hol = hi >= 0 ? _HOLIDAYS[hi] : null;
+      if (hol){
+        const isNow = curHol && curHol.fromISO === hol.fromISO;
+        html += `<div class="sprint-item${selHolM===hi?' active':''}" data-hol="${hi}" onclick="${pickHolFn}(${hi})">`
+              +   `<span>Каникулы${isNow?' <span class="s-badge">сейчас</span>':''}</span>`
+              +   `<span class="s-range">${_sprShort(hol.fromISO)}–${_sprShort(hol.toISO)}</span>`
+              + `</div>`;
+      }
+      if (MARATHONS.length > 1) html += `<div class="sprint-group">Марафон ${s.m}</div>`;
+      prevM = s.m;
+    }
+    html += `<div class="sprint-item${s.g===selG?' active':''}" data-n="${s.g}" onclick="${pickFn}(${s.g})">`
+          +   `<span>Спринт ${s.i}${s.g===curG?' <span class="s-badge">сейчас</span>':''}</span>`
+          +   `<span class="s-range">${_sprShort(s.fromISO)}–${_sprShort(s.toISO)}</span>`
+          + `</div>`;
+  }
+  return html;
 }
 function buildSprintMenu(){
   const menu = document.getElementById('sprint-menu');
   if (!menu) return;
-  const curN = sprintNumForDate(_now()) || 1;
-  const maxN = curN + 1;                     // показываем и следующий спринт
-  const sel  = (activePeriod && /^sprint_\d+$/.test(activePeriod.preset||''))
-             ? +activePeriod.preset.split('_')[1] : null;
-  let html = '';
-  for (let n = 1; n <= maxN; n++){
-    const s = sprintByNum(n);
-    html += `<div class="sprint-item${n===sel?' active':''}" data-n="${n}" onclick="pickSprint(${n})">`
-          +   `<span>Спринт ${n}${n===curN?' <span class="s-badge">сейчас</span>':''}</span>`
-          +   `<span class="s-range">${_sprShort(s.fromISO)}–${_sprShort(s.toISO)}</span>`
-          + `</div>`;
-  }
-  menu.innerHTML = html;
+  menu.innerHTML = _sprMenuHTML(activePeriod && activePeriod.preset, 'pickSprint', 'pickHoliday');
 }
 function toggleSprintMenu(){
   const menu = document.getElementById('sprint-menu');
@@ -2319,14 +2417,28 @@ function toggleSprintMenu(){
   buildSprintMenu();                          // ребилд: «сейчас»/выбранный
   menu.classList.toggle('open');
 }
-function pickSprint(n){
-  const s = sprintByNum(n);
-  const from = _sprDisp(s.fromISO), to = _sprDisp(s.toISO);
-  activePeriod = { from, to, label:`Спринт ${n} · ${_sprShort(s.fromISO)}–${_sprShort(s.toISO)}`, preset:`sprint_${n}` };
+function pickSprint(g){
+  const s = sprintByNum(g);
+  if (!s) return;
+  activePeriod = { from:_sprDisp(s.fromISO), to:_sprDisp(s.toISO), label:_sprFull(s), preset:`sprint_${g}` };
   document.querySelectorAll('#global-filters .period-pill').forEach(b=>b.classList.remove('active'));
   const btn = document.getElementById('sprint-btn');
-  if (btn){ btn.classList.add('active'); btn.textContent = `🏃 Спринт ${n} ▾`; }
-  document.querySelectorAll('#sprint-menu .sprint-item').forEach(it=>it.classList.toggle('active', +it.dataset.n===n));
+  if (btn){ btn.classList.add('active'); btn.textContent = _sprBtn(s); }
+  document.querySelectorAll('#sprint-menu .sprint-item').forEach(it=>it.classList.toggle('active', +it.dataset.n===g));
+  const menu = document.getElementById('sprint-menu'); if (menu) menu.classList.remove('open');
+  const cw = document.getElementById('custom-wrap'); if (cw) cw.style.display='none';
+  render();
+}
+// Каникулы между марафонами: обычный период по датам, но плана нет
+// (activeSprintNum() вернёт null → «План —», выполнение не считается).
+function pickHoliday(hi){
+  const h = _HOLIDAYS[hi];
+  if (!h) return;
+  activePeriod = { from:_sprDisp(h.fromISO), to:_sprDisp(h.toISO), label:_holFull(h), preset:`holiday_${hi}` };
+  document.querySelectorAll('#global-filters .period-pill').forEach(b=>b.classList.remove('active'));
+  const btn = document.getElementById('sprint-btn');
+  if (btn){ btn.classList.add('active'); btn.textContent = '🏝 Каникулы ▾'; }
+  document.querySelectorAll('#sprint-menu .sprint-item').forEach(it=>it.classList.toggle('active', +it.dataset.hol===hi));
   const menu = document.getElementById('sprint-menu'); if (menu) menu.classList.remove('open');
   const cw = document.getElementById('custom-wrap'); if (cw) cw.style.display='none';
   render();
@@ -2344,19 +2456,7 @@ document.addEventListener('click', e=>{
 function buildMgrSprintMenu(){
   const menu = document.getElementById('mgr-sprint-menu');
   if (!menu) return;
-  const curN = sprintNumForDate(_now()) || 1;
-  const maxN = curN + 1;                       // показываем и следующий спринт
-  const sel  = (activeMgrPeriod && /^sprint_\d+$/.test(activeMgrPeriod.preset||''))
-             ? +activeMgrPeriod.preset.split('_')[1] : null;
-  let html = '';
-  for (let n = 1; n <= maxN; n++){
-    const s = sprintByNum(n);
-    html += `<div class="sprint-item${n===sel?' active':''}" data-n="${n}" onclick="pickMgrSprint(${n})">`
-          +   `<span>Спринт ${n}${n===curN?' <span class="s-badge">сейчас</span>':''}</span>`
-          +   `<span class="s-range">${_sprShort(s.fromISO)}–${_sprShort(s.toISO)}</span>`
-          + `</div>`;
-  }
-  menu.innerHTML = html;
+  menu.innerHTML = _sprMenuHTML(activeMgrPeriod && activeMgrPeriod.preset, 'pickMgrSprint', 'pickMgrHoliday');
 }
 function toggleMgrSprintMenu(){
   const menu = document.getElementById('mgr-sprint-menu');
@@ -2364,14 +2464,26 @@ function toggleMgrSprintMenu(){
   buildMgrSprintMenu();
   menu.classList.toggle('open');
 }
-function pickMgrSprint(n){
-  const s = sprintByNum(n);
-  const from = _sprDisp(s.fromISO), to = _sprDisp(s.toISO);
-  activeMgrPeriod = { from, to, label:`Спринт ${n} · ${_sprShort(s.fromISO)}–${_sprShort(s.toISO)}`, preset:`sprint_${n}` };
+function pickMgrSprint(g){
+  const s = sprintByNum(g);
+  if (!s) return;
+  activeMgrPeriod = { from:_sprDisp(s.fromISO), to:_sprDisp(s.toISO), label:_sprFull(s), preset:`sprint_${g}` };
   document.querySelectorAll('#mgr-filters .period-pill').forEach(b=>b.classList.remove('active'));
   const btn = document.getElementById('mgr-sprint-btn');
-  if (btn){ btn.classList.add('active'); btn.textContent = `🏃 Спринт ${n} ▾`; }
-  document.querySelectorAll('#mgr-sprint-menu .sprint-item').forEach(it=>it.classList.toggle('active', +it.dataset.n===n));
+  if (btn){ btn.classList.add('active'); btn.textContent = _sprBtn(s); }
+  document.querySelectorAll('#mgr-sprint-menu .sprint-item').forEach(it=>it.classList.toggle('active', +it.dataset.n===g));
+  const menu = document.getElementById('mgr-sprint-menu'); if (menu) menu.classList.remove('open');
+  const cw = document.getElementById('mgr-custom-wrap'); if (cw) cw.style.display='none';
+  renderManagers();
+}
+function pickMgrHoliday(hi){
+  const h = _HOLIDAYS[hi];
+  if (!h) return;
+  activeMgrPeriod = { from:_sprDisp(h.fromISO), to:_sprDisp(h.toISO), label:_holFull(h), preset:`holiday_${hi}` };
+  document.querySelectorAll('#mgr-filters .period-pill').forEach(b=>b.classList.remove('active'));
+  const btn = document.getElementById('mgr-sprint-btn');
+  if (btn){ btn.classList.add('active'); btn.textContent = '🏝 Каникулы ▾'; }
+  document.querySelectorAll('#mgr-sprint-menu .sprint-item').forEach(it=>it.classList.toggle('active', +it.dataset.hol===hi));
   const menu = document.getElementById('mgr-sprint-menu'); if (menu) menu.classList.remove('open');
   const cw = document.getElementById('mgr-custom-wrap'); if (cw) cw.style.display='none';
   renderManagers();
@@ -2597,28 +2709,20 @@ function _sprSellersWithDeal(from, to){
   for (const m of mgrs) byName[m.name] = (byName[m.name] || 0) + (m.deals || 0);
   return Object.values(byName).filter(d => d > 0).length;
 }
-// Карточки за каждый сквозной спринт (1..текущий): план, факт (выполнение %),
-// возвраты, кол-во людей с ≥1 сделкой. Учитывает активный РОП/продукт-фильтр.
-function renderSprintHistory(){
-  const sec  = document.getElementById('sprint-history-sec');
-  const wrap = document.getElementById('sprint-history');
-  if (!sec || !wrap) return;
-  const curN = sprintNumForDate(_now()) || 1;
-  let html = '';
-  for (let n = 1; n <= curN; n++){
-    const sp   = _aggregateForKpiSprintG(n);     // {data, from, to, n}
-    const plan = sp.data.plan || 0;
-    const fact = sp.data.budget || 0;
-    const ret  = _sprReturnsTotal(sp.from, sp.to);
-    const ppl  = _sprSellersWithDeal(sp.from, sp.to);
-    const pct  = plan ? Math.round(fact / plan * 100) : 0;
-    const pctClr = !plan ? 'var(--muted)' : pct>=100 ? '#16a34a' : pct>=80 ? '#ca8a04' : '#c0392b';
-    const s     = sprintByNum(n);
-    const range = `${_sprShort(s.fromISO)}–${_sprShort(s.toISO)}`;
-    const isCur = n === curN;
-    html += `<div class="sprint-hist-card${isCur?' cur':''}">
+// Метрики любого периода для карточки истории: план/факт/возвраты/люди.
+// План берётся из SPRINT_PLANS по сквозному номеру (g); для каникул плана нет.
+function _histCardHTML(opts){
+  const { title, range, isCur, from, to, g } = opts;
+  const sp   = g ? _aggregateForKpiSprintG(g) : { data: _aggregateForKpi({ from, to }), from, to };
+  const plan = g ? (sp.data.plan || 0) : 0;
+  const fact = sp.data.budget || 0;
+  const ret  = _sprReturnsTotal(sp.from, sp.to);
+  const ppl  = _sprSellersWithDeal(sp.from, sp.to);
+  const pct  = plan ? Math.round(fact / plan * 100) : 0;
+  const pctClr = !plan ? 'var(--muted)' : pct>=100 ? '#16a34a' : pct>=80 ? '#ca8a04' : '#c0392b';
+  return `<div class="sprint-hist-card${isCur?' cur':''}${g?'':' hol'}">
       <div class="shc-head">
-        <span class="shc-title">Спринт ${n}${isCur?' <span class="shc-now">сейчас</span>':''}</span>
+        <span class="shc-title">${title}${isCur?' <span class="shc-now">сейчас</span>':''}</span>
         <span class="shc-range">${range}</span>
       </div>
       <div class="shc-row"><span>План</span><b>${plan?fmtM(plan):'—'}</b></div>
@@ -2626,6 +2730,49 @@ function renderSprintHistory(){
       <div class="shc-row"><span>Возвраты</span><b style="color:#dc2626">${ret?fmtM(ret):'—'}</b></div>
       <div class="shc-row"><span title="Менеджеров, закрывших хотя бы 1 сделку">С ≥1 сделкой</span><b>${ppl}</b></div>
     </div>`;
+}
+// История: все НАЧАВШИЕСЯ спринты, сгруппированные по марафонам, плюс
+// карточка каникул между марафонами. Учитывает активный РОП/продукт-фильтр.
+function renderSprintHistory(){
+  const sec  = document.getElementById('sprint-history-sec');
+  const wrap = document.getElementById('sprint-history');
+  if (!sec || !wrap) return;
+  const todayISO = _sprISOofDate(_now());
+  const curG     = sprintNumForDate(_now());
+  const curHol   = holidayForDate(_now());
+  const started  = _sprintsStarted();
+  if (!started.length){ wrap.innerHTML = ''; sec.style.display = 'none'; return; }
+
+  // Единая лента по датам: спринты + начавшиеся каникулы.
+  const items = started.map(s => ({ kind:'sprint', fromISO:s.fromISO, s }));
+  for (const h of _HOLIDAYS) if (h.fromISO <= todayISO) items.push({ kind:'holiday', fromISO:h.fromISO, h });
+  items.sort((a,b) => a.fromISO < b.fromISO ? -1 : 1);
+
+  let html = '', prevM = null;
+  for (const it of items){
+    if (it.kind === 'sprint'){
+      const s = it.s;
+      if (s.m !== prevM){
+        if (MARATHONS.length > 1) html += `<div class="shc-marathon">Марафон ${s.m}</div>`;
+        prevM = s.m;
+      }
+      html += _histCardHTML({
+        title: `Спринт ${s.i}`,
+        range: `${_sprShort(s.fromISO)}–${_sprShort(s.toISO)}`,
+        isCur: s.g === curG,
+        g: s.g,
+      });
+    } else {
+      const h = it.h;
+      html += _histCardHTML({
+        title: 'Каникулы',
+        range: `${_sprShort(h.fromISO)}–${_sprShort(h.toISO)}`,
+        isCur: !!curHol && curHol.fromISO === h.fromISO,
+        from: _sprDisp(h.fromISO),
+        to:   _sprDisp(h.toISO),
+        g: null,
+      });
+    }
   }
   wrap.innerHTML = html;
   sec.style.display = '';
@@ -2643,11 +2790,18 @@ function renderKPI(d){
   const yesterdayData = _aggregateForKpi(_getKpiPeriod('yesterday'));
   const todayData = _aggregateForKpi(_getKpiPeriod('today'));
 
-  // Заголовок первой колонки: «Спринт N» при выборе спринта, иначе «Месяц».
-  // В спринт-режиме бейдж — только даты (без дубля «Спринт N ·»).
-  const _kpiMainN = activeSprintNum();
-  const _kpiMainTitle = _kpiMainN ? `Спринт ${_kpiMainN}` : 'Месяц';
-  const _kpiMainBadge = _kpiMainN ? activePeriod.label.replace(/^Спринт\s*\d+\s*·\s*/, '') : activePeriod.label;
+  // Заголовок первой колонки: «Спринт N» (номер внутри марафона) при выборе
+  // спринта, «Каникулы» между марафонами, иначе «Месяц». В бейдже — марафон
+  // и даты, без дубля названия.
+  const _kpiMainG = activeSprintNum();
+  const _kpiMainS = _kpiMainG ? sprintByNum(_kpiMainG) : null;
+  const _kpiIsHol = /^holiday_\d+$/.test((activePeriod && activePeriod.preset) || '');
+  const _kpiMainTitle = _kpiMainS ? _sprTitle(_kpiMainS) : (_kpiIsHol ? 'Каникулы' : 'Месяц');
+  const _kpiMainBadge = _kpiMainS
+    ? (MARATHONS.length > 1
+        ? `М${_kpiMainS.m} · ${_sprShort(_kpiMainS.fromISO)}–${_sprShort(_kpiMainS.toISO)}`
+        : `${_sprShort(_kpiMainS.fromISO)}–${_sprShort(_kpiMainS.toISO)}`)
+    : (activePeriod.label || '').replace(/^Каникулы\s*·\s*/, '');
 
   document.getElementById('kpi-3col').innerHTML =
     _kpiColHTML(_kpiMainTitle, _kpiMainBadge, monthData, clr, 'month') +
@@ -2662,7 +2816,8 @@ function renderKPI(d){
   // Выбранный в выпадашке спринт не дублируем (он уже основная колонка).
   const spWrap = document.getElementById('kpi-sprints');
   if (!spWrap) return;
-  const curN = sprintNumForDate(_now()) || 1;
+  // В каникулы текущего спринта нет — берём ближайший предстоящий.
+  const curN = _sprintNowOrNextG();
   const _selN = activeSprintNum();
   const spNums = [curN, curN+1].filter(n => sprintPlanTotal(n) > 0 && n !== _selN);
   if (spNums.length) {
@@ -2670,8 +2825,10 @@ function renderKPI(d){
     let html = '';
     spNums.forEach((n, i) => {
       const sp = _aggregateForKpiSprintG(n);
-      const badge = `${sp.from} — ${sp.to}${n===curN ? ' · сейчас' : ''}`;
-      html += _kpiColHTML(`Спринт ${n}`, badge, sp.data, spColors[i % 2], 'sprint');
+      const s  = sprintByNum(n);
+      const mPfx  = (s && MARATHONS.length > 1) ? `М${s.m} · ` : '';
+      const badge = `${mPfx}${sp.from} — ${sp.to}${n===sprintNumForDate(_now()) ? ' · сейчас' : ''}`;
+      html += _kpiColHTML(s ? `Спринт ${s.i}` : `Спринт ${n}`, badge, sp.data, spColors[i % 2], 'sprint');
     });
     spWrap.innerHTML = html;
     spWrap.style.display = 'grid';
@@ -2700,10 +2857,15 @@ function calcForecast(d) {
 // показываем — возвращаем 0 (колонка «—», план с возвратом = план).
 function _ropReturnPrevSprint(ropName){
   const n = activeSprintNum();
-  if (!n || n <= 1) return 0;                 // спринт 1 — нет предыдущего
-  const s = sprintByNum(n - 1);
+  if (!n || n <= 1) return 0;                 // самый первый спринт — предыдущего нет
+  const s    = sprintByNum(n - 1);
+  const cur  = sprintByNum(n);
+  if (!s || !cur) return 0;
+  // Окно = [начало предыдущего спринта .. день до начала текущего]. Для
+  // подряд идущих спринтов это ровно предыдущий спринт, а для первого спринта
+  // нового марафона сюда попадают и КАНИКУЛЫ — их возвраты иначе потерялись бы.
   const fromD = parseDate(_sprDisp(s.fromISO));
-  const toD   = parseDate(_sprDisp(s.toISO));
+  const toD   = parseDate(_sprDisp(_sprAddDays(cur.fromISO, -1)));
   const map = RETURNS_BY_ROP[ropName] || {};
   let sum = 0;
   for (const [d, v] of Object.entries(map)){
@@ -4996,22 +5158,38 @@ function renderPeriodPills() {
 window.renderPeriodPills = renderPeriodPills;
 var _prodByRopChart = null;
 
-// По умолчанию дашборд открывается на ТЕКУЩЕМ сквозном спринте (а не месяце).
-// Вызываем здесь, а не при объявлении activePeriod: спринт-функции опираются
-// на const _SPR_EPOCH (TDZ), который к этому моменту уже инициализирован.
+// По умолчанию дашборд открывается на ТЕКУЩЕМ периоде: идёт спринт — на нём,
+// идут каникулы между марафонами — на каникулах, иначе (до старта/после конца)
+// на последнем начавшемся спринте. Вызываем здесь, а не при объявлении
+// activePeriod: спринт-функции опираются на const-объявления (TDZ), которые к
+// этому моменту уже инициализированы.
 function _applyDefaultSprint(){
   try{
-    const n = sprintNumForDate(_now()) || 1;
-    const s = sprintByNum(n);
-    activePeriod = {
-      from: _sprDisp(s.fromISO),
-      to:   _sprDisp(s.toISO),
-      label: `Спринт ${n} · ${_sprShort(s.fromISO)}–${_sprShort(s.toISO)}`,
-      preset: `sprint_${n}`
-    };
+    const g   = sprintNumForDate(_now());
+    const hol = g ? null : holidayForDate(_now());
+    if (g){
+      const s = sprintByNum(g);
+      activePeriod = { from:_sprDisp(s.fromISO), to:_sprDisp(s.toISO), label:_sprFull(s), preset:`sprint_${g}` };
+      document.querySelectorAll('#global-filters .period-pill').forEach(b=>b.classList.remove('active'));
+      const btn = document.getElementById('sprint-btn');
+      if (btn){ btn.classList.add('active'); btn.textContent = _sprBtn(s); }
+      return;
+    }
+    if (hol){
+      const hi = _HOLIDAYS.indexOf(hol);
+      activePeriod = { from:_sprDisp(hol.fromISO), to:_sprDisp(hol.toISO), label:_holFull(hol), preset:`holiday_${hi}` };
+      document.querySelectorAll('#global-filters .period-pill').forEach(b=>b.classList.remove('active'));
+      const btn = document.getElementById('sprint-btn');
+      if (btn){ btn.classList.add('active'); btn.textContent = '🏝 Каникулы ▾'; }
+      return;
+    }
+    const started = _sprintsStarted();
+    const s = started.length ? started[started.length-1] : _SPRINTS[0];
+    if (!s) return;
+    activePeriod = { from:_sprDisp(s.fromISO), to:_sprDisp(s.toISO), label:_sprFull(s), preset:`sprint_${s.g}` };
     document.querySelectorAll('#global-filters .period-pill').forEach(b=>b.classList.remove('active'));
     const btn = document.getElementById('sprint-btn');
-    if (btn){ btn.classList.add('active'); btn.textContent = `🏃 Спринт ${n} ▾`; }
+    if (btn){ btn.classList.add('active'); btn.textContent = _sprBtn(s); }
   }catch(e){ console.warn('default sprint init failed', e); }
 }
 _applyDefaultSprint();

@@ -907,27 +907,70 @@ let ropPlans   = {};      // месячные планы РОП: { 'РОП X': {
 let sprintPlans = {};     // спринт-планы РОП:  { 'РОП X': {'<глоб.№ спринта>': N} }
 let selectedSprint = null;// выбранный сквозной спринт в редакторе
 
-// ── Сквозные спринты (по 14 дней, как в дашборде) ──────────────────
-// Спринт 1: 01.05–17.05 (особый), далее каждый по 14 дней от 18.05.2026.
-const _SPR_EPOCH = '2026-05-18';
+// ── Марафоны и спринты (модель 1-в-1 с dashboard.html) ─────────────
+//   Марафон 1: спринты 1-6, 01.05–26.07 (первый — 17 дней).
+//   Каникулы:  27.07–02.08 (плана нет).
+//   Марафон 2: спринты 1-6 по 14 дней, с 03.08 (03.08–25.10).
+// Номер спринта в КОДЕ сквозной (g) — по нему хранятся планы в SPRINT_PLANS,
+// поэтому уже заданные планы (g=4,5,6) остаются на своих спринтах. На экране
+// показываем номер внутри марафона (во втором марафоне — снова с 1).
+// Новый марафон = одна строка в MARATHONS (здесь и в dashboard.html).
+const MARATHONS = [
+  { n: 1, startISO: '2026-05-01', count: 6, firstLen: 17, len: 14 },
+  { n: 2, startISO: '2026-08-03', count: 6, firstLen: 14, len: 14 },
+];
 function _sprAddDays(iso, n){
   const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n);
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 function _sprDisp(iso){ const [y,m,d] = iso.split('-'); return `${d}.${m}.${y}`; }
 function _sprShort(iso){ const [y,m,d] = iso.split('-'); return `${d}.${m}`; }
-function sprintByNum(n){
-  if (n <= 1) return { n:1, fromISO:'2026-05-01', toISO:'2026-05-17' };
-  const fromISO = _sprAddDays(_SPR_EPOCH, (n-2)*14);
-  return { n, fromISO, toISO: _sprAddDays(fromISO, 13) };
-}
+function _sprISOofDate(dt){ return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`; }
+const _SPRINTS = (function(){
+  const out = []; let g = 0;
+  for (const M of MARATHONS){
+    let from = M.startISO;
+    for (let i = 1; i <= M.count; i++){
+      const len = (i === 1 ? M.firstLen : M.len);
+      const to  = _sprAddDays(from, len - 1);
+      out.push({ g: ++g, m: M.n, i, count: M.count, fromISO: from, toISO: to });
+      from = _sprAddDays(to, 1);
+    }
+  }
+  return out;
+})();
+const _HOLIDAYS = (function(){
+  const out = [];
+  for (let k = 1; k < MARATHONS.length; k++){
+    const prevLast = _SPRINTS.filter(s => s.m === MARATHONS[k-1].n).slice(-1)[0];
+    if (!prevLast) continue;
+    const fromISO = _sprAddDays(prevLast.toISO, 1);
+    const toISO   = _sprAddDays(MARATHONS[k].startISO, -1);
+    if (fromISO <= toISO) out.push({ afterM: MARATHONS[k-1].n, beforeM: MARATHONS[k].n, fromISO, toISO });
+  }
+  return out;
+})();
+function sprintByNum(g){ return _SPRINTS.find(s => s.g === +g) || null; }
 function sprintNumForDate(dt){
-  const iso = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
-  if (iso < '2026-05-01') return null;
-  if (iso <= '2026-05-17') return 1;
-  const days = Math.floor((new Date(iso+'T00:00:00') - new Date(_SPR_EPOCH+'T00:00:00')) / 86400000);
-  return 2 + Math.floor(days / 14);
+  const iso = _sprISOofDate(dt);
+  const s = _SPRINTS.find(x => iso >= x.fromISO && iso <= x.toISO);
+  return s ? s.g : null;
 }
+function holidayForDate(dt){
+  const iso = _sprISOofDate(dt);
+  return _HOLIDAYS.find(h => iso >= h.fromISO && iso <= h.toISO) || null;
+}
+// Текущий спринт, а в каникулы — ближайший предстоящий (его и планируем).
+function _sprintNowOrNextG(){
+  const g = sprintNumForDate(new Date());
+  if (g) return g;
+  const iso  = _sprISOofDate(new Date());
+  const next = _SPRINTS.find(s => s.fromISO > iso);
+  if (next) return next.g;
+  return _SPRINTS.length ? _SPRINTS[_SPRINTS.length - 1].g : 1;
+}
+// Подпись спринта для селектора/таблиц: «М2 · Спринт 1» либо «Спринт 1».
+function _sprName(s){ return MARATHONS.length > 1 ? `М${s.m} · Спринт ${s.i}` : `Спринт ${s.i}`; }
 
 // ═══════════════ ЗАГРУЗКА КОНФИГА + СПРИНТ-РЕДАКТОР ════════════════
 // ropPlans грузим для секции «РОП — план / факт» (только чтение плана).
@@ -946,7 +989,8 @@ async function loadRopPlans(){
     console.error('loadRopPlans parse error:', e);
   }
   // Спринт-редактор (независим от выбора месяца)
-  if(!selectedSprint) selectedSprint = sprintNumForDate(new Date()) || 1;
+  // В каникулы планировать нечего «сейчас» — открываем ближайший спринт.
+  if(!selectedSprint) selectedSprint = _sprintNowOrNextG();
   buildSprintCards();
   buildSprintSelector();
   fillSprintForm();
@@ -957,14 +1001,20 @@ async function loadRopPlans(){
 function buildSprintSelector(){
   const sel = document.getElementById('sprint-sel');
   if(!sel) return;
-  const curN = sprintNumForDate(new Date()) || 1;
-  const startN = Math.max(1, curN - 2);
-  const endN = curN + 3;
+  const curN = sprintNumForDate(new Date());          // null в каникулы
+  // Показываем ВСЕ спринты всех марафонов, сгруппированные по марафону:
+  // прошлые нужны, чтобы поправить план задним числом, будущие — чтобы
+  // заранее проставить план на новый марафон.
   let html = '';
-  for(let n = startN; n <= endN; n++){
-    const s = sprintByNum(n);
-    const range = `${_sprShort(s.fromISO)}–${_sprShort(s.toISO)}`;
-    html += `<option value="${n}" ${n===selectedSprint?'selected':''}>Спринт ${n} (${range})${n===curN?' — сейчас':''}</option>`;
+  for (const M of MARATHONS){
+    const list = _SPRINTS.filter(s => s.m === M.n);
+    if (!list.length) continue;
+    html += MARATHONS.length > 1 ? `<optgroup label="Марафон ${M.n}">` : '';
+    for (const s of list){
+      const range = `${_sprShort(s.fromISO)}–${_sprShort(s.toISO)}`;
+      html += `<option value="${s.g}" ${s.g===selectedSprint?'selected':''}>Спринт ${s.i} (${range})${s.g===curN?' — сейчас':''}</option>`;
+    }
+    html += MARATHONS.length > 1 ? '</optgroup>' : '';
   }
   sel.innerHTML = html;
   sel.value = String(selectedSprint);
@@ -999,9 +1049,13 @@ function updateSprintCur(slug){
 function fillSprintForm(){
   if(!selectedSprint) return;
   const s = sprintByNum(selectedSprint);
+  if(!s) return;
   const lbl = document.getElementById('sprint-range-label');
-  const days = selectedSprint<=1 ? 17 : 14;
-  if(lbl) lbl.textContent = `${_sprDisp(s.fromISO)} → ${_sprDisp(s.toISO)} · ${days} дней`;
+  // Длину считаем из самих границ спринта, а не по номеру: у первого спринта
+  // марафона она может отличаться (в марафоне 1 это 17 дней).
+  const days = Math.round((new Date(s.toISO+'T00:00:00') - new Date(s.fromISO+'T00:00:00')) / 86400000) + 1;
+  const mPfx = MARATHONS.length > 1 ? `Марафон ${s.m} · Спринт ${s.i} · ` : '';
+  if(lbl) lbl.textContent = `${mPfx}${_sprDisp(s.fromISO)} → ${_sprDisp(s.toISO)} · ${days} дней`;
   for(const rop of ROP_DEFS){
     const v = (sprintPlans[rop.name] && sprintPlans[rop.name][selectedSprint]) || 0;
     document.getElementById(`sprint-rop-${rop.slug}`).value = v || '';
@@ -1036,7 +1090,8 @@ async function saveSprintPlans(){
     fillSprintForm();
     renderSprintPlanHistory();
 
-    toast(`✓ Планы на Спринт ${selectedSprint} сохранены`, 'ok');
+    const _savedS = sprintByNum(selectedSprint);
+    toast(`✓ Планы на ${_savedS ? _sprName(_savedS) : 'Спринт ' + selectedSprint} сохранены`, 'ok');
     showSprintStatus('');
   } catch(e){
     if(e.message === 'AUTH_EXPIRED'){
@@ -1080,7 +1135,9 @@ function renderSprintPlanHistory(){
 
   const rows = sorted.map(n => {
     const s = sprintByNum(n);
-    const range = `${_sprShort(s.fromISO)}–${_sprShort(s.toISO)}`;
+    // Спринт мог остаться от старой (досквозной) нумерации — не падаем.
+    const range = s ? `${_sprShort(s.fromISO)}–${_sprShort(s.toISO)}` : '—';
+    const name  = s ? _sprName(s) : `Спринт ${n}`;
     const isCur = n === curN;
     let total = 0;
     const cells = ROP_DEFS.map(r => {
@@ -1089,7 +1146,7 @@ function renderSprintPlanHistory(){
       return `<td style="color:${r.color};font-weight:600">${fmtM(v)}</td>`;
     }).join('');
     return `<tr class="${isCur?'cur-row':''}">
-      <td style="font-weight:600">Спринт ${n} ${isCur?'<span class="tag-cur">сейчас</span>':''}<div style="font-size:11px;color:var(--muted);font-weight:400">${range}</div></td>
+      <td style="font-weight:600">${name} ${isCur?'<span class="tag-cur">сейчас</span>':''}<div style="font-size:11px;color:var(--muted);font-weight:400">${range}</div></td>
       ${cells}
       <td style="font-weight:700">${fmtM(total)}</td>
       <td><button class="edit-btn" onclick="editSprint(${n})">✏️ Изменить</button></td>
