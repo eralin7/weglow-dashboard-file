@@ -1345,13 +1345,8 @@ const _authGuard = new MutationObserver(() => {
     <!-- Managers filters (hidden by default) -->
     <div id="mgr-filters" style="display:none;align-items:center;gap:6px;flex-wrap:wrap">
       <span class="tb-label">Группа:</span>
-      <button class="pill rop-pill active" onclick="setMgrRop('all',this)">Все</button>
-      <button class="pill rop-pill" onclick="setMgrRop('РОП Айдана',this)">Айдана</button>
-      <button class="pill rop-pill" onclick="setMgrRop('РОП Аслиддин',this)">Аслиддин</button>
-      <button class="pill rop-pill" onclick="setMgrRop('РОП Нурдаулет',this)">Нурдаулет</button>
-      <button class="pill rop-pill" onclick="setMgrRop('РОП Ербол',this)">Ербол</button>
-      <button class="pill rop-pill" onclick="setMgrRop('РОП Айдана KIDS',this)">Айдана KIDS</button>
-      <button class="pill rop-pill" onclick="setMgrRop('РОП Диас KIDS',this)">Диас KIDS</button>
+      <!-- кнопки отделов строит renderRopFilterPills() из живых данных -->
+      <div id="mgr-rop-pills" style="display:contents"></div>
       <div class="pill-sep" id="prod-sub-sep" style="display:none"></div>
       <span class="tb-label" id="prod-sub-label" style="display:none">Продукт:</span>
       <div id="prod-sub-pills" style="display:contents"></div>
@@ -1460,15 +1455,8 @@ const _authGuard = new MutationObserver(() => {
         <div class="card" style="flex:1;min-width:500px">
           <div class="card-hdr">
             <span class="card-title">Лиды и Сделки</span>
-            <div class="chart-filters" id="leads-deals-filters">
-              <button class="cf-btn active" onclick="setLeadsDealsFilter('all',this)">Все</button>
-              <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Айдана',this)">Айдана</button>
-              <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Аслиддин',this)">Аслиддин</button>
-              <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Нурдаулет',this)">Нурдаулет</button>
-              <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Ербол',this)">Ербол</button>
-              <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Айдана KIDS',this)">Айдана KIDS</button>
-              <button class="cf-btn" onclick="setLeadsDealsFilter('РОП Диас KIDS',this)">Диас KIDS</button>
-            </div>
+            <!-- кнопки отделов строит renderRopFilterPills() из живых данных -->
+            <div class="chart-filters" id="leads-deals-filters"></div>
           </div>
           <div class="chart-body"><canvas id="leadsDealsChart" height="110"></canvas></div>
         </div>
@@ -1489,13 +1477,7 @@ const _authGuard = new MutationObserver(() => {
             <div class="summary-filters">
               <div class="summary-filter-group">
                 <span class="sf-label">Отдел:</span>
-                <button class="cf-btn active" onclick="setSummaryDept('all',this)">Все</button>
-                <button class="cf-btn" onclick="setSummaryDept('РОП Айдана',this)">Айдана</button>
-                <button class="cf-btn" onclick="setSummaryDept('РОП Аслиддин',this)">Аслиддин</button>
-                <button class="cf-btn" onclick="setSummaryDept('РОП Нурдаулет',this)">Нурдаулет</button>
-                <button class="cf-btn" onclick="setSummaryDept('РОП Ербол',this)">Ербол</button>
-                <button class="cf-btn" onclick="setSummaryDept('РОП Айдана KIDS',this)">Айдана KIDS</button>
-                <button class="cf-btn" onclick="setSummaryDept('РОП Диас KIDS',this)">Диас KIDS</button>
+                <div id="summary-dept-pills" style="display:contents"></div>
               </div>
               <div class="summary-filter-group">
                 <span class="sf-label">Метрика:</span>
@@ -1507,8 +1489,7 @@ const _authGuard = new MutationObserver(() => {
               </div>
               <div class="summary-filter-group">
                 <span class="sf-label">Продукт:</span>
-                <button class="cf-btn active" onclick="setSummaryProd('all',this)">Все</button>
-                <button class="cf-btn" onclick="setSummaryProd('Коллаген',this)">Коллаген</button>
+                <div id="summary-prod-pills" style="display:contents"></div>
               </div>
             </div>
           </div>
@@ -3396,7 +3377,9 @@ function renderSummaryChart(){
 
   // Get all months from RAW data
   const monthSet=new Set();
-  ['Коллаген','Ummi','Ербол','Кофе (Архив)'].forEach(crm=>{
+  // B1 Partners тоже входит в набор — без него месяцы с продажами только по
+  // этому бакету не попадали в ось графика (как и его выручка ниже).
+  ['Коллаген','Ummi','Ербол','Кофе (Архив)','B1 Partners'].forEach(crm=>{
     Object.keys(RAW[crm]||{}).forEach(d=>{
       const parts=d.split('.');
       if(parts.length===3) monthSet.add(parts[1]+'.'+parts[2]);
@@ -3423,7 +3406,8 @@ function renderSummaryChart(){
     const dateList=getDatesInRange(mStart,mEnd);
 
     // Filter by product
-    const crms=summaryProd==='all'?['Коллаген','Ummi','Ербол','Кофе (Архив)']:[PROD_CFG[summaryProd]?.rawKey||summaryProd].filter(Boolean);
+    // «Все» = все бакеты, включая B1 Partners (раньше его выручка терялась).
+    const crms=summaryProd==='all'?['Коллаген','Ummi','Ербол','Кофе (Архив)','B1 Partners']:[PROD_CFG[summaryProd]?.rawKey||summaryProd].filter(Boolean);
     let leads=0,deals=0,budget=0,adSpend=0;
 
     dateList.forEach(date=>{
@@ -4268,6 +4252,9 @@ async function loadFromSupabase() {
       // Rebuild presets but keep current filter selection
       PRESETS = buildPresets();
       if (typeof renderPeriodPills === 'function') renderPeriodPills();
+      // Состав отделов/продуктов приходит вместе с данными — пересобираем
+      // кнопки фильтров (выбранное значение сохраняется).
+      if (typeof renderRopFilterPills === 'function') renderRopFilterPills();
 
       // Re-render with fresh data
       render();
@@ -4952,6 +4939,7 @@ async function _eraCrmRefreshTick() {
     // Пересобираем пресеты (диапазоны дат могут меняться) и рендерим.
     if (typeof buildPresets === 'function') PRESETS = buildPresets();
     if (typeof renderPeriodPills === 'function') renderPeriodPills();
+    if (typeof renderRopFilterPills === 'function') renderRopFilterPills();
     if (typeof render === 'function') render();
     if (typeof renderManagers === 'function' && activeView === 'managers') renderManagers();
     if (typeof renderAdSpend  === 'function' && activeView === 'adspend')  renderAdSpend();
@@ -5121,6 +5109,40 @@ function initDynamicUI() {
   renderSidebarKPI(now, dayOfMonth, totalDays);
 
   renderPeriodPills();
+  renderRopFilterPills();
+}
+
+// ── Фильтры графиков по отделам и продуктам ───────────────────────────
+// Раньше эти кнопки были захардкожены в разметке и устаревали при каждом
+// изменении состава отделов: висели расформированные Айдана / Ербол /
+// Айдана KIDS / Диас KIDS, а живых Аяулым, Нурдаулет KIDS, Диас,
+// B1 Partners, KAZ Бауыржан не было вовсе. Теперь строим из ROP_GROUPS —
+// он пересобирается из данных Era CRM и уже учитывает ERA_HIDE_ROPS,
+// поэтому список сам подхватывает новый отдел и прячет расформированный.
+// Продукты — по бакетам, в которых реально есть данные (KAZ Коллаген
+// сведён в «Коллаген», см. ERA_PIPELINE_TO_BUCKET).
+const _PROD_BUCKET_LABEL = { 'Коллаген': 'Коллаген', 'Ummi': 'KIDS', 'B1 Partners': 'B1 Partners' };
+function _liveProdBuckets(){
+  return Object.keys(_PROD_BUCKET_LABEL).filter(b =>
+    (RAW[b] && Object.keys(RAW[b]).length) || (MANAGERS[b] && MANAGERS[b].length));
+}
+function _filterBtnsHTML(items, handler, activeVal, cls){
+  return [{ v:'all', label:'Все' }].concat(items).map(it =>
+    `<button class="${cls}${it.v===activeVal?' active':''}" `
+    + `onclick="${handler}('${String(it.v).replace(/'/g, "\\'")}',this)">${it.label}</button>`
+  ).join('');
+}
+function renderRopFilterPills(){
+  const hide = (typeof ERA_HIDE_ROPS !== 'undefined') ? ERA_HIDE_ROPS : new Set();
+  const rops = Object.keys(ROP_GROUPS)
+    .filter(k => k !== 'all' && !hide.has(k))
+    .map(r => ({ v: r, label: r.replace(/^РОП\s+/, '') }));
+  const prods = _liveProdBuckets().map(b => ({ v: b, label: _PROD_BUCKET_LABEL[b] }));
+  const put = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+  put('mgr-rop-pills',      _filterBtnsHTML(rops,  'setMgrRop',           activeMgrRop,           'pill rop-pill'));
+  put('leads-deals-filters',_filterBtnsHTML(rops,  'setLeadsDealsFilter', activeLeadsDealsFilter, 'cf-btn'));
+  put('summary-dept-pills', _filterBtnsHTML(rops,  'setSummaryDept',      summaryDept,            'cf-btn'));
+  put('summary-prod-pills', _filterBtnsHTML(prods, 'setSummaryProd',      summaryProd,            'cf-btn'));
 }
 
 // Перерисовка пилюль периода — отдельная функция, чтобы её можно было
