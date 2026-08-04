@@ -4360,8 +4360,11 @@ const ERA_PRODUCT_LABEL_TO_NAME = {
 // pipeline_title в Era CRM → имя бакета (comp) в PRODUCTS. B1 Partners не
 // трекается в виджете «Товары» (старая структура была Коллаген + Ummi).
 const ERA_PIPELINE_TO_PRODUCT_COMP = {
-  'Коллаген': 'Коллаген',
-  'KIDS':     'Ummi',
+  'Коллаген':     'Коллаген',
+  'KIDS':         'Ummi',
+  // Казахоязычная воронка (с 07.2026) — тот же товар, тот же бакет. Без этой
+  // строки её штуки молча выпадали из виджета (за июль — 42 шт).
+  'KAZ Коллаген': 'Коллаген',
 };
 
 // Старые РОПы из AmoCRM, которых больше нет в Era CRM. Прячем строки на
@@ -4420,9 +4423,14 @@ function _purgeEraDates() {
   for (const comp of Object.keys(PRODUCTS || {})) {
     for (const prodName of Object.keys(PRODUCTS[comp] || {})) {
       const info = PRODUCTS[comp][prodName];
-      if (!info || !info.daily) continue;
-      for (const date of Object.keys(info.daily)) {
+      if (!info) continue;
+      for (const date of Object.keys(info.daily || {})) {
         if (_isEraDate(date)) delete info.daily[date];
+      }
+      // giftDaily чистим тем же правилом — иначе при каждом refresh подарки
+      // складывались бы поверх прошлых (в loadEraCrmProducts идёт +=).
+      for (const date of Object.keys(info.giftDaily || {})) {
+        if (_isEraDate(date)) delete info.giftDaily[date];
       }
     }
   }
@@ -4770,16 +4778,23 @@ async function loadEraCrmProducts() {
     if (!prodName) continue;
     const date = _ddmmyyyy(r.day);
     if (!date) continue;
-    const qty = Number(r.qty) || 0;
-    if (qty === 0) continue;
+    const qty  = Number(r.qty) || 0;
+    const gift = Number(r.gift_qty) || 0;   // подарочные штуки (ключ __gift_* в CRM)
+    if (qty === 0 && gift === 0) continue;
 
     PRODUCTS[comp] = PRODUCTS[comp] || {};
     if (!PRODUCTS[comp][prodName]) {
-      PRODUCTS[comp][prodName] = { own: true, daily: {} };
+      PRODUCTS[comp][prodName] = { own: true, daily: {}, giftDaily: {} };
       _newProds++;
     }
-    PRODUCTS[comp][prodName].daily = PRODUCTS[comp][prodName].daily || {};
-    PRODUCTS[comp][prodName].daily[date] = qty;
+    const _slot = PRODUCTS[comp][prodName];
+    _slot.daily = _slot.daily || {};
+    _slot.giftDaily = _slot.giftDaily || {};
+    // Именно СЛОЖЕНИЕ, а не присваивание: в один бакет «Коллаген» теперь
+    // приходят две воронки (Коллаген и KAZ Коллаген), и присваивание затирало
+    // бы штуки первой из них.
+    _slot.daily[date]     = (_slot.daily[date]     || 0) + qty;
+    _slot.giftDaily[date] = (_slot.giftDaily[date] || 0) + gift;
     _cells++;
   }
 
@@ -5503,6 +5518,7 @@ function renderProdByRop() {
   // (matches «Факт» in plan-by-groups table). Then split per product proportionally to qty.
   const prodTotals = {};
   const prodRevenue = {};
+  const prodGifts = {};          // штуки, ушедшие подарком (акция 2+1 / подарочный бюджет)
   const _from = activePeriod.from, _to = activePeriod.to;
   const _fromD = parseDate(_from);
   const _historyCutoff = new Date(2026, 2, 23);
@@ -5514,9 +5530,15 @@ function renderProdByRop() {
     const crmProdQty = {};
     let crmTotalQty = 0;
     for (const [name, info] of Object.entries(prods)) {
-      if (!info.daily) continue;
-      let total = 0;
-      for (const d of dates) { total += info.daily[d] || 0; }
+      if (!info.daily && !info.giftDaily) continue;
+      let total = 0, gifts = 0;
+      for (const d of dates) {
+        total += (info.daily     || {})[d] || 0;
+        gifts += (info.giftDaily || {})[d] || 0;
+      }
+      // Подарки копим отдельно: в выручку они не идут (уходят по 1 ₸), но в
+      // штуках это реальный расход склада.
+      if (gifts > 0) prodGifts[name] = (prodGifts[name] || 0) + gifts;
       if (total > 0) { crmProdQty[name] = total; crmTotalQty += total; }
     }
     // CRM «Факт»: sum manager budgets only for managers belonging to ROPs that map to this CRM
@@ -5575,18 +5597,31 @@ function renderProdByRop() {
     }
   });
 
+  const grandGifts = labels.reduce((s, name) => s + (prodGifts[name] || 0), 0);
   legendEl.innerHTML = labels.map((name, i) => {
     const pct = (values[i] / grandTotal * 100).toFixed(1);
     const rev = Math.round(revenues[i] || 0).toLocaleString('ru-RU');
+    const gift = prodGifts[name] || 0;
+    // Подарки — отдельной строчкой под продажами, чтобы не путались со штуками
+    // за деньги (в выручке их нет, они уходят по 1 ₸).
+    const giftHtml = gift
+      ? `<br><span style="color:#a855f7;font-weight:600" title="Ушло подарком (акция), в выручку не входит">🎁 +${gift.toLocaleString('ru-RU')} шт</span>`
+      : '';
     return `<div style="display:flex;align-items:center;gap:6px">
       <div style="width:10px;height:10px;border-radius:50%;background:${colors[i]};flex-shrink:0"></div>
       <span style="color:var(--ink);font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</span>
-      <span style="color:var(--muted);white-space:nowrap;text-align:right">${values[i].toLocaleString('ru-RU')} шт · ${pct}%<br><span style="color:#10b981;font-weight:600">${rev} ₸</span></span>
+      <span style="color:var(--muted);white-space:nowrap;text-align:right">${values[i].toLocaleString('ru-RU')} шт · ${pct}%<br><span style="color:#10b981;font-weight:600">${rev} ₸</span>${giftHtml}</span>
     </div>`;
   }).join('') + `<div style="border-top:1px solid var(--line);margin-top:6px;padding-top:6px;font-weight:700;color:var(--ink);font-size:13px;display:flex;justify-content:space-between;gap:8px">
-    <span>Итого: ${grandTotal.toLocaleString('ru-RU')} шт</span>
+    <span>Продано: ${grandTotal.toLocaleString('ru-RU')} шт</span>
     <span style="color:#10b981">${Math.round(grandRevenue).toLocaleString('ru-RU')} ₸</span>
-  </div>`;
+  </div>` + (grandGifts ? `<div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;margin-top:3px">
+    <span style="color:#a855f7;font-weight:600">🎁 Подарком: ${grandGifts.toLocaleString('ru-RU')} шт</span>
+    <span style="color:var(--muted)">не в выручке</span>
+  </div>
+  <div style="display:flex;justify-content:space-between;gap:8px;font-weight:700;color:var(--ink);font-size:13px;border-top:1px solid var(--line2);margin-top:4px;padding-top:4px">
+    <span>Всего со склада: ${(grandTotal + grandGifts).toLocaleString('ru-RU')} шт</span>
+  </div>` : '');
 }
 
 // ═══════════════════════════════════════════════════════════
