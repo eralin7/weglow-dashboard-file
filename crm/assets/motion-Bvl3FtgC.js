@@ -1,4 +1,4 @@
-import{r as v}from"./icons-C5ohF6_t.js";var Ms={exports:{}},Ht={};/**
+import{r as v}from"./icons-Cg2x-jZ6.js";var Ms={exports:{}},Ht={};/**
  * @license React
  * react-jsx-runtime.production.min.js
  *
