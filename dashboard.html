@@ -1620,6 +1620,8 @@ const _authGuard = new MutationObserver(() => {
       <h2>Аналитика по клиентам</h2>
       <p id="clients-sub">Первичные и повторные покупки · клиент = номер телефона · вся история era-crm</p>
     </div>
+    <!-- фильтр по периоду: строится в renderClientsFilter() -->
+    <div id="clients-filter" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:14px"></div>
     <div id="clients-content"><div class="card card-pad" style="color:var(--muted)">Загрузка…</div></div>
   </div>
 
@@ -4823,18 +4825,32 @@ window.loadEraCrmProducts = loadEraCrmProducts;
 // сделкам): холодный вызов может упереться в anon-таймаут ~3с, поэтому до
 // 4 ретраев (первый прогревает план, обычно второй проходит). Ответ кешируем
 // на сессию — данные меняются медленно, а каждый вызов дорогой.
-let _clientsData = null, _clientsLoading = false;
-async function _fetchClientsAnalytics(){
+// Кеш ответов по ключу периода: расчёт дорогой, а фильтры щёлкают часто.
+const _clientsCache = {};
+let _clientsLoading = false;
+// Активный период: null = вся история; иначе {from,to,label} (ISO с +05:00,
+// границы [from,to) — как у остальных era-crm RPC).
+let _clientsRange = null;
+// Фильтр ещё не задеплоен в БД (404 на параметрах) — показываем всё время.
+let _clientsFilterUnavailable = false;
+async function _fetchClientsAnalytics(range){
   const url = `${ERA_CRM_URL}/rest/v1/rpc/get_customer_analytics`;
+  const body = range ? JSON.stringify({ p_date_from: range.from, p_date_to: range.to }) : '{}';
   let lastErr = '';
   for (let i = 0; i < 4; i++){
     try {
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'apikey': ERA_CRM_ANON, 'Authorization': `Bearer ${ERA_CRM_ANON}`, 'Content-Type': 'application/json' },
-        body: '{}',
+        body,
       });
       if (res.ok) return await res.json();
+      // 404 на параметрах = в БД ещё старая версия функции без фильтра —
+      // тихо откатываемся на «всю историю», чтобы вкладка не умерла.
+      if (res.status === 404 && range){
+        _clientsFilterUnavailable = true;
+        return await _fetchClientsAnalytics(null);
+      }
       lastErr = 'HTTP ' + res.status;
       if (res.status !== 500 && res.status !== 504 && res.status !== 408) break; // не таймаут — ретрай не поможет
     } catch (e) { lastErr = e.message; }
@@ -4845,15 +4861,68 @@ async function _fetchClientsAnalytics(){
 // В «Дате заказа» встречается мусор (видели год 202619) — отсекаем месяцы вне
 // разумного диапазона, чтобы одна опечатка не рисовала фантомные строки.
 function _validMonth(m){ return /^\d{4}-\d{2}$/.test(m || '') && m >= '2026-01' && m <= '2030-12'; }
+// Пилюли фильтра: Вся история + каждый месяц с мая 2026 + свой диапазон.
+function renderClientsFilter(){
+  const bar = document.getElementById('clients-filter');
+  if (!bar) return;
+  const now = _now();
+  const months = [];
+  for (let y = 2026, m = 5; y < now.getFullYear() || (y === now.getFullYear() && m <= now.getMonth() + 1); ){
+    months.push(`${y}-${String(m).padStart(2, '0')}`);
+    m++; if (m > 12){ m = 1; y++; }
+  }
+  const activeKey = _clientsRange ? _clientsRange.label : 'all';
+  const pill = (key, label, onclick) =>
+    `<button class="pill period-pill${key === activeKey ? ' active' : ''}" onclick="${onclick}">${label}</button>`;
+  const MONTH_NAMES = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
+  let html = pill('all', 'Вся история', 'setClientsRange(null)');
+  for (const mk of months){
+    const [y, m] = mk.split('-').map(Number);
+    html += pill(mk, MONTH_NAMES[m - 1] + ' ' + y, `setClientsMonth('${mk}')`);
+  }
+  html += `<span style="display:inline-flex;gap:6px;align-items:center;margin-left:4px">
+    <input type="date" class="date-in" id="cl-d-from">
+    <span style="color:var(--muted);font-size:12px">—</span>
+    <input type="date" class="date-in" id="cl-d-to">
+    <button class="apply-btn" onclick="applyClientsRange()">Применить</button>
+  </span>`;
+  bar.innerHTML = html;
+}
+function setClientsRange(range){
+  _clientsRange = range;
+  renderClientsFilter();
+  renderClientsView();
+}
+function setClientsMonth(mk){
+  const [y, m] = mk.split('-').map(Number);
+  const from = `${mk}-01T00:00:00+05:00`;
+  const ny = m === 12 ? y + 1 : y, nm = m === 12 ? 1 : m + 1;
+  const to = `${ny}-${String(nm).padStart(2, '0')}-01T00:00:00+05:00`;
+  setClientsRange({ from, to, label: mk });
+}
+function applyClientsRange(){
+  const f = document.getElementById('cl-d-from').value;
+  const t = document.getElementById('cl-d-to').value;
+  if (!f || !t) return;
+  // p_date_to исключительный при полуночи — сдвигаем на день, чтобы «по t» включительно
+  const toD = new Date(t + 'T00:00:00'); toD.setDate(toD.getDate() + 1);
+  const toISO = `${toD.getFullYear()}-${String(toD.getMonth() + 1).padStart(2, '0')}-${String(toD.getDate()).padStart(2, '0')}T00:00:00+05:00`;
+  setClientsRange({ from: f + 'T00:00:00+05:00', to: toISO, label: `${f} — ${t}` });
+}
+window.setClientsRange = setClientsRange;
+window.setClientsMonth = setClientsMonth;
+window.applyClientsRange = applyClientsRange;
 function renderClientsView(){
   const el = document.getElementById('clients-content');
   if (!el) return;
-  if (_clientsData){ _renderClients(el, _clientsData); return; }
+  renderClientsFilter();
+  const key = _clientsRange ? _clientsRange.label : 'all';
+  if (_clientsCache[key]){ _renderClients(el, _clientsCache[key]); return; }
   if (_clientsLoading) return;
   _clientsLoading = true;
   el.innerHTML = '<div class="card card-pad" style="color:var(--muted)">Считаем по всем сделкам… до 10 секунд</div>';
-  _fetchClientsAnalytics()
-    .then(d => { _clientsData = d; _renderClients(el, d); })
+  _fetchClientsAnalytics(_clientsRange)
+    .then(d => { _clientsCache[key] = d; _renderClients(el, d); })
     .catch(e => { el.innerHTML = '<div class="card card-pad" style="color:#c0392b">Не удалось получить данные (' + e.message + '). Попробуйте перезайти на вкладку через минуту.</div>'; })
     .finally(() => { _clientsLoading = false; });
 }
@@ -4883,12 +4952,30 @@ function _renderClients(el, d){
   const repeatPct = s.clients ? (100 * repeatClients / s.clients).toFixed(1) : '0';
   const gap1 = (d.return_gap || []).find(g => g.after_purchase === 1) || {};
 
-  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:18px">'
-    + _clCard('Покупателей всего', fmt(s.clients || 0), 'с мая 2026 (глубина базы)')
-    + _clCard('Покупают повторно', fmt(repeatClients) + ' · ' + repeatPct + '%', '2 и более покупок', '#16a34a')
+  const _rangeSub = _clientsRange ? 'за период ' + _clientsRange.label : 'с мая 2026 (глубина базы)';
+  let html = '';
+  if (_clientsFilterUnavailable && _clientsRange){
+    html += '<div class="card card-pad" style="color:#ca8a04;margin-bottom:12px">Фильтр по дате ещё не задеплоен в базу — показана вся история.</div>';
+  }
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:18px">'
+    + _clCard('Покупателей', fmt(s.clients || 0), _rangeSub)
+    + _clCard('Покупают повторно', fmt(repeatClients) + ' · ' + repeatPct + '%', '2 и более покупок' + (_clientsRange ? ' за период' : ''), '#16a34a')
     + _clCard('Медиана возврата', (gap1.median_days != null ? gap1.median_days + ' дн' : '—'), 'после первой покупки', '#ca8a04')
-    + _clCard('Рекорд покупок', fmt(s.max_purchases || 0), 'у одного клиента (опт)', '#a855f7')
+    + _clCard('Рекорд покупок', fmt(s.max_purchases || 0), 'у одного клиента' + (_clientsRange ? ' за период' : ' (опт)'), '#a855f7')
     + '</div>';
+
+  // ── сколько раз покупают («кто купил 3-4-5 и так далее») ──
+  const totalCl = s.clients || 0;
+  html += _clTable('Сколько раз покупают' + (_clientsRange ? ' — за период' : ''),
+    _clientsRange ? 'покупки внутри выбранного периода' : 'за всю историю',
+    ['Покупок', 'Клиентов', 'Доля клиентов', 'Выручка этих клиентов'],
+    dist.slice().sort((a, b) => (a.purchases || 0) - (b.purchases || 0)).map(x => {
+      const share = totalCl ? (100 * (x.clients || 0) / totalCl).toFixed(1) : '0';
+      const hot = (x.purchases || 0) >= 3;
+      return `<tr><td style="font-weight:700;${hot ? 'color:#16a34a' : ''}">${fmt(x.purchases)}</td>`
+        + `<td style="${hot ? 'font-weight:600;color:#16a34a' : ''}">${fmt(x.clients)}</td>`
+        + `<td>${share}%</td><td>${fmtM(x.revenue || 0)}</td></tr>`;
+    }).join(''));
 
   // ── по месяцам ──
   html += _clTable('По месяцам: первичные и повторные', 'повторный = уже покупал раньше (в этой базе)',
@@ -4950,7 +5037,8 @@ function _renderClients(el, d){
       + `<td style="font-weight:600">${t.to}</td><td>${fmt(t.n)}</td></tr>`).join(''));
 
   // ── когорты ──
-  html += _clTable('Когорты: месяц первой покупки → вернулись', 'молодые когорты ещё не успели вернуться — их % дорастёт',
+  html += _clTable('Когорты: месяц первой покупки → вернулись',
+    'молодые когорты ещё не успели вернуться — их % дорастёт' + (_clientsRange ? ' · всегда вся история' : ''),
     ['Первая покупка', 'Клиентов', 'Вернулись', '%'],
     cohorts.map(c => `<tr><td style="font-weight:600">${c.cohort}</td><td>${fmt(c.clients)}</td><td>${fmt(c.returned)}</td>`
       + `<td style="font-weight:700">${c.pct}%</td></tr>`).join(''));
