@@ -1268,6 +1268,9 @@ const _authGuard = new MutationObserver(() => {
       <button class="nav-item" onclick="switchView('rnp',this)" data-tip="РНП">
         <span class="icon">📊</span><span class="nav-label">РНП</span>
       </button>
+      <button class="nav-item" onclick="switchView('clients',this)" data-tip="Клиенты">
+        <span class="icon">🔁</span><span class="nav-label">Клиенты</span>
+      </button>
       <div class="dock-divider"></div>
       <a href="game.html" class="nav-item" data-tip="Персонажи">
         <span class="icon">🎮</span><span class="nav-label">Персонажи</span>
@@ -1609,6 +1612,15 @@ const _authGuard = new MutationObserver(() => {
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px" id="prod-period-pills"></div>
     <div id="prod-content"></div>
+  </div>
+
+  <!-- ═══════════════ CLIENTS ANALYTICS VIEW ═══════════════ -->
+  <div id="view-clients" style="display:none;">
+    <div class="view-hdr">
+      <h2>Аналитика по клиентам</h2>
+      <p id="clients-sub">Первичные и повторные покупки · клиент = номер телефона · вся история era-crm</p>
+    </div>
+    <div id="clients-content"><div class="card card-pad" style="color:var(--muted)">Загрузка…</div></div>
   </div>
 
 
@@ -2228,15 +2240,17 @@ function switchView(v,el){
   document.getElementById('view-adspend').style.display=v==='adspend'?'block':'none';
   document.getElementById('view-products').style.display=v==='products'?'block':'none';
   const rnpEl=document.getElementById('view-rnp'); if(rnpEl) rnpEl.style.display=v==='rnp'?'block':'none';
+  const clEl=document.getElementById('view-clients'); if(clEl) clEl.style.display=v==='clients'?'block':'none';
   document.getElementById('global-filters').style.display=v==='main'?'flex':'none';
   const mgrF = document.getElementById('mgr-filters'); if(mgrF) mgrF.style.display=v==='managers'?'flex':'none';
   document.getElementById('ad-filters').style.display=v==='adspend'?'flex':'none';
   if(v==='rnp') renderRnp();
-  const titles={main:'Обзор продаж',managers:'Менеджеры',adspend:'Расходы на рекламу',products:'Товары'};
+  const titles={main:'Обзор продаж',managers:'Менеджеры',adspend:'Расходы на рекламу',products:'Товары',clients:'Клиенты'};
   document.getElementById('tb-title').textContent=titles[v]||'';
   if(v==='managers'){renderManagers();}
   if(v==='adspend'){renderAdSpend();}
   if(v==='products'){renderProducts();}
+  if(v==='clients'){renderClientsView();}
 }
 
 // ═══════════════════ PERIOD PRESETS ═══════════════════════════════
@@ -4801,6 +4815,155 @@ async function loadEraCrmProducts() {
   console.log('[era-crm products] applied:', _cells, 'date-cells,', _newProds, 'new product entries');
 }
 window.loadEraCrmProducts = loadEraCrmProducts;
+
+// ═══════════════ ВКЛАДКА «КЛИЕНТЫ» (когортная аналитика) ═══════════════
+// Данные считает era-crm RPC get_customer_analytics() (миграция
+// 2026-08-12-customer-cohort-analytics.sql). Наружу приходят ТОЛЬКО агрегаты —
+// ни телефонов, ни строк по сделкам. Запрос тяжёлый (полный проход по won-
+// сделкам): холодный вызов может упереться в anon-таймаут ~3с, поэтому до
+// 4 ретраев (первый прогревает план, обычно второй проходит). Ответ кешируем
+// на сессию — данные меняются медленно, а каждый вызов дорогой.
+let _clientsData = null, _clientsLoading = false;
+async function _fetchClientsAnalytics(){
+  const url = `${ERA_CRM_URL}/rest/v1/rpc/get_customer_analytics`;
+  let lastErr = '';
+  for (let i = 0; i < 4; i++){
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'apikey': ERA_CRM_ANON, 'Authorization': `Bearer ${ERA_CRM_ANON}`, 'Content-Type': 'application/json' },
+        body: '{}',
+      });
+      if (res.ok) return await res.json();
+      lastErr = 'HTTP ' + res.status;
+      if (res.status !== 500 && res.status !== 504 && res.status !== 408) break; // не таймаут — ретрай не поможет
+    } catch (e) { lastErr = e.message; }
+    await new Promise(r => setTimeout(r, 1200));
+  }
+  throw new Error(lastErr || 'нет ответа');
+}
+// В «Дате заказа» встречается мусор (видели год 202619) — отсекаем месяцы вне
+// разумного диапазона, чтобы одна опечатка не рисовала фантомные строки.
+function _validMonth(m){ return /^\d{4}-\d{2}$/.test(m || '') && m >= '2026-01' && m <= '2030-12'; }
+function renderClientsView(){
+  const el = document.getElementById('clients-content');
+  if (!el) return;
+  if (_clientsData){ _renderClients(el, _clientsData); return; }
+  if (_clientsLoading) return;
+  _clientsLoading = true;
+  el.innerHTML = '<div class="card card-pad" style="color:var(--muted)">Считаем по всем сделкам… до 10 секунд</div>';
+  _fetchClientsAnalytics()
+    .then(d => { _clientsData = d; _renderClients(el, d); })
+    .catch(e => { el.innerHTML = '<div class="card card-pad" style="color:#c0392b">Не удалось получить данные (' + e.message + '). Попробуйте перезайти на вкладку через минуту.</div>'; })
+    .finally(() => { _clientsLoading = false; });
+}
+function _clCard(title, val, sub, clr){
+  return `<div class="card card-pad" style="border-top:3px solid ${clr || 'var(--acc)'}">
+    <div style="font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">${title}</div>
+    <div style="font-size:22px;font-weight:700;color:var(--ink)">${val}</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:2px">${sub || ''}</div>
+  </div>`;
+}
+function _clTable(title, note, headCols, rowsHtml){
+  return `<div class="card" style="margin-bottom:16px">
+    <div class="card-hdr"><span class="card-title">${title}</span>${note ? `<span style="font-size:11px;color:var(--muted)">${note}</span>` : ''}</div>
+    <div style="overflow-x:auto;padding:0 16px 14px"><table class="dt" style="min-width:560px">
+      <thead><tr>${headCols.map(c => '<th>' + c + '</th>').join('')}</tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table></div>
+  </div>`;
+}
+function _renderClients(el, d){
+  const s = d.summary || {};
+  const monthly = (d.monthly || []).filter(m => _validMonth(m.month));
+  const cohorts = (d.cohorts || []).filter(c => _validMonth(c.cohort));
+  const dist = (d.purchase_count_dist || []);
+  const oneTime = (dist.find(x => x.purchases === 1) || {}).clients || 0;
+  const repeatClients = Math.max(0, (s.clients || 0) - oneTime);
+  const repeatPct = s.clients ? (100 * repeatClients / s.clients).toFixed(1) : '0';
+  const gap1 = (d.return_gap || []).find(g => g.after_purchase === 1) || {};
+
+  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:18px">'
+    + _clCard('Покупателей всего', fmt(s.clients || 0), 'с мая 2026 (глубина базы)')
+    + _clCard('Покупают повторно', fmt(repeatClients) + ' · ' + repeatPct + '%', '2 и более покупок', '#16a34a')
+    + _clCard('Медиана возврата', (gap1.median_days != null ? gap1.median_days + ' дн' : '—'), 'после первой покупки', '#ca8a04')
+    + _clCard('Рекорд покупок', fmt(s.max_purchases || 0), 'у одного клиента (опт)', '#a855f7')
+    + '</div>';
+
+  // ── по месяцам ──
+  html += _clTable('По месяцам: первичные и повторные', 'повторный = уже покупал раньше (в этой базе)',
+    ['Месяц', 'Покупателей', 'Новых', 'Повторных', '% повторных', 'Выручка повторных', 'Ср.чек новых', 'Ср.чек повторных'],
+    monthly.map(m => {
+      const pr = m.buyers ? (100 * (m.buyers_repeat || 0) / m.buyers).toFixed(1) : '0';
+      const rshare = m.revenue ? (100 * (m.revenue_repeat || 0) / m.revenue).toFixed(1) : '0';
+      return `<tr><td style="font-weight:600">${m.month}</td><td>${fmt(m.buyers)}</td><td>${fmt(m.buyers_new)}</td>`
+        + `<td style="color:#16a34a;font-weight:600">${fmt(m.buyers_repeat || 0)}</td><td>${pr}%</td>`
+        + `<td>${fmtM(m.revenue_repeat || 0)} <span style="color:var(--muted)">(${rshare}%)</span></td>`
+        + `<td>${m.avg_check_new ? fmtM(m.avg_check_new) : '—'}</td><td>${m.avg_check_repeat ? fmtM(m.avg_check_repeat) : '—'}</td></tr>`;
+    }).join(''));
+
+  // ── по товарам ──
+  const prods = (d.by_product || []).slice().sort((a, b) => (b.orders || 0) - (a.orders || 0));
+  html += _clTable('По товарам: кто их покупает', 'три группы не пересекаются и в сумме дают все заказы товара',
+    ['Товар', 'Заказов', 'Впервые вообще', 'Перешли с другого', 'Тот же повторно'],
+    prods.map(p => `<tr><td style="font-weight:600">${p.product}</td><td>${fmt(p.orders)}</td><td>${fmt(p.first_ever)}</td>`
+      + `<td style="color:#ca8a04;font-weight:600">${fmt(p.switched)}</td><td style="color:#16a34a;font-weight:600">${fmt(p.repeat_same)}</td></tr>`).join(''));
+
+  // ── удержание по первому товару ──
+  const fpr = (d.first_product_retention || []).filter(x => x.first_product !== '(без товара)');
+  html += _clTable('С какого товара лучше возвращаются', 'первый купленный товар → доля вернувшихся',
+    ['Первый товар', 'Клиентов', 'Вернулись', 'Удержание'],
+    fpr.map(x => `<tr><td style="font-weight:600">${x.first_product}</td><td>${fmt(x.clients)}</td><td>${fmt(x.came_back)}</td>`
+      + `<td style="font-weight:700;color:${x.retention_pct >= 9 ? '#16a34a' : 'var(--ink)'}">${x.retention_pct}%</td></tr>`).join(''));
+
+  // ── интервалы возврата ──
+  const gaps = (d.return_gap || []).filter(g => g.n >= 5);
+  html += _clTable('Через сколько дней возвращаются', 'хвост из 2-3 оптовых клиентов скрыт (n < 5)',
+    ['После покупки №', 'Случаев', 'Медиана', 'Типичный разброс (p25–p75)'],
+    gaps.map(g => `<tr><td style="font-weight:600">${g.after_purchase}</td><td>${fmt(g.n)}</td>`
+      + `<td style="font-weight:700">${g.median_days} дн</td><td>${g.p25_days}–${g.p75_days} дн</td></tr>`).join(''));
+  const buckets = d.return_buckets || [];
+  if (buckets.length){
+    const bmax = Math.max(...buckets.map(b => b.n), 1);
+    html += `<div class="card card-pad" style="margin-bottom:16px">
+      <div class="card-title" style="margin-bottom:10px">Распределение интервалов возврата</div>
+      ${buckets.map(b => `<div style="display:flex;align-items:center;gap:8px;margin:4px 0">
+        <span style="width:90px;font-size:12px;color:var(--muted);flex-shrink:0">${b.bucket}</span>
+        <div style="height:14px;border-radius:4px;background:var(--acc);opacity:.85;width:${Math.max(2, Math.round(100 * b.n / bmax))}%"></div>
+        <span style="font-size:12px;font-weight:600">${fmt(b.n)}</span>
+      </div>`).join('')}
+    </div>`;
+  }
+
+  // ── рост корзины ──
+  html += _clTable('Рост корзины: купил N упаковок → что дальше', 'следующая покупка того же клиента',
+    ['Было упаковок', 'Случаев', 'Средняя следующая', 'Берут больше', 'Столько же', 'Меньше'],
+    (d.basket_growth || []).map(b => `<tr><td style="font-weight:600">${b.prev_qty}</td><td>${fmt(b.n)}</td>`
+      + `<td style="font-weight:700">${b.avg_next_qty}</td><td style="color:#16a34a">${b.share_more}%</td>`
+      + `<td>${b.share_same}%</td><td style="color:#c0392b">${b.share_less}%</td></tr>`).join(''));
+
+  // ── переходы между товарами ──
+  const trans = (d.transitions || []).filter(t => t.from !== '(без товара)' && t.to !== '(без товара)').slice(0, 10);
+  html += _clTable('Переходы между товарами (топ-10)', 'главный товар прошлой покупки → текущей',
+    ['Был', '→', 'Стал', 'Случаев'],
+    trans.map(t => `<tr><td style="font-weight:600">${t.from}</td><td style="color:var(--muted)">→</td>`
+      + `<td style="font-weight:600">${t.to}</td><td>${fmt(t.n)}</td></tr>`).join(''));
+
+  // ── когорты ──
+  html += _clTable('Когорты: месяц первой покупки → вернулись', 'молодые когорты ещё не успели вернуться — их % дорастёт',
+    ['Первая покупка', 'Клиентов', 'Вернулись', '%'],
+    cohorts.map(c => `<tr><td style="font-weight:600">${c.cohort}</td><td>${fmt(c.clients)}</td><td>${fmt(c.returned)}</td>`
+      + `<td style="font-weight:700">${c.pct}%</td></tr>`).join(''));
+
+  html += `<div style="font-size:12px;color:var(--muted);line-height:1.5;padding:4px 2px 14px">
+    ⚠️ База покупок ведётся с мая 2026, поэтому доля повторных занижена: клиент, покупавший до мая (в AmoCRM),
+    считается новым. Клиент определяется по номеру телефона; несколько сделок одного клиента за один день
+    считаются одной покупкой. Данные обновляются вместе с CRM (каждые ~5 минут), вкладка кеширует расчёт на сессию.
+  </div>`;
+
+  el.innerHTML = html;
+}
+window.renderClientsView = renderClientsView;
 
 // Era CRM → виджет «География заказов»: per-city per-day deals/budget из
 // custom-поля «АДРЕС ДОСТАВКИ». RPC get_city_metrics возвращает первую
