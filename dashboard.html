@@ -1623,6 +1623,10 @@ const _authGuard = new MutationObserver(() => {
     <!-- фильтр по периоду: строится в renderClientsFilter() -->
     <div id="clients-filter" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:14px"></div>
     <div id="clients-content"><div class="card card-pad" style="color:var(--muted)">Загрузка…</div></div>
+    <!-- модалка списка клиентов (ПД — только после входа Era CRM) -->
+    <div class="mgr-modal-overlay" id="cl-modal-overlay" onclick="if(event.target===this)closeClientList()">
+      <div class="mgr-modal" id="cl-modal-body"></div>
+    </div>
   </div>
 
 
@@ -4967,12 +4971,14 @@ function _renderClients(el, d){
   // ── сколько раз покупают («кто купил 3-4-5 и так далее») ──
   const totalCl = s.clients || 0;
   html += _clTable('Сколько раз покупают' + (_clientsRange ? ' — за период' : ''),
-    _clientsRange ? 'покупки внутри выбранного периода' : 'за всю историю',
+    'клик по строке — список клиентов с телефонами (нужен вход Era CRM)',
     ['Покупок', 'Клиентов', 'Доля клиентов', 'Выручка этих клиентов'],
     dist.slice().sort((a, b) => (a.purchases || 0) - (b.purchases || 0)).map(x => {
       const share = totalCl ? (100 * (x.clients || 0) / totalCl).toFixed(1) : '0';
-      const hot = (x.purchases || 0) >= 3;
-      return `<tr><td style="font-weight:700;${hot ? 'color:#16a34a' : ''}">${fmt(x.purchases)}</td>`
+      const n = x.purchases || 0;
+      const hot = n >= 3;
+      return `<tr style="cursor:pointer" title="Показать клиентов (${fmt(n)} покуп.)" onclick="showClientList(${n},${n})">`
+        + `<td style="font-weight:700;${hot ? 'color:#16a34a' : ''}">${fmt(n)}</td>`
         + `<td style="${hot ? 'font-weight:600;color:#16a34a' : ''}">${fmt(x.clients)}</td>`
         + `<td>${share}%</td><td>${fmtM(x.revenue || 0)}</td></tr>`;
     }).join(''));
@@ -5052,6 +5058,150 @@ function _renderClients(el, d){
   el.innerHTML = html;
 }
 window.renderClientsView = renderClientsView;
+
+// ── Список клиентов по клику (телефон/имя/адрес — персональные данные) ──
+// ПД отдаёт ТОЛЬКО get_customer_list, у которого execute отозван у anon:
+// нужен вход Era CRM (email+пароль, роль admin/director/accountant) — тот же
+// флоу, что в director.html. Токен держим в sessionStorage; если пользователь
+// уже входил в кабинет директора в этой вкладке браузера — переиспользуем его
+// токен (sessionStorage общий на origin в рамках вкладки).
+let _clToken = null;
+let _clLast = null;   // последний список — для выгрузки CSV
+function _clGetToken(){
+  return _clToken || sessionStorage.getItem('era_cl_token') || sessionStorage.getItem('dir_token') || null;
+}
+function _esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function closeClientList(){ const ov = document.getElementById('cl-modal-overlay'); if (ov) ov.classList.remove('open'); }
+window.closeClientList = closeClientList;
+
+async function _clLogin(email, password){
+  const r = await fetch(`${ERA_CRM_URL}/auth/v1/token?grant_type=password`, {
+    method: 'POST',
+    headers: { 'apikey': ERA_CRM_ANON, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!r.ok){ const j = await r.json().catch(() => ({})); throw new Error(j.error_description || j.msg || ('http ' + r.status)); }
+  const j = await r.json();
+  _clToken = j.access_token;
+  sessionStorage.setItem('era_cl_token', _clToken);
+  return _clToken;
+}
+
+async function _clFetchList(minP, maxP){
+  const token = _clGetToken();
+  if (!token) throw { needAuth: true };
+  const body = { p_min_purchases: minP, p_max_purchases: maxP };
+  if (_clientsRange){ body.p_date_from = _clientsRange.from; body.p_date_to = _clientsRange.to; }
+  const r = await fetch(`${ERA_CRM_URL}/rest/v1/rpc/get_customer_list`, {
+    method: 'POST',
+    headers: { 'apikey': ERA_CRM_ANON, 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (r.status === 401 || r.status === 403){
+    sessionStorage.removeItem('era_cl_token'); _clToken = null;
+    throw { needAuth: true };
+  }
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return await r.json();
+}
+
+function _clTitle(minP, maxP){
+  const cnt = maxP == null ? (minP + '+') : (minP === maxP ? String(minP) : minP + '–' + maxP);
+  return `Клиенты с ${cnt} покуп.` + (_clientsRange ? ' · ' + _clientsRange.label : ' · вся история');
+}
+function showClientList(minP, maxP){
+  const ov = document.getElementById('cl-modal-overlay');
+  if (!ov) return;
+  ov.classList.add('open');
+  _clLoad(minP, maxP);
+}
+window.showClientList = showClientList;
+
+async function _clLoad(minP, maxP){
+  const body = document.getElementById('cl-modal-body');
+  if (!body) return;
+  const title = _clTitle(minP, maxP);
+  body.innerHTML = `<div style="padding:20px"><b>${title}</b><div style="color:var(--muted);margin-top:10px">Загрузка…</div></div>`;
+  try {
+    const rows = await _clFetchList(minP, maxP);
+    _clLast = { rows, minP, maxP };
+    if (!rows.length){
+      body.innerHTML = `<div style="padding:20px"><b>${title}</b>
+        <div style="color:var(--muted);margin-top:10px">Пусто: либо нет клиентов с таким числом покупок за период, либо у учётки нет прав (нужна роль admin / director / accountant).</div>
+        <div style="text-align:right;margin-top:12px"><button class="apply-btn" onclick="closeClientList()">Закрыть</button></div></div>`;
+      return;
+    }
+    body.innerHTML = `<div style="padding:18px 20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <b>${title} · ${fmt(rows.length)}${rows.length === 1000 ? ' (показаны первые 1000)' : ''}</b>
+        <span style="display:flex;gap:8px">
+          <button class="apply-btn" onclick="clDownloadCsv()">Скачать CSV</button>
+          <button class="apply-btn" style="opacity:.75" onclick="closeClientList()">Закрыть</button>
+        </span>
+      </div>
+      <div style="overflow:auto;max-height:62vh;margin-top:10px"><table class="dt" style="min-width:680px">
+        <thead><tr><th style="width:36px">#</th><th style="text-align:left">Имя</th><th>Телефон</th><th style="text-align:left">Адрес</th><th>Покупок</th><th>Сумма</th><th>Последняя</th></tr></thead>
+        <tbody>${rows.map((r, i) => `<tr>
+          <td style="color:var(--muted)">${i + 1}</td>
+          <td style="text-align:left;font-weight:600">${_esc(r.client_name) || '—'}</td>
+          <td style="white-space:nowrap">${_esc(r.phone)}</td>
+          <td style="text-align:left;max-width:280px">${_esc(r.address) || '—'}</td>
+          <td>${r.purchases}</td>
+          <td style="white-space:nowrap;font-weight:600">${fmtM(r.total_amount || 0)}</td>
+          <td style="white-space:nowrap">${r.last_purchase || ''}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </div>`;
+  } catch (e){
+    if (e && e.needAuth){ _clRenderLogin(minP, maxP); return; }
+    body.innerHTML = `<div style="padding:20px"><b>${title}</b>
+      <div style="color:#c0392b;margin-top:10px">Ошибка: ${_esc(e.message || e)}</div>
+      <div style="text-align:right;margin-top:12px"><button class="apply-btn" onclick="closeClientList()">Закрыть</button></div></div>`;
+  }
+}
+
+function _clRenderLogin(minP, maxP){
+  const body = document.getElementById('cl-modal-body');
+  body.innerHTML = `<div style="padding:20px;max-width:420px">
+    <b>Список клиентов — вход Era CRM</b>
+    <div style="font-size:12px;color:var(--muted);margin:6px 0 12px">Телефоны и адреса показываются только администратору, директору или бухгалтеру. Войдите учёткой Era CRM (как в кабинете директора).</div>
+    <input class="date-in" style="width:100%;margin-bottom:8px" type="email" id="cl-email" placeholder="Email" autocomplete="username">
+    <input class="date-in" style="width:100%;margin-bottom:8px" type="password" id="cl-pass" placeholder="Пароль" autocomplete="current-password">
+    <div id="cl-login-err" style="color:#c0392b;font-size:12px;margin-bottom:8px"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px">
+      <button class="apply-btn" style="opacity:.75" onclick="closeClientList()">Отмена</button>
+      <button class="apply-btn" onclick="clDoLogin(${minP}, ${maxP == null ? 'null' : maxP})">Войти</button>
+    </div>
+  </div>`;
+  const pw = document.getElementById('cl-pass');
+  if (pw) pw.addEventListener('keydown', e => { if (e.key === 'Enter') clDoLogin(minP, maxP); });
+}
+async function clDoLogin(minP, maxP){
+  const email = (document.getElementById('cl-email') || { value: '' }).value.trim();
+  const pass  = (document.getElementById('cl-pass')  || { value: '' }).value;
+  const err   = document.getElementById('cl-login-err');
+  if (!email || !pass){ if (err) err.textContent = 'Введите email и пароль'; return; }
+  if (err) err.textContent = '';
+  try { await _clLogin(email, pass); _clLoad(minP, maxP); }
+  catch (e){ if (err) err.textContent = 'Не вошло: ' + (e.message || e); }
+}
+window.clDoLogin = clDoLogin;
+
+// CSV для обзвона: BOM + ';' — открывается в русском Excel без настройки.
+function clDownloadCsv(){
+  if (!_clLast || !_clLast.rows || !_clLast.rows.length) return;
+  const head = 'Имя;Телефон;Адрес;Покупок;Сумма;Последняя покупка';
+  const lines = _clLast.rows.map(r =>
+    [r.client_name, r.phone, r.address, r.purchases, Math.round(r.total_amount || 0), r.last_purchase || '']
+      .map(v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"').join(';'));
+  const csv = '\uFEFF' + head + '\n' + lines.join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  const tag = _clLast.maxP == null ? (_clLast.minP + 'plus') : String(_clLast.minP);
+  a.download = 'clients-' + tag + '-pokupok.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+window.clDownloadCsv = clDownloadCsv;
 
 // Era CRM → виджет «География заказов»: per-city per-day deals/budget из
 // custom-поля «АДРЕС ДОСТАВКИ». RPC get_city_metrics возвращает первую
