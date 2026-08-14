@@ -1141,7 +1141,7 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
     <div class="login-sub">Sales Dashboard</div>
     <div class="login-field">
       <label>Логин</label>
-      <input type="text" id="login-user" placeholder="Введите логин" autocomplete="username">
+      <input type="text" id="login-user" placeholder="Логин или email Era CRM" autocomplete="username">
     </div>
     <div class="login-field">
       <label>Пароль</label>
@@ -1162,21 +1162,60 @@ async function _sha256(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
+function _loginOk(role){
+  sessionStorage.setItem('wg_auth','1');
+  sessionStorage.setItem('wg_role', role);
+  document.getElementById('login-overlay').style.display='none';
+  document.getElementById('login-error').textContent='';
+  _initKey();
+  loadFromSupabase();
+}
+// Вход учёткой Era CRM (email + пароль) — единый доступ: тот же аккаунт
+// открывает кабинет директора, список клиентов и этот дашборд. Роли CRM
+// admin/director получают полный дашборд, accountant — режим просмотра.
+// Функции/константы era-crm объявлены в основном скрипте ниже — на момент
+// клика они уже загружены (локальная ветка так же зовёт loadFromSupabase).
+async function _eraLogin(email, password){
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = 'Проверяем…';
+  try {
+    const r = await fetch(`${ERA_CRM_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { 'apikey': ERA_CRM_ANON, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!r.ok){
+      const j = await r.json().catch(() => ({}));
+      throw new Error(/invalid login credentials/i.test(j.error_description || '')
+        ? 'Неверный email или пароль Era CRM'
+        : (j.error_description || j.msg || ('http ' + r.status)));
+    }
+    const j = await r.json();
+    const pr = await fetch(`${ERA_CRM_URL}/rest/v1/profiles?id=eq.${j.user.id}&select=team_role`, {
+      headers: { 'apikey': ERA_CRM_ANON, 'Authorization': 'Bearer ' + j.access_token },
+    });
+    const arr = await pr.json().catch(() => []);
+    const role = arr[0]?.team_role || null;
+    const ROLE_MAP = { admin: 'admin', director: 'admin', accountant: 'viewer' };
+    if (!ROLE_MAP[role]){
+      errEl.textContent = `Вход верный, но роль «${role || 'нет'}» не даёт доступ к дашборду (нужна admin / director / accountant)`;
+      return;
+    }
+    // Токен пригодится списку клиентов на вкладке «Клиенты» — не переспрашиваем вход.
+    sessionStorage.setItem('era_cl_token', j.access_token);
+    _loginOk(ROLE_MAP[role]);
+  } catch (e){
+    errEl.textContent = 'Не вошло: ' + (e.message || e);
+  }
+}
 async function doLogin(){
   const u = document.getElementById('login-user').value.trim().toLowerCase();
   const p = document.getElementById('login-pass').value;
+  if (u.includes('@')) return _eraLogin(u, p);
   const user = _USERS[u];
   if (user) {
     const hash = await _sha256(p);
-    if (hash === user.h) {
-      sessionStorage.setItem('wg_auth','1');
-      sessionStorage.setItem('wg_role', user.role);
-      document.getElementById('login-overlay').style.display='none';
-      document.getElementById('login-error').textContent='';
-      _initKey();
-      loadFromSupabase();
-      return;
-    }
+    if (hash === user.h) { _loginOk(user.role); return; }
   }
   document.getElementById('login-error').textContent='Неверный логин или пароль';
 }
