@@ -1,0 +1,322 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   theme.css — темы дашборда WEGLOW.
+   Переключатель живёт в сайдбаре (theme.js), выбор хранится в localStorage
+   (ключ wg_theme). Тема «Классика» = отсутствие data-theme на <html>: базовые
+   стили страницы не трогаем, здесь только переопределения токенов и тех
+   компонентов, у которых цвета были захардкожены.
+   Темы: glow · paper · forest · bento (см. канвас редизайна от 04.09.2026).
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Семантические токены (значения классики — чтобы переключатель и
+      компоненты работали и без data-theme) ───────────────────────────── */
+:root {
+  --sb-bg: #0f1623;
+  --sb-text: rgba(255,255,255,.45);
+  --sb-text-strong: #ffffff;
+  --sb-muted: rgba(255,255,255,.3);
+  --sb-line: rgba(255,255,255,.07);
+  --sb-chip: rgba(255,255,255,.04);
+  --on-acc: #ffffff;
+  --pill-bg: var(--acc-l);
+  --pill-fg: var(--acc);
+  --tfoot-bg: #0f1623;
+  --tfoot-fg: #ffffff;
+  --menu-bg: #ffffff;
+  --font-ui: 'DM Sans', sans-serif;
+  --font-display: 'Playfair Display', serif;
+  --chart-grid: rgba(232,236,244,.9);
+  --chart-tick: #8896ae;
+  --chart-font: DM Sans;
+  --page-image: none;
+  --page-veil: none;
+  --page-pos: center;
+  --logo-color: #ffffff;
+}
+
+/* ═══ A · MIDNIGHT GLOW ═══════════════════════════════════════════════ */
+html[data-theme="glow"] {
+  --ink: #eef5f1; --ink2: #ffffff; --slate: #b9c8c0; --muted: #8fa39a;
+  --line: rgba(255,255,255,.09); --line2: rgba(255,255,255,.06);
+  --bg: #060c0a; --white: rgba(14,24,20,.78);
+  --col: #5aa2ff; --col-l: rgba(90,162,255,.16);
+  --ummi: #34d399; --ummi-l: rgba(52,211,153,.16);
+  --cof: #f5a524; --cof-l: rgba(245,165,36,.16);
+  --acc: #7affb4; --acc-l: rgba(122,255,180,.14);
+  --red: #ff8a8a; --red-l: rgba(255,120,120,.14);
+  --green: #7affb4; --green-l: rgba(122,255,180,.12);
+  --gold: #ffd166; --gold-l: rgba(255,209,102,.14);
+  --shadow: 0 0 0 1px rgba(255,255,255,.06);
+  --shadow2: 0 16px 48px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.08);
+  --r: 16px;
+  --sb-bg: rgba(8,16,13,.78); --sb-text: #a9bab2; --sb-text-strong: #ffffff; --sb-muted: #5f736a;
+  --sb-line: rgba(255,255,255,.07); --sb-chip: rgba(255,255,255,.04);
+  --on-acc: #06110c; --pill-bg: #7affb4; --pill-fg: #06110c;
+  --tfoot-bg: #0f1f19; --tfoot-fg: #ffffff; --menu-bg: #0f1f19;
+  --font-ui: 'Manrope', 'Segoe UI', sans-serif; --font-display: 'Space Grotesk', sans-serif;
+  --chart-grid: rgba(255,255,255,.08); --chart-tick: #7b8d85; --chart-font: Manrope;
+  --page-image: url("assets/theme/bg-midnight.jpg");
+  --page-veil: linear-gradient(180deg, rgba(6,12,10,.45) 0%, rgba(6,12,10,.86) 55%, rgba(6,12,10,.96) 100%);
+  --logo-color: #ffffff;
+}
+
+/* ═══ B · PAPER EDITORIAL ═════════════════════════════════════════════ */
+html[data-theme="paper"] {
+  --ink: #111110; --ink2: #000000; --slate: #4c4c4a; --muted: #7f7e7b;
+  --line: #e6e2d2; --line2: #f1eee2;
+  --bg: #fdfcf5; --white: #ffffff;
+  --acc: #10756a; --acc-l: #e3f2ef;
+  --red: #b42323; --red-l: #fbe8e6;
+  --green: #0b5e55; --green-l: #e3f2ef;
+  --gold: #7a5a06; --gold-l: #fbf1d3;
+  --shadow: rgba(213,208,184,.45) 0 2px 6px, rgba(213,208,184,.55) 0 0 0 1px;
+  --shadow2: rgba(120,110,80,.22) 0 16px 40px, rgba(213,208,184,.6) 0 0 0 1px;
+  --r: 20px;
+  --sb-bg: #000000; --sb-text: rgba(255,255,255,.55); --sb-text-strong: #ffffff; --sb-muted: rgba(255,255,255,.35);
+  --sb-line: rgba(255,255,255,.1); --sb-chip: rgba(255,255,255,.06);
+  --on-acc: #ffffff; --pill-bg: #000000; --pill-fg: #ffffff;
+  --tfoot-bg: #000000; --tfoot-fg: #ffffff; --menu-bg: #ffffff;
+  --font-ui: 'Source Sans 3', 'Segoe UI', sans-serif; --font-display: 'Lora', Georgia, serif;
+  --chart-grid: #ebe8dc; --chart-tick: #7f7e7b; --chart-font: Source Sans 3;
+  --page-image: url("assets/theme/bg-paper.jpg");
+  --page-veil: linear-gradient(180deg, rgba(253,252,245,.5) 0%, rgba(253,252,245,.9) 40%, rgba(253,252,245,.98) 100%);
+  --logo-color: #ffffff;
+}
+
+/* ═══ C · FOREST POSTER ═══════════════════════════════════════════════ */
+html[data-theme="forest"] {
+  --ink: #eef2e3; --ink2: #fcfcfc; --slate: #cfe0d6; --muted: #9fc4b3;
+  --line: rgba(238,242,227,.13); --line2: rgba(238,242,227,.07);
+  --bg: #043f2e; --white: rgba(2,40,29,.78);
+  --col: #6fb0ff; --col-l: rgba(111,176,255,.16);
+  --ummi: #7fe0b8; --ummi-l: rgba(127,224,184,.16);
+  --cof: #f2c94c; --cof-l: rgba(242,201,76,.18);
+  --acc: #c8f169; --acc-l: rgba(200,241,105,.16);
+  --red: #ff9c95; --red-l: rgba(182,64,58,.35);
+  --green: #c8f169; --green-l: rgba(200,241,105,.16);
+  --gold: #f2c94c; --gold-l: rgba(242,201,76,.18);
+  --shadow: 0 0 0 1px rgba(238,242,227,.08);
+  --shadow2: 0 16px 48px rgba(0,20,12,.6), 0 0 0 1px rgba(238,242,227,.1);
+  --r: 14px;
+  --sb-bg: #032e22; --sb-text: #9fc4b3; --sb-text-strong: #fcfcfc; --sb-muted: #6f9a88;
+  --sb-line: rgba(238,242,227,.1); --sb-chip: rgba(238,242,227,.05);
+  --on-acc: #043f2e; --pill-bg: #eef2e3; --pill-fg: #043f2e;
+  --tfoot-bg: #032e22; --tfoot-fg: #fcfcfc; --menu-bg: #05392a;
+  --font-ui: 'Geist', 'Segoe UI', sans-serif; --font-display: 'Instrument Serif', Georgia, serif;
+  --chart-grid: rgba(238,242,227,.10); --chart-tick: #8fb5a4; --chart-font: Geist;
+  --page-image: url("assets/theme/bg-forest.jpg");
+  --page-veil: linear-gradient(90deg, rgba(4,63,46,1) 0%, rgba(4,63,46,.92) 45%, rgba(4,63,46,.55) 100%);
+  --page-pos: right top;
+  --logo-color: #c8f169;
+}
+
+/* ═══ D · STUDIO BENTO ════════════════════════════════════════════════ */
+html[data-theme="bento"] {
+  --ink: #09090b; --ink2: #09090b; --slate: #52525c; --muted: #71717b;
+  --line: #e4e4e7; --line2: #f0f0f2;
+  --bg: #f7f7f8; --white: #ffffff;
+  --acc: #615fff; --acc-l: #eeeeff;
+  --red: #9f1239; --red-l: #ffe4e9;
+  --green: #06603a; --green-l: #dcfaef;
+  --gold: #7c4a03; --gold-l: #fff1d6;
+  --shadow: rgba(9,9,11,.075) 0 0 0 1px, rgba(9,9,11,.05) 0 4px 10px -2px;
+  --shadow2: rgba(9,9,11,.075) 0 0 0 1px, rgba(9,9,11,.12) 0 16px 40px -8px;
+  --r: 16px;
+  --sb-bg: #ffffff; --sb-text: #52525c; --sb-text-strong: #09090b; --sb-muted: #71717b;
+  --sb-line: #e4e4e7; --sb-chip: #f4f4f5;
+  --on-acc: #ffffff; --pill-bg: #09090b; --pill-fg: #ffffff;
+  --tfoot-bg: #09090b; --tfoot-fg: #ffffff; --menu-bg: #ffffff;
+  --font-ui: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; --font-display: 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
+  --chart-grid: #ececef; --chart-tick: #71717b; --chart-font: Plus Jakarta Sans;
+  --page-image: none; --page-veil: none;
+  --logo-color: #09090b;
+}
+
+/* ═══ Общие переопределения для всех новых тем ═══════════════════════ */
+html[data-theme] { background: var(--bg); }
+html[data-theme] body { background: transparent; font-family: var(--font-ui); }
+html[data-theme] body::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background-image: var(--page-veil), var(--page-image);
+  background-size: cover, cover;
+  background-position: center, var(--page-pos);
+  background-repeat: no-repeat;
+}
+html[data-theme="glow"] body::before { background-size: cover, cover; }
+
+/* Шрифты */
+html[data-theme] .pill, html[data-theme] .date-in, html[data-theme] .apply-btn, html[data-theme] .mt,
+html[data-theme] .cf-btn, html[data-theme] .export-btn, html[data-theme] .ft-inp, html[data-theme] .ft-btn,
+html[data-theme] .logout-btn, html[data-theme] .login-field input, html[data-theme] .login-btn,
+html[data-theme] .kpi-col-title .kpi-period-badge, html[data-theme] .sb-date strong,
+html[data-theme] .weather-temp, html[data-theme] .weather-desc, html[data-theme] .weather-city,
+html[data-theme] input, html[data-theme] button, html[data-theme] select { font-family: var(--font-ui); }
+html[data-theme] .view-hdr h2, html[data-theme] .kc-val, html[data-theme] .kpi-col-title,
+html[data-theme] .login-card h2 { font-family: var(--font-display); }
+
+/* Логотип: без неона, спокойный wordmark + светящаяся точка акцента */
+html[data-theme] .sb-logo h1 {
+  animation: none !important; background: none !important;
+  -webkit-text-fill-color: var(--logo-color) !important; color: var(--logo-color);
+  font-family: var(--font-display); font-size: 30px; font-weight: 700; letter-spacing: -.03em;
+  display: inline-block !important; line-height: 1; filter: none !important; transform: none !important;
+}
+html[data-theme] .sb-logo h1 span { animation: none !important; text-shadow: none !important; color: inherit !important; -webkit-text-fill-color: inherit !important; }
+html[data-theme] .sb-logo h1::before {
+  content: ""; display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin: 0 10px 4px 0; vertical-align: middle;
+  background: var(--acc); box-shadow: 0 0 16px var(--acc-l), 0 0 32px var(--acc-l);
+}
+html[data-theme="forest"] .sb-logo h1 { font-style: italic; font-weight: 400; font-size: 34px; }
+html[data-theme="paper"] .sb-logo h1 { font-size: 28px; }
+
+/* Сайдбар */
+html[data-theme] .sidebar { background: var(--sb-bg); border-right: 1px solid var(--sb-line); }
+html[data-theme="glow"] .sidebar { backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+html[data-theme] .sb-logo, html[data-theme] .sb-date { border-bottom-color: var(--sb-line); }
+html[data-theme] .nav-item { color: var(--sb-text); }
+html[data-theme] .nav-item:hover { color: var(--sb-text-strong); background: var(--sb-chip); box-shadow: none; }
+html[data-theme] .nav-item.active { background: var(--sb-active-bg, var(--acc-l)); color: var(--sb-active-fg, var(--sb-text-strong)); border-color: transparent; box-shadow: inset 0 0 0 1px var(--sb-active-bg, var(--acc-l)); }
+html[data-theme] .nav-item.active::before { background: var(--acc); }
+html[data-theme] .nav-item.active .icon { background: var(--sb-active-bg, var(--acc-l)); }
+html[data-theme="glow"] { --sb-active-bg: rgba(122,255,180,.12); --sb-active-fg: #ffffff; }
+html[data-theme="paper"] { --sb-active-bg: rgba(255,255,255,.14); --sb-active-fg: #ffffff; }
+html[data-theme="forest"] { --sb-active-bg: rgba(200,241,105,.16); --sb-active-fg: #fcfcfc; }
+html[data-theme="bento"] { --sb-active-bg: #eeeeff; --sb-active-fg: #615fff; }
+html[data-theme] .nav-item::after { background: var(--tfoot-bg); color: var(--tfoot-fg); border-color: var(--sb-line); }
+html[data-theme] .sp-fill { background: var(--acc); }
+html[data-theme] .sb-section { color: var(--sb-muted); }
+html[data-theme] .dock-wrap, html[data-theme] .sb-progress, html[data-theme] .weather-row, html[data-theme] .logout-btn { background: var(--sb-chip); border-color: var(--sb-line); }
+html[data-theme] .dock-divider, html[data-theme] .sp-bar { background: var(--sb-line); }
+html[data-theme] .sp-kpi { border-top-color: var(--sb-line); }
+html[data-theme] .logout-btn { color: var(--sb-text); }
+html[data-theme] .mob-menu-btn { background: var(--sb-bg); color: var(--sb-text-strong); border-color: var(--sb-line); }
+
+/* Светлый сайдбар (Studio Bento): перекрываем белые полупрозрачные цвета */
+html[data-theme="bento"] .sb-date, html[data-theme="bento"] .weather-desc, html[data-theme="bento"] .weather-city,
+html[data-theme="bento"] .sp-label, html[data-theme="bento"] .sp-nums, html[data-theme="bento"] .sp-kl,
+html[data-theme="bento"] .sb-logo .tagline { color: var(--sb-muted); }
+html[data-theme="bento"] .sb-date strong, html[data-theme="bento"] .weather-temp,
+html[data-theme="bento"] .sp-nums strong, html[data-theme="bento"] .sp-kv { color: var(--sb-text-strong); }
+html[data-theme="bento"] .nav-item.active { background: #eeeeff; color: #615fff; }
+html[data-theme="bento"] .nav-item .icon { background: #ececef; }
+html[data-theme="bento"] .nav-item.active .icon { background: #e0e0ff; }
+html[data-theme="bento"] .sidebar [style*="rgba(255,255,255"] { color: var(--sb-muted) !important; }
+html[data-theme="bento"] .sidebar #sb-today { color: var(--sb-text-strong) !important; }
+html[data-theme="bento"] .sidebar .logout-btn[style] { background: #eeeeff !important; color: #615fff !important; }
+html[data-theme="bento"] .sidebar-overlay { background: rgba(9,9,11,.35); }
+html[data-theme="bento"] .sidebar.open { box-shadow: 6px 0 32px rgba(9,9,11,.18) !important; }
+
+/* Топбар, карточки, поверхности */
+html[data-theme] .topbar { background: var(--white); border-bottom: 1px solid var(--line); box-shadow: none; }
+html[data-theme="glow"] .topbar, html[data-theme="forest"] .topbar { backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+html[data-theme] .kpi-card { background: var(--white); border: 1px solid var(--line); box-shadow: var(--shadow); border-radius: var(--r); }
+html[data-theme] .kpi-card:hover { box-shadow: var(--shadow2); }
+html[data-theme] .card, html[data-theme] .kpi-col, html[data-theme] .ai-side, html[data-theme] .ad-card,
+html[data-theme] .ps-card, html[data-theme] .sprint-hist-card, html[data-theme] .mgr-modal, html[data-theme] .sprint-menu { border-radius: var(--r); }
+html[data-theme="glow"] .card, html[data-theme="glow"] .kpi-col, html[data-theme="glow"] .ai-side, html[data-theme="glow"] .ad-card,
+html[data-theme="glow"] .ps-card, html[data-theme="glow"] .sprint-hist-card, html[data-theme="glow"] .kpi-card,
+html[data-theme="forest"] .card, html[data-theme="forest"] .kpi-col, html[data-theme="forest"] .ai-side, html[data-theme="forest"] .ad-card,
+html[data-theme="forest"] .ps-card, html[data-theme="forest"] .sprint-hist-card, html[data-theme="forest"] .kpi-card {
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+}
+html[data-theme="paper"] .card, html[data-theme="paper"] .kpi-card, html[data-theme="paper"] .kpi-col,
+html[data-theme="paper"] .ai-side, html[data-theme="paper"] .ad-card, html[data-theme="paper"] .ps-card,
+html[data-theme="paper"] .sprint-hist-card { border-color: transparent; box-shadow: var(--shadow); }
+html[data-theme="bento"] .card, html[data-theme="bento"] .kpi-card, html[data-theme="bento"] .kpi-col,
+html[data-theme="bento"] .ai-side, html[data-theme="bento"] .ad-card, html[data-theme="bento"] .ps-card,
+html[data-theme="bento"] .sprint-hist-card { border-color: transparent; box-shadow: var(--shadow); }
+html[data-theme="bento"] .kpi-3col > .kpi-col:first-child { border-radius: 28px 16px 16px 16px; }
+html[data-theme="bento"] .kpi-3col > .kpi-col:last-child { border-radius: 16px 28px 16px 16px; }
+html[data-theme] .kpi-col { border-top: 3px solid var(--acc); }
+html[data-theme] .ai-side { border-left-color: var(--acc) !important; }
+html[data-theme] .ai-side-hdr, html[data-theme] .card-title, html[data-theme] .topbar-title, html[data-theme] .shc-title { color: var(--ink2); }
+html[data-theme] .mgr-modal { background: var(--menu-bg); }
+html[data-theme] .sprint-menu { background: var(--menu-bg); }
+html[data-theme] .mgr-modal-overlay { background: rgba(0,0,0,.55); }
+
+/* Кнопки, пилюли, табы */
+html[data-theme] .pill { border-color: var(--line); color: var(--slate); background: transparent; }
+html[data-theme] .pill:hover { border-color: var(--acc); color: var(--acc); }
+html[data-theme] .pill.active { background: var(--pill-bg); color: var(--pill-fg); border-color: var(--pill-bg); }
+html[data-theme] .mt.active, html[data-theme] .cf-btn.active { background: var(--acc); color: var(--on-acc); border-color: var(--acc); }
+html[data-theme] .apply-btn, html[data-theme] .ft-btn, html[data-theme] .login-btn, html[data-theme] .shc-now { background: var(--acc); color: var(--on-acc); }
+html[data-theme] .export-btn { color: var(--slate); border-color: var(--line); }
+html[data-theme] .date-in, html[data-theme] .ft-inp { background: var(--white); color: var(--ink); border-color: var(--line); }
+html[data-theme] .dt tfoot tr td { background: var(--tfoot-bg); color: var(--tfoot-fg); border-top-color: var(--line); }
+html[data-theme] .ft-tooltip::after { background: var(--tfoot-bg); color: var(--tfoot-fg); }
+html[data-theme] .ft-panel { background: var(--acc-l); border-color: var(--line); }
+html[data-theme] table.dt tr.tr-sum { background: var(--acc-l); }
+html[data-theme] .period-badge { background: var(--acc-l); color: var(--acc); }
+html[data-theme] .kpi-row-growth.up, html[data-theme] .ft-conv-hi { color: var(--green); }
+html[data-theme] .kpi-row-growth.down, html[data-theme] .ft-conv-lo { color: var(--red); }
+html[data-theme] .ft-conv-mid { color: var(--gold); }
+html[data-theme] .mgr-highlight { background: var(--acc-l) !important; }
+html[data-theme] .funnel-step { background: var(--line2); }
+
+/* Заголовок вкладки «Товары» задан инлайном светлым — в темах ведём к токенам */
+html[data-theme] #view-products .view-hdr h2 { color: var(--ink2) !important; }
+html[data-theme] #view-products .view-hdr div { color: var(--muted) !important; }
+
+/* Экран входа в цветах темы */
+html[data-theme] .login-overlay { background: var(--bg); }
+html[data-theme="paper"] .login-card, html[data-theme="bento"] .login-card { background: var(--white); border-color: var(--line); box-shadow: var(--shadow2); }
+html[data-theme="paper"] .login-card h2, html[data-theme="bento"] .login-card h2 { color: var(--ink2); }
+html[data-theme="paper"] .login-sub, html[data-theme="bento"] .login-sub,
+html[data-theme="paper"] .login-field label, html[data-theme="bento"] .login-field label { color: var(--muted); }
+html[data-theme="paper"] .login-field input, html[data-theme="bento"] .login-field input { background: var(--bg); color: var(--ink); border-color: var(--line); }
+
+/* Типографика по направлениям */
+html[data-theme="forest"] .view-hdr h2 { font-size: 36px; font-weight: 400; letter-spacing: -.01em; }
+html[data-theme="forest"] .kc-val { font-weight: 400; font-size: 24px; }
+html[data-theme="forest"] .kpi-card.span-2 .kc-val { font-size: 32px; }
+html[data-theme="forest"] .kpi-col-title { font-weight: 400; font-size: 20px; }
+html[data-theme="paper"] .view-hdr h2 { font-size: 32px; }
+html[data-theme="glow"] .view-hdr h2 { font-size: 26px; letter-spacing: -.03em; }
+html[data-theme="bento"] .view-hdr h2 { font-size: 26px; font-weight: 800; letter-spacing: -.035em; }
+html[data-theme="bento"] .kc-val { font-weight: 800; letter-spacing: -.03em; }
+html[data-theme="bento"] .kc-lbl, html[data-theme="bento"] .sec-label, html[data-theme="bento"] .tb-label,
+html[data-theme="bento"] table.dt th, html[data-theme="bento"] .sf-label, html[data-theme="bento"] .rop-section-label,
+html[data-theme="bento"] .mini-label, html[data-theme="bento"] .sb-section { font-family: 'JetBrains Mono', Consolas, monospace; letter-spacing: .06em; font-weight: 500; }
+
+/* ═══ Переключатель тем (theme.js) ═══════════════════════════════════ */
+.wg-theme { position: relative; margin: 10px 14px 0; }
+.wg-theme-btn {
+  width: 100%; display: flex; align-items: center; gap: 9px; padding: 8px 10px;
+  border-radius: 10px; border: 1px solid var(--sb-line); background: var(--sb-chip);
+  color: var(--sb-text); font-family: var(--font-ui); font-size: 12px; font-weight: 500;
+  cursor: pointer; text-align: left; transition: color .15s, border-color .15s;
+}
+.wg-theme-btn:hover { color: var(--sb-text-strong); border-color: var(--acc); }
+.wg-theme-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--acc); box-shadow: 0 0 0 2px var(--sb-line); flex-shrink: 0; }
+.wg-theme-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wg-theme-caret { opacity: .6; font-size: 10px; }
+.wg-theme-menu {
+  display: none; position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 400;
+  background: var(--menu-bg); border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: var(--shadow2); padding: 6px;
+}
+.wg-theme.open .wg-theme-menu { display: block; }
+.wg-theme-item {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; cursor: pointer;
+  color: var(--slate); font-family: var(--font-ui); font-size: 12.5px; font-weight: 500;
+}
+.wg-theme-item:hover { background: var(--acc-l); color: var(--ink); }
+.wg-theme-item.active { color: var(--ink); font-weight: 700; }
+.wg-theme-item.active::after { content: "✓"; margin-left: auto; color: var(--acc); font-size: 12px; }
+.wg-swatch { display: flex; gap: 2px; flex-shrink: 0; }
+.wg-swatch i { width: 9px; height: 18px; border-radius: 3px; display: block; border: 1px solid rgba(0,0,0,.08); }
+/* Плавающая кнопка на страницах без сайдбара */
+.wg-theme.wg-theme-float { position: fixed; right: 16px; bottom: 16px; margin: 0; z-index: 900; width: 210px; }
+.wg-theme.wg-theme-float .wg-theme-menu { top: auto; bottom: calc(100% + 6px); }
+@media (max-width: 768px) { .wg-theme.wg-theme-float { width: 56px; } .wg-theme.wg-theme-float .wg-theme-name, .wg-theme.wg-theme-float .wg-theme-caret { display: none; } .wg-theme.wg-theme-float .wg-theme-menu { width: 210px; left: auto; right: 0; } }
+
+/* ═══ Кабинеты (director / rop / ad / advisor / chat): у них --ink2 служит фоном
+      шапки и кнопок, а текст захардкожен белым — ведём к токенам темы ═════ */
+html[data-theme] .topbar:not(.main > .topbar) { background: var(--tfoot-bg); color: var(--tfoot-fg); border-bottom: 1px solid var(--sb-line); }
+html[data-theme] .pw-btn, html[data-theme] .save-btn, html[data-theme] .tab.active,
+html[data-theme] [style*="background:var(--ink2)"] { background: var(--acc) !important; color: var(--on-acc) !important; border-color: var(--acc) !important; }
+html[data-theme] .toast { background: var(--tfoot-bg); color: var(--tfoot-fg); }
+html[data-theme] .pw-inp { background: var(--white); color: var(--ink); border-color: var(--line); }
+/* Плавающий переключатель на страницах без сайдбара — в цветах страницы, не сайдбара */
+.wg-theme.wg-theme-float .wg-theme-btn { background: var(--white); color: var(--slate); border-color: var(--line); box-shadow: var(--shadow2); }
+.wg-theme.wg-theme-float .wg-theme-btn:hover { color: var(--ink); border-color: var(--acc); }
+.wg-theme.wg-theme-float .wg-theme-dot { box-shadow: 0 0 0 2px var(--line); }

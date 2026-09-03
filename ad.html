@@ -114,6 +114,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 .ad-tab.active{color:var(--acc);border-bottom-color:var(--acc);}
 .ad-tab:not(.active):hover{color:var(--slate);}
 </style>
+<script>/* Тема оформления до первой отрисовки (см. theme.css / theme.js) */(function(){try{var t=localStorage.getItem("wg_theme");if(t===null||t==="")t="glow";if(t!=="classic")document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700&family=Lora:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
 </head>
 <body>
 
@@ -940,5 +943,6 @@ async function sendRequest(){
 }
 
 </script>
+<script src="theme.js"></script>
 </body>
 </html>

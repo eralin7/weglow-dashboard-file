@@ -3,12 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
+<script>/* Тема оформления до первой отрисовки (см. theme.css / theme.js) */(function(){try{var t=localStorage.getItem("wg_theme");if(t===null||t==="")t="glow";if(t!=="classic")document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
 <title>WEGLOW — Sales Dashboard</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700&family=Lora:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
   --ink:     #0f1623;
@@ -1132,6 +1134,7 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
 }
 .logout-btn:hover { background:rgba(220,38,38,.15); color:#f87171; border-color:rgba(220,38,38,.2); }
 </style>
+<link rel="stylesheet" href="theme.css">
 </head>
 <body>
 <!-- LOGIN SCREEN -->
@@ -3307,7 +3310,30 @@ function renderRopKPI(stats) {
 
 // ═══════════════════ CHARTS ═══════════════════════════════════════
 let lastStats=null;
-const GRID='rgba(232,236,244,.9)', TICK='#8896ae', FONT="'DM Sans'";
+let GRID='rgba(232,236,244,.9)', TICK='#8896ae', FONT="'DM Sans'", INK='#1e2840';
+// Цвета/шрифт графиков берём из CSS-переменных активной темы (theme.css).
+// Chart.js читает их при создании графика, поэтому при смене темы перерисовываем
+// активный вид (событие 'wg:theme' шлёт theme.js).
+function syncChartTheme(){
+  const cs=getComputedStyle(document.documentElement);
+  const v=n=>cs.getPropertyValue(n).trim();
+  GRID=v('--chart-grid')||GRID; TICK=v('--chart-tick')||TICK; INK=v('--ink2')||INK;
+  const f=v('--chart-font').replace(/["']/g,''); if(f) FONT="'"+f+"'";
+  if(window.Chart){ Chart.defaults.color=TICK; Chart.defaults.font.family=FONT; }
+}
+syncChartTheme();
+window.addEventListener('wg:theme',()=>{
+  syncChartTheme();
+  try{ _wgSwapMapTiles(); }catch(e){}
+  try{
+    if(lastStats) render();
+    if(activeView==='managers') renderManagers();
+    else if(activeView==='adspend') renderAdSpend();
+    else if(activeView==='products') renderProducts();
+    else if(activeView==='rnp') renderRnp();
+    else if(activeView==='clients') renderClientsView();
+  }catch(e){ console.warn('[theme] rerender:', e.message); }
+});
 
 // ═══ CHARTS: Sales by ROP, Leads+Deals combined, Monthly Summary ═══
 let chartLeadsDeals = null;
@@ -4019,8 +4045,8 @@ function renderManagers(){
   const top8=withDeals.slice(0,8);
   const names=top8.map(m=>m.name.replace(/^(Пин|пин)\s+\d+\s+/i,'').trim());
   Object.values(mgrCharts).forEach(c=>c&&c.destroy());mgrCharts={};
-  const barOpts=(axis,cb)=>({responsive:true,indexAxis:axis,plugins:{legend:{display:false},tooltip:{callbacks:{label:cb}}},scales:{x:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10}}},y:{grid:{display:false},ticks:{color:'#1e2840',font:{family:FONT,size:11,weight:'500'}}}}});
-  mgrCharts.b=new Chart(document.getElementById('mgrBudget').getContext('2d'),{type:'bar',data:{labels:names,datasets:[{data:top8.map(m=>m.budget),backgroundColor:cfg.color+'cc',borderColor:cfg.color,borderWidth:1,borderRadius:6}]},options:{...barOpts('y',c=>' '+fmtM(c.raw)),scales:{x:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10},callback:v=>fmtK(v)}},y:{grid:{display:false},ticks:{color:'#1e2840',font:{family:FONT,size:11,weight:'500'}}}}}});
+  const barOpts=(axis,cb)=>({responsive:true,indexAxis:axis,plugins:{legend:{display:false},tooltip:{callbacks:{label:cb}}},scales:{x:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10}}},y:{grid:{display:false},ticks:{color:INK,font:{family:FONT,size:11,weight:'500'}}}}});
+  mgrCharts.b=new Chart(document.getElementById('mgrBudget').getContext('2d'),{type:'bar',data:{labels:names,datasets:[{data:top8.map(m=>m.budget),backgroundColor:cfg.color+'cc',borderColor:cfg.color,borderWidth:1,borderRadius:6}]},options:{...barOpts('y',c=>' '+fmtM(c.raw)),scales:{x:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10},callback:v=>fmtK(v)}},y:{grid:{display:false},ticks:{color:INK,font:{family:FONT,size:11,weight:'500'}}}}}});
   mgrCharts.c=new Chart(document.getElementById('mgrConv').getContext('2d'),{type:'bar',data:{labels:names,datasets:[{data:top8.map(m=>m.conv),backgroundColor:top8.map(m=>m.conv>=12?'#16a34acc':m.conv>=8?'#ca8a04cc':'#c0392bcc'),borderWidth:0,borderRadius:6}]},options:{...barOpts('y',c=>` ${c.raw}%`)}});
   mgrCharts.k=new Chart(document.getElementById('mgrCheck').getContext('2d'),{type:'bar',data:{labels:names,datasets:[{data:top8.map(m=>m.avgCheck),backgroundColor:'#6366f1cc',borderColor:'#6366f1',borderWidth:1,borderRadius:6}]},options:{...barOpts('y',c=>' '+fmt(c.raw)+' ₸')}});
 }
@@ -6622,6 +6648,18 @@ function _findCityCoords(cityName) {
   return null;
 }
 
+// ── Тайлы карты по теме (theme.css): тёмные темы → CARTO dark, светлые → OSM ──
+let _cityTiles = null;
+function _wgIsDarkTheme(){ const t=document.documentElement.getAttribute('data-theme'); return t==='glow'||t==='forest'; }
+function _wgTileUrl(){ return _wgIsDarkTheme() ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'; }
+function _wgTileOpts(){ return _wgIsDarkTheme() ? { attribution: '© OpenStreetMap © CARTO', subdomains: 'abcd', maxZoom: 12 } : { attribution: '© OpenStreetMap', maxZoom: 12 }; }
+function _wgSwapMapTiles(){
+  if(!_cityMap || !_cityTiles) return;
+  const url=_wgTileUrl(); if(_cityTiles._url===url) return;
+  _cityMap.removeLayer(_cityTiles);
+  _cityTiles = L.tileLayer(url, _wgTileOpts()).addTo(_cityMap);
+  _cityTiles.bringToBack();
+}
 function renderCityMap() {
   const mapEl = document.getElementById('cityMap');
   const listEl = document.getElementById('cityList');
@@ -6678,9 +6716,7 @@ function renderCityMap() {
   // Init map
   if (!_cityMap) {
     _cityMap = L.map('cityMap', { scrollWheelZoom: true, zoomControl: true }).setView([48.0, 68.0], 5);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap', maxZoom: 12
-    }).addTo(_cityMap);
+    _cityTiles = L.tileLayer(_wgTileUrl(), _wgTileOpts()).addTo(_cityMap);
   } else {
     _cityMap.eachLayer(l => { if (l instanceof L.CircleMarker) _cityMap.removeLayer(l); });
   }
@@ -6896,5 +6932,6 @@ function exportManagers() {
 }
 
 </script>
+<script src="theme.js"></script>
 </body>
 </html>
