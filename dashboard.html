@@ -2643,17 +2643,46 @@ function _aggregateForKpi(period) {
   const dd=aggregate(activeProd, period.from, period.to);
   return {...dd, parts:{[activeProd]:dd}, daily:dd.daily};
 }
-function _kpiColHTML(label, badge, kd, borderColor, periodType) {
-  // For 'day' cards (Вчера/Сегодня): show daily plan and daily execution
+// План на день внутри спринта — «догоняющий»: (план спринта − факт с начала
+// спринта по предыдущий день) / дней до конца спринта, включая сам день.
+// Пример: план 90,5 млн, к утру 18.09 сделано 36,7 млн → остаток 53,8 млн,
+// до 27.09 включительно 10 дней → план дня 5,38 млн. План и факт берутся под
+// текущими фильтрами (продукт / РОП) — как и в основной колонке.
+// Вне спринта (каникулы) или без плана — null, и карточка падает на старую
+// логику «план периода / дней в месяце».
+function _dayPlanBySprint(dayStr){
+  const d = parseDate(dayStr);
+  const g = sprintNumForDate(d);
+  if (!g) return null;
+  const s = sprintByNum(g);
+  const plan = _aggregateForKpiSprintG(g).data.plan || 0;
+  if (!plan) return null;
+  const dayISO = _sprISOofDate(d);
+  let factBefore = 0;
+  if (dayISO > s.fromISO){
+    const prev = new Date(d); prev.setDate(prev.getDate() - 1);
+    factBefore = _aggregateForKpi({ from: _sprDisp(s.fromISO), to: _fmt(prev) }).budget || 0;
+  }
+  const daysLeft = Math.max(1, Math.round((new Date(s.toISO + 'T00:00:00') - new Date(dayISO + 'T00:00:00')) / 86400000) + 1);
+  const remain = Math.max(0, plan - factBefore);
+  return { plan: Math.round(remain / daysLeft), remain, daysLeft, factBefore, sprintPlan: plan };
+}
+function _kpiColHTML(label, badge, kd, borderColor, periodType, opts) {
+  // For 'day' cards (Вчера/Сегодня): show daily plan and daily execution.
+  //   Внутри спринта план дня — догоняющий (см. _dayPlanBySprint); opts.day —
+  //   дата карточки DD.MM.YYYY. Иначе — план периода / дней в месяце.
   // For 'month' card: show full month plan and month-to-date execution
   const now2 = new Date();
   const totalDaysM = _lastDay(now2.getFullYear(), now2.getMonth()+1);
-  const dailyPlan = kd.plan ? Math.round(kd.plan / totalDaysM) : 0;
+  const sprDay = (periodType === 'day' && opts && opts.day) ? _dayPlanBySprint(opts.day) : null;
+  const dailyPlan = sprDay ? sprDay.plan : (kd.plan ? Math.round(kd.plan / totalDaysM) : 0);
   const displayPlan = periodType === 'day' ? dailyPlan : kd.plan;
   const pct = displayPlan ? (periodType === 'day'
     ? Math.round(kd.budget / dailyPlan * 100)
     : (kd.isCurrentMonth ? Math.round(kd.monthBudget/kd.plan*100) : Math.round(kd.budget/kd.plan*100))
   ) : 0;
+  // План спринта уже закрыт — дневного плана нет, «выполнение» не считаем.
+  const planDone = !!(sprDay && !displayPlan);
   const drr = kd.budget ? +(kd.adTotal/kd.budget*100).toFixed(1) : 0;
   const cpl = periodType === 'day'
     ? (kd.leads ? Math.round(kd.adTotal / kd.leads) : 0)
@@ -2668,7 +2697,9 @@ function _kpiColHTML(label, badge, kd, borderColor, periodType) {
     <div class="kpi-col-title">${label} <span class="kpi-period-badge">${badge}</span></div>
     <div class="kpi-row">
       <span class="kpi-row-label">План</span>
-      <div><div class="kpi-row-val">${displayPlan?fmtM(displayPlan):'—'}</div></div>
+      <div><div class="kpi-row-val">${displayPlan?fmtM(displayPlan):'—'}</div>${sprDay
+        ? `<div class="kpi-row-sub">${planDone ? 'план спринта выполнен' : `остаток ${fmtM(sprDay.remain)} · ${sprDay.daysLeft} дн.`}</div>`
+        : ''}</div>
     </div>
     <div class="kpi-row">
       <span class="kpi-row-label">Продажи</span>
@@ -2676,7 +2707,7 @@ function _kpiColHTML(label, badge, kd, borderColor, periodType) {
     </div>
     <div class="kpi-row">
       <span class="kpi-row-label">Выполнение</span>
-      <div><div class="kpi-row-val" style="color:${pctClr}">${pct}%</div></div>
+      <div><div class="kpi-row-val" style="color:${planDone ? 'var(--muted)' : pctClr}">${planDone ? '—' : pct + '%'}</div></div>
     </div>
     <div class="kpi-row">
       <span class="kpi-row-label">Лиды</span>
@@ -2832,6 +2863,7 @@ function renderKPI(d){
   const monthData = _aggregateForKpi(_getKpiPeriod('month'));
   const yesterdayData = _aggregateForKpi(_getKpiPeriod('yesterday'));
   const todayData = _aggregateForKpi(_getKpiPeriod('today'));
+  const _yd = _getKpiPeriod('yesterday').from, _td = _getKpiPeriod('today').from;
 
   // Заголовок первой колонки: «Спринт N» (номер внутри марафона) при выборе
   // спринта, «Каникулы» между марафонами, иначе «Месяц». В бейдже — марафон
@@ -2848,8 +2880,8 @@ function renderKPI(d){
 
   document.getElementById('kpi-3col').innerHTML =
     _kpiColHTML(_kpiMainTitle, _kpiMainBadge, monthData, clr, 'month') +
-    _kpiColHTML('Вчера', _getKpiPeriod('yesterday').from, yesterdayData, '#ca8a04', 'day') +
-    _kpiColHTML('Сегодня', _getKpiPeriod('today').from, todayData, '#16a34a', 'day');
+    _kpiColHTML('Вчера', _yd, yesterdayData, '#ca8a04', 'day', { day: _yd }) +
+    _kpiColHTML('Сегодня', _td, todayData, '#16a34a', 'day', { day: _td });
 
   // История по спринтам (1..текущий) — карточки план/факт/возвраты/люди.
   try { renderSprintHistory(); } catch(e){ console.error('renderSprintHistory error:', e); }
