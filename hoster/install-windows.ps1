@@ -1,5 +1,7 @@
-<#
+﻿<#
   Установка советника WeGlow на Windows Server.
+  Файл сохранён в UTF-8 с BOM: так Windows PowerShell 5.1 правильно читает
+  русские буквы. Не пересохраняйте его без BOM.
 
   Запуск в PowerShell от имени администратора:
     Set-ExecutionPolicy -Scope Process Bypass -Force
@@ -24,6 +26,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$ProgressPreference    = 'SilentlyContinue'   # без индикатора прогресса скачивание в PS 5.1 в разы быстрее
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 
@@ -44,7 +47,7 @@ foreach ($name in @('advice-server.js', 'Caddyfile')) {
   else { Invoke-WebRequest -UseBasicParsing "$RepoRaw/$name" -OutFile $dest }
 }
 $caddyfile = Join-Path $Root 'Caddyfile'
-$text = Get-Content $caddyfile -Raw
+$text = Get-Content $caddyfile -Raw -Encoding UTF8
 $text = $text -replace 'api\.officeweglow\.kz', $Domain
 $text = $text -replace 'C:/weglow-advice', ($Root -replace '\\', '/')
 [IO.File]::WriteAllText($caddyfile, $text, $utf8NoBom)
@@ -116,7 +119,8 @@ function Install-Task([string]$name, [string]$exe, [string]$arguments) {
   $action    = New-ScheduledTaskAction -Execute $exe -Argument $arguments -WorkingDirectory $Root
   $trigger   = New-ScheduledTaskTrigger -AtStartup
   $principal = New-ScheduledTaskPrincipal -UserId 'NT AUTHORITY\SYSTEM' -LogonType ServiceAccount -RunLevel Highest
-  $settings  = New-ScheduledTaskSettingsSet -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 5 -RestartInterval (New-TimeSpan -Minutes 1) -MultipleInstances IgnoreNew -StartWhenAvailable
+  $settings  = New-ScheduledTaskSettingsSet -RestartCount 5 -RestartInterval (New-TimeSpan -Minutes 1) -MultipleInstances IgnoreNew -StartWhenAvailable
+  $settings.ExecutionTimeLimit = 'PT0S'   # не останавливать задачу через 3 дня (работает на всех версиях Windows Server)
   Register-ScheduledTask -TaskName $name -Action $action -Trigger $trigger -Principal $principal -Settings $settings | Out-Null
   Start-ScheduledTask -TaskName $name
   Write-Host "  задача «$name» создана и запущена"
