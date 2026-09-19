@@ -71,9 +71,24 @@ if (-not (Test-Path $nodeExe)) {
 Write-Host ("node " + (& $nodeExe --version))
 
 Step 'Caddy (HTTPS с автоматическим сертификатом)'
-$caddyExe = Join-Path $Root 'caddy.exe'
-if (-not (Test-Path $caddyExe)) {
-  Invoke-WebRequest -UseBasicParsing 'https://caddyserver.com/api/download?os=windows&arch=amd64' -OutFile $caddyExe
+# Если на сервере уже работает Caddy (например для era-crm), второй экземпляр
+# не поднимаем: порты 80/443 заняты, он просто не стартует. Вместо этого
+# допишем наш адрес в его конфиг и перезагрузим — так делает Add-SiteToCaddy.
+$existingCaddy = Get-CimInstance Win32_Process -Filter "name='caddy.exe'" -ErrorAction SilentlyContinue |
+                 Where-Object { $_.CommandLine -and $_.CommandLine -notlike "*$Root*" } | Select-Object -First 1
+$caddyExe = $null; $caddyCfg = $null
+if ($existingCaddy) {
+  if ($existingCaddy.CommandLine -match '^"?(?<exe>[^"]*caddy\.exe)"?')      { $caddyExe = $Matches['exe'] }
+  if ($existingCaddy.CommandLine -match '--config\s+"?(?<cfg>[^"]+?)"?(\s|$)') { $caddyCfg = $Matches['cfg'] }
+}
+if ($caddyExe -and $caddyCfg -and (Test-Path $caddyCfg)) {
+  Write-Host "  найден работающий Caddy: $caddyExe, конфиг $caddyCfg — добавим адрес в него"
+} else {
+  $existingCaddy = $null
+  $caddyExe = Join-Path $Root 'caddy.exe'
+  if (-not (Test-Path $caddyExe)) {
+    Invoke-WebRequest -UseBasicParsing 'https://caddyserver.com/api/download?os=windows&arch=amd64' -OutFile $caddyExe
+  }
 }
 Write-Host (& $caddyExe version)
 
@@ -129,7 +144,29 @@ function Install-Task([string]$name, [string]$exe, [string]$arguments) {
   Write-Host "  задача «$name» создана и запущена"
 }
 Install-Task 'WeGlow Advice' $nodeExe 'advice-server.js'
-Install-Task 'WeGlow Caddy'  $caddyExe "run --config `"$caddyfile`""
+if ($existingCaddy) {
+  # Свой Caddy не запускаем — дописываем сайт в конфиг работающего и перезагружаем его
+  if (Get-ScheduledTask -TaskName 'WeGlow Caddy' -ErrorAction SilentlyContinue) {
+    Stop-ScheduledTask -TaskName 'WeGlow Caddy' -ErrorAction SilentlyContinue
+    Unregister-ScheduledTask -TaskName 'WeGlow Caddy' -Confirm:$false
+  }
+  if ((Get-Content $caddyCfg -Raw) -match [regex]::Escape($Domain)) {
+    Write-Host "  адрес $Domain уже есть в $caddyCfg"
+  } else {
+    Copy-Item $caddyCfg "$caddyCfg.bak" -Force
+    Add-Content $caddyCfg "`r`n$Domain {`r`n    reverse_proxy 127.0.0.1:8787`r`n}"
+    & $caddyExe validate --config $caddyCfg | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+      Copy-Item "$caddyCfg.bak" $caddyCfg -Force
+      throw "Конфиг $caddyCfg не прошёл проверку — изменения откатаны."
+    }
+    Write-Host "  адрес $Domain добавлен в $caddyCfg (копия: $caddyCfg.bak)"
+  }
+  & $caddyExe reload --config $caddyCfg
+  Write-Host '  конфигурация работающего Caddy перезагружена'
+} else {
+  Install-Task 'WeGlow Caddy' $caddyExe "run --config `"$caddyfile`""
+}
 
 Step 'Самопроверка'
 Start-Sleep -Seconds 4
