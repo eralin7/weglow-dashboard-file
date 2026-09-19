@@ -1879,6 +1879,26 @@ function ropMatches(mgrName, targetRop) {
   return false;
 }
 let activeMgrRop = 'all';
+// ── Категории раздела «Менеджеры» (по просьбе владельца) ─────────────
+// Партнёрский канал (Айдана B1 Partners) и бот БОТА AI — не продажники, и в
+// общем рейтинге они только мешают. Поэтому три категории:
+//   sales    — ОП, отдел продаж: все продающие РОПы (и менеджеры без РОПа);
+//   partners — группа «РОП B1 Partners»;
+//   ai       — системный аккаунт «БОТА AI».
+// В фильтре activeMgrRop категория кодируется как 'cat:<key>'; конкретный РОП
+// по-прежнему хранится своим именем (и подразумевает категорию sales).
+const MGR_CATS = {
+  sales:    { label: 'ОП',          head: 'Отдел продаж', color: '#6366f1' },
+  partners: { label: 'Партнёры',    head: 'Партнёры',     color: '#7c3aed' },
+  ai:       { label: 'AI-менеджер', head: 'AI-менеджер',  color: '#0ea5e9' },
+};
+// Группы, которые вынесены из ОП в отдельные категории.
+const MGR_CAT_ROPS = { 'РОП B1 Partners': 'partners', 'БОТА AI': 'ai' };
+function _mgrCatOf(mgrName){
+  if (mgrName === 'БОТА AI') return 'ai';   // Админ-группа Era CRM: getRop() пуст, матчим по имени (как ropMatches)
+  return MGR_CAT_ROPS[getRop(mgrName)] || 'sales';
+}
+function _mgrCatKey(v){ return (typeof v === 'string' && v.startsWith('cat:')) ? v.slice(4) : null; }
 let activeMgrProdSub = 'all';
 // Главный дашборд: фильтр по РОП-группе (Все/Нурдаулет/Аслиддин/Диас/Аяулым).
 // Влияет на весь главный вид через _mergedRaw/aggregate (KPI, графики, таблица).
@@ -2603,9 +2623,10 @@ function setMetric(m,el){
 function setMgrRop(rop, el) {
   activeMgrRop = rop;
   activeMgrProdSub = 'all';
-  document.querySelectorAll('#mgr-filters .rop-pill').forEach(b=>b.classList.remove('active'));
-  if(el) el.classList.add('active');
+  _renderMgrGroupPills();   // категории + под-строка РОПов под ОП (см. MGR_CATS)
 
+  // Под-фильтр продукта — только для конкретного РОПа с несколькими воронками;
+  // у категорий ('cat:*') в ROP_CRM_MAP ничего нет — под-фильтр скрыт.
   const crms = ROP_CRM_MAP[rop] || [];
   const isMultiCrm = rop !== 'all' && crms.length > 1;
   document.getElementById('prod-sub-sep').style.display = isMultiCrm ? '' : 'none';
@@ -3824,8 +3845,10 @@ function renderFtTotal() {
 // ═══════════════════ MANAGERS ═════════════════════════════════════
 function aggregateManagersByRop(ropKey, prodFilter, from, to) {
   let crmKeys;
-  if (ropKey === 'all') {
-    // Все бакеты, известные дашборду + Era CRM (B1 Partners).
+  const cat = _mgrCatKey(ropKey);            // категория ('cat:sales' и т.п.) или null
+  if (ropKey === 'all' || cat) {
+    // Все бакеты, известные дашборду + Era CRM (B1 Partners). Категория тоже
+    // смотрит во все воронки — фильтруем уже по людям (_mgrCatOf).
     crmKeys = ['Коллаген', 'Ummi', 'Ербол', 'Кофе (Архив)', 'B1 Partners'];
   } else if (prodFilter !== 'all') {
     crmKeys = [prodFilter];
@@ -3837,7 +3860,9 @@ function aggregateManagersByRop(ropKey, prodFilter, from, to) {
   crmKeys.forEach(crm => {
     const mgrs = aggregateManagersByPeriod(crm, from, to);
     mgrs.forEach(m => { m._crm = crm; });
-    if (ropKey !== 'all') {
+    if (cat) {
+      allMgrs.push(...mgrs.filter(m => _mgrCatOf(m.name) === cat));
+    } else if (ropKey !== 'all') {
       allMgrs.push(...mgrs.filter(m => ropMatches(m.name, ropKey)));
     } else {
       allMgrs.push(...mgrs);
@@ -3944,11 +3969,16 @@ function renderManagers(){
   let mgrs = aggregateManagersByRop(activeMgrRop, activeMgrProdSub, from, to);
   console.log('[renderManagers] rop:', activeMgrRop, 'prodSub:', activeMgrProdSub, 'result:', mgrs.length, 'managers');
 
-  const ropLabel = activeMgrRop !== 'all' ? ROP_GROUPS[activeMgrRop]?.label || activeMgrRop : 'Все группы';
+  const _cat = _mgrCatKey(activeMgrRop);     // 'sales' | 'partners' | 'ai' | null
+  const ropLabel = activeMgrRop === 'all' ? 'Все группы'
+    : _cat ? MGR_CATS[_cat].label
+    : (ROP_GROUPS[activeMgrRop]?.label || activeMgrRop);
   const prodLabel = activeMgrProdSub !== 'all' ? ' \u00b7 ' + activeMgrProdSub : '';
   document.getElementById('mgr-sub').textContent=`${activeMgrPeriod.label} \u00b7 ${ropLabel}${prodLabel}`;
 
-  const cfg = activeMgrRop !== 'all' ? {color: ROP_GROUPS[activeMgrRop]?.color || '#6366f1'} : {color:'#6366f1'};
+  const cfg = { color: activeMgrRop === 'all' ? '#6366f1'
+    : _cat ? MGR_CATS[_cat].color
+    : (ROP_GROUPS[activeMgrRop]?.color || '#6366f1') };
 
   let withDeals=mgrs.filter(m=>m.deals>0).sort((a,b)=>b.budget-a.budget);
   const withoutDeals=mgrs.filter(m=>m.deals===0);
@@ -4001,15 +4031,26 @@ function renderManagers(){
     return `<th${cls}${st}${onclick}>${c.label}${c.sortable?`<span style="font-size:10px;color:var(--acc)">${_sortArrow(c.key)}</span>`:''}</th>`;
   }).join('\n     ');
 
+  // Под «Все» таблица делится на секции по категориям (ОП / Партнёры /
+  // AI-менеджер): партнёрский канал и бот не мешаются в рейтинге продажников.
+  // Нумерация и медали — внутри секции, медали только у ОП. Сортировка по
+  // колонке уже применена к withDeals и сохраняется внутри каждой секции.
+  const sections = activeMgrRop === 'all'
+    ? Object.keys(MGR_CATS).map(k => ({ k, list: withDeals.filter(m => _mgrCatOf(m.name) === k) })).filter(s => s.list.length)
+    : [{ k: _cat || 'sales', list: withDeals }];
+  const showHeads = activeMgrRop === 'all' && sections.length > 1;
   let tbody='';
-  withDeals.forEach((m,i)=>{
+  sections.forEach(sec => {
+    const medals = sec.k === 'sales';
+    if (showHeads) tbody+=`<tr class="mgr-sec"><td colspan="14" style="text-align:left;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:${MGR_CATS[sec.k].color};padding:12px 12px 6px;border-top:2px solid var(--line2)">${MGR_CATS[sec.k].head} · ${sec.list.length}</td></tr>`;
+    sec.list.forEach((m,i)=>{
     const ropGroup = getRop(m.name) || '—';
     const ropCellColor = ROP_COLORS[ropGroup]||'var(--muted)';
     const newD=m.newDeals||0, baseD=m.baseDeals||0;
     const newConv=m.leads>0&&newD>0?(newD/m.leads*100).toFixed(1):'—';
     const baseConv=m.leads>0&&baseD>0?(baseD/m.leads*100).toFixed(1):'—';
     tbody+=`<tr data-mgr="${m.name}" data-prod="${m._crm}" style="cursor:pointer" title="Нажмите для детального просмотра">
-      <td style="text-align:center;font-size:${i<3?'16':'13'}px">${i<3?ranks[i]:i+1}</td>
+      <td style="text-align:center;font-size:${medals&&i<3?'16':'13'}px">${medals&&i<3?ranks[i]:i+1}</td>
       <td style="font-weight:600">${m.name}</td>
       <td style="font-size:11px;font-weight:600;color:${ropCellColor};white-space:nowrap">${ropGroup}</td>
       <td>${fmt(m.leads)}</td>
@@ -4027,6 +4068,7 @@ function renderManagers(){
         <span style="font-size:11px;color:var(--muted);min-width:28px">${Math.round(m.budget/maxB*100)}%</span>
       </div></td>
     </tr>`;
+    });
   });
   if(withoutDeals.length){
     tbody+=`<tr><td colspan="14" style="text-align:center;color:var(--muted);font-size:11px;padding:10px;border-top:2px solid var(--line2);letter-spacing:1px">— Без сделок в периоде —</td></tr>`;
@@ -4074,7 +4116,10 @@ function renderManagers(){
   // ── Update count label ──
   const countEl = document.getElementById('mgr-count');
   if (countEl) countEl.textContent = `${withDeals.length} менеджеров`;
-  const top8=withDeals.slice(0,8);
+  // Графики топ-8 под «Все» строим по ОП: партнёрский канал и бот в рейтинге
+  // продажников не участвуют (та же логика, что и у секций таблицы).
+  const chartList = activeMgrRop === 'all' ? ((sections.find(s => s.k === 'sales') || {}).list || withDeals) : withDeals;
+  const top8=chartList.slice(0,8);
   const names=top8.map(m=>m.name.replace(/^(Пин|пин)\s+\d+\s+/i,'').trim());
   Object.values(mgrCharts).forEach(c=>c&&c.destroy());mgrCharts={};
   const barOpts=(axis,cb)=>({responsive:true,indexAxis:axis,plugins:{legend:{display:false},tooltip:{callbacks:{label:cb}}},scales:{x:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10}}},y:{grid:{display:false},ticks:{color:INK,font:{family:FONT,size:11,weight:'500'}}}}});
@@ -5652,10 +5697,33 @@ function renderRopFilterPills(){
     .map(r => ({ v: r, label: r.replace(/^РОП\s+/, '') }));
   const prods = _liveProdBuckets().map(b => ({ v: b, label: _PROD_BUCKET_LABEL[b] }));
   const put = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
-  put('mgr-rop-pills',      _filterBtnsHTML(rops,  'setMgrRop',           activeMgrRop,           'pill rop-pill'));
+  _renderMgrGroupPills();
   put('leads-deals-filters',_filterBtnsHTML(rops,  'setLeadsDealsFilter', activeLeadsDealsFilter, 'cf-btn'));
   put('summary-dept-pills', _filterBtnsHTML(rops,  'setSummaryDept',      summaryDept,            'cf-btn'));
   put('summary-prod-pills', _filterBtnsHTML(prods, 'setSummaryProd',      summaryProd,            'cf-btn'));
+}
+// Пилюли раздела «Менеджеры» — одна строка: Все / ОП / Партнёры / AI-менеджер.
+// Под ОП (или выбранным РОПом) раскрывается под-строка продающих РОПов; группы
+// из MGR_CAT_ROPS (B1 Partners, БОТА AI) в неё не входят — это свои категории.
+function _renderMgrGroupPills(){
+  const el = document.getElementById('mgr-rop-pills');
+  if (!el) return;
+  const hide = (typeof ERA_HIDE_ROPS !== 'undefined') ? ERA_HIDE_ROPS : new Set();
+  const salesRops = Object.keys(ROP_GROUPS)
+    .filter(k => k !== 'all' && !hide.has(k) && !MGR_CAT_ROPS[k])
+    .map(r => ({ v: r, label: r.replace(/^РОП\s+/, '') }));
+  const cat = _mgrCatKey(activeMgrRop);
+  const inSales = cat === 'sales' || (activeMgrRop !== 'all' && !cat);   // ОП целиком или конкретный РОП
+  const btn = (v, label, active) =>
+    `<button class="pill rop-pill${active?' active':''}" onclick="setMgrRop('${String(v).replace(/'/g, "\\'")}',this)">${label}</button>`;
+  let html = btn('all', 'Все', activeMgrRop === 'all');
+  for (const [k, c] of Object.entries(MGR_CATS)) html += btn('cat:' + k, c.label, k === 'sales' ? inSales : cat === k);
+  if (inSales) {
+    html += '<div class="pill-sep"></div><span class="tb-label">РОП:</span>';
+    html += btn('cat:sales', 'Все', cat === 'sales');
+    salesRops.forEach(r => { html += btn(r.v, r.label, activeMgrRop === r.v); });
+  }
+  el.innerHTML = html;
 }
 
 // Перерисовка пилюль периода — отдельная функция, чтобы её можно было
@@ -6402,9 +6470,10 @@ function renderFunnel() {
   const {from, to} = activeMgrPeriod;
   if (lbl) lbl.textContent = activeMgrPeriod.label || '';
 
-  // Aggregate across selected ROP / product
+  // Aggregate across selected ROP / product / category (см. MGR_CATS)
   let crmKeys;
-  if (activeMgrRop === 'all') {
+  const fCat = _mgrCatKey(activeMgrRop);
+  if (activeMgrRop === 'all' || fCat) {
     crmKeys = ['Коллаген', 'Ummi', 'Ербол', 'Кофе (Архив)', 'B1 Partners'];
   } else if (activeMgrProdSub !== 'all') {
     crmKeys = [activeMgrProdSub];
@@ -6418,7 +6487,8 @@ function renderFunnel() {
   crmKeys.forEach(crm => {
     const mgrs = MANAGERS[crm] || [];
     mgrs.forEach(m => {
-      if (activeMgrRop !== 'all' && getRop(m.name) !== activeMgrRop) return;
+      if (fCat) { if (_mgrCatOf(m.name) !== fCat) return; }
+      else if (activeMgrRop !== 'all' && getRop(m.name) !== activeMgrRop) return;
       Object.entries(m.daily||{}).forEach(([d,v]) => {
         if (dates.has(d)) { totalLeads+=v[0]||0; totalDeals+=v[1]||0; }
       });
@@ -6430,9 +6500,9 @@ function renderFunnel() {
     return;
   }
 
-  const color = activeMgrRop !== 'all'
-    ? (ROP_GROUPS[activeMgrRop]?.color || '#6366f1')
-    : '#6366f1';
+  const color = activeMgrRop === 'all' ? '#6366f1'
+    : fCat ? MGR_CATS[fCat].color
+    : (ROP_GROUPS[activeMgrRop]?.color || '#6366f1');
 
   // Build funnel steps with realistic drop-offs
   const steps = [
