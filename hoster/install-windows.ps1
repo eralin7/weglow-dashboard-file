@@ -92,6 +92,20 @@ if ($caddyExe -and $caddyCfg -and (Test-Path $caddyCfg)) {
 }
 Write-Host (& $caddyExe version)
 
+Step 'Порт сервиса'
+# На сервере может уже работать чужое приложение (у нас порт 8787 занимал
+# era-crm), поэтому берём первый свободный порт из диапазона.
+$port = $null
+foreach ($p in 8787..8807) {
+  $busy = Get-NetTCPConnection -State Listen -LocalPort $p -ErrorAction SilentlyContinue
+  if (-not $busy) { $port = $p; break }
+}
+if (-not $port) { throw 'Не нашёл свободный порт в диапазоне 8787-8807.' }
+Write-Host "  сервис советника займёт порт $port"
+# свой Caddyfile (нужен, только если на сервере ещё нет работающего Caddy)
+$cfText = (Get-Content $caddyfile -Raw -Encoding UTF8) -replace 'reverse_proxy 127\.0\.0\.1:\d+', "reverse_proxy 127.0.0.1:$port"
+[IO.File]::WriteAllText($caddyfile, $cfText, $utf8NoBom)
+
 Step 'Ключ DeepSeek'
 $cfgPath = Join-Path $Root 'advice-config.json'
 $existingKey = ''
@@ -106,7 +120,7 @@ $config = [ordered]@{
   deepseekKey    = $key
   model          = 'deepseek-chat'
   host           = '127.0.0.1'
-  port           = 8787
+  port           = $port
   allowedOrigins = @('https://officeweglow.kz', 'https://www.officeweglow.kz')
 }
 [IO.File]::WriteAllText($cfgPath, ($config | ConvertTo-Json), $utf8NoBom)
@@ -151,10 +165,15 @@ if ($existingCaddy) {
     Unregister-ScheduledTask -TaskName 'WeGlow Caddy' -Confirm:$false
   }
   if ((Get-Content $caddyCfg -Raw) -match [regex]::Escape($Domain)) {
-    Write-Host "  адрес $Domain уже есть в $caddyCfg"
+    # адрес уже добавлен — поправим только порт в нашем блоке
+    Copy-Item $caddyCfg "$caddyCfg.bak" -Force
+    $cfgText = [regex]::Replace((Get-Content $caddyCfg -Raw),
+      ('(' + [regex]::Escape($Domain) + '\s*\{[^}]*?reverse_proxy\s+127\.0\.0\.1:)\d+'), ('${1}' + $port))
+    [IO.File]::WriteAllText($caddyCfg, $cfgText, $utf8NoBom)
+    Write-Host "  адрес $Domain уже есть в $caddyCfg, порт обновлён на $port"
   } else {
     Copy-Item $caddyCfg "$caddyCfg.bak" -Force
-    Add-Content $caddyCfg "`r`n$Domain {`r`n    reverse_proxy 127.0.0.1:8787`r`n}"
+    Add-Content $caddyCfg "`r`n$Domain {`r`n    reverse_proxy 127.0.0.1:$port`r`n}"
     & $caddyExe validate --config $caddyCfg | Out-Null
     if ($LASTEXITCODE -ne 0) {
       Copy-Item "$caddyCfg.bak" $caddyCfg -Force
@@ -171,7 +190,7 @@ if ($existingCaddy) {
 Step 'Самопроверка'
 Start-Sleep -Seconds 4
 try {
-  $t = Invoke-RestMethod -UseBasicParsing 'http://127.0.0.1:8787/advice?selftest=1'
+  $t = Invoke-RestMethod -UseBasicParsing "http://127.0.0.1:$port/advice?selftest=1"
   Write-Host ($t | ConvertTo-Json -Compress)
   if ($t.ok) { Write-Host 'Сервис советника работает.' -ForegroundColor Green }
 } catch {

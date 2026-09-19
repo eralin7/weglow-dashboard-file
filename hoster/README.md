@@ -42,7 +42,8 @@ Caddy — один exe, который сам получает и продлев
 
 - Ключ хранится в `C:\weglow-advice\advice-config.json`; доступ к файлу
   только у администраторов и SYSTEM, в git он не попадает.
-- Сервис слушает только `127.0.0.1:8787`, снаружи виден только Caddy по HTTPS.
+- Сервис слушает только localhost (порт 8787 или первый свободный за ним —
+  установщик печатает выбранный), снаружи виден только Caddy по HTTPS.
 - Запросы принимаются только с `officeweglow.kz` (Origin/Referer).
 - Одинаковые метрики 30 минут отвечаются из кэша без обращения к DeepSeek.
 - Лимиты: 12 запросов с одного IP за 10 минут, 60 в час, 400 в сутки
@@ -50,7 +51,9 @@ Caddy — один exe, который сам получает и продлев
 
 ## Обслуживание
 
-- Логи: `C:\weglow-advice\advice.log` и `C:\weglow-advice\caddy.log`.
+- Логи: `C:\weglow-advice\advice.log` и, если Caddy свой, `caddy.log` рядом.
+- Порт сервиса записан в `advice-config.json`; при смене порта поправьте и
+  блок `api.officeweglow.kz` в конфиге Caddy, затем `caddy reload`.
 - Сменить ключ: запустить `install-windows.ps1` ещё раз и ввести новый ключ,
   либо отредактировать `advice-config.json` и перезапустить задачу:
   `Stop-ScheduledTask 'WeGlow Advice'; Start-ScheduledTask 'WeGlow Advice'`.
@@ -61,15 +64,15 @@ Caddy — один exe, который сам получает и продлев
 
 ## Если что-то не так
 
-- `selftest` по HTTPS не открывается, а `http://127.0.0.1:8787/advice?selftest=1`
-  на самом сервере работает — проблема в DNS, портах 80/443 или сертификате:
+- `selftest` по HTTPS не открывается, а на самом сервере
+  `http://127.0.0.1:<порт>/advice?selftest=1` работает — проблема в DNS, портах 80/443 или сертификате:
   смотрите `caddy.log`.
 - В панели советника «сервер советника не отвечает» — сервис не запущен:
   `Get-ScheduledTask 'WeGlow *' | Get-ScheduledTaskInfo`.
 - Порты 80/443 занял другой веб-сервер, а сертификата нет: посмотрите, кто их
   держит — `Get-CimInstance Win32_Process -Filter "name='caddy.exe'" |
   Select ProcessId, CommandLine`. Если это чужой Caddy, допишите в его конфиг
-  блок `api.officeweglow.kz { reverse_proxy 127.0.0.1:8787 }` и выполните
+  блок `api.officeweglow.kz { reverse_proxy 127.0.0.1:<порт> }` и выполните
   `caddy reload --config <его конфиг>`. Если это IIS, остановите его
   (`Stop-Service W3SVC`, `Set-Service W3SVC -StartupType Disabled`).
 
