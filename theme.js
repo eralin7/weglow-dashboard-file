@@ -11,7 +11,7 @@
 (function () {
   'use strict';
   var KEY = 'wg_theme';
-  var DEFAULT_THEME = 'glow';
+  var DEFAULT_THEME = 'classic';
   var THEMES = [
     { id: 'glow',    name: 'Midnight Glow',   sw: ['#060c0a', '#0f1f19', '#7affb4'] },
     { id: 'paper',   name: 'Paper Editorial', sw: ['#000000', '#fdfcf5', '#10756a'] },

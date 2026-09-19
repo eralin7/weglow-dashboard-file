@@ -174,7 +174,7 @@ body{font-family:"DM Sans",sans-serif;background:var(--bg);color:var(--ink);min-
 #app{display:none;}
 
 </style>
-<script>/* Тема оформления до первой отрисовки (см. theme.css / theme.js) */(function(){try{var t=localStorage.getItem("wg_theme");if(t===null||t==="")t="glow";if(t!=="classic")document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+<script>/* Тема оформления до первой отрисовки (см. theme.css / theme.js) */(function(){try{var t=localStorage.getItem("wg_theme");if(t===null||t==="")t="classic";if(t!=="classic")document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700&family=Lora:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme.css">
 </head>
@@ -265,7 +265,8 @@ body{font-family:"DM Sans",sans-serif;background:var(--bg);color:var(--ink);min-
 
 <script>
 
-const ANTHROPIC_KEY = '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';
+// ANTHROPIC_KEY removed: an API key must never live in a page served to browsers.
+// This constant was unused; route any Claude call through a server-side proxy instead.
 // После деплоя Cloudflare Worker — вставьте URL сюда:
 const SUPABASE_URL = 'https://bdyakgmeibpdkisbiykt.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkeWFrZ21laWJwZGtpc2JpeWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTQzOTMsImV4cCI6MjA4Nzc5MDM5M30.nA187grJR6XFQRmTP6WOM-6-1dZK1EzYNNP2JH9aAMg';

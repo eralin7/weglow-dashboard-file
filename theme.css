@@ -1,8 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════════════
    theme.css — темы дашборда WEGLOW.
    Переключатель живёт в сайдбаре (theme.js), выбор хранится в localStorage
-   (ключ wg_theme). Тема «Классика» = отсутствие data-theme на <html>: базовые
-   стили страницы не трогаем, здесь только переопределения токенов и тех
+   (ключ wg_theme). Тема «Классика» = отсутствие data-theme на <html>: светлый
+   Apple-стиль (см. блок APPLE-STYLE UI в dashboard.html), здесь только переопределения токенов и тех
    компонентов, у которых цвета были захардкожены.
    Темы: glow · paper · forest · bento (см. канвас редизайна от 04.09.2026).
    ═══════════════════════════════════════════════════════════════════════ */
@@ -10,27 +10,27 @@
 /* ── Семантические токены (значения классики — чтобы переключатель и
       компоненты работали и без data-theme) ───────────────────────────── */
 :root {
-  --sb-bg: #0f1623;
-  --sb-text: rgba(255,255,255,.45);
-  --sb-text-strong: #ffffff;
-  --sb-muted: rgba(255,255,255,.3);
-  --sb-line: rgba(255,255,255,.07);
-  --sb-chip: rgba(255,255,255,.04);
+  --sb-bg: #ffffff;
+  --sb-text: #424245;
+  --sb-text-strong: #1d1d1f;
+  --sb-muted: #86868b;
+  --sb-line: rgba(0,0,0,.08);
+  --sb-chip: #f5f5f7;
   --on-acc: #ffffff;
-  --pill-bg: var(--acc-l);
-  --pill-fg: var(--acc);
-  --tfoot-bg: #0f1623;
-  --tfoot-fg: #ffffff;
+  --pill-bg: #ffffff;
+  --pill-fg: #1d1d1f;
+  --tfoot-bg: #f5f5f7;
+  --tfoot-fg: #1d1d1f;
   --menu-bg: #ffffff;
-  --font-ui: 'DM Sans', sans-serif;
-  --font-display: 'Playfair Display', serif;
-  --chart-grid: rgba(232,236,244,.9);
-  --chart-tick: #8896ae;
-  --chart-font: DM Sans;
+  --font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', 'Inter', 'DM Sans', sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', 'Inter', 'DM Sans', sans-serif;
+  --chart-grid: rgba(0,0,0,.06);
+  --chart-tick: #86868b;
+  --chart-font: -apple-system, BlinkMacSystemFont, Helvetica Neue, Helvetica, Arial, sans-serif;
   --page-image: none;
   --page-veil: none;
   --page-pos: center;
-  --logo-color: #ffffff;
+  --logo-color: #1d1d1f;
 }
 
 /* ═══ A · MIDNIGHT GLOW ═══════════════════════════════════════════════ */
