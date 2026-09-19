@@ -57,12 +57,15 @@ $nodeExe = Join-Path $Root 'node.exe'
 if (-not (Test-Path $nodeExe)) {
   $zipName = "node-$NodeVersion-win-x64"
   $zip     = Join-Path $env:TEMP "$zipName.zip"
-  $tmpDir  = Join-Path $env:TEMP $zipName
   Invoke-WebRequest -UseBasicParsing "https://nodejs.org/dist/$NodeVersion/$zipName.zip" -OutFile $zip
-  if (Test-Path $tmpDir) { Remove-Item $tmpDir -Recurse -Force }
-  Expand-Archive -Path $zip -DestinationPath $env:TEMP -Force
-  Copy-Item (Join-Path $tmpDir 'node.exe') $nodeExe -Force
-  Remove-Item $tmpDir -Recurse -Force
+  # Из архива нужен только node.exe — достаём его напрямую, без распаковки тысяч файлов
+  Add-Type -AssemblyName System.IO.Compression.FileSystem
+  $archive = [IO.Compression.ZipFile]::OpenRead($zip)
+  try {
+    $entry = $archive.Entries | Where-Object { $_.Name -eq 'node.exe' } | Select-Object -First 1
+    if (-not $entry) { throw 'В архиве Node не найден node.exe' }
+    [IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $nodeExe, $true)
+  } finally { $archive.Dispose() }
   Remove-Item $zip -Force
 }
 Write-Host ("node " + (& $nodeExe --version))
