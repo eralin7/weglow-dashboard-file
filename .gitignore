@@ -9,4 +9,5 @@ node_modules/
 
 # Ключ DeepSeek для hoster/advice.php — никогда не коммитить
 advice-config.php
+advice-config.json
 hoster/advice-cache/

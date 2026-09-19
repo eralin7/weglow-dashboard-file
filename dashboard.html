@@ -7081,9 +7081,9 @@ function renderSectionAdvice() {
 // только в localStorage этого браузера — в код сайта и на сервер он не
 // попадает. Одинаковый набор метрик повторно не отправляем; ответ
 // кэшируется 30 минут, чтобы клики по фильтрам не тратили баланс.
-// Общий советник для всех: advice.php на хостинге (см. hoster/README.md).
+// Общий советник для всех: сервис на вашем Windows Server (см. hoster/README.md).
 // Пусто — каждый пользователь работает со своим ключом из шестерёнки.
-var ADVICE_URL     = '';
+var ADVICE_URL     = 'https://api.officeweglow.kz/advice';
 var DEEPSEEK_URL   = 'https://api.deepseek.com/chat/completions';
 var DEEPSEEK_MODEL = 'deepseek-chat';
 var _ADVICE_KEYS   = ['KPI','PLAN','DYNAMICS','LEADS','SUMMARY'];

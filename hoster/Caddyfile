@@ -1,0 +1,14 @@
+# Caddy публикует советника по HTTPS. Сертификат Let's Encrypt он получает и
+# продлевает сам: домен должен указывать на этот сервер, порты 80 и 443 открыты.
+# Пути с прямыми слэшами Windows понимает; install-windows.ps1 подставляет
+# свой домен и папку.
+{
+	log {
+		output file C:/weglow-advice/caddy.log
+		level INFO
+	}
+}
+
+api.officeweglow.kz {
+	reverse_proxy 127.0.0.1:8787
+}

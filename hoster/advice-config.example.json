@@ -1,0 +1,11 @@
+{
+  "deepseekKey": "sk-ВАШ_КЛЮЧ_DEEPSEEK",
+  "model": "deepseek-chat",
+  "host": "127.0.0.1",
+  "port": 8787,
+  "allowedOrigins": ["https://officeweglow.kz", "https://www.officeweglow.kz"],
+  "cacheTtlMin": 30,
+  "limitIp10min": 12,
+  "limitHour": 60,
+  "limitDay": 400
+}
