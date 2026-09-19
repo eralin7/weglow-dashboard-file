@@ -1,0 +1,12 @@
+# Local secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Dependencies / OS noise
+node_modules/
+.DS_Store
+
+# Ключ DeepSeek для hoster/advice.php — никогда не коммитить
+advice-config.php
+hoster/advice-cache/

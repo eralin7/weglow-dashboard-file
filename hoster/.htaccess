@@ -1,0 +1,8 @@
+# Ключ DeepSeek хранится в advice-config.php — файл никогда не отдаём как текст.
+<Files "advice-config.php">
+  Require all denied
+</Files>
+<Files "advice-config.example.php">
+  Require all denied
+</Files>
+# Папку кэша закрывает свой .htaccess, который создаёт advice.php.

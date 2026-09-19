@@ -7081,6 +7081,9 @@ function renderSectionAdvice() {
 // только в localStorage этого браузера — в код сайта и на сервер он не
 // попадает. Одинаковый набор метрик повторно не отправляем; ответ
 // кэшируется 30 минут, чтобы клики по фильтрам не тратили баланс.
+// Общий советник для всех: advice.php на хостинге (см. hoster/README.md).
+// Пусто — каждый пользователь работает со своим ключом из шестерёнки.
+var ADVICE_URL     = '';
 var DEEPSEEK_URL   = 'https://api.deepseek.com/chat/completions';
 var DEEPSEEK_MODEL = 'deepseek-chat';
 var _ADVICE_KEYS   = ['KPI','PLAN','DYNAMICS','LEADS','SUMMARY'];
@@ -7121,7 +7124,8 @@ function _adviceKey() { try { return (localStorage.getItem('wg_deepseek_key') ||
 // Диалог ввода ключа (шестерёнка в панели «КП»). Пустое поле удаляет ключ.
 function setupAdvisorKey() {
   const cur = _adviceKey();
-  const v = prompt('Ключ DeepSeek API для советника.\nХранится только в этом браузере: в код сайта и на сервер не попадает.\nПустое поле — удалить ключ.', cur ? cur.slice(0, 6) + '…' : '');
+  const v = prompt((ADVICE_URL ? 'Личный ключ DeepSeek — запасной вариант, если общий сервер советника недоступен.' : 'Ключ DeepSeek API для советника.')
+    + '\nХранится только в этом браузере: в код сайта не попадает.\nПустое поле — удалить ключ.', cur ? cur.slice(0, 6) + '…' : '');
   if (v === null) return;
   const key = v.trim();
   if (key.endsWith('…')) return;                       // оставили маску — ничего не меняем
@@ -7155,7 +7159,7 @@ function requestAiAdvice(force) {
   _adviceTimer = setTimeout(async () => {
     if (sessionStorage.getItem('wg_auth') !== '1') return;
     const apiKey = _adviceKey();
-    if (!apiKey) { _adviceLastKey = ''; _adviceSetAll('<span style="color:var(--muted)">Советник не настроен. ' + _ADVICE_CFG_LINK + '</span>'); return; }
+    if (!ADVICE_URL && !apiKey) { _adviceLastKey = ''; _adviceSetAll('<span style="color:var(--muted)">Советник не настроен. ' + _ADVICE_CFG_LINK + '</span>'); return; }
     let metrics;
     try { metrics = _adviceMetricsText(); } catch (e) { console.warn('advice metrics:', e); return; }
     if (!force && metrics === _adviceLastKey) return;   // ничего не изменилось
@@ -7167,31 +7171,56 @@ function requestAiAdvice(force) {
     _adviceSetAll('<span style="color:var(--muted)">Советник думает…</span>');
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 60000);
+    let viaServer = !!ADVICE_URL;
     try {
-      const r = await fetch(DEEPSEEK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + apiKey },
-        body: JSON.stringify({ model: DEEPSEEK_MODEL, temperature: 0.4, max_tokens: 1200,
-          messages: [{ role: 'system', content: _ADVICE_SYSTEM }, { role: 'user', content: _advicePrompt(metrics) }] }),
-        signal: ctrl.signal,
-      });
+      let r = null;
+      if (viaServer) {
+        // Общий сервер (ключ хранится там). Если он недоступен или без ключа,
+        // а у пользователя есть личный ключ — идём в DeepSeek напрямую.
+        try {
+          r = await fetch(ADVICE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ metrics, period: activePeriod.label }), signal: ctrl.signal });
+        } catch (e) {
+          if (e.name === 'AbortError' || !apiKey) throw e;
+          r = null; viaServer = false;
+        }
+        if (r && r.status === 503 && apiKey) { r = null; viaServer = false; }
+      }
+      if (!viaServer) {
+        r = await fetch(DEEPSEEK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + apiKey },
+          body: JSON.stringify({ model: DEEPSEEK_MODEL, temperature: 0.4, max_tokens: 1200,
+            messages: [{ role: 'system', content: _ADVICE_SYSTEM }, { role: 'user', content: _advicePrompt(metrics) }] }),
+          signal: ctrl.signal,
+        });
+      }
       const j = await r.json().catch(() => ({}));
       if (!r.ok) {
-        const msg = r.status === 401 ? 'ключ DeepSeek не принят. ' + _ADVICE_CFG_LINK
-          : r.status === 402 ? 'на балансе DeepSeek нет средств'
-          : r.status === 429 ? 'DeepSeek ограничил частоту запросов, попробуйте позже'
-          : 'DeepSeek ответил ошибкой ' + r.status + (j.error && j.error.message ? ': ' + _esc(j.error.message) : '');
+        let msg;
+        if (viaServer) {
+          msg = j.error ? _esc(String(j.error)) : ('сервер советника ответил ошибкой ' + r.status);
+          if (r.status === 503) msg += '. ' + _ADVICE_CFG_LINK;
+        } else {
+          msg = r.status === 401 ? 'ключ DeepSeek не принят. ' + _ADVICE_CFG_LINK
+            : r.status === 402 ? 'на балансе DeepSeek нет средств'
+            : r.status === 429 ? 'DeepSeek ограничил частоту запросов, попробуйте позже'
+            : 'DeepSeek ответил ошибкой ' + r.status + (j.error && j.error.message ? ': ' + _esc(j.error.message) : '');
+        }
         throw Object.assign(new Error(msg), { shown: true });
       }
-      const text = ((((j.choices || [])[0] || {}).message || {}).content || '').trim();
-      const sections = _adviceParse(text);
-      if (!Object.keys(sections).length) throw Object.assign(new Error('DeepSeek вернул ответ без разделов'), { shown: true });
-      _aiAdviceData = { sections, text, ts: Date.now() };
+      let sections, text;
+      if (viaServer) { sections = j.sections || {}; text = j.text || ''; }
+      else { text = ((((j.choices || [])[0] || {}).message || {}).content || '').trim(); sections = _adviceParse(text); }
+      if (!Object.keys(sections).length) throw Object.assign(new Error('советник вернул ответ без разделов'), { shown: true });
+      _aiAdviceData = { sections, text, ts: (viaServer && j.ts) || Date.now() };
       _adviceCachePut(h, _aiAdviceData);
       renderSectionAdvice();
     } catch (e) {
       _adviceLastKey = '';   // при следующем render() попробуем снова
-      const why = e.shown ? e.message : (e.name === 'AbortError' ? 'DeepSeek не ответил за минуту' : 'нет связи с api.deepseek.com');
+      const why = e.shown ? e.message
+        : e.name === 'AbortError' ? 'нет ответа за минуту'
+        : viaServer ? 'сервер советника не отвечает' : 'нет связи с api.deepseek.com';
       _adviceSetAll('<span style="color:var(--muted)">Советник недоступен: ' + why + '. <a href="#" onclick="requestAiAdvice(true);return false;" style="color:var(--acc)">Повторить</a></span>');
       console.warn('advice:', e);
     } finally { clearTimeout(timer); _adviceInFlight = false; }
