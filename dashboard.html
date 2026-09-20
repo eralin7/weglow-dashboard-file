@@ -1259,6 +1259,55 @@ html:not([data-theme]) .tb-menu .pill.active:hover { background: var(--acc); col
 html:not([data-theme]) .tb-menu .pill.tb-narrow,
 .tb-menu .tb-label.tb-narrow { display: none; }
 
+/* ═══ РЯДЫ С ГРАФИКАМИ (20.09.2026) ══════════════════════════════════
+   Карточки больше не растягиваются под самого высокого соседа: график
+   высотой ~100px (aspectRatio 8) внутри карточки ростом с донат «Товары»
+   оставлял под собой белую пустоту почти на 800px.
+   ═══════════════════════════════════════════════════════════════════ */
+.chart-row { display: flex; flex-wrap: wrap; align-items: flex-start; }
+.chart-row > .ai-side { align-self: auto; }
+/* «Динамика продаж по РОПам»: 13 точек сжимались в 30px и линия выглядела
+   плоской — теперь у графика нормальная высота. */
+.chart-body.tall { position: relative; height: clamp(280px, 30vh, 360px); }
+.chart-empty {
+  position: absolute; inset: 0; display: flex;
+  align-items: center; justify-content: center; pointer-events: none;
+}
+.chart-empty[hidden] { display: none; }
+.chart-empty .ce-box {
+  display: flex; flex-direction: column; gap: 3px; text-align: center;
+  padding: 11px 18px; border-radius: 12px; background: var(--white);
+  border: 1px solid var(--line); box-shadow: var(--shadow);
+  font-size: 13px; color: var(--slate);
+}
+.chart-empty .ce-sub { font-size: 11.5px; color: var(--muted); }
+
+/* Итоги по РОПам под графиком — заодно легенда: клик прячет линию.
+   Раньше место под коротким графиком пустовало, а сумм за период не было
+   нигде: они читались только по тултипам. */
+.rop-totals { display: flex; flex-direction: column; gap: 1px; padding: 0 20px 16px; }
+.rop-totals:empty { display: none; }
+.rt-row {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 8px;
+  border: 0; border-radius: 8px; background: transparent; cursor: pointer;
+  font-family: var(--font-ui); font-size: 12.5px; color: var(--slate); text-align: left;
+  transition: background .12s, opacity .12s;
+}
+.rt-row:hover { background: var(--line2); }
+.rt-row.off { opacity: .38; }
+.rt-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.rt-name { flex: none; width: 168px; color: var(--ink); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rt-bar { flex: 1; min-width: 40px; height: 6px; border-radius: 3px; background: var(--line2); overflow: hidden; }
+.rt-bar i { display: block; height: 100%; border-radius: 3px; }
+.rt-sum { width: 132px; text-align: right; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.rt-share { width: 50px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+@media (max-width: 768px) {
+  .rop-totals { padding: 0 12px 12px; }
+  .rt-name { width: 96px; }
+  .rt-bar { display: none; }
+  .rt-sum { flex: 1; }
+}
+
 /* ── «свой диапазон» — поповер под кнопкой периода, а не в строке шапки ── */
 .tb-dd > .custom-wrap {
   position: absolute; top: calc(100% + 6px); right: 0; z-index: 210;
@@ -1794,12 +1843,21 @@ const _authGuard = new MutationObserver(() => {
       </div>
 
       <!-- Sales by ROP chart + Products donut side by side -->
-      <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:24px">
+      <div class="chart-row" style="gap:24px;margin-bottom:24px">
         <div class="card" style="flex:1;min-width:500px">
           <div class="card-hdr">
             <span class="card-title" id="chart-lbl">Динамика продаж по РОПам</span>
           </div>
-          <div class="chart-body"><canvas id="lineChart" height="120"></canvas></div>
+          <div class="chart-body tall">
+            <canvas id="lineChart"></canvas>
+            <div class="chart-empty" id="lineChart-empty" hidden>
+              <div class="ce-box">Нет продаж за выбранный период
+                <span class="ce-sub">Смените период или группу в шапке</span>
+              </div>
+            </div>
+          </div>
+          <!-- Итоги по РОПам за период: они же легенда графика (клик — скрыть линию) -->
+          <div class="rop-totals" id="lineTotals"></div>
         </div>
         <div class="card" style="width:380px;flex-shrink:0">
           <div class="card-hdr" style="flex-wrap:wrap;gap:6px">
@@ -1822,7 +1880,7 @@ const _authGuard = new MutationObserver(() => {
       </div>
 
       <!-- Combined Leads & Deals chart -->
-      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px">
+      <div class="chart-row" style="gap:16px;margin-bottom:20px">
         <div class="card" style="flex:1;min-width:500px">
           <div class="card-hdr">
             <span class="card-title">Лиды и Сделки</span>
@@ -1839,7 +1897,7 @@ const _authGuard = new MutationObserver(() => {
 
       <!-- Monthly Summary chart -->
       <div class="sec-label mb20">Итоги за месяц</div>
-      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px">
+      <div class="chart-row" style="gap:16px;margin-bottom:20px">
         <div class="card" style="flex:1;min-width:500px">
           <div class="card-hdr" style="flex-wrap:wrap;gap:8px">
             <span class="card-title">Итоги за месяц</span>
@@ -3841,6 +3899,12 @@ function renderLine(stats){
     });
   }
 
+  // Пустой период (нет ни одной продажи) — показываем подпись поверх сетки.
+  const _hasData = datasets.some(d=>d.data.some(v=>v>0));
+  const _ph = document.getElementById('lineChart-empty');
+  if(_ph) _ph.hidden = _hasData;
+  _renderRopTotals(datasets);
+
   const scales={
     x:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10},maxTicksLimit:16}},
     y:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10},callback:v=>fmtK(v)}},
@@ -3854,7 +3918,37 @@ function renderLine(stats){
     };
   }
 
-  chartLine=new Chart(ctx,{type:'line',data:{labels,datasets},options:{responsive:true,aspectRatio:8,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:TICK,font:{family:FONT,size:11},boxWidth:10,padding:16}},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmt(c.raw)} ₸`}}},scales}});
+  chartLine=new Chart(ctx,{type:'line',data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmt(c.raw)} ₸`}}},scales}});
+}
+
+// Итоги по РОПам за период под графиком: сумма, доля и полоска. Заменяют
+// легенду Chart.js — клик по строке прячет линию, как в обычной легенде.
+function _renderRopTotals(datasets){
+  const box = document.getElementById('lineTotals');
+  if(!box) return;
+  const rows = datasets
+    .map((d,i)=>({ i, label:d.label, color:d.borderColor, sum:d.data.reduce((a,v)=>a+(v||0),0) }))
+    .filter(r=>r.sum>0)
+    .sort((a,b)=>b.sum-a.sum);
+  const total = rows.reduce((a,r)=>a+r.sum,0);
+  if(!rows.length || !total){ box.innerHTML=''; return; }
+  box.innerHTML = rows.map(r=>{
+    const sh = r.sum/total*100;
+    return `<button class="rt-row" onclick="toggleRopSeries(${r.i},this)" title="Скрыть/показать линию">`
+         +   `<span class="rt-dot" style="background:${r.color}"></span>`
+         +   `<span class="rt-name">${r.label}</span>`
+         +   `<span class="rt-bar"><i style="width:${sh.toFixed(1)}%;background:${r.color}"></i></span>`
+         +   `<span class="rt-sum">${fmt(r.sum)} ₸</span>`
+         +   `<span class="rt-share">${sh.toFixed(1)}%</span>`
+         + `</button>`;
+  }).join('');
+}
+function toggleRopSeries(i, el){
+  if(!chartLine) return;
+  const vis = chartLine.isDatasetVisible(i);
+  chartLine.setDatasetVisibility(i, !vis);
+  chartLine.update();
+  el.classList.toggle('off', vis);
 }
 
 // ═══ LEADS + DEALS combined chart ═══
