@@ -1264,11 +1264,11 @@ html:not([data-theme]) .tb-menu .pill.tb-narrow,
    высотой ~100px (aspectRatio 8) внутри карточки ростом с донат «Товары»
    оставлял под собой белую пустоту почти на 800px.
    ═══════════════════════════════════════════════════════════════════ */
-.chart-row { display: flex; flex-wrap: wrap; align-items: flex-start; }
-.chart-row > .ai-side { align-self: auto; }
-/* «Динамика продаж по РОПам»: 13 точек сжимались в 30px и линия выглядела
-   плоской — теперь у графика нормальная высота. */
-.chart-body.tall { position: relative; height: clamp(280px, 30vh, 360px); }
+.chart-row { display: flex; flex-wrap: wrap; align-items: stretch; }
+.chart-row > .card { display: flex; flex-direction: column; }
+/* График тянется на всю свободную высоту карточки, поэтому карточки в ряду
+   заканчиваются на одной линии и пустого места не остаётся. */
+.chart-row .chart-body { flex: 1 1 auto; min-height: 240px; position: relative; }
 .chart-empty {
   position: absolute; inset: 0; display: flex;
   align-items: center; justify-content: center; pointer-events: none;
@@ -1306,6 +1306,32 @@ html:not([data-theme]) .tb-menu .pill.tb-narrow,
   .rt-name { width: 96px; }
   .rt-bar { display: none; }
   .rt-sum { flex: 1; }
+}
+
+/* Легенда «Товаров»: строка на товар вместо трёх. */
+.prod-legend { width: 100%; margin-top: 10px; font-size: 12.5px; }
+.pl-row {
+  display: grid; grid-template-columns: 8px minmax(0,1fr) auto;
+  gap: 1px 8px; align-items: center; padding: 6px 0;
+}
+.pl-row + .pl-row { border-top: 1px solid var(--line2); }
+.pl-dot { width: 8px; height: 8px; border-radius: 50%; }
+.pl-name { color: var(--ink); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pl-rev { color: var(--green); font-weight: 600; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pl-meta {
+  grid-column: 2 / 4; display: flex; align-items: center; gap: 8px;
+  font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums;
+}
+.pl-gift { color: #a855f7; font-weight: 600; }
+.pl-total {
+  display: flex; justify-content: space-between; gap: 8px; align-items: baseline;
+  margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line);
+  font-size: 13px; font-weight: 700; color: var(--ink);
+}
+.pl-total-sum { color: var(--green); font-variant-numeric: tabular-nums; }
+.pl-sub {
+  display: flex; justify-content: space-between; gap: 8px; align-items: baseline;
+  margin-top: 4px; font-size: 11px; color: var(--muted);
 }
 
 /* ── «свой диапазон» — поповер под кнопкой периода, а не в строке шапки ── */
@@ -1870,7 +1896,7 @@ const _authGuard = new MutationObserver(() => {
           </div>
           <div style="display:flex;flex-direction:column;align-items:center;padding:8px 16px 16px">
             <div style="width:220px;height:220px"><canvas id="prodByRopChart"></canvas></div>
-            <div id="prodByRopLegend" style="font-size:12px;line-height:1.8;width:100%;margin-top:8px"></div>
+            <div id="prodByRopLegend" class="prod-legend"></div>
           </div>
         </div>
         <div class="ai-side" style="border-left-color:#10b981">
@@ -3992,7 +4018,7 @@ function renderLeadsDeals(stats){
   chartLeadsDeals=new Chart(ctx,{type:'line',data:{labels,datasets:[
     {label:'Лиды',data:leadsData,borderColor:'#6366f1',backgroundColor:'#6366f118',borderWidth:2,tension:.4,pointRadius:2,fill:true},
     {label:'Сделки',data:dealsData,borderColor:'#16a34a',backgroundColor:'#16a34a18',borderWidth:2,tension:.4,pointRadius:2,fill:true}
-  ]},options:{responsive:true,aspectRatio:8,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:TICK,font:{family:FONT,size:11},boxWidth:10}},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.raw}`}}},scales:{x:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10},maxTicksLimit:16}},y:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10}}}}}});
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:TICK,font:{family:FONT,size:11},boxWidth:10}},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.raw}`}}},scales:{x:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10},maxTicksLimit:16}},y:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10}}}}}});
 }
 
 // ═══ MONTHLY SUMMARY CHART ═══
@@ -4077,7 +4103,7 @@ function renderSummaryChart(){
 
   chartSummary=new Chart(ctx.getContext('2d'),{type:'bar',data:{labels,datasets:[{
     label:metricLabels[summaryMetric],data,backgroundColor:clr+'cc',borderColor:clr,borderWidth:1,borderRadius:6
-  }]},options:{responsive:true,aspectRatio:8,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{
+  }]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{
     if(summaryMetric==='budget') return ` ${fmt(c.raw)} ₸`;
     if(summaryMetric==='conv'||summaryMetric==='drr') return ` ${c.raw}%`;
     return ` ${fmt(c.raw)} ₸`;
@@ -6559,6 +6585,11 @@ function setProdDonutFilter(val, btn) {
   renderProdByRop();
 }
 
+// «Количество "Красный"» → «Красный»: слово «Количество» и кавычки в подписи
+// только съедают ширину, полное имя остаётся в title.
+function _prodShortName(name){
+  return String(name).replace(/^Количество\s*/i, '').replace(/["«»]/g, '').trim() || name;
+}
 function renderProdByRop() {
   const canvas = document.getElementById('prodByRopChart');
   const legendEl = document.getElementById('prodByRopLegend');
@@ -6657,29 +6688,28 @@ function renderProdByRop() {
   });
 
   const grandGifts = labels.reduce((s, name) => s + (prodGifts[name] || 0), 0);
+  // Одна компактная строка на товар: название + выручка, под ней штуки, доля
+  // и подарки. Раньше на каждый товар уходило по три строки, и карточка была
+  // вдвое выше соседнего графика.
   legendEl.innerHTML = labels.map((name, i) => {
-    const pct = (values[i] / grandTotal * 100).toFixed(1);
-    const rev = Math.round(revenues[i] || 0).toLocaleString('ru-RU');
+    const pct  = (values[i] / grandTotal * 100).toFixed(1);
+    const rev  = Math.round(revenues[i] || 0).toLocaleString('ru-RU');
     const gift = prodGifts[name] || 0;
-    // Подарки — отдельной строчкой под продажами, чтобы не путались со штуками
-    // за деньги (в выручке их нет, они уходят по 1 ₸).
     const giftHtml = gift
-      ? `<br><span style="color:#a855f7;font-weight:600" title="Ушло подарком (акция), в выручку не входит">🎁 +${gift.toLocaleString('ru-RU')} шт</span>`
+      ? `<span class="pl-gift" title="Ушло подарком (акция), в выручку не входит">🎁 +${gift.toLocaleString('ru-RU')}</span>`
       : '';
-    return `<div style="display:flex;align-items:center;gap:6px">
-      <div style="width:10px;height:10px;border-radius:50%;background:${colors[i]};flex-shrink:0"></div>
-      <span style="color:var(--ink);font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</span>
-      <span style="color:var(--muted);white-space:nowrap;text-align:right">${values[i].toLocaleString('ru-RU')} шт · ${pct}%<br><span style="color:#10b981;font-weight:600">${rev} ₸</span>${giftHtml}</span>
+    return `<div class="pl-row" title="${name}">
+      <span class="pl-dot" style="background:${colors[i]}"></span>
+      <span class="pl-name">${_prodShortName(name)}</span>
+      <span class="pl-rev">${rev} ₸</span>
+      <span class="pl-meta">${values[i].toLocaleString('ru-RU')} шт · ${pct}%${giftHtml}</span>
     </div>`;
-  }).join('') + `<div style="border-top:1px solid var(--line);margin-top:6px;padding-top:6px;font-weight:700;color:var(--ink);font-size:13px;display:flex;justify-content:space-between;gap:8px">
+  }).join('') + `<div class="pl-total">
     <span>Продано: ${grandTotal.toLocaleString('ru-RU')} шт</span>
-    <span style="color:#10b981">${Math.round(grandRevenue).toLocaleString('ru-RU')} ₸</span>
-  </div>` + (grandGifts ? `<div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;margin-top:3px">
-    <span style="color:#a855f7;font-weight:600">🎁 Подарком: ${grandGifts.toLocaleString('ru-RU')} шт</span>
-    <span style="color:var(--muted)">не в выручке</span>
-  </div>
-  <div style="display:flex;justify-content:space-between;gap:8px;font-weight:700;color:var(--ink);font-size:13px;border-top:1px solid var(--line2);margin-top:4px;padding-top:4px">
-    <span>Всего со склада: ${(grandTotal + grandGifts).toLocaleString('ru-RU')} шт</span>
+    <span class="pl-total-sum">${Math.round(grandRevenue).toLocaleString('ru-RU')} ₸</span>
+  </div>` + (grandGifts ? `<div class="pl-sub">
+    <span class="pl-gift">🎁 Подарком: ${grandGifts.toLocaleString('ru-RU')} шт</span>
+    <span>не в выручке · всего со склада ${(grandTotal + grandGifts).toLocaleString('ru-RU')} шт</span>
   </div>` : '');
 }
 
