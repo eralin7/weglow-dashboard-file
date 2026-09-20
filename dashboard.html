@@ -169,34 +169,55 @@ body { font-family:var(--font-ui); background:var(--bg); color:var(--ink); min-h
   font-family:-apple-system,'SF Pro Display','DM Sans',sans-serif;
 }
 
-/* ── WEATHER WIDGET — iOS style ── */
+/* ── WEATHER WIDGET — iOS style ──
+   Сайдбар узкий (220px), поэтому строки внутри карточки переносятся, а не
+   вылезают за её край: «Малооблачно» рядом с температурой не помещается и
+   уходит на свою строку. */
 .weather-row {
-  display:flex; align-items:center; gap:10px;
+  display:flex; align-items:center; gap:8px;
   margin-top:10px;
   background: rgba(255,255,255,.07);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255,255,255,.10);
   border-radius: 14px;
-  padding: 10px 12px;
+  padding: 10px;
+  overflow: hidden;
 }
 .weather-icon-wrap {
-  width:40px; height:40px; flex-shrink:0;
+  width:34px; height:34px; flex-shrink:0;
   display:flex; align-items:center; justify-content:center;
 }
 .weather-info { flex:1; min-width:0; }
+.weather-top { display:flex; align-items:baseline; flex-wrap:wrap; column-gap:6px; row-gap:1px; }
 .weather-temp {
-  font-size:22px; font-weight:300;
+  font-size:21px; font-weight:300;
   color:#fff; line-height:1;
   font-family:-apple-system,'SF Pro Display','DM Sans',sans-serif;
   letter-spacing:-.5px;
 }
 .weather-desc {
   font-size:11px; color:rgba(255,255,255,.5);
-  margin-top:3px; white-space:nowrap;
+  margin-top:3px; line-height:1.25; overflow-wrap:anywhere;
   font-family:-apple-system,'SF Pro Text','DM Sans',sans-serif;
   letter-spacing:.1px;
 }
+.weather-top .weather-desc { margin-top:0; }
+/* .sb-date strong задаёт 15px — перебиваем более точным селектором,
+   иначе дата «20 сентября 2026» ломается на две строки. */
+.weather-info .weather-date {
+  margin:4px 0 0; font-size:11px; font-weight:600; line-height:1.25;
+  color:var(--sb-text-strong); letter-spacing:-.1px;
+  display:block; overflow-wrap:anywhere;
+}
+/* «Воскресенье · 20:11:18» упирается в 127px ширины — убираем разрядку и
+   лишний пиксель отступа, иначе время срывается на вторую строку. */
+.weather-when {
+  display:flex; align-items:center; flex-wrap:wrap; column-gap:3px; margin-top:3px;
+  font-size:10px; line-height:1.25; color:var(--sb-muted); letter-spacing:0;
+}
+.weather-when .ww-dot { opacity:.6; font-size:9px; }
+.weather-when .ww-clock { font-weight:500; color:var(--sb-text); letter-spacing:0; font-variant-numeric:tabular-nums; }
 .weather-city {
   font-size:9px; color:rgba(255,255,255,.25);
   letter-spacing:1.8px; text-transform:uppercase;
@@ -1621,17 +1642,15 @@ const _authGuard = new MutationObserver(() => {
         </div>
       </div>
       <div class="weather-info">
-        <div style="display:flex;align-items:baseline;gap:6px">
+        <div class="weather-top">
           <div class="weather-temp" id="weather-temp">—</div>
-          <div class="weather-desc" id="weather-desc" style="margin-top:0"></div>
+          <div class="weather-desc" id="weather-desc"></div>
         </div>
-        <div style="margin-top:5px;display:flex;align-items:center;gap:4px">
-          <strong id="sb-today" style="font-size:11px;font-weight:600;color:var(--sb-text-strong);letter-spacing:-.1px"></strong>
-        </div>
-        <div style="display:flex;align-items:center;gap:4px;margin-top:2px">
-          <span id="sb-weekday" style="font-size:10px;color:var(--sb-muted);letter-spacing:.2px"></span>
-          <span style="color:var(--sb-muted);opacity:.6;font-size:9px">·</span>
-          <span id="sb-clock" style="font-size:10px;font-weight:500;color:var(--sb-text);letter-spacing:.3px;font-variant-numeric:tabular-nums"></span>
+        <strong class="weather-date" id="sb-today"></strong>
+        <div class="weather-when">
+          <span id="sb-weekday"></span>
+          <span class="ww-dot">·</span>
+          <span class="ww-clock" id="sb-clock"></span>
         </div>
       </div>
     </div>
