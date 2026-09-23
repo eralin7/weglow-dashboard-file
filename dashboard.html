@@ -1864,7 +1864,7 @@ const _authGuard = new MutationObserver(() => {
           <div id="ai-section-KPI" class="ai-side-body"><span style="color:var(--muted)">Загрузка...</span></div>
         </div>
       </div>
-      <!-- Следующий спринт (план задан, данных ещё нет) — компактной полосой на всю ширину -->
+      <!-- Текущий и следующий спринт + сверх план месяца — компактными полосами на всю ширину -->
       <div class="kpi-strip-wrap" id="kpi-sprints" style="display:none;margin-bottom:20px"></div>
 
       <!-- ══ ИСТОРИЯ ПО СПРИНТАМ ══ -->
@@ -3366,6 +3366,56 @@ function renderSprintHistory(){
   sec.style.display = '';
 }
 
+// ═══════════════════ СВЕРХ ПЛАН МЕСЯЦА ════════════════════════════
+// Директор задаёт его в кабинете (director.html) рядом с обычным месячным
+// планом: PLANS.super['MM.YYYY'] — одна сумма на всю компанию. Полоса идёт
+// под спринтами и показывает месяц, выбранный в фильтре периода; при любом
+// другом периоде (сегодня / 7 дней / спринт) — текущий месяц.
+function _superPlanStripHTML(){
+  // Сверх план общий на компанию — с фильтром по РОПу сравнивать его не с чем.
+  if (activeMainRop !== 'all') return '';
+  const now = _now();
+  const pm  = String((activePeriod && activePeriod.preset) || '').match(/^m_(\d{4})_(\d{1,2})$/);
+  const y = pm ? +pm[1] : now.getFullYear();
+  const m = pm ? +pm[2] : now.getMonth() + 1;
+  const mk   = `${String(m).padStart(2,'0')}.${y}`;
+  const plan = (PLANS.super && PLANS.super[mk]) || 0;
+  if (!plan) return '';
+
+  // Факт — тот же диапазон, что у карточки «Месяц» (весь календарный месяц).
+  const mp     = _makeMonthPreset(y, m);
+  const fact   = _aggregateForKpi({ from: mp.from, to: mp.to }).budget || 0;
+  const pct    = Math.round(fact / plan * 100);
+  const remain = Math.max(0, plan - fact);
+  const isCur  = y === now.getFullYear() && m === now.getMonth() + 1;
+  const clr    = '#db2777';
+  const pctClr = pct>=100 ? '#16a34a' : pct>=80 ? '#ca8a04' : '#c0392b';
+  const row = (label, val, valClr, sub) => `<div class="kpi-row">
+      <span class="kpi-row-label">${label}</span>
+      <div><div class="kpi-row-val"${valClr ? ` style="color:${valClr}"` : ''}>${val}</div>${sub ? `<div class="kpi-row-sub">${sub}</div>` : ''}</div>
+    </div>`;
+
+  let html = `<div class="kpi-col" style="border-top-color:${clr}">
+    <div class="kpi-col-title"><span class="kpi-dot" style="background:${clr}"></span>Сверх план <span class="kpi-period-badge">${mp.label}</span></div>`;
+  html += row('План', fmtM(plan));
+  html += row('Продажи', fmtM(fact), clr);
+  html += row('Выполнение', pct + '%', pctClr);
+  html += remain
+    ? row('Остаток', fmtM(remain))
+    : row('Остаток', 'выполнен', '#16a34a', `+${fmtM(fact - plan)} сверху`);
+  // Темп и прогноз имеют смысл только для идущего месяца. Дни — с сегодняшним
+  // включительно, как «нужно в день» в aggregate().
+  if (isCur) {
+    const totalDays = _lastDay(y, m);
+    const daysLeft  = Math.max(1, totalDays - now.getDate() + 1);
+    if (remain) html += row('Нужно в день', fmtM(Math.round(remain / daysLeft)), null, `${daysLeft} дн. до конца месяца`);
+    const forecast = Math.round(fact / now.getDate() * totalDays);
+    const fcPct    = Math.round(forecast / plan * 100);
+    html += row('Прогноз', fmtM(forecast), fcPct>=100 ? '#16a34a' : fcPct>=80 ? '#ca8a04' : '#c0392b', `${fcPct}% от сверх плана`);
+  }
+  return html + `</div>`;
+}
+
 function renderKPI(d){
   const prodName = activeProd==='all' ? 'Все продукты' : PROD_CFG[activeProd].name;
   document.getElementById('main-title').textContent = 'Ключевые показатели';
@@ -3402,7 +3452,8 @@ function renderKPI(d){
   try { renderSprintHistory(); } catch(e){ console.error('renderSprintHistory error:', e); }
 
   // Карточки спринтов — текущий + следующий сквозной спринт, для которых
-  // директор задал план (SPRINT_PLANS). Если планов нет — блок скрыт.
+  // директор задал план (SPRINT_PLANS), а под ними — сверх план месяца.
+  // Если ни планов спринтов, ни сверх плана нет — блок скрыт.
   // Выбранный в выпадашке спринт не дублируем (он уже основная колонка).
   const spWrap = document.getElementById('kpi-sprints');
   if (!spWrap) return;
@@ -3410,22 +3461,18 @@ function renderKPI(d){
   const curN = _sprintNowOrNextG();
   const _selN = activeSprintNum();
   const spNums = [curN, curN+1].filter(n => sprintPlanTotal(n) > 0 && n !== _selN);
-  if (spNums.length) {
-    const spColors = ['var(--acc)', '#7c3aed'];
-    let html = '';
-    spNums.forEach((n, i) => {
-      const sp = _aggregateForKpiSprintG(n);
-      const s  = sprintByNum(n);
-      const mPfx  = (s && MARATHONS.length > 1) ? `М${s.m} · ` : '';
-      const badge = `${mPfx}${sp.from} — ${sp.to}${n===sprintNumForDate(_now()) ? ' · сейчас' : ''}`;
-      html += _kpiColHTML(s ? `Спринт ${s.i}` : `Спринт ${n}`, badge, sp.data, spColors[i % 2], 'sprint');
-    });
-    spWrap.innerHTML = html;
-    spWrap.style.display = 'grid';
-  } else {
-    spWrap.innerHTML = '';
-    spWrap.style.display = 'none';
-  }
+  const spColors = ['var(--acc)', '#7c3aed'];
+  let html = '';
+  spNums.forEach((n, i) => {
+    const sp = _aggregateForKpiSprintG(n);
+    const s  = sprintByNum(n);
+    const mPfx  = (s && MARATHONS.length > 1) ? `М${s.m} · ` : '';
+    const badge = `${mPfx}${sp.from} — ${sp.to}${n===sprintNumForDate(_now()) ? ' · сейчас' : ''}`;
+    html += _kpiColHTML(s ? `Спринт ${s.i}` : `Спринт ${n}`, badge, sp.data, spColors[i % 2], 'sprint');
+  });
+  html += _superPlanStripHTML();
+  spWrap.innerHTML = html;
+  spWrap.style.display = html ? 'grid' : 'none';
 }
 
 // ═══════════════════ FORECAST HELPER ══════════════════════════════
