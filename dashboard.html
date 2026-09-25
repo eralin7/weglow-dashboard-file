@@ -2516,16 +2516,17 @@ function _allViewAdChannels() {
     : [PROD_CFG[activeProd]?.rawKey || 'Коллаген'];
 }
 // Дневной «RAW» ([leads,deals,budget]) только по менеджерам активного
-// фильтра, собранный по всем релевантным бакетам. Идентичен логике
-// renderPlanTable/renderLine, поэтому цифры KPI сходятся с таблицей групп.
-function _mainRopDailyRaw() {
+// фильтра (или явно переданного списка РОПов), собранный по всем релевантным
+// бакетам. Идентичен логике renderPlanTable/renderLine, поэтому цифры KPI
+// сходятся с таблицей групп.
+function _mainRopDailyRaw(names = _mainRopNames()) {
   const out = {};
   const buckets = new Set();
-  _mainRopNames().forEach(n => (ROP_CRM_MAP[n] || []).forEach(c => buckets.add(c)));
+  names.forEach(n => (ROP_CRM_MAP[n] || []).forEach(c => buckets.add(c)));
   const crms = buckets.size ? [...buckets] : Object.keys(MANAGERS);
   crms.forEach(crm => {
     (MANAGERS[crm] || []).forEach(m => {
-      if (!_mainRopMatch(m.name)) return;
+      if (!names.some(r => ropMatches(m.name, r))) return;
       const daily = m.daily || {};
       for (const [d, v] of Object.entries(daily)) {
         const cur = out[d] || (out[d] = [0, 0, 0]);
@@ -3368,12 +3369,13 @@ function renderSprintHistory(){
 
 // ═══════════════════ СВЕРХ ПЛАН МЕСЯЦА ════════════════════════════
 // Директор задаёт его в кабинете (director.html) рядом с обычным месячным
-// планом: PLANS.super['MM.YYYY'] — одна сумма на всю компанию. Полоса идёт
-// под спринтами и показывает месяц, выбранный в фильтре периода; при любом
-// другом периоде (сегодня / 7 дней / спринт) — текущий месяц.
+// планом: PLANS.super['MM.YYYY'] — одна сумма на «4 РОПа» (MAIN_ROP4). Полоса
+// идёт под спринтами и показывает месяц, выбранный в фильтре периода; при
+// любом другом периоде (сегодня / 7 дней / спринт) — текущий месяц.
 function _superPlanStripHTML(){
-  // Сверх план общий на компанию — с фильтром по РОПу сравнивать его не с чем.
-  if (activeMainRop !== 'all') return '';
+  // План задан на 4 РОПа — видим его в группах «Все» и «4 РОПа». У отдельного
+  // РОПа своего сверх плана нет, сравнивать не с чем.
+  if (activeMainRop !== 'all' && activeMainRop !== 'main4') return '';
   const now = _now();
   const pm  = String((activePeriod && activePeriod.preset) || '').match(/^m_(\d{4})_(\d{1,2})$/);
   const y = pm ? +pm[1] : now.getFullYear();
@@ -3382,9 +3384,11 @@ function _superPlanStripHTML(){
   const plan = (PLANS.super && PLANS.super[mk]) || 0;
   if (!plan) return '';
 
-  // Факт — тот же диапазон, что у карточки «Месяц» (весь календарный месяц).
+  // Факт — продажи 4 РОПов за весь календарный месяц, даже в группе «Все»:
+  // совпадает с «Продажами» карточки «Месяц» при группе «4 РОПа».
   const mp     = _makeMonthPreset(y, m);
-  const fact   = _aggregateForKpi({ from: mp.from, to: mp.to }).budget || 0;
+  const raw    = _mainRopDailyRaw(MAIN_ROP4);
+  const fact   = getDatesInRange(mp.from, mp.to).reduce((s, d) => s + ((raw[d] && raw[d][2]) || 0), 0);
   const pct    = Math.round(fact / plan * 100);
   const remain = Math.max(0, plan - fact);
   const isCur  = y === now.getFullYear() && m === now.getMonth() + 1;
@@ -3396,7 +3400,7 @@ function _superPlanStripHTML(){
     </div>`;
 
   let html = `<div class="kpi-col" style="border-top-color:${clr}">
-    <div class="kpi-col-title"><span class="kpi-dot" style="background:${clr}"></span>Сверх план <span class="kpi-period-badge">${mp.label}</span></div>`;
+    <div class="kpi-col-title"><span class="kpi-dot" style="background:${clr}"></span>Сверх план <span class="kpi-period-badge">${mp.label} · 4 РОПа</span></div>`;
   html += row('План', fmtM(plan));
   html += row('Продажи', fmtM(fact), clr);
   html += row('Выполнение', pct + '%', pctClr);
