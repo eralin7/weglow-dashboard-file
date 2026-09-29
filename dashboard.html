@@ -1732,11 +1732,8 @@ const _authGuard = new MutationObserver(() => {
             <button class="pill mainrop-pill active" onclick="setMainRop('all',this)">Все</button>
             <button class="pill mainrop-pill" onclick="setMainRop('main4',this)">4 РОПа</button>
             <span class="tb-label">Руководители</span>
-            <button class="pill mainrop-pill" onclick="setMainRop('РОП Нурдаулет',this)">Нурдаулет</button>
-            <button class="pill mainrop-pill" onclick="setMainRop('РОП Аслиддин',this)">Аслиддин</button>
-            <button class="pill mainrop-pill" onclick="setMainRop('РОП Диас',this)">Диас</button>
-            <button class="pill mainrop-pill" onclick="setMainRop('РОП Аяулым',this)">Аяулым</button>
-            <button class="pill mainrop-pill" onclick="setMainRop('РОП KAZ Бауыржан',this)">KAZ Бауыржан</button>
+            <!-- Продающие отделы из данных Era CRM — рисует renderRopFilterPills -->
+            <div id="grp-rop-pills" style="display:contents"></div>
           </div>
         </div>
       </div>
@@ -2208,7 +2205,7 @@ let ROP_GROUPS = {
   'Кофе (Архив)':     { label: 'Кофе (Архив)',    color: '#b45309' },
   'БОТА AI':          { label: 'БОТА AI',         color: '#0ea5e9' },
 };
-const ROP_COLORS = {'РОП Айдана':'#1a56db','РОП Аслиддин':'#b45309','РОП Нурдаулет':'#0a7c5c','РОП Ербол':'#e11d48','РОП Айдана KIDS':'#7c3aed','РОП Диас KIDS':'#db2777','Кофе (Архив)':'#b45309','БОТА AI':'#0ea5e9','РОП KAZ Бауыржан':'#0891b2'};
+const ROP_COLORS = {'РОП Айдана':'#1a56db','РОП Аслиддин':'#b45309','РОП Нурдаулет':'#0a7c5c','РОП Ербол':'#e11d48','РОП Айдана KIDS':'#7c3aed','РОП Диас KIDS':'#db2777','Кофе (Архив)':'#b45309','БОТА AI':'#0ea5e9','РОП KAZ Бауыржан':'#0891b2','РОП Айша':'#0a7c5c','РОП KAZ Отдел':'#0891b2','РОП KIDS':'#db2777'};
 const ROP_CRM_MAP = {
   // Active ROPs (Era CRM с 01.05.2026): managers могут иметь сделки в любом
   // из 3 пайплайнов, поэтому смотрим во все 3 бакета.
@@ -2224,6 +2221,11 @@ const ROP_CRM_MAP = {
   'РОП KAZ Бауыржан': ['Коллаген', 'Ummi', 'B1 Partners'],
   'РОП Аяулым':       ['Коллаген', 'Ummi', 'B1 Partners'],
   'РОП B1 Partners':  ['Коллаген', 'Ummi', 'B1 Partners'],
+  // Отделы после переименования групп в Era CRM (09.2026): «Нұрдаулет» и
+  // «Нурдаулет KIDS» → «Айша», «KAZ Бауыржан» → «KAZ Отдел», новая «KIDS».
+  'РОП Айша':         ['Коллаген', 'Ummi', 'B1 Partners'],
+  'РОП KAZ Отдел':    ['Коллаген', 'Ummi', 'B1 Partners'],
+  'РОП KIDS':         ['Коллаген', 'Ummi', 'B1 Partners'],
   'БОТА AI':          ['Коллаген', 'Ummi'],  // AI bot manager (Админ-группа Era CRM)
 
   // Legacy ROPs (AmoCRM ≤ 30.04.2026). Их строки спрятаны через ERA_HIDE_ROPS,
@@ -2255,10 +2257,15 @@ function rebuildRopGroups() {
 // CRM names may have full names (e.g. "пин 20 Жазира Ибраева")
 // while ROP cabinet stores shorter versions (e.g. "пин 20 Жазира")
 const _ropCache = {};
+// Менеджеры, у которых по Era CRM нет РОПа (группа «Админ» или без группы).
+// Для них нечёткий поиск ниже запрещён: иначе «Аида» из Админ-группы по
+// префиксу уезжала к «Аида Бурақожа» в отдел Айши. Заполняет loadEraCrmOverlay.
+const _ERA_NO_ROP = new Set();
 function getRop(mgrName) {
   if (_ropCache[mgrName] !== undefined) return _ropCache[mgrName];
   // 1. Exact match
   if (MGR_TO_ROP[mgrName]) { _ropCache[mgrName] = MGR_TO_ROP[mgrName]; return _ropCache[mgrName]; }
+  if (_ERA_NO_ROP.has(mgrName)) { _ropCache[mgrName] = ''; return ''; }
   // 2. Case-insensitive exact
   const lower = mgrName.toLowerCase();
   for (const [k,v] of Object.entries(MGR_TO_ROP)) {
@@ -2477,16 +2484,17 @@ function pctBg(v){return v>=80?'bg-g':v>=50?'bg-y':'bg-r';}
 // (после переезда на Era CRM) — раньше его не было.
 const _VIRTUAL_CRMS = { 'Коллаген': ['Ummi', 'Ербол', 'Кофе (Архив)', 'B1 Partners'] };
 // ── ROP-фильтр главного вида ──────────────────────────────────────
-// Набор РОПов под кнопкой «4 РОПа» (без B1 Partners и БОТА AI).
-// «РОП Нурдаулет KIDS» — это переименованный в Era CRM «Диас» (с 08.06.2026,
-// см. _applyRopDateSplit / ROP_DATE_SPLIT). Его дни ≥08.06 живут под этим РОПом
-// и без явного включения сюда выпадали бы из «4 РОПа» (дни ≤07.06 идут под
-// «РОП Диас», который уже в наборе). Двойного счёта нет — date-split разводит дни.
-// «РОП KAZ Бауыржан» — казахоязычный отдел (с 07.2026), включён в набор по
-// просьбе владельца: кнопка «4 РОПа» = все продающие отделы (без B1 и БОТА AI).
-const MAIN_ROP4 = ['РОП Нурдаулет','РОП Нурдаулет KIDS','РОП Аслиддин','РОП Диас','РОП Аяулым','РОП KAZ Бауыржан'];
+// Кнопка «4 РОПа» = все продающие отделы: каждая группа из ROP_GROUPS, кроме
+// партнёров и бота (MGR_CAT_ROPS — те же категории, что в разделе «Менеджеры»).
+// Набор считается из данных, а не списком имён: раньше это был жёсткий список,
+// и когда в Era CRM переименовали группы (09.2026: «Нұрдаулет» → «Айша»,
+// «KAZ Бауыржан» → «KAZ Отдел», новая «KIDS»), их продажи молча выпали из
+// «4 РОПа» и «Сверх плана». Двойного счёта нет: у менеджера один РОП.
+function _mainRop4() {
+  return Object.keys(ROP_GROUPS).filter(r => r !== 'all' && !MGR_CAT_ROPS[r]);
+}
 // Список РОПов, которые покрывает текущий фильтр главного вида.
-function _mainRopNames() { return activeMainRop==='main4' ? MAIN_ROP4.slice() : [activeMainRop]; }
+function _mainRopNames() { return activeMainRop==='main4' ? _mainRop4() : [activeMainRop]; }
 // Принадлежит ли менеджер активному фильтру (одиночный РОП или 4 РОПа).
 function _mainRopMatch(mgrName) { return _mainRopNames().some(r => ropMatches(mgrName, r)); }
 // План активного фильтра за месяц mk (сумма планов входящих РОПов).
@@ -3369,7 +3377,7 @@ function renderSprintHistory(){
 
 // ═══════════════════ СВЕРХ ПЛАН МЕСЯЦА ════════════════════════════
 // Директор задаёт его в кабинете (director.html) рядом с обычным месячным
-// планом: PLANS.super['MM.YYYY'] — одна сумма на «4 РОПа» (MAIN_ROP4). Полоса
+// планом: PLANS.super['MM.YYYY'] — одна сумма на «4 РОПа» (_mainRop4). Полоса
 // идёт под спринтами и показывает месяц, выбранный в фильтре периода; при
 // любом другом периоде (сегодня / 7 дней / спринт) — текущий месяц.
 function _superPlanStripHTML(){
@@ -3387,7 +3395,7 @@ function _superPlanStripHTML(){
   // Факт — продажи 4 РОПов за весь календарный месяц, даже в группе «Все»:
   // совпадает с «Продажами» карточки «Месяц» при группе «4 РОПа».
   const mp     = _makeMonthPreset(y, m);
-  const raw    = _mainRopDailyRaw(MAIN_ROP4);
+  const raw    = _mainRopDailyRaw(_mainRop4());
   const fact   = getDatesInRange(mp.from, mp.to).reduce((s, d) => s + ((raw[d] && raw[d][2]) || 0), 0);
   const pct    = Math.round(fact / plan * 100);
   const remain = Math.max(0, plan - fact);
@@ -4966,6 +4974,7 @@ async function loadFromSupabase() {
       if (d.ROP_SPRINT_PLANS) ROP_SPRINT_PLANS = d.ROP_SPRINT_PLANS;
       if (d.SPRINTS) SPRINTS = d.SPRINTS;
       if (d.SPRINT_PLANS) SPRINT_PLANS = d.SPRINT_PLANS;
+      _foldAllRopPlans();
       if (d.RNP_EXCEL) RNP_EXCEL = d.RNP_EXCEL;
 
       if (d.AI_ADVICE) { _aiAdviceData = d.AI_ADVICE; renderSectionAdvice(); }
@@ -4987,7 +4996,9 @@ async function loadFromSupabase() {
       // ВАЖНО: ждём результата синхронно, чтобы первый render показывал уже
       // мерженные цифры — иначе после snapshot-render будет «прыжок» при
       // подходе era CRM данных. Если era CRM упал — рендерим без него.
-      try { await loadEraCrmOverlay();  } catch (e) { console.warn('[era-crm overlay]', e); }
+      // Бейдж со временем снимка (18.05) вводил в заблуждение: цифры уже
+      // живые из era CRM. После удачного overlay показываем время загрузки.
+      try { await loadEraCrmOverlay(); _setDataBadgeNow(); } catch (e) { console.warn('[era-crm overlay]', e); }
       try { await loadEraCrmProducts(); } catch (e) { console.warn('[era-crm products]', e); }
       try { await loadEraCrmCities();   } catch (e) { console.warn('[era-crm cities]', e); }
       try { await loadEraCrmReturns();  } catch (e) { console.warn('[era-crm returns]', e); }
@@ -5073,19 +5084,66 @@ const ERA_GROUP_TO_ROP = {
   'Аслиддин':    'РОП Аслиддин',
   'Диас':        'РОП Диас',
   'Нурдаулет':   'РОП Нурдаулет',  // на случай если Era CRM нормализуется на русскую «у»
-  'Нұрдаулет':   'РОП Нурдаулет',  // фактический вариант в БД сейчас — казахская «ұ»
+  'Нұрдаулет':   'РОП Нурдаулет',  // вариант в БД до 09.2026 — казахская «ұ»
   'Аяулым':      'РОП Аяулым',
   'B1 Partners': 'РОП B1 Partners',
   'KAZ Бауыржан':'РОП KAZ Бауыржан', // казахоязычный отдел (с 07.2026)
+  // Переименования в Era CRM (09.2026). CRM хранит только ТЕКУЩУЮ группу, так
+  // что новые названия приходят и за прошлые дни — вся история с 06.2026.
+  'Айша':        'РОП Айша',      // бывшие «Нұрдаулет» + «Нурдаулет KIDS»
+  'KAZ Отдел':   'РОП KAZ Отдел', // бывший «KAZ Бауыржан»
+  'KIDS':        'РОП KIDS',      // новая группа (3 менеджера Ummi)
   'Админ':       null, // skip — Admin/БОТА AI/Бухгалтерия и т.п.
 };
 
 // Старое имя РОПа → новое. Применяется к ВСЕМ записям MGR_TO_ROP (включая
-// snapshot ≤ 30.04), чтобы исторические данные сшились с майскими в одну
-// строку «РОП Диас», а не висели отдельно как «РОП Диас KIDS».
+// snapshot ≤ 30.04), чтобы исторические данные сшились с новыми в одну
+// строку, и к планам (_foldRenamedRopPlans), чтобы план старого отдела
+// перешёл к новому.
 const _OLD_ROP_RENAME = {
-  'РОП Диас KIDS': 'РОП Диас',
+  'РОП Диас KIDS':      'РОП Диас',
+  'РОП Нурдаулет':      'РОП Айша',
+  'РОП Нурдаулет KIDS': 'РОП Айша',
+  'РОП KAZ Бауыржан':   'РОП KAZ Отдел',
 };
+
+// Планы по РОПам (ROP_PLANS / SPRINT_PLANS / ROP_SPRINT_PLANS: { РОП: { период:
+// сумма } }) переносим со старых имён на новые по _OLD_ROP_RENAME. Если у
+// нового отдела на период уже есть свой план (директор задал его в кабинете) —
+// он главнее, старые на этот период отбрасываются; иначе план нового = сумма
+// старых (Айша = Нурдаулет + Нурдаулет KIDS). Старые ключи удаляются из памяти,
+// поэтому суммарный план (sprintPlanTotal) не задваивается. Идемпотентно.
+function _sumPlanVal(a, b) {
+  if (b && typeof b === 'object') {
+    const o = { ...(a && typeof a === 'object' ? a : {}) };
+    for (const [k, v] of Object.entries(b)) o[k] = _sumPlanVal(o[k], v);
+    return o;
+  }
+  return (Number(a) || 0) + (Number(b) || 0);
+}
+function _foldRenamedRopPlans(plans) {
+  if (!plans || typeof plans !== 'object') return plans;
+  const own = {};
+  for (const newRop of new Set(Object.values(_OLD_ROP_RENAME))) {
+    own[newRop] = new Set(Object.keys(plans[newRop] || {}));
+  }
+  for (const [oldRop, newRop] of Object.entries(_OLD_ROP_RENAME)) {
+    const src = plans[oldRop];
+    if (!src || typeof src !== 'object') continue;
+    const dst = plans[newRop] = plans[newRop] || {};
+    for (const [period, v] of Object.entries(src)) {
+      if (own[newRop].has(period)) continue;
+      dst[period] = _sumPlanVal(dst[period], v);
+    }
+    delete plans[oldRop];
+  }
+  return plans;
+}
+function _foldAllRopPlans() {
+  _foldRenamedRopPlans(ROP_PLANS);
+  _foldRenamedRopPlans(SPRINT_PLANS);
+  _foldRenamedRopPlans(ROP_SPRINT_PLANS);
+}
 
 // Era CRM custom-field label → имя товара на дашборде (ключ в PRODUCTS[comp]).
 // Снапшот использует устоявшиеся имена с кавычками — сохраняем 1-в-1,
@@ -5199,6 +5257,9 @@ function _purgeEraDates() {
 // двойника. Это же чинит исторические (майские) данные, которые после
 // переименования утянуло в KIDS. Идемпотентно — вызывается в конце
 // loadEraCrmOverlay на каждом refresh.
+// С 09.2026 группы «Нурдаулет KIDS» в Era CRM нет (её люди — в «Айша», см.
+// _OLD_ROP_RENAME), поэтому делить больше некого и правило ничего не делает:
+// дни 01–07.06 этих менеджеров CRM теперь отдаёт под «Айшой».
 const ROP_DATE_SPLIT = {
   oldRop:    'РОП Диас',            // дни ≤ cutoff
   newRop:    'РОП Нурдаулет KIDS',  // дни ≥ cutoff + 1 день
@@ -5415,6 +5476,7 @@ async function loadEraCrmOverlay() {
 
   // Merge into MANAGERS + populate MGR_TO_ROP from group_title.
   let _mgrMatched = 0, _mgrAdded = 0, _ropMapped = 0;
+  _ERA_NO_ROP.clear();
   for (const [acc, mgrs] of Object.entries(mgrRoll)) {
     MANAGERS[acc] = MANAGERS[acc] || [];
     for (const [name, slot] of Object.entries(mgrs)) {
@@ -5452,6 +5514,8 @@ async function loadEraCrmOverlay() {
           MGR_TO_ROP[name] = ropName;
           _ropMapped++;
         }
+      } else {
+        _ERA_NO_ROP.add(name);   // Админ / без группы — не угадывать РОП по имени
       }
     }
     MANAGERS[acc].sort((a,b) => b.budget - a.budget);
@@ -6062,6 +6126,9 @@ async function loadEraCrmConfig() {
   if (cfg.SPRINT_PLANS && typeof cfg.SPRINT_PLANS === 'object' && Object.keys(cfg.SPRINT_PLANS).length) {
     SPRINT_PLANS = cfg.SPRINT_PLANS; _changed++;
   }
+  // Планы в конфиге ещё записаны на старые имена отделов (кабинет директора
+  // знал только их) — переносим на новые, иначе у «РОП Айша» плана нет.
+  _foldAllRopPlans();
   console.log('[era-crm config] applied:', _changed, 'sections (AD_SPEND/PLANS/ROP_PLANS/SPRINTS/SPRINT_PLANS)');
 }
 window.loadEraCrmConfig = loadEraCrmConfig;
@@ -6089,13 +6156,15 @@ async function _eraCrmRefreshTick() {
     if (typeof renderCityMap === 'function') {
       try { renderCityMap(); } catch (e) { console.warn('[cityMap refresh]', e); }
     }
-    const badge = document.getElementById('data-badge');
-    if (badge) {
-      const dt = new Date();
-      badge.textContent = 'Обновлено: ' + dt.toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
-    }
+    _setDataBadgeNow();
   } catch (e) {
     console.warn('[era-crm refresh]', e);
+  }
+}
+function _setDataBadgeNow() {
+  const badge = document.getElementById('data-badge');
+  if (badge) {
+    badge.textContent = 'Обновлено: ' + new Date().toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
   }
 }
 setInterval(_eraCrmRefreshTick, ERA_CRM_REFRESH_MS);
@@ -6279,6 +6348,12 @@ function renderRopFilterPills(){
     .map(r => ({ v: r, label: r.replace(/^РОП\s+/, '') }));
   const prods = _liveProdBuckets().map(b => ({ v: b, label: _PROD_BUCKET_LABEL[b] }));
   const put = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+  // «Группа» главного вида: руководители = продающие отделы (как в «4 РОПа»),
+  // чтобы переименование группы в Era CRM не оставляло кнопку с пустыми данными.
+  put('grp-rop-pills', _mainRop4().filter(r => !hide.has(r)).map(r =>
+    `<button class="pill mainrop-pill${r===activeMainRop?' active':''}" `
+    + `onclick="setMainRop('${r.replace(/'/g, "\\'")}',this)">${r.replace(/^РОП\s+/, '')}</button>`
+  ).join(''));
   _renderMgrGroupPills();
   put('leads-deals-filters',_filterBtnsHTML(rops,  'setLeadsDealsFilter', activeLeadsDealsFilter, 'cf-btn'));
   put('summary-dept-pills', _filterBtnsHTML(rops,  'setSummaryDept',      summaryDept,            'cf-btn'));
