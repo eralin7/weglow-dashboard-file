@@ -1588,6 +1588,10 @@ function doLogout(){
   sessionStorage.removeItem('wg_auth');
   sessionStorage.removeItem('wg_role');
   sessionStorage.removeItem('wg_data');
+  // Токен Era CRM открывает аналитику и список клиентов — при выходе забываем
+  // его вместе с уже загруженным (сброс объявлен в основном скрипте ниже).
+  sessionStorage.removeItem('era_cl_token');
+  if (window._clResetSession) window._clResetSession();
   SUPABASE_KEY = null;
   RAW = {}; MANAGERS = {};
   document.getElementById('login-overlay').style.display='flex';
@@ -5612,10 +5616,14 @@ window.loadEraCrmProducts = loadEraCrmProducts;
 
 // ═══════════════ ВКЛАДКА «КЛИЕНТЫ» (когортная аналитика) ═══════════════
 // Данные считает era-crm RPC get_customer_analytics() (миграция
-// 2026-08-12-customer-cohort-analytics.sql). Наружу приходят ТОЛЬКО агрегаты —
-// ни телефонов, ни строк по сделкам. Запрос тяжёлый (полный проход по won-
-// сделкам): холодный вызов может упереться в anon-таймаут ~3с, поэтому до
-// 4 ретраев (первый прогревает план, обычно второй проходит). Ответ кешируем
+// 2026-08-13-customer-analytics-date-filter.sql). Наружу приходят только
+// агрегаты, но это выручка и средние чеки, поэтому с 05.10.2026 execute у anon
+// отозван (2026-10-05-customer-analytics-auth-gate.sql): зовём с токеном входа
+// Era CRM (роль admin / director / accountant) — тем же, что у списка клиентов
+// (_clGetToken). Нет токена или протух (401) — форма входа прямо во вкладке;
+// учётке без нужной роли функция отдаёт null. Запрос тяжёлый (полный проход
+// по won-сделкам): холодный вызов может упереться в statement-таймаут, поэтому
+// до 4 ретраев (первый прогревает план, обычно второй проходит). Ответ кешируем
 // на сессию — данные меняются медленно, а каждый вызов дорогой.
 // Кеш ответов по ключу периода: расчёт дорогой, а фильтры щёлкают часто.
 const _clientsCache = {};
@@ -5626,6 +5634,8 @@ let _clientsRange = null;
 // Фильтр ещё не задеплоен в БД (404 на параметрах) — показываем всё время.
 let _clientsFilterUnavailable = false;
 async function _fetchClientsAnalytics(range){
+  const token = _clGetToken();
+  if (!token) throw { needAuth: true };
   const url = `${ERA_CRM_URL}/rest/v1/rpc/get_customer_analytics`;
   const body = range ? JSON.stringify({ p_date_from: range.from, p_date_to: range.to }) : '{}';
   let lastErr = '';
@@ -5633,10 +5643,20 @@ async function _fetchClientsAnalytics(range){
     try {
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'apikey': ERA_CRM_ANON, 'Authorization': `Bearer ${ERA_CRM_ANON}`, 'Content-Type': 'application/json' },
+        headers: { 'apikey': ERA_CRM_ANON, 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
         body,
       });
-      if (res.ok) return await res.json();
+      // токен протух / не принят — забываем и просим войти заново
+      if (res.status === 401 || res.status === 403){
+        sessionStorage.removeItem('era_cl_token'); _clToken = null;
+        throw { needAuth: true };
+      }
+      if (res.ok){
+        const d = await res.json();
+        // null — вход верный, но роль не admin / director / accountant (гейт в RPC)
+        if (d == null) throw { noAccess: true };
+        return d;
+      }
       // 404 на параметрах = в БД ещё старая версия функции без фильтра —
       // тихо откатываемся на «всю историю», чтобы вкладка не умерла.
       if (res.status === 404 && range){
@@ -5645,7 +5665,10 @@ async function _fetchClientsAnalytics(range){
       }
       lastErr = 'HTTP ' + res.status;
       if (res.status !== 500 && res.status !== 504 && res.status !== 408) break; // не таймаут — ретрай не поможет
-    } catch (e) { lastErr = e.message; }
+    } catch (e) {
+      if (e && (e.needAuth || e.noAccess)) throw e;
+      lastErr = e.message;
+    }
     await new Promise(r => setTimeout(r, 1200));
   }
   throw new Error(lastErr || 'нет ответа');
@@ -5711,11 +5734,20 @@ function renderClientsView(){
   const key = _clientsRange ? _clientsRange.label : 'all';
   if (_clientsCache[key]){ _renderClients(el, _clientsCache[key]); return; }
   if (_clientsLoading) return;
+  if (!_clGetToken()){ _clRenderTabLogin(el); return; }
   _clientsLoading = true;
   el.innerHTML = '<div class="card card-pad" style="color:var(--muted)">Считаем по всем сделкам… до 10 секунд</div>';
   _fetchClientsAnalytics(_clientsRange)
     .then(d => { _clientsCache[key] = d; _renderClients(el, d); })
-    .catch(e => { el.innerHTML = '<div class="card card-pad" style="color:#c0392b">Не удалось получить данные (' + e.message + '). Попробуйте перезайти на вкладку через минуту.</div>'; })
+    .catch(e => {
+      if (e && e.needAuth){ _clRenderTabLogin(el); return; }
+      if (e && e.noAccess){
+        sessionStorage.removeItem('era_cl_token'); _clToken = null;
+        _clRenderTabLogin(el, 'Эта учётка Era CRM не даёт доступа к аналитике — нужна роль admin / director / accountant. Войдите другой учёткой.');
+        return;
+      }
+      el.innerHTML = '<div class="card card-pad" style="color:#c0392b">Не удалось получить данные (' + e.message + '). Попробуйте перезайти на вкладку через минуту.</div>';
+    })
     .finally(() => { _clientsLoading = false; });
 }
 function _clCard(title, val, sub, clr){
@@ -5974,6 +6006,38 @@ async function clDoLogin(minP, maxP){
   catch (e){ if (err) err.textContent = 'Не вошло: ' + (e.message || e); }
 }
 window.clDoLogin = clDoLogin;
+
+// Та же форма входа Era CRM, но прямо во вкладке «Клиенты»: с 05.10.2026
+// аналитика (выручка, средние чеки) тоже отдаётся только под токеном.
+// id полей свои (clt-*), чтобы не пересекаться с формой в модалке списка.
+function _clRenderTabLogin(el, note){
+  el.innerHTML = `<div class="card card-pad" style="max-width:420px">
+    <b>Аналитика по клиентам — вход Era CRM</b>
+    <div style="font-size:12px;color:var(--muted);margin:6px 0 12px">${note || 'Выручка и средние чеки видны только администратору, директору или бухгалтеру. Войдите учёткой Era CRM (как в кабинете директора).'}</div>
+    <input class="date-in" style="width:100%;margin-bottom:8px" type="email" id="clt-email" placeholder="Email" autocomplete="username">
+    <input class="date-in" style="width:100%;margin-bottom:8px" type="password" id="clt-pass" placeholder="Пароль" autocomplete="current-password">
+    <div id="clt-login-err" style="color:#c0392b;font-size:12px;margin-bottom:8px"></div>
+    <div style="display:flex;justify-content:flex-end"><button class="apply-btn" onclick="clTabLogin()">Войти</button></div>
+  </div>`;
+  const pw = document.getElementById('clt-pass');
+  if (pw) pw.addEventListener('keydown', e => { if (e.key === 'Enter') clTabLogin(); });
+}
+async function clTabLogin(){
+  const email = (document.getElementById('clt-email') || { value: '' }).value.trim();
+  const pass  = (document.getElementById('clt-pass')  || { value: '' }).value;
+  const err   = document.getElementById('clt-login-err');
+  if (!email || !pass){ if (err) err.textContent = 'Введите email и пароль'; return; }
+  if (err) err.textContent = '';
+  try { await _clLogin(email, pass); renderClientsView(); }
+  catch (e){ if (err) err.textContent = 'Не вошло: ' + (e.message || e); }
+}
+window.clTabLogin = clTabLogin;
+// Выход из дашборда (doLogout): забыть токен Era CRM и всё, что под ним
+// загружено, — иначе следующий в этой вкладке увидит выручку без входа.
+window._clResetSession = () => {
+  _clToken = null; _clLast = null;
+  for (const k in _clientsCache) delete _clientsCache[k];
+};
 
 // CSV для обзвона: BOM + ';' — открывается в русском Excel без настройки.
 function clDownloadCsv(){
