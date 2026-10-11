@@ -4,6 +4,33 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%233B82F6'/%3E%3Cstop offset='1' stop-color='%23A855F7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='1.4' y='1.4' width='29.2' height='29.2' rx='8' fill='%23fff' stroke='url(%23g)' stroke-width='2'/%3E%3Cpath d='M7 10 L11 22 L16 14 L21 22 L25 10' fill='none' stroke='url(%23g)' stroke-width='2.8' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+    <script>
+      // iOS: Safari приближает страницу при фокусе на любом поле с шрифтом
+      // мельче 16px (в альбомной ориентации, contenteditable, date-поля —
+      // CSS-правило из index.css туда не дотягивается), и обратно сам не
+      // отдаляет: «интерфейс сам увеличивается». maximum-scale=1 iOS (с 10-й
+      // версии) применяет ТОЛЬКО к авто-зуму, ручной щипок остаётся. Android
+      // по maximum-scale запретил бы щипок, а авто-зума у него нет — ему не ставим.
+      (function () {
+        var ua = navigator.userAgent;
+        var ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+        if (!ios) return;
+        var m = document.querySelector('meta[name="viewport"]');
+        if (m) m.setAttribute('content', m.getAttribute('content') + ', maximum-scale=1');
+      })();
+    </script>
+    <!-- Мобильное веб-приложение: «На экран Домой» открывает CRM на весь
+         экран, без адресной строки Safari и без его «потяни — обновить». -->
+    <link rel="manifest" href="/crm/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/crm/icons/apple-touch-icon.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Weglow CRM" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="theme-color" content="#FFFFFF" />
+    <!-- iOS превращает номера телефонов в тексте в tel:-ссылки: тап по карточке
+         сделки с номером открывал звонок вместо карточки. Звоним своими кнопками. -->
+    <meta name="format-detection" content="telephone=no, date=no, address=no, email=no" />
 
     <!-- Базовый CSP: ограничивает источники скриптов и подключений. На GitHub
          Pages нет HTTP-заголовков, поэтому используем meta — это слабее
@@ -32,15 +59,15 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-    <script type="module" crossorigin src="/crm/assets/index-DXxIMRYh.js"></script>
-    <link rel="modulepreload" crossorigin href="/crm/assets/icons-FNsIhGYX.js">
-    <link rel="modulepreload" crossorigin href="/crm/assets/motion-xTk-_Q_u.js">
-    <link rel="modulepreload" crossorigin href="/crm/assets/dnd-BAwt5rrg.js">
+    <script type="module" crossorigin src="/crm/assets/index-2NIRSt-v.js"></script>
+    <link rel="modulepreload" crossorigin href="/crm/assets/icons-KO_IXYG7.js">
+    <link rel="modulepreload" crossorigin href="/crm/assets/motion-BIDH69NX.js">
+    <link rel="modulepreload" crossorigin href="/crm/assets/dnd-p4JXRLTq.js">
     <link rel="modulepreload" crossorigin href="/crm/assets/three-Cm6remgg.js">
-    <link rel="modulepreload" crossorigin href="/crm/assets/r3f-CUZJt-rj.js">
-    <link rel="modulepreload" crossorigin href="/crm/assets/spline-BPFfE5Xu.js">
+    <link rel="modulepreload" crossorigin href="/crm/assets/r3f-LTZ8bepy.js">
+    <link rel="modulepreload" crossorigin href="/crm/assets/spline-BKBIbJog.js">
     <link rel="modulepreload" crossorigin href="/crm/assets/supabase-D3Pb_Qvf.js">
-    <link rel="stylesheet" crossorigin href="/crm/assets/index-Cv6XF-j1.css">
+    <link rel="stylesheet" crossorigin href="/crm/assets/index-zHCFFvuT.css">
   </head>
   <body class="antialiased">
     <div id="root"></div>
