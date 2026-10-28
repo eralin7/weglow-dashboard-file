@@ -19,6 +19,35 @@
         if (m) m.setAttribute('content', m.getAttribute('content') + ', maximum-scale=1');
       })();
     </script>
+    <script>
+      // Белый экран после выкатки: телефон взял из кэша index.html прошлой
+      // сборки, а её скрипт/стили на сервере уже 404 — приложение не стартует.
+      // Ловим провал загрузки своих ассетов и перезагружаемся мимо кэша
+      // (уникальный ?v=…) — не больше двух раз за минуту; дальше заставка
+      // покажет «Обновить». Счётчик сбрасывает main.tsx после старта.
+      (function () {
+        var KEY = 'era-boot-retry';
+        function bustReload() {
+          try {
+            var s = JSON.parse(sessionStorage.getItem(KEY) || '{"n":0,"t":0}');
+            if (Date.now() - s.t > 60000) s = { n: 0, t: Date.now() };
+            if (s.n >= 2) return;
+            s.n++;
+            sessionStorage.setItem(KEY, JSON.stringify(s));
+          } catch (e) { /* приватный режим — без счётчика, но с одним повтором */ }
+          var u = new URL(location.href);
+          u.searchParams.set('v', Date.now().toString(36));
+          location.replace(u.toString());
+        }
+        window.__eraBustReload = bustReload;
+        window.addEventListener('error', function (e) {
+          var t = e.target;
+          if (!t || (t.tagName !== 'SCRIPT' && t.tagName !== 'LINK')) return;
+          var url = t.src || t.href || '';
+          if (/\/assets\/[^/?#]+\.(js|css)(\?|#|$)/.test(url)) bustReload();
+        }, true);
+      })();
+    </script>
     <!-- Мобильное веб-приложение: «На экран Домой» открывает CRM на весь
          экран, без адресной строки Safari и без его «потяни — обновить». -->
     <link rel="manifest" href="/crm/manifest.webmanifest" />
@@ -59,7 +88,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-    <script type="module" crossorigin src="/crm/assets/index-C6TWVyj5.js"></script>
+    <script type="module" crossorigin src="/crm/assets/index-QHlE5NUC.js"></script>
     <link rel="modulepreload" crossorigin href="/crm/assets/icons-D87TiuKU.js">
     <link rel="modulepreload" crossorigin href="/crm/assets/motion-BrXka-Jr.js">
     <link rel="modulepreload" crossorigin href="/crm/assets/dnd-CPpiokMb.js">
@@ -70,6 +99,31 @@
     <link rel="stylesheet" crossorigin href="/crm/assets/index-C0GpHQQ1.css">
   </head>
   <body class="antialiased">
-    <div id="root"></div>
+    <!-- Заставка до старта React (main.tsx её убирает). Раньше до загрузки
+         скрипта был пустой белый экран; если CRM не стартовала за 15 с —
+         показываем причину и кнопку «Обновить» (мимо кэша). -->
+    <div id="root"><div id="boot" style="position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;font:15px/1.4 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#F2F2F7;color:#6B7785"><div id="boot-msg">Загрузка CRM…</div><button id="boot-reload" type="button" style="display:none;height:44px;padding:0 22px;border:0;border-radius:12px;background:#2563EB;color:#fff;font:600 15px -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">Обновить</button></div></div>
+    <script>
+      (function () {
+        try {
+          var ui = JSON.parse(localStorage.getItem('era-crm-ui') || '{}');
+          var theme = ui && ui.state && ui.state.theme;
+          var boot = document.getElementById('boot');
+          if (boot && theme === 'dark') { boot.style.background = '#0F172A'; boot.style.color = '#94A3B8'; }
+          if (boot && theme === 'tron') { boot.style.background = '#02040A'; boot.style.color = '#7BB7CC'; }
+        } catch (e) { /* без темы — светлая заставка */ }
+        setTimeout(function () {
+          if (!document.getElementById('boot')) return;
+          document.getElementById('boot-msg').textContent = 'CRM не загрузилась. Проверьте интернет и нажмите «Обновить».';
+          var b = document.getElementById('boot-reload');
+          b.style.display = 'block';
+          b.addEventListener('click', function () {
+            try { sessionStorage.removeItem('era-boot-retry'); } catch (e) {}
+            if (window.__eraBustReload) window.__eraBustReload();
+            else location.reload();
+          });
+        }, 15000);
+      })();
+    </script>
   </body>
 </html>
