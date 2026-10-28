@@ -2845,6 +2845,8 @@ function applyCustom(){
 //   Марафон 1: спринты 1-6, 01.05–26.07 (первый спринт особый, 17 дней).
 //   Каникулы:  27.07–02.08.
 //   Марафон 2: спринты 1-6 по 14 дней, с 03.08 (03.08–25.10).
+//   Каникулы:  26.10–01.11.
+//   Марафон 3: спринты 1-4 по 14 дней, с 02.11 (02.11–27.12).
 //
 // ВАЖНО про нумерацию. Внутри кода номер спринта СКВОЗНОЙ (g): по нему
 // хранятся планы в SPRINT_PLANS и строятся ключи preset 'sprint_<g>'.
@@ -2856,6 +2858,7 @@ function applyCustom(){
 const MARATHONS = [
   { n: 1, startISO: '2026-05-01', count: 6, firstLen: 17, len: 14 },
   { n: 2, startISO: '2026-08-03', count: 6, firstLen: 14, len: 14 },
+  { n: 3, startISO: '2026-11-02', count: 4, firstLen: 14, len: 14 },
 ];
 function _sprAddDays(iso, n){
   const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n);
