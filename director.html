@@ -416,8 +416,25 @@ const _ERA_GROUP_TO_ROP = {
   'Айша':        'РОП Айша',
   'KAZ Отдел':   'РОП KAZ Отдел',
   'KIDS':        'РОП KIDS',
+  // Марафон 3 (11.2026) — как в dashboard.html.
+  'Мухамеджан':    'РОП Мухамеджан',
+  'Шыңғыс Астана': 'РОП Шыңғыс Астана',
+  'Шынгыс Астана': 'РОП Шыңғыс Астана',
+  'Астана':        'РОП Шыңғыс Астана',
   'Админ':       null,
 };
+// Отдел сменил РОПа с даты: дни ≤ cutoffISO — прежнему РОПу, позже — новому
+// (Era CRM знает только текущую группу). Как ROP_DATE_SPLITS в dashboard.html:
+// отдел Аяулым с 01.11.2026 ведёт Мухамеджан.
+const ROP_DATE_SPLITS = [
+  { oldRop: 'РОП Аяулым', newRop: 'РОП Мухамеджан', cutoffISO: '2026-10-31' },
+];
+function _ropOnDate(rop, iso){
+  for (const r of ROP_DATE_SPLITS){
+    if (rop === r.oldRop || rop === r.newRop) return iso <= r.cutoffISO ? r.oldRop : r.newRop;
+  }
+  return rop;
+}
 // Старое имя РОПа → новое: для MGR_TO_ROP и для планов (как _OLD_ROP_RENAME
 // в dashboard.html).
 const _OLD_ROP_RENAME_DIR = {
@@ -974,8 +991,10 @@ const ROP_DEFS = [
   {name:'РОП Диас',        slug:'dias',      color:'#db2777'},
   {name:'РОП Айша',        slug:'aisha',     color:'#0a7c5c'},
   {name:'РОП Аяулым',      slug:'ayaulym',   color:'#1a56db'},
+  {name:'РОП Мухамеджан',  slug:'mukhamedzhan', color:'#2563eb'}, // отдел Аяулым с 01.11.2026
   {name:'РОП KAZ Отдел',   slug:'kaz',       color:'#0891b2'},
   {name:'РОП KIDS',        slug:'kids',      color:'#be185d'},
+  {name:'РОП Шыңғыс Астана', slug:'astana',  color:'#ea580c'}, // новый отдел, Марафон 3
   {name:'РОП B1 Partners', slug:'b1',        color:'#7c3aed'},
   {name:'БОТА AI',         slug:'bota-ai',   color:'#0ea5e9'},
 ];
@@ -1262,8 +1281,10 @@ const ROP_FACT_DEFS = [
   {name:'РОП Диас',        color:'#db2777', crms:['Коллаген','Ummi','B1 Partners']},
   {name:'РОП Айша',        color:'#0a7c5c', crms:['Коллаген','Ummi','B1 Partners']},
   {name:'РОП Аяулым',      color:'#1a56db', crms:['Коллаген','Ummi','B1 Partners']},
+  {name:'РОП Мухамеджан',  color:'#2563eb', crms:['Коллаген','Ummi','B1 Partners']},
   {name:'РОП KAZ Отдел',   color:'#0891b2', crms:['Коллаген','Ummi','B1 Partners']},
   {name:'РОП KIDS',        color:'#be185d', crms:['Коллаген','Ummi','B1 Partners']},
+  {name:'РОП Шыңғыс Астана', color:'#ea580c', crms:['Коллаген','Ummi','B1 Partners']},
   {name:'РОП B1 Partners', color:'#7c3aed', crms:['Коллаген','Ummi','B1 Partners']},
   {name:'БОТА AI',         color:'#0ea5e9', crms:['Коллаген','Ummi']},
 ];
@@ -1329,11 +1350,14 @@ async function loadRopFact(){
       for(const crm of rd.crms){
         const mgrs = MANAGERS[crm] || [];
         for(const mgr of mgrs){
-          if(getRopName(mgr.name) !== rd.name) continue;
+          const baseRop = getRopName(mgr.name);
+          if(!baseRop) continue;
           // Sum daily data for the month
           if(mgr.daily){
             for(const [dateStr, vals] of Object.entries(mgr.daily)){
               const parts = dateStr.split('.');
+              // День — тому РОПу, кто вёл отдел в этот день (ROP_DATE_SPLITS).
+              if(_ropOnDate(baseRop, `${parts[2]}-${parts[1]}-${parts[0]}`) !== rd.name) continue;
               const dd = new Date(parseInt(parts[2]),parseInt(parts[1])-1,parseInt(parts[0]));
               if(dd>=monthStart && dd<=monthEnd){
                 ropStats[rd.name].leads  += vals[0]||0;

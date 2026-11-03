@@ -2209,7 +2209,12 @@ let ROP_GROUPS = {
   'Кофе (Архив)':     { label: 'Кофе (Архив)',    color: '#b45309' },
   'БОТА AI':          { label: 'БОТА AI',         color: '#0ea5e9' },
 };
-const ROP_COLORS = {'РОП Айдана':'#1a56db','РОП Аслиддин':'#b45309','РОП Нурдаулет':'#0a7c5c','РОП Ербол':'#e11d48','РОП Айдана KIDS':'#7c3aed','РОП Диас KIDS':'#db2777','Кофе (Архив)':'#b45309','БОТА AI':'#0ea5e9','РОП KAZ Бауыржан':'#0891b2','РОП Айша':'#0a7c5c','РОП KAZ Отдел':'#0891b2','РОП KIDS':'#db2777'};
+const ROP_COLORS = {'РОП Айдана':'#1a56db','РОП Аслиддин':'#b45309','РОП Нурдаулет':'#0a7c5c','РОП Ербол':'#e11d48','РОП Айдана KIDS':'#7c3aed','РОП Диас KIDS':'#db2777','Кофе (Архив)':'#b45309','БОТА AI':'#0ea5e9','РОП KAZ Бауыржан':'#0891b2','РОП Айша':'#0a7c5c','РОП KAZ Отдел':'#0891b2','РОП KIDS':'#db2777','РОП Мухамеджан':'#2563eb','РОП Шыңғыс Астана':'#ea580c'};
+// Отделы, которых ещё нет в Era CRM, но план на них уже задан: строку
+// показываем с даты старта (с нулевым фактом), чтобы план было видно и
+// «ИТОГО РОП» сходился с суммой планов. Когда группа появится в Era CRM,
+// её менеджеры сами встанут в эту строку (см. ERA_GROUP_TO_ROP).
+const ROP_SINCE = { 'РОП Шыңғыс Астана': '2026-11-02' };
 const ROP_CRM_MAP = {
   // Active ROPs (Era CRM с 01.05.2026): managers могут иметь сделки в любом
   // из 3 пайплайнов, поэтому смотрим во все 3 бакета.
@@ -2230,6 +2235,10 @@ const ROP_CRM_MAP = {
   'РОП Айша':         ['Коллаген', 'Ummi', 'B1 Partners'],
   'РОП KAZ Отдел':    ['Коллаген', 'Ummi', 'B1 Partners'],
   'РОП KIDS':         ['Коллаген', 'Ummi', 'B1 Partners'],
+  // Марафон 3 (11.2026): отдел Аяулым ведёт Мухамеджан (ROP_DATE_SPLITS),
+  // новый отдел в Астане.
+  'РОП Мухамеджан':   ['Коллаген', 'Ummi', 'B1 Partners'],
+  'РОП Шыңғыс Астана':['Коллаген', 'Ummi', 'B1 Partners'],
   'БОТА AI':          ['Коллаген', 'Ummi'],  // AI bot manager (Админ-группа Era CRM)
 
   // Legacy ROPs (AmoCRM ≤ 30.04.2026). Их строки спрятаны через ERA_HIDE_ROPS,
@@ -2246,8 +2255,10 @@ function rebuildRopGroups() {
   // Старые AmoCRM-РОПы (Ербол / Айдана KIDS / Диас KIDS / Кофе) теперь скрыты
   // через ERA_HIDE_ROPS (constant выше). Force-add только для БОТА AI —
   // system-аккаунт Era CRM (Админ-группа): за ним есть лиды/сделки, строка
-  // должна быть видна даже без явного MGR_TO_ROP.
+  // должна быть видна даже без явного MGR_TO_ROP. И отделы с планом, которых
+  // ещё нет в Era CRM (ROP_SINCE).
   ropSet.add('БОТА AI');
+  for (const rop of Object.keys(ROP_SINCE)) ropSet.add(rop);
   ROP_GROUPS = { 'all': { label: 'Все', color: '#6366f1' } };
   // (Старое локальное _hiddenRops перенесено в ERA_HIDE_ROPS — constant в overlay-блоке.)
   for (const rop of [...ropSet].sort()) {
@@ -3522,11 +3533,16 @@ function _ropReturnPrevSprint(ropName){
   // нового марафона сюда попадают и КАНИКУЛЫ — их возвраты иначе потерялись бы.
   const fromD = parseDate(_sprDisp(s.fromISO));
   const toD   = parseDate(_sprDisp(_sprAddDays(cur.fromISO, -1)));
-  const map = RETURNS_BY_ROP[ropName] || {};
+  // Отдел, сменивший РОПа (ROP_DATE_SPLITS), несёт и возвраты прежнего РОПа:
+  // иначе в первом спринте нового РОПа возвраты команды за прошлый спринт и
+  // каникулы потерялись бы — строку прежнего РОПа в этом спринте уже не видно.
+  const rops = [ropName, ...ROP_DATE_SPLITS.filter(r => r.newRop === ropName).map(r => r.oldRop)];
   let sum = 0;
-  for (const [d, v] of Object.entries(map)){
-    const dd = parseDate(d);
-    if (dd >= fromD && dd <= toD) sum += v;
+  for (const rop of rops){
+    for (const [d, v] of Object.entries(RETURNS_BY_ROP[rop] || {})){
+      const dd = parseDate(d);
+      if (dd >= fromD && dd <= toD) sum += v;
+    }
   }
   return sum;
 }
@@ -3598,13 +3614,18 @@ function renderPlanTable(stats){
     const _historyCutoff = new Date(2026, 2, 23); // March 23
     const _historyGroups = new Set(['РОП Ербол', 'Кофе (Архив)']);
 
-    // «РОП Диас» переименован в Era CRM в «Нурдаулет KIDS» с 08.06.2026
-    // (см. ROP_DATE_SPLIT, cutoffISO='2026-06-07'). Прячем строку РОПа только
-    // когда период ЦЕЛИКОМ лежит в чужой эре, иначе у периодов на стыке
-    // (Спринт 3 = 01–14.06, Июнь целиком) пропадает половина данных:
-    //   • Диас прячем, если период целиком ≥08.06 (начало > 07.06);
-    //   • Нурдаулет KIDS прячем, если период целиком ≤07.06 (конец ≤ 07.06).
-    const _diasLastDay = new Date(2026, 5, 7); // 07.06.2026 — последний день Диаса
+    // Отдел, сменивший РОПа (ROP_DATE_SPLITS: Диас → Нурдаулет KIDS с 08.06,
+    // Аяулым → Мухамеджан с 01.11). Прячем строку РОПа только когда период
+    // ЦЕЛИКОМ лежит в чужой эре, иначе у периодов на стыке (Спринт 3 =
+    // 01–14.06, Каникулы 26.10–01.11) пропадает часть данных:
+    //   • прежнего РОПа прячем, если период начинается после cutoff;
+    //   • нового — если период заканчивается не позже cutoff.
+    // Отдел из ROP_SINCE прячем, пока он не начал работать.
+    const _cutD = iso => new Date(iso + 'T00:00:00');
+    const _ropOutOfEra = rop => ROP_DATE_SPLITS.some(r =>
+      (rop === r.oldRop && _fromD > _cutD(r.cutoffISO)) ||
+      (rop === r.newRop && _toD <= _cutD(r.cutoffISO))) ||
+      (ROP_SINCE[rop] && _toD < _cutD(ROP_SINCE[rop]));
 
     // Collect all ROP row data first
     const _ropRows = [];
@@ -3612,8 +3633,7 @@ function renderPlanTable(stats){
       if (ropName === 'all') continue;
       if (activeMainRop !== 'all' && !_mainRopNames().includes(ropName)) continue; // фильтр по РОПу
       if (_historyGroups.has(ropName) && _fromD > _historyCutoff) continue;
-      if (ropName === 'РОП Диас' && _fromD > _diasLastDay) continue;           // период целиком ≥08.06 → Диаса нет
-      if (ropName === 'РОП Нурдаулет KIDS' && _toD <= _diasLastDay) continue;   // период целиком ≤07.06 → KIDS ещё не было
+      if (_ropOutOfEra(ropName)) continue;
       const ropCrms = ROP_CRM_MAP[ropName] || [];
       if (selectedProdName && !ropCrms.includes(selectedProdName)) continue;
       const crms = selectedProdName ? ropCrms.filter(c=>c===selectedProdName) : ropCrms;
@@ -5100,6 +5120,14 @@ const ERA_GROUP_TO_ROP = {
   'Айша':        'РОП Айша',      // бывший «Нұрдаулет»
   'KAZ Отдел':   'РОП KAZ Отдел', // бывший «KAZ Бауыржан»
   'KIDS':        'РОП KIDS',      // детский отдел; планы «Нурдаулет KIDS» переходят сюда
+  // Марафон 3 (11.2026). Отдел Аяулым с 01.11 ведёт Мухамеджан — если группу
+  // переименуют в Era CRM, история по 31.10 всё равно останется у Аяулым
+  // (ROP_DATE_SPLITS). Новый отдел в Астане — группу могут набрать с
+  // казахскими «ң»/«ғ» или русскими «н»/«г», либо просто «Астана».
+  'Мухамеджан':    'РОП Мухамеджан',
+  'Шыңғыс Астана': 'РОП Шыңғыс Астана',
+  'Шынгыс Астана': 'РОП Шыңғыс Астана',
+  'Астана':        'РОП Шыңғыс Астана',
   'Админ':       null, // skip — Admin/БОТА AI/Бухгалтерия и т.п.
 };
 
@@ -5255,23 +5283,34 @@ function _purgeEraDates() {
   }
 }
 
-// ════════ DATE-SPLIT переименованного РОПа (Диас → Нурдаулет KIDS) ════════
-// В Era CRM группу «Диас» переименовали в «Нурдаулет KIDS». Нужно: данные
-// ≤ 07.06.2026 показывать под «РОП Диас», а с 08.06.2026 — под
-// «РОП Нурдаулет KIDS». Группировка в дашборде идёт по ИМЕНИ менеджера (без
-// учёта даты), поэтому разносим дни каждого менеджера обеих «личностей» этой
-// команды между двумя РОПами, при необходимости создавая виртуального
-// двойника. Это же чинит исторические (майские) данные, которые после
-// переименования утянуло в KIDS. Идемпотентно — вызывается в конце
+// ════════ DATE-SPLIT: отдел сменил РОПа (другое имя с даты) ════════
+// Нужно: данные ≤ cutoffISO показывать под прежним РОПом, а с cutoff + 1
+// день — под новым. Группировка в дашборде идёт по ИМЕНИ менеджера (без
+// учёта даты), а Era CRM знает только ТЕКУЩУЮ группу, поэтому разносим дни
+// каждого менеджера обеих «личностей» команды между двумя РОПами. Неважно,
+// переименовали ли группу в Era CRM: правило ловит менеджеров под обоими
+// именами. Кто работал после cutoff — остаётся настоящим именем у нового
+// РОПа, а его дни ≤ cutoff уезжают двойнику «Имя (oldTag)» у прежнего; кто
+// ушёл до cutoff — целиком у прежнего. Идемпотентно — вызывается в конце
 // loadEraCrmOverlay на каждом refresh.
-// С 09.2026 группы «Нурдаулет KIDS» в Era CRM нет (см. _OLD_ROP_RENAME),
-// поэтому делить больше некого и правило ничего не делает:
-// дни 01–07.06 этих менеджеров CRM теперь отдаёт под «Айшой».
-const ROP_DATE_SPLIT = {
-  oldRop:    'РОП Диас',            // дни ≤ cutoff
-  newRop:    'РОП Нурдаулет KIDS',  // дни ≥ cutoff + 1 день
-  cutoffISO: '2026-06-07',          // последний день oldRop (Диас по 07.06 включительно; KIDS с 08.06)
-};
+//   • Диас → Нурдаулет KIDS (с 08.06.2026). С 09.2026 группы «Нурдаулет
+//     KIDS» в Era CRM нет (см. _OLD_ROP_RENAME), поэтому делить больше некого
+//     и правило ничего не делает: дни 01–07.06 этих менеджеров CRM теперь
+//     отдаёт под «Айшой».
+//   • Аяулым → Мухамеджан (с 01.11.2026): отдел Аяулым с Марафона 3 ведёт
+//     Мухамеджан, всё по 31.10 — история Аяулым.
+const ROP_DATE_SPLITS = [
+  { oldRop: 'РОП Диас',   newRop: 'РОП Нурдаулет KIDS', cutoffISO: '2026-06-07', oldTag: 'Диас' },
+  { oldRop: 'РОП Аяулым', newRop: 'РОП Мухамеджан',     cutoffISO: '2026-10-31', oldTag: 'Аяулым' },
+];
+// РОП отдела в конкретный день (ISO): для сменившего РОПа — прежний или
+// новый по дате, для остальных — как есть.
+function _ropOnDate(rop, iso){
+  for (const r of ROP_DATE_SPLITS){
+    if (rop === r.oldRop || rop === r.newRop) return iso <= r.cutoffISO ? r.oldRop : r.newRop;
+  }
+  return rop;
+}
 function _ropSplitISO(ddmmyyyy){
   // 'DD.MM.YYYY' → 'YYYY-MM-DD' (zero-padded, лексикографически сравнимо с cutoffISO)
   const [d,m,y] = String(ddmmyyyy).split('.');
@@ -5289,44 +5328,54 @@ function _ropSplitRecalc(m){
   m.avgCheck = d>0 ? Math.round(b/d)        : 0;
 }
 function _applyRopDateSplit(){
-  const { oldRop, newRop, cutoffISO } = ROP_DATE_SPLIT;
-  const SUF_OLD = ' (Диас)';   // двойник, несущий ≤cutoff-часть KIDS-менеджера
-  const SUF_NEW = ' (KIDS)';   // двойник, несущий >cutoff-часть Диас-менеджера (редкий случай)
   if (typeof clearRopCache === 'function') clearRopCache();
-  let _split = 0;
-  for (const acc of Object.keys(MANAGERS)){
-    const list = MANAGERS[acc];
-    if (!Array.isArray(list)) continue;
-    const additions = [];
-    for (const m of list){
-      if (!m || !m.name) continue;
-      if (m.name.endsWith(SUF_OLD) || m.name.endsWith(SUF_NEW)) continue; // это уже двойник
-      const rop = getRop(m.name);
-      if (rop !== oldRop && rop !== newRop) continue;
-      const lo = {}, hi = {};                       // lo = ≤cutoff (Диас), hi = >cutoff (KIDS)
-      for (const [date, vals] of Object.entries(m.daily || {})){
-        (_ropSplitISO(date) <= cutoffISO ? lo : hi)[date] = vals;
+  const twinSufs = ROP_DATE_SPLITS.map(r => ' (' + r.oldTag + ')');
+  const isTwin = name => twinSufs.some(s => name.endsWith(s));
+  for (const { oldRop, newRop, cutoffISO, oldTag } of ROP_DATE_SPLITS){
+    // 1) Менеджеры команды (под любым из двух имён РОПа) и есть ли у них дни
+    //    после cutoff хоть в одной воронке. Решаем по человеку, а не по
+    //    записи: MGR_TO_ROP один на имя для всех воронок.
+    const hasHi = new Map();
+    for (const list of Object.values(MANAGERS)){
+      if (!Array.isArray(list)) continue;
+      for (const m of list){
+        if (!m || !m.name || isTwin(m.name)) continue;
+        const rop = getRop(m.name);
+        if (rop !== oldRop && rop !== newRop) continue;
+        const hi = Object.keys(m.daily || {}).some(d => _ropSplitISO(d) > cutoffISO);
+        hasHi.set(m.name, hasHi.get(m.name) || hi);
       }
-      const keepHi = (rop === newRop);              // KIDS-менеджер держит hi; Диас-менеджер держит lo
-      const keep   = keepHi ? hi : lo;
-      const spill  = keepHi ? lo : hi;
-      if (Object.keys(spill).length === 0) continue; // делить нечего — уже всё под своим РОПом
-      m.daily = keep; _ropSplitRecalc(m); MGR_TO_ROP[m.name] = rop;
-      // Отколовшаяся часть → двойник с противоположным РОПом.
-      const sibRop  = keepHi ? oldRop : newRop;
-      const sibName = m.name + (keepHi ? SUF_OLD : SUF_NEW);
-      let sib = list.find(x=>x.name===sibName) || additions.find(x=>x.name===sibName);
-      if (!sib){
-        sib = { name:sibName, leads:0,deals:0,budget:0,newDeals:0,newBudget:0,baseDeals:0,baseBudget:0,conv:0,newConv:0,baseConv:0,avgCheck:0, daily:{} };
-        additions.push(sib);
-      }
-      Object.assign(sib.daily, spill); _ropSplitRecalc(sib); MGR_TO_ROP[sibName] = sibRop;
-      _split++;
     }
-    if (additions.length) list.push(...additions);
+    // 2) Работал после cutoff → настоящее имя у нового РОПа, дни ≤ cutoff во
+    //    всех воронках → двойнику у прежнего. Ушёл раньше → целиком у прежнего.
+    const suf = ' (' + oldTag + ')';
+    let _split = 0;
+    for (const [name, hi] of hasHi){
+      MGR_TO_ROP[name] = hi ? newRop : oldRop;
+      if (!hi) continue;
+      for (const list of Object.values(MANAGERS)){
+        if (!Array.isArray(list)) continue;
+        const m = list.find(x => x && x.name === name);
+        if (!m) continue;
+        const keep = {}, lo = {};
+        for (const [date, vals] of Object.entries(m.daily || {})){
+          (_ropSplitISO(date) <= cutoffISO ? lo : keep)[date] = vals;
+        }
+        if (!Object.keys(lo).length) continue;      // уже всё под своим РОПом
+        m.daily = keep; _ropSplitRecalc(m);
+        const sibName = name + suf;
+        let sib = list.find(x => x && x.name === sibName);
+        if (!sib){
+          sib = { name:sibName, leads:0,deals:0,budget:0,newDeals:0,newBudget:0,baseDeals:0,baseBudget:0,conv:0,newConv:0,baseConv:0,avgCheck:0, daily:{} };
+          list.push(sib);
+        }
+        Object.assign(sib.daily, lo); _ropSplitRecalc(sib); MGR_TO_ROP[sibName] = oldRop;
+        _split++;
+      }
+    }
+    if (_split) console.log('[rop date-split] разнесено записей:', _split, '→ ≤'+cutoffISO+' '+oldRop+' / далее '+newRop);
   }
   if (typeof clearRopCache === 'function') clearRopCache();
-  if (_split) console.log('[rop date-split] разнесено менеджеров:', _split, '→ ≤'+cutoffISO+' '+oldRop+' / далее '+newRop);
 }
 
 // ── История переходов менеджеров между отделами ───────────────────────
@@ -5334,7 +5383,7 @@ function _applyRopDateSplit(){
 // другой отдел его ПРОШЛЫЕ продажи задним числом уезжают к новому РОПу.
 // Здесь фиксируем историю: дни ≤ untilISO остаются за прежним отделом.
 // Отколотая часть живёт двойником «Имя (Отдел)» — тот же приём, что в
-// ROP_DATE_SPLIT: в таблице менеджеров её видно отдельной строкой, а суммы
+// ROP_DATE_SPLITS: в таблице менеджеров её видно отдельной строкой, а суммы
 // компании не меняются (переносится только принадлежность к РОПу).
 // Чтобы добавить ещё один переход — допишите строку в массив.
 const MGR_ROP_HISTORY = [
@@ -5540,7 +5589,7 @@ async function loadEraCrmOverlay() {
   }
   if (_renamed) console.log('[era-crm overlay] renamed', _renamed, 'mgr→rop entries via _OLD_ROP_RENAME');
 
-  // Date-split переименованного РОПа (Диас ≤07.06 / Нурдаулет KIDS ≥08.06).
+  // Date-split отделов, сменивших РОПа (Аяулым ≤31.10 / Мухамеджан ≥01.11 и т.п.).
   // Должен идти ДО rebuildRopGroups, чтобы новые маппинги попали в группы.
   _applyRopDateSplit();
 
@@ -6135,9 +6184,11 @@ async function loadEraCrmReturns() {
   for (const r of rows) {
     const rop0 = _eraCrmRopName(r.group_title);
     if (!rop0) continue;
-    const rop = (typeof _OLD_ROP_RENAME !== 'undefined' && _OLD_ROP_RENAME[rop0]) || rop0;
+    const rop1 = (typeof _OLD_ROP_RENAME !== 'undefined' && _OLD_ROP_RENAME[rop0]) || rop0;
     const date = _ddmmyyyy(r.day);
     if (!date) continue;
+    // Отдел, сменивший РОПа: возврат — тому, кто вёл отдел в этот день.
+    const rop = _ropOnDate(rop1, _ropSplitISO(date));
     const amt = Number(r.returns_budget) || 0;
     if (!amt) continue;
     if (!next[rop]) next[rop] = {};
