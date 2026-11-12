@@ -3143,7 +3143,7 @@ function setMetric(m,el){
 function setMgrRop(rop, el) {
   activeMgrRop = rop;
   activeMgrProdSub = 'all';
-  _renderMgrGroupPills();   // категории + под-строка РОПов под ОП (см. MGR_CATS)
+  _renderMgrGroupPills();   // категории (MGR_CATS) + список руководителей
 
   // Под-фильтр продукта — только для конкретного РОПа с несколькими воронками;
   // у категорий ('cat:*') в ROP_CRM_MAP ничего нет — под-фильтр скрыт.
@@ -6477,9 +6477,9 @@ function renderRopFilterPills(){
   put('summary-dept-pills', _filterBtnsHTML(rops,  'setSummaryDept',      summaryDept,            'cf-btn'));
   put('summary-prod-pills', _filterBtnsHTML(prods, 'setSummaryProd',      summaryProd,            'cf-btn'));
 }
-// Пилюли раздела «Менеджеры» — одна строка: Все / ОП / Партнёры / AI-менеджер.
-// Под ОП (или выбранным РОПом) раскрывается под-строка продающих РОПов; группы
-// из MGR_CAT_ROPS (B1 Partners, БОТА AI) в неё не входят — это свои категории.
+// Меню «Группа» раздела «Менеджеры»: Все / ОП / Партнёры / AI-менеджер, под
+// ними «Руководители» — продающие РОПы, как в «Группе» главного вида. Группы
+// из MGR_CAT_ROPS (B1 Partners, БОТА AI) в список не входят — это свои категории.
 function _renderMgrGroupPills(){
   const el = document.getElementById('mgr-rop-pills');
   if (!el) return;
@@ -6488,14 +6488,12 @@ function _renderMgrGroupPills(){
     .filter(k => k !== 'all' && !hide.has(k) && !MGR_CAT_ROPS[k])
     .map(r => ({ v: r, label: r.replace(/^РОП\s+/, '') }));
   const cat = _mgrCatKey(activeMgrRop);
-  const inSales = cat === 'sales' || (activeMgrRop !== 'all' && !cat);   // ОП целиком или конкретный РОП
   const btn = (v, label, active) =>
     `<button class="pill rop-pill${active?' active':''}" onclick="setMgrRop('${String(v).replace(/'/g, "\\'")}',this)">${label}</button>`;
   let html = btn('all', 'Все', activeMgrRop === 'all');
-  for (const [k, c] of Object.entries(MGR_CATS)) html += btn('cat:' + k, c.label, k === 'sales' ? inSales : cat === k);
-  if (inSales) {
-    html += '<div class="pill-sep"></div><span class="tb-label">РОП:</span>';
-    html += btn('cat:sales', 'Все', cat === 'sales');
+  for (const [k, c] of Object.entries(MGR_CATS)) html += btn('cat:' + k, c.label, cat === k);
+  if (salesRops.length) {
+    html += '<span class="tb-label">Руководители</span>';
     salesRops.forEach(r => { html += btn(r.v, r.label, activeMgrRop === r.v); });
   }
   el.innerHTML = html;
