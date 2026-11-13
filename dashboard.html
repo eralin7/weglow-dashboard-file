@@ -533,6 +533,10 @@ body { font-family:var(--font-ui); background:var(--bg); color:var(--ink); min-h
   text-transform:uppercase; color:var(--muted); border-top:1px solid var(--line2);
 }
 .sprint-menu > .sprint-group:first-child { border-top:none; }
+/* Марафон целиком — пункт-заголовок над своими спринтами */
+.sprint-item.sprint-mar { font-weight:700; color:var(--ink); margin-top:4px; }
+.sprint-item .s-all { font-size:9px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:var(--muted); margin-left:6px; }
+.sprint-item.sprint-mar:hover .s-all, .sprint-item.sprint-mar.active .s-all { color:inherit; }
 .sprint-item .s-badge {
   font-size:9px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
   color:var(--green); background:var(--green-l);
@@ -1070,6 +1074,14 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
   letter-spacing:1px; text-transform:uppercase; color:var(--muted);
 }
 .shc-marathon:first-child { margin-top:0; }
+/* Заголовок марафона — кнопка «развернуть / свернуть» с итогом */
+.shc-mar-btn { display:flex; align-items:center; gap:10px; width:100%; text-align:left; background:none; border:0;
+               border-top:1px solid var(--line2); padding:10px 2px 6px; cursor:pointer; font-family:inherit; }
+.shc-mar-btn:first-child { border-top:0; padding-top:2px; }
+.shc-mar-btn .shc-caret { width:10px; color:var(--acc); }
+.shc-mar-btn:hover .shc-mar-name { color:var(--acc); }
+.shc-mar-btn .shc-mar-range { text-transform:none; letter-spacing:0; font-weight:500; }
+.shc-mar-btn .shc-mar-sum { margin-left:auto; text-transform:none; letter-spacing:0; font-weight:600; font-size:12px; color:var(--slate); white-space:nowrap; }
 .shc-head { display:flex; justify-content:space-between; align-items:baseline; gap:6px; margin-bottom:8px; }
 .shc-title { font-weight:600; font-size:13px; color:var(--ink); }
 .shc-now { font-size:10px; color:#fff; background:var(--acc); border-radius:6px; padding:1px 6px; font-weight:600; margin-left:4px; }
@@ -1495,6 +1507,48 @@ html:not([data-theme]) .mob-menu-btn { background: var(--sb-bg); color: var(--sb
 .kpi-strip-wrap .kpi-row-label { white-space: nowrap; }
 .kpi-strip-wrap .kpi-row-val, .kpi-strip-wrap .kpi-row-sub, .kpi-strip-wrap .kpi-row-growth,
 html:not([data-theme]) .kpi-strip-wrap .kpi-col .kpi-row-val, html:not([data-theme]) .kpi-strip-wrap .kpi-col .kpi-row-sub { text-align: left; }
+
+/* Касса по направлениям — строки под «Продажами» в карточках KPI */
+html .kpi-col .kpi-row.kpi-split { padding: 5px 0 5px 12px; border-bottom-style: dashed; }
+html .kpi-col .kpi-row.kpi-split .kpi-row-label { display: flex; align-items: center; gap: 6px; font-size: 12px; text-transform: none; letter-spacing: 0; min-width: 0; }
+html .kpi-col .kpi-row.kpi-split .kpi-row-val { font-size: 13px; font-weight: 600; white-space: nowrap; }
+html .kpi-col .kpi-row.kpi-split > div { flex-shrink: 0; margin-left: 8px; }
+/* строка «из них» внутри предыдущей и термин маркетинга второй строкой подписи */
+html .kpi-col .kpi-row.kpi-split.kpi-nested { padding-left: 22px; }
+html .kpi-col .kpi-row.kpi-split .kpi-row-label.has-term { align-items: flex-start; }
+html .kpi-col .kpi-row-label.has-term .kpi-split-dot { margin-top: 4px; }
+html .kpi-col .kpi-term { display: block; font-size: 10px; font-weight: 400; color: var(--muted); line-height: 1.3; }
+.kpi-split-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+/* Разделы карточек KPI: строки раздела скрыты, пока раздел не развернули */
+#kpi-3col:not(.kpi-open-sales) .kpi-d-sales, #kpi-3col:not(.kpi-open-leads) .kpi-d-leads,
+#kpi-3col:not(.kpi-open-deals) .kpi-d-deals, #kpi-3col:not(.kpi-open-drr) .kpi-d-drr,
+#kpi-3col:not(.kpi-open-conv) .kpi-d-conv { display: none; }
+.kpi-col .kpi-row.kpi-toggle { cursor: pointer; }
+.kpi-col .kpi-row.kpi-toggle:hover .kpi-row-label { color: var(--acc); }
+.kpi-caret { display: inline-block; width: 11px; font-size: 9px; font-style: normal; color: var(--acc); transition: transform .15s; }
+#kpi-3col.kpi-open-sales .kpi-toggle[data-sec="sales"] .kpi-caret, #kpi-3col.kpi-open-leads .kpi-toggle[data-sec="leads"] .kpi-caret,
+#kpi-3col.kpi-open-deals .kpi-toggle[data-sec="deals"] .kpi-caret, #kpi-3col.kpi-open-drr .kpi-toggle[data-sec="drr"] .kpi-caret,
+#kpi-3col.kpi-open-conv .kpi-toggle[data-sec="conv"] .kpi-caret { transform: rotate(90deg); }
+.kpi-more { display: block; width: 100%; margin-top: 6px; padding: 8px 0 2px; border: 0; border-top: 1px dashed var(--line2);
+            background: none; color: var(--acc); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; text-align: center; }
+.kpi-more:hover { text-decoration: underline; }
+/* Таблица планов: кнопки групп колонок */
+.plan-col-bar { position: sticky; left: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 12px 16px 6px; }
+.plan-col-lbl { font-size: 11px; color: var(--muted); margin-right: 2px; }
+.plan-col-btn { border: 1px solid var(--line); background: var(--white); color: var(--slate); border-radius: 999px;
+                padding: 4px 11px; font: inherit; font-size: 12px; cursor: pointer; }
+.plan-col-btn.active { background: var(--acc-l); border-color: var(--acc); color: var(--acc); font-weight: 600; }
+.plan-col-btn:disabled { opacity: .4; cursor: default; }
+.plan-base-note { position: sticky; left: 0; padding: 2px 16px 8px; font-size: 12px; color: var(--muted); }
+.plan-base-note a, .cb-link { color: var(--acc); cursor: pointer; text-decoration: underline; }
+.cb-bar { display: flex; height: 12px; min-width: 150px; gap: 2px; border-radius: 4px; overflow: hidden; }
+.cb-bar i { display: block; height: 100%; }
+.cb-bar-sub { font-size: 10px; color: var(--muted); margin-top: 3px; text-align: left; white-space: nowrap; }
+.cb-leg { display: flex; flex-wrap: wrap; gap: 14px; padding: 2px 24px 16px; font-size: 11px; color: var(--muted); }
+.cb-leg span { display: inline-flex; align-items: center; gap: 5px; }
+.cb-leg i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+/* Таблица планов: ОБЩЕЕ ИТОГО (РОПы + партнёры + бот) */
+table.dt tr.tr-grand td { background: var(--line2); }
 </style>
 <link rel="stylesheet" href="theme.css">
 </head>
@@ -1726,6 +1780,7 @@ const _authGuard = new MutationObserver(() => {
         <div class="seg">
           <button class="pill prod-pill active" onclick="setProd('all',this)"><div class="prod-dot" style="background:var(--acc)"></div><span class="pl-txt">Все</span></button>
           <button class="pill prod-pill" onclick="setProd('col',this)"><div class="prod-dot" style="background:#1a56db"></div><span class="pl-txt">Коллаген</span></button>
+          <button class="pill prod-pill" onclick="setProd('kids',this)"><div class="prod-dot" style="background:#db2777"></div><span class="pl-txt">KIDS</span></button>
         </div>
       </div>
       <div class="tb-group">
@@ -1877,7 +1932,16 @@ const _authGuard = new MutationObserver(() => {
       <div class="sec-label mb20">Выполнение плана по группам</div>
       <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px">
         <div class="card" style="flex:1;min-width:700px;overflow-x:auto;-webkit-overflow-scrolling:touch">
-          <div id="plan-table" style="min-width:900px"></div>
+          <div class="plan-col-bar">
+            <span class="plan-col-lbl">Колонки:</span>
+            <button class="plan-col-btn" data-k="plan" onclick="togglePlanCols('plan')">План подробно</button>
+            <button class="plan-col-btn" data-k="cust" onclick="togglePlanCols('cust')">Первичные / повторные</button>
+            <button class="plan-col-btn" data-k="prod" onclick="togglePlanCols('prod')">Товары</button>
+            <button class="plan-col-btn" data-k="base" onclick="togglePlanCols('base')">База</button>
+            <button class="plan-col-btn" data-k="ads" onclick="togglePlanCols('ads')">Реклама</button>
+          </div>
+          <div id="plan-base-note" class="plan-base-note" hidden></div>
+          <div id="plan-table"></div>
         </div>
         <div class="ai-side" style="border-left-color:#f59e0b">
           <div class="ai-side-hdr"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg> План</div>
@@ -1894,8 +1958,8 @@ const _authGuard = new MutationObserver(() => {
           <div class="chart-body tall">
             <canvas id="lineChart"></canvas>
             <div class="chart-empty" id="lineChart-empty" hidden>
-              <div class="ce-box">Нет продаж за выбранный период
-                <span class="ce-sub">Смените период или группу в шапке</span>
+              <div class="ce-box"><span id="lineChart-empty-t">Нет продаж за выбранный период</span>
+                <span class="ce-sub" id="lineChart-empty-s">Смените период или группу в шапке</span>
               </div>
             </div>
           </div>
@@ -1905,11 +1969,6 @@ const _authGuard = new MutationObserver(() => {
         <div class="card" style="width:380px;flex-shrink:0">
           <div class="card-hdr" style="flex-wrap:wrap;gap:6px">
             <span class="card-title">Товары</span>
-            <div class="chart-filters" id="prod-donut-filters">
-              <button class="cf-btn active" onclick="setProdDonutFilter('all',this)">Все</button>
-              <button class="cf-btn" onclick="setProdDonutFilter('Коллаген',this)">Коллаген</button>
-              <button class="cf-btn" onclick="setProdDonutFilter('Ummi',this)">KIDS</button>
-            </div>
           </div>
           <div style="display:flex;flex-direction:column;align-items:center;padding:8px 16px 16px">
             <div style="width:220px;height:220px"><canvas id="prodByRopChart"></canvas></div>
@@ -1922,8 +1981,8 @@ const _authGuard = new MutationObserver(() => {
         </div>
       </div>
 
-      <!-- Combined Leads & Deals chart -->
-      <div class="chart-row" style="gap:16px;margin-bottom:20px">
+      <!-- Combined Leads & Deals chart (в продуктовом режиме скрыт: лиды товару не приписываем) -->
+      <div class="chart-row" id="leads-deals-row" style="gap:16px;margin-bottom:20px">
         <div class="card" style="flex:1;min-width:500px">
           <div class="card-hdr">
             <span class="card-title">Лиды и Сделки</span>
@@ -1977,7 +2036,7 @@ const _authGuard = new MutationObserver(() => {
       <!-- Geography Map -->
       <div class="sec-label mb20">География заказов</div>
       <div class="card mb24">
-        <div class="card-hdr"><span class="card-title">Карта заказов по городам</span>
+        <div class="card-hdr" style="flex-wrap:wrap;gap:4px 16px;padding-bottom:10px"><span class="card-title" style="white-space:nowrap">Карта заказов по городам</span>
           <span id="map-city-count" style="font-size:11px;color:var(--muted)"></span>
         </div>
         <div style="display:flex;gap:16px;flex-wrap:wrap">
@@ -2091,6 +2150,8 @@ const _authGuard = new MutationObserver(() => {
     </div>
     <!-- фильтр по периоду: строится в renderClientsFilter() -->
     <div id="clients-filter" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:14px"></div>
+    <!-- база клиентов по отделам: renderClientBase() -->
+    <div id="clients-base"></div>
     <div id="clients-content"><div class="card card-pad" style="color:var(--muted)">Загрузка…</div></div>
     <!-- модалка списка клиентов (ПД — только после входа Era CRM) -->
     <div class="mgr-modal-overlay" id="cl-modal-overlay" onclick="if(event.target===this)closeClientList()">
@@ -2165,8 +2226,57 @@ let SPRINTS = (_loaded && _loaded.SPRINTS) ? _loaded.SPRINTS : {};
 let SPRINT_PLANS = (_loaded && _loaded.SPRINT_PLANS) ? _loaded.SPRINT_PLANS : {};
 let RNP_EXCEL = (_loaded && _loaded.RNP_EXCEL) ? _loaded.RNP_EXCEL : {};
 
+// ═══ НАПРАВЛЕНИЯ (ПРОЕКТЫ) ═══════════════════════════════════════
+// Переключатель «Продукт» в шапке: Все / Коллаген / KIDS.
+//   • Все — вся компания: лиды, сделки, конверсии, план.
+//   • Коллаген / KIDS — ПРОДУКТОВЫЙ режим (решение владельца: «воронки не
+//     работают»): только то, что считается по товарам во всех воронках, —
+//     касса товаров направления, штуки, сделки с этим товаром, средний чек
+//     (aggregateProduct, _productCash). Лиды и конверсию направлению не
+//     приписываем: у лида товара ещё нет, а Умми продают и в воронке «Коллаген».
+// ad — каналы рекламы направления (AD_SPEND); mgrKey — бакет для цвета в
+// карточке менеджера.
 const PROD_CFG = {
-  col:    {name:'Коллаген', color:'#1a56db', rawKey:'Коллаген', mgrKey:'Коллаген'},
+  col:  {name:'Коллаген', color:'#1a56db', mgrKey:'Коллаген', ad:['Коллаген']},
+  kids: {name:'KIDS',     color:'#db2777', mgrKey:'Ummi',     ad:['Ummi']},
+};
+// Все бакеты компании (воронки Era CRM и аккаунты старой AmoCRM).
+const ALL_BUCKETS = ['Коллаген', 'Ummi', 'Ербол', 'Кофе (Архив)', 'B1 Partners'];
+const PROD_ALL = {name:'Все продукты', color:'var(--acc)', ad:['Коллаген','Ummi','БОТА AI']};
+function _prodCfg(pk){ return pk === 'all' ? PROD_ALL : (PROD_CFG[pk] || PROD_ALL); }
+// Направления для подписей и цветов (касса по товарам).
+const DIRECTIONS = {
+  col:  {label:'Коллаген',       color:'#1a56db'},
+  kids: {label:'Детское (Умми)', color:'#db2777'},
+  b1:   {label:'Партнёры',       color:'#0891b2'},
+};
+// Касса по направлениям в карточках KPI — по составу заказов (см. _productCash).
+const CASH_SPLIT_KEYS = ['col', 'kids'];
+// Прайс (РРЦ) Era CRM — src/lib/promo-calc.ts → PRICES; ключ = label товарного
+// поля сделки в lower-case. Касса сделки делится между товарами пропорционально
+// qty × РРЦ — так скидки и возвраты распределяются по товарам поровну.
+// dir — направление (переключатель «Продукт»), group — колонка «Товары» в
+// таблице РОПов, short — подпись в карточках.
+const PRODUCT_PRICE_DIR = {
+  'коллаген красный':   { price: 32000, dir: 'col',  group: 'col',    short: 'Красный'   },
+  'коллаген синий':     { price: 28000, dir: 'col',  group: 'col',    short: 'Синий'     },
+  'коллаген кофе':      { price: 38500, dir: 'col',  group: 'coffee', short: 'Кофе'      },
+  'мини коллаген кофе': { price: 7500,  dir: 'col',  group: 'coffee', short: 'Мини кофе' },
+  'умми':               { price: 37000, dir: 'kids', group: 'ummi',   short: 'Умми'      },
+};
+// Группы товаров для таблицы РОПов («кто сколько продаёт коллагена, кофе, умми»).
+const PRODUCT_GROUPS = [
+  { key: 'col',    label: 'Коллаген', title: 'Коллаген Красный и Синий' },
+  { key: 'coffee', label: 'Кофе',     title: 'Коллаген Кофе и Мини Коллаген Кофе' },
+  { key: 'ummi',   label: 'Умми',     title: 'Детский Умми' },
+];
+// Имена товаров снимка AmoCRM (PRODUCTS, ≤ 31.05.2026) → ключ прайса.
+const _SNAP_PRODUCT_KEY = {
+  'Детский "Умми"':       'умми',
+  'Количество "Красный"': 'коллаген красный',
+  'Количество "Синий"':   'коллаген синий',
+  'Коллаген "Кофе"':      'коллаген кофе',
+  'Мини Коллаген "Кофе"': 'мини коллаген кофе',
 };
 
 // ═══ ROP GROUPS (all products) ════════════════════════════════════
@@ -2379,14 +2489,15 @@ function buildPresets() {
   presets.yesterday = { from: yesterdayStr, to: yesterdayStr, label: `Вчера, ${yest.getDate()} ${MONTH_NAMES_GEN[yest.getMonth()]}` };
   presets.week = { from: week7Str, to: todayStr, label: '7 дней' };
 
-  // Previous month (рендерится слева от текущего; корректно через границу года)
-  const prevD = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const pm = _makeMonthPreset(prevD.getFullYear(), prevD.getMonth() + 1);
-  presets[pm.key] = pm;
-
-  // Current month only
+  // Месяцы в фильтре периода: текущий и два предыдущих (корректно через
+  // границу года). Порядок вставки = порядок кнопок: текущий первым.
   const p = _makeMonthPreset(now.getFullYear(), now.getMonth() + 1);
   presets[p.key] = p;
+  for (let back = 1; back <= 2; back++) {
+    const prevD = new Date(now.getFullYear(), now.getMonth() - back, 1);
+    const pm = _makeMonthPreset(prevD.getFullYear(), prevD.getMonth() + 1);
+    presets[pm.key] = pm;
+  }
 
   // Sprint presets — добавляем рядом с месячным, если в SPRINTS заданы даты.
   const curMk = `${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
@@ -2410,6 +2521,22 @@ function buildPresets() {
 function activeSprintNum(){
   const m = activePeriod && activePeriod.preset && String(activePeriod.preset).match(/^sprint_(\d+)$/);
   return m ? +m[1] : null;
+}
+// Номер марафона, выбранного в фильтре периода целиком (preset 'marathon_<n>').
+function activeMarathonNum(){
+  const m = activePeriod && activePeriod.preset && String(activePeriod.preset).match(/^marathon_(\d+)$/);
+  return m ? +m[1] : null;
+}
+// Сквозные номера спринтов «планового периода»: выбранный спринт или все
+// спринты выбранного марафона (план марафона = сумма планов его спринтов).
+// null — у периода нет спринт-плана (месяц, день, свой диапазон, каникулы).
+function activePlanSprints(){
+  const g = activeSprintNum();
+  if (g) return [g];
+  const m = activeMarathonNum();
+  if (!m) return null;
+  const gs = _SPRINTS.filter(s => s.m === m).map(s => s.g);
+  return gs.length ? gs : null;
 }
 // План конкретного РОПа на сквозной спринт n.
 function sprintPlanFor(ropName, n){
@@ -2493,11 +2620,8 @@ function convCls(v){return v>=12?'txt-g':v>=8?'txt-y':'txt-r';}
 function pctBg(v){return v>=80?'bg-g':v>=50?'bg-y':'bg-r';}
 
 // ═══════════════════ AGGREGATE ════════════════════════════════════
-// Virtual CRM siblings: aggregate() merges these with the main CRM RAW.
-// «Коллаген» виртуально включает все бакеты, чтобы топ-KPI «Все продукты»
-// и итог по РОП-таблице совпадали. B1 Partners добавлен с 18.05.2026
-// (после переезда на Era CRM) — раньше его не было.
-const _VIRTUAL_CRMS = { 'Коллаген': ['Ummi', 'Ербол', 'Кофе (Архив)', 'B1 Partners'] };
+// «Все продукты» = все бакеты ALL_BUCKETS (B1 Partners — с 18.05.2026, после
+// переезда на Era CRM); направление считается по товарам (aggregateProduct).
 // ── ROP-фильтр главного вида ──────────────────────────────────────
 // Кнопка «4 РОПа» = все продающие отделы: каждая группа из ROP_GROUPS, кроме
 // партнёров и бота (MGR_CAT_ROPS — те же категории, что в разделе «Менеджеры»).
@@ -2530,23 +2654,28 @@ function _sumAdChannels(channels, from, to) {
 }
 // Каналы рекламы для KPI «расход» в общем виде (ГРУППА=Все):
 //   ПРОДУКТ=Все      → Коллаген + Ummi + БОТА AI (вся реклама компании);
-//   ПРОДУКТ=Коллаген → только Коллаген.
+//   ПРОДУКТ=Коллаген → только Коллаген; ПРОДУКТ=KIDS → только Ummi.
 // БОТА AI учитываем только в общем виде; при РОП-фильтрах (4 РОПа / один РОП)
 // его расход к отделам не относим — там работает _mainRopAd (Коллаген+Ummi).
 function _allViewAdChannels() {
-  return activeProd === 'all'
-    ? ['Коллаген', 'Ummi', 'БОТА AI']
-    : [PROD_CFG[activeProd]?.rawKey || 'Коллаген'];
+  return _prodCfg(activeProd).ad;
+}
+// Бакеты, которые покрывает набор РОПов (ROP_CRM_MAP); null — если ни у
+// одного нет маппинга (тогда смотрим во все бакеты MANAGERS).
+function _ropBuckets(names = _mainRopNames()) {
+  const buckets = new Set();
+  names.forEach(n => (ROP_CRM_MAP[n] || []).forEach(c => buckets.add(c)));
+  return buckets.size ? [...buckets] : null;
 }
 // Дневной «RAW» ([leads,deals,budget]) только по менеджерам активного
 // фильтра (или явно переданного списка РОПов), собранный по всем релевантным
 // бакетам. Идентичен логике renderPlanTable/renderLine, поэтому цифры KPI
-// сходятся с таблицей групп.
-function _mainRopDailyRaw(names = _mainRopNames()) {
+// сходятся с таблицей групп. onlyBuckets — дополнительно ограничить бакетами
+// (направление из переключателя «Продукт»); null — без ограничения.
+function _mainRopDailyRaw(names = _mainRopNames(), onlyBuckets = null) {
   const out = {};
-  const buckets = new Set();
-  names.forEach(n => (ROP_CRM_MAP[n] || []).forEach(c => buckets.add(c)));
-  const crms = buckets.size ? [...buckets] : Object.keys(MANAGERS);
+  let crms = _ropBuckets(names) || Object.keys(MANAGERS);
+  if (onlyBuckets) crms = crms.filter(c => onlyBuckets.includes(c));
   crms.forEach(crm => {
     (MANAGERS[crm] || []).forEach(m => {
       if (!names.some(r => ropMatches(m.name, r))) return;
@@ -2582,26 +2711,170 @@ function _ropAdSpend(ropName, from, to) {
   });
   return adSpend;
 }
-function _mergedRaw(mainKey) {
-  // Активен фильтр по РОПу — отдаём дневные данные только этого фильтра.
-  if (activeMainRop !== 'all') return _mainRopDailyRaw();
-  const main = RAW[mainKey] || {};
-  const siblings = _VIRTUAL_CRMS[mainKey] || [];
-  if (!siblings.length) return main;
-  // Merge: sum values from virtual CRMs into main
+// Дневные [leads,deals,budget] по списку бакетов (null = все бакеты компании).
+// При активном фильтре по РОПу — только менеджеры этого фильтра в тех же бакетах.
+function _mergedRaw(buckets = null) {
+  if (activeMainRop !== 'all') return _mainRopDailyRaw(_mainRopNames(), buckets);
   const merged = {};
-  const allKeys = new Set(Object.keys(main));
-  siblings.forEach(s => Object.keys(RAW[s]||{}).forEach(k => allKeys.add(k)));
-  for (const d of allKeys) {
-    const v = main[d] || [0,0,0];
-    let l=v[0], de=v[1], b=v[2];
-    siblings.forEach(s => { const sv=(RAW[s]||{})[d]; if(sv){l+=sv[0]||0;de+=sv[1]||0;b+=sv[2]||0;} });
-    merged[d] = [l, de, b];
-  }
+  (buckets || ALL_BUCKETS).forEach(s => {
+    for (const [d, sv] of Object.entries(RAW[s] || {})) {
+      const cur = merged[d] || (merged[d] = [0, 0, 0]);
+      cur[0] += sv[0] || 0; cur[1] += sv[1] || 0; cur[2] += sv[2] || 0;
+    }
+  });
   return merged;
 }
+// Касса по ТОВАРАМ за даты. Умми часто продают в воронке «Коллаген», поэтому
+// деньги направления считаем по составу заказов, а не по воронке.
+//   • с 01.06.2026, когда есть разбивка по сделкам (_ERA_PROD_IDX, RPC
+//     get_dashboard_product_split): сумма КАЖДОЙ сделки поделена между её
+//     товарами по qty × РРЦ на сервере. Умеет фильтр по отделам (names).
+//     Касса сделок без товарных полей — в unassigned («Без товара»);
+//   • запасной путь (RPC ещё нет) и снимок AmoCRM до 01.06.2026 — только вся
+//     компания: касса дня воронки / бакета × доли товаров за день
+//     (_ERA_PIPE_BUDGET × _ERA_PIPE_PRODUCTS либо RAW × PRODUCTS). Касса дня
+//     без товаров — в направление воронки (noProd).
+// → { col, kids: {cash, units, deals}, byProduct[label]: {cash, units},
+//     groups[key]: {cash, units, deals}, unassigned, noProd,
+//     dealsKnown — число сделок с товаром известно за все даты,
+//     covered — данные есть за все даты (false: отдел без разбивки по сделкам) }
+function _productCash(dates, names = null) {
+  const out = { col: { cash: 0, units: 0, deals: 0 }, kids: { cash: 0, units: 0, deals: 0 },
+                byProduct: {}, groups: {}, unassigned: 0, noProd: 0, dealsKnown: true, covered: true };
+  for (const g of PRODUCT_GROUPS) out.groups[g.key] = { cash: 0, units: 0, deals: 0 };
+  const add = (label, units, cash) => {
+    const pc = PRODUCT_PRICE_DIR[label];
+    if (!pc) return;
+    const bp = out.byProduct[label] || (out.byProduct[label] = { cash: 0, units: 0 });
+    bp.units += units; bp.cash += cash;
+    out[pc.dir].units += units; out[pc.dir].cash += cash;
+    out.groups[pc.group].units += units; out.groups[pc.group].cash += cash;
+  };
+  // Запасной путь: одна ячейка (день × бакет / воронка) — штуки → доли → касса.
+  const cell = (B, qtyByLabel, bucket) => {
+    const vals = {}; let v = 0;
+    for (const [label, q] of Object.entries(qtyByLabel)) {
+      const pc = PRODUCT_PRICE_DIR[label];
+      if (!pc || !(q > 0)) continue;
+      vals[label] = q * pc.price; v += vals[label];
+    }
+    for (const [label, val] of Object.entries(vals)) add(label, qtyByLabel[label], B * val / v);
+    if (B && !(v > 0)) { out[_DIR_OF_BUCKET[bucket] === 'kids' ? 'kids' : 'col'].cash += B; out.noProd += B; }
+  };
+  for (const d of dates) {
+    const era = _isEraDate(d);
+    if (era && _ERA_PROD_STATE === 'ok') {
+      for (const r of (_ERA_PROD_IDX[d] || [])) {
+        if (names && !_eraRowRopMatch(r.mgr, d, names)) continue;
+        for (const label in r.u) add(label, r.u[label], r.c[label] || 0);
+        out.unassigned += r.cNone;
+        out.col.deals += r.dDirCol; out.kids.deals += r.dUmmi;
+        out.groups.col.deals += r.dCol; out.groups.coffee.deals += r.dCoffee; out.groups.ummi.deals += r.dUmmi;
+      }
+      continue;
+    }
+    out.dealsKnown = false;
+    if (names) { out.covered = false; continue; }   // по отделам — только с разбивкой по сделкам
+    if (!era) {
+      for (const bucket of ALL_BUCKETS) {
+        const q = {};
+        for (const [name, slot] of Object.entries(PRODUCTS[bucket] || {})) {
+          const label = _SNAP_PRODUCT_KEY[name];
+          const n = (slot && slot.daily && slot.daily[d]) || 0;
+          if (label && n) q[label] = (q[label] || 0) + n;
+        }
+        const v = (RAW[bucket] || {})[d];
+        cell(v ? (v[2] || 0) : 0, q, bucket);
+      }
+    } else {
+      const bud = _ERA_PIPE_BUDGET[d] || {}, prods = _ERA_PIPE_PRODUCTS[d] || {};
+      for (const pipe of new Set([...Object.keys(bud), ...Object.keys(prods)])) {
+        const bucket = _eraCrmBucket(pipe);
+        if (!bucket) continue;               // воронка не на дашборде (как и её касса)
+        cell(bud[pipe] || 0, prods[pipe] || {}, bucket);
+      }
+    }
+  }
+  return out;
+}
+// Первичные / повторные за даты с фильтром шапки «Группа» (отделы; как лиды
+// и сделки KPI). Только для всей компании (ПРОДУКТ = Все). Источник —
+// _ERA_CUST_ROWS (Era CRM, с 01.06.2026). null — разбивки нет: период задевает
+// снимок AmoCRM (≤ 31.05.2026) или RPC ещё не развёрнут.
+function _custSplit(dates, pk = activeProd) {
+  return _custSplitFor(dates, pk, activeMainRop !== 'all' ? _mainRopNames() : null);
+}
+// Почему за даты нет первичных / повторных — подпись под «—» в карточках KPI.
+function _custNoDataNote(dates) {
+  if (_ERA_CUST_STATE === 'missing') return 'появится после выкатки расчёта';
+  if (_ERA_CUST_STATE !== 'ok')      return _ERA_CUST_STATE === 'none' ? 'загрузка…' : 'данные не загрузились';
+  if (dates.length && !dates.every(_isEraDate)) return 'данные — с 01.06.2026';
+  return 'нет данных';
+}
+// То же для явного набора РОПов (names = null — без фильтра по отделам):
+// бакеты РОПов (ROP_CRM_MAP) ∩ бакеты направления, менеджер → РОП на дату.
+function _custSplitFor(dates, pk, names) {
+  if (_ERA_CUST_STATE !== 'ok' || !dates.length || !dates.every(_isEraDate)) return null;
+  const want  = new Set(dates);
+  const ropOn = !!names;
+  const ropB  = ropOn ? _ropBuckets(names) : null;
+  // primaryLeads / knownLeads — ВСЕ первичные / повторные лиды, включая возвраты
+  // по рекламе (они уже в «Лидах»): первичные + повторные = лиды дашборда.
+  const out = { primaryLeads: 0, knownLeads: 0, adReturnLeads: 0, adReturnPrimary: 0, primaryBought: 0,
+                repeatAdDeals: 0, repeatAdBudget: 0, newDeals: 0, newBudget: 0,
+                repeatDeals: 0, repeatBudget: 0, unknownDeals: 0, unknownBudget: 0 };
+  for (const r of _ERA_CUST_ROWS) {
+    const d = r[0], bucket = r[2];
+    if (!want.has(d)) continue;
+    if (ropB && !ropB.includes(bucket)) continue;
+    if (ropOn && !_eraRowRopMatch(r[3], d, names)) continue;
+    const retAll = r[12] || 0, retPrim = r[14] || 0;
+    out.primaryLeads += r[4] + retPrim;  out.knownLeads += r[5] + retAll - retPrim;
+    out.newDeals     += r[6];  out.newBudget    += r[7];
+    out.repeatDeals  += r[8];  out.repeatBudget += r[9];
+    out.unknownDeals += r[10]; out.unknownBudget += r[11];
+    out.adReturnLeads += retAll; out.adReturnPrimary += retPrim;
+    out.repeatAdDeals += r[15] || 0; out.repeatAdBudget += r[16] || 0;
+    out.primaryBought += r[13] || 0;
+  }
+  // Платное / органическое удержание показываем, только когда за весь период
+  // есть касания рекламы (CRM пишет их с 28.10.2026) — иначе вся повторная касса
+  // выглядела бы органической (без рекламы).
+  out.passiveOk = _ERA_CUST_HAS_AD && dates.every(d => parseDate(d) >= new Date(2026, 9, 28));
+  return out;
+}
+// Продуктовый режим (ПРОДУКТ = Коллаген / KIDS): касса товаров направления во
+// всех воронках, штуки, сделки с этим товаром и средний чек. Лидов, конверсии
+// и плана у направления нет (см. PROD_CFG). Расход на рекламу — по каналу
+// направления и только для всей компании (ГРУППА = Все).
+function aggregateProduct(pk, from, to){
+  const dates = getDatesInRange(from, to);
+  const names = activeMainRop !== 'all' ? _mainRopNames() : null;
+  const tot = _productCash(dates, names);
+  const v = tot[pk];
+  const dl = { labels: [], leads: [], deals: [], budget: [] };
+  for (const d of dates) {
+    const dv = _productCash([d], names)[pk];
+    dl.labels.push(d.slice(0,5)); dl.leads.push(0); dl.deals.push(dv.deals); dl.budget.push(dv.cash);
+  }
+  const mk = getMonthKey(parseDate(from));
+  const now = new Date();
+  const curMK = `${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
+  const adKnown = !names;
+  const adTotal = adKnown ? _sumAdChannels(_prodCfg(pk).ad, from, to) : 0;
+  const deals = tot.dealsKnown ? v.deals : 0;
+  return { productView: true, covered: tot.covered, dealsKnown: tot.dealsKnown,
+    leads: 0, deals, budget: v.cash, units: v.units, byProduct: tot.byProduct, daily: dl,
+    plan: 0, monthKey: mk, monthBudget: Math.round(v.cash), remain: 0, perDay: 0, daysLeft: 1, planToday: 0,
+    isCurrentMonth: mk === curMK && !activePlanSprints(),
+    adTotal, adKnown, monthAdTotal: adTotal, monthLeads: 0, cplMonth: 0, rpl: 0,
+    cashSplit: null, cust: null, custNote: null,
+    conv: 0, avgCheck: deals ? Math.round(v.cash / deals) : 0 };
+}
+// pk: 'all' — вся компания; ключ PROD_CFG — продуктовый режим (aggregateProduct).
 function aggregate(pk,from,to){
-  const raw=_mergedRaw(PROD_CFG[pk].rawKey);
+  if (pk !== 'all') return aggregateProduct(pk, from, to);
+  const raw=_mergedRaw(null);
   const dates=getDatesInRange(from,to);
   let leads=0,deals=0,budget=0;
   const dl={labels:[],leads:[],deals:[],budget:[]};
@@ -2614,14 +2887,18 @@ function aggregate(pk,from,to){
   const mk=getMonthKey(fromD);
   // Активный сквозной спринт (из выпадашки) — план берём из SPRINT_PLANS,
   // период считаем закрытым (без месячной пропорции и forecast-логики).
-  const _spN = activeSprintNum();
+  const _gs  = activePlanSprints();   // спринт или все спринты марафона
+  const _spN = !!_gs;                 // период со своим планом считаем «закрытым»
   // Always use FULL monthly plan — never prorate.
   // При активном РОП-фильтре берём план РОПа(ов), а не продукта.
-  const plan = _spN
-    ? (activeMainRop!=='all'
-        ? _mainRopNames().reduce((s,r)=>s+sprintPlanFor(r,_spN),0)
-        : sprintPlanTotal(_spN))
-    : (activeMainRop!=='all' ? _mainRopPlan(mk) : getPlan(pk,mk));
+  // Планы ставятся на отделы (РОПов), а отдел продаёт во всех направлениях —
+  // плана по отдельному направлению нет, поэтому для Коллагена / KIDS план 0
+  // (в карточках «—»). План компании — getPlan('col'): исторический ключ.
+  const plan = pk!=='all' ? 0 : (_gs
+    ? _gs.reduce((sum,g)=>sum+(activeMainRop!=='all'
+        ? _mainRopNames().reduce((s,r)=>s+sprintPlanFor(r,g),0)
+        : sprintPlanTotal(g)),0)
+    : (activeMainRop!=='all' ? _mainRopPlan(mk) : getPlan('col',mk)));
 
   // Full month accumulated fact (for остаток/нужно-в-день regardless of period filter)
   const now=new Date();
@@ -2665,38 +2942,31 @@ function aggregate(pk,from,to){
   const cplMonth = monthLeads ? Math.round(monthAdTotal/monthLeads) : 0;
   const rpl = monthLeads ? Math.round(monthBudget/monthLeads) : 0; // выручка/лид
 
+  // Касса по товарам (Коллаген / Умми / без товара) под «Продажами». С фильтром
+  // по отделам — только когда есть разбивка по сделкам (_pc.covered).
+  const _pc = _productCash(dates, activeMainRop==='all' ? null : _mainRopNames());
+  const _cust = _custSplit(dates, pk);
+
   return{leads,deals,budget,daily:dl,plan:Math.round(plan),monthKey:mk,
     monthBudget:Math.round(monthBudget),remain:Math.round(remain),perDay,daysLeft:daysLeftMonth,
     planToday:Math.round(planToday),
     isCurrentMonth:mk===curMK && !_spN,
     adTotal,monthAdTotal,monthLeads,cplMonth,rpl,
+    // «Все продукты»: строки кассы по направлениям под «Продажами».
+    cashSplit: _pc.covered
+      ? CASH_SPLIT_KEYS.map(k => ({ key:k, label:DIRECTIONS[k].label, color:DIRECTIONS[k].color,
+                                    budget:_pc[k].cash, units:_pc[k].units }))
+          .concat(_pc.unassigned >= 1 ? [{ key:'none', label:'Без товара', color:'#94a3b8', budget:_pc.unassigned, units:null }] : [])
+      : null,
+    // Первичные / повторные лиды и продажи (null — нет данных, см. _custSplit).
+    cust: _cust,
+    custNote: _cust ? null : _custNoDataNote(dates),
     conv:leads?+(deals/leads*100).toFixed(1):0,avgCheck:deals?Math.round(budget/deals):0};
 }
+// Вся компания (ПРОДУКТ = Все). parts — для мест, которые перебирают части.
 function aggregateAll(from,to){
-  const parts={};['col'].forEach(k=>{parts[k]=aggregate(k,from,to);});
-  const dates=getDatesInRange(from,to);
-  const leads=Object.values(parts).reduce((a,p)=>a+p.leads,0);
-  const deals=Object.values(parts).reduce((a,p)=>a+p.deals,0);
-  const budget=Object.values(parts).reduce((a,p)=>a+p.budget,0);
-  const plan=Object.values(parts).reduce((a,p)=>a+p.plan,0);
-  const adTotal=Object.values(parts).reduce((a,p)=>a+p.adTotal,0);
-  const monthBudget=Object.values(parts).reduce((a,p)=>a+p.monthBudget,0);
-  const remain=Object.values(parts).reduce((a,p)=>a+p.remain,0);
-  const perDay=Object.values(parts).reduce((a,p)=>a+p.perDay,0);
-  const daysLeft=Object.values(parts)[0]?Object.values(parts)[0].daysLeft:1;
-  const isCurrentMonth=Object.values(parts)[0]?Object.values(parts)[0].isCurrentMonth:false;
-  const monthAdTotal=Object.values(parts).reduce((a,p)=>a+p.monthAdTotal,0);
-  const monthLeads=Object.values(parts).reduce((a,p)=>a+p.monthLeads,0);
-  const cplMonth=monthLeads?Math.round(monthAdTotal/monthLeads):0;
-  const rpl=monthLeads?Math.round(Object.values(parts).reduce((a,p)=>a+p.monthBudget,0)/monthLeads):0;
-  const dl={labels:dates.map(d=>d.slice(0,5)),
-    leads:dates.map((_,i)=>Object.values(parts).reduce((a,p)=>a+p.daily.leads[i],0)),
-    deals:dates.map((_,i)=>Object.values(parts).reduce((a,p)=>a+p.daily.deals[i],0)),
-    budget:dates.map((_,i)=>Object.values(parts).reduce((a,p)=>a+p.daily.budget[i],0))};
-  const planTodayAll = Object.values(parts).reduce((s,p)=>s+(p.planToday||0),0);
-  return{leads,deals,budget,plan,adTotal,daily:dl,parts,
-    monthBudget,remain,perDay,daysLeft,isCurrentMonth,planToday:planTodayAll,monthAdTotal,monthLeads,cplMonth,rpl,
-    conv:leads?+(deals/leads*100).toFixed(1):0,avgCheck:deals?Math.round(budget/deals):0};
+  const d=aggregate('all',from,to);
+  return {...d, parts:{all:d}};
 }
 
 // ═══════════════════ DATA SNAPSHOT ════════════════════════════════
@@ -2947,7 +3217,16 @@ function _sprBtn(s){ return MARATHONS.length > 1 ? `М${s.m} · Спринт ${s
 function _holFull(h){ return `Каникулы · ${_sprShort(h.fromISO)}–${_sprShort(h.toISO)}`; }
 // Общий HTML выпадашки: спринты сгруппированы по марафонам, между марафонами —
 // пункт «Каникулы». Показываем все начавшиеся спринты + один следующий.
-function _sprMenuHTML(selPreset, pickFn, pickHolFn){
+// Границы марафона: от первого спринта до последнего (каникулы не входят).
+function _marathonRange(m){
+  const ss = _SPRINTS.filter(s => s.m === +m);
+  return ss.length ? { fromISO: ss[0].fromISO, toISO: ss[ss.length-1].toISO } : null;
+}
+function _marFull(m){
+  const r = _marathonRange(m);
+  return r ? `Марафон ${m} · ${_sprShort(r.fromISO)}–${_sprShort(r.toISO)}` : `Марафон ${m}`;
+}
+function _sprMenuHTML(selPreset, pickFn, pickHolFn, pickMarFn){
   const started = _sprintsStarted();
   const lastG   = started.length ? started[started.length-1].g : 0;
   const shown   = _SPRINTS.filter(s => s.g <= lastG + 1);
@@ -2955,6 +3234,7 @@ function _sprMenuHTML(selPreset, pickFn, pickHolFn){
   const curHol  = holidayForDate(_now());
   const selG    = /^sprint_(\d+)$/.test(selPreset||'') ? +String(selPreset).split('_')[1] : null;
   const selHolM = /^holiday_(\d+)$/.test(selPreset||'') ? +String(selPreset).split('_')[1] : null;
+  const selMar  = /^marathon_(\d+)$/.test(selPreset||'') ? +String(selPreset).split('_')[1] : null;
   let html = '', prevM = null;
   for (const s of shown){
     if (s.m !== prevM){
@@ -2967,7 +3247,14 @@ function _sprMenuHTML(selPreset, pickFn, pickHolFn){
               +   `<span class="s-range">${_sprShort(hol.fromISO)}–${_sprShort(hol.toISO)}</span>`
               + `</div>`;
       }
-      if (MARATHONS.length > 1) html += `<div class="sprint-group">Марафон ${s.m}</div>`;
+      // Заголовок марафона — кнопка: выбрать весь марафон (общие данные).
+      const mr = _marathonRange(s.m);
+      if (pickMarFn && mr) {
+        html += `<div class="sprint-item sprint-mar${selMar===s.m?' active':''}" data-mar="${s.m}" onclick="${pickMarFn}(${s.m})">`
+              +   `<span>Марафон ${s.m} <span class="s-all">весь</span></span>`
+              +   `<span class="s-range">${_sprShort(mr.fromISO)}–${_sprShort(mr.toISO)}</span>`
+              + `</div>`;
+      } else if (MARATHONS.length > 1) html += `<div class="sprint-group">Марафон ${s.m}</div>`;
       prevM = s.m;
     }
     html += `<div class="sprint-item${s.g===selG?' active':''}" data-n="${s.g}" onclick="${pickFn}(${s.g})">`
@@ -2980,7 +3267,7 @@ function _sprMenuHTML(selPreset, pickFn, pickHolFn){
 function buildSprintMenu(){
   const menu = document.getElementById('sprint-menu-items');
   if (!menu) return;
-  menu.innerHTML = _sprMenuHTML(activePeriod && activePeriod.preset, 'pickSprint', 'pickHoliday');
+  menu.innerHTML = _sprMenuHTML(activePeriod && activePeriod.preset, 'pickSprint', 'pickHoliday', 'pickMarathon');
 }
 function toggleSprintMenu(){
   const menu = document.getElementById('sprint-menu');
@@ -3003,6 +3290,20 @@ function pickSprint(g){
   const btn = document.getElementById('sprint-btn');
   if (btn){ btn.classList.add('active'); _ddLabel(btn, _sprBtn(s)); }
   document.querySelectorAll('#sprint-menu .sprint-item').forEach(it=>it.classList.toggle('active', +it.dataset.n===g));
+  const menu = document.getElementById('sprint-menu'); if (menu) menu.classList.remove('open');
+  const cw = document.getElementById('custom-wrap'); if (cw) cw.style.display='none';
+  render();
+}
+// Весь марафон: период от первого до последнего спринта, план — сумма планов
+// его спринтов (activePlanSprints).
+function pickMarathon(m){
+  const r = _marathonRange(m);
+  if (!r) return;
+  activePeriod = { from:_sprDisp(r.fromISO), to:_sprDisp(r.toISO), label:_marFull(m), preset:`marathon_${m}` };
+  document.querySelectorAll('#global-filters .period-pill').forEach(b=>b.classList.remove('active'));
+  const btn = document.getElementById('sprint-btn');
+  if (btn){ btn.classList.add('active'); _ddLabel(btn, `Марафон ${m}`); }
+  document.querySelectorAll('#sprint-menu .sprint-item').forEach(it=>it.classList.toggle('active', +it.dataset.mar===m));
   const menu = document.getElementById('sprint-menu'); if (menu) menu.classList.remove('open');
   const cw = document.getElementById('custom-wrap'); if (cw) cw.style.display='none';
   render();
@@ -3034,7 +3335,7 @@ document.addEventListener('click', e=>{
 function buildMgrSprintMenu(){
   const menu = document.getElementById('mgr-sprint-menu-items');
   if (!menu) return;
-  menu.innerHTML = _sprMenuHTML(activeMgrPeriod && activeMgrPeriod.preset, 'pickMgrSprint', 'pickMgrHoliday');
+  menu.innerHTML = _sprMenuHTML(activeMgrPeriod && activeMgrPeriod.preset, 'pickMgrSprint', 'pickMgrHoliday', 'pickMgrMarathon');
 }
 function toggleMgrSprintMenu(){
   const menu = document.getElementById('mgr-sprint-menu');
@@ -3051,6 +3352,18 @@ function pickMgrSprint(g){
   const btn = document.getElementById('mgr-sprint-btn');
   if (btn){ btn.classList.add('active'); _ddLabel(btn, _sprBtn(s)); }
   document.querySelectorAll('#mgr-sprint-menu .sprint-item').forEach(it=>it.classList.toggle('active', +it.dataset.n===g));
+  const menu = document.getElementById('mgr-sprint-menu'); if (menu) menu.classList.remove('open');
+  const cw = document.getElementById('mgr-custom-wrap'); if (cw) cw.style.display='none';
+  renderManagers();
+}
+function pickMgrMarathon(m){
+  const r = _marathonRange(m);
+  if (!r) return;
+  activeMgrPeriod = { from:_sprDisp(r.fromISO), to:_sprDisp(r.toISO), label:_marFull(m), preset:`marathon_${m}` };
+  document.querySelectorAll('#mgr-filters .period-pill').forEach(b=>b.classList.remove('active'));
+  const btn = document.getElementById('mgr-sprint-btn');
+  if (btn){ btn.classList.add('active'); _ddLabel(btn, `Марафон ${m}`); }
+  document.querySelectorAll('#mgr-sprint-menu .sprint-item').forEach(it=>it.classList.toggle('active', +it.dataset.mar===m));
   const menu = document.getElementById('mgr-sprint-menu'); if (menu) menu.classList.remove('open');
   const cw = document.getElementById('mgr-custom-wrap'); if (cw) cw.style.display='none';
   renderManagers();
@@ -3208,7 +3521,80 @@ function _dayPlanBySprint(dayStr){
   const remain = Math.max(0, plan - factBefore);
   return { plan: Math.round(remain / daysLeft), remain, daysLeft, factBefore, sprintPlan: plan };
 }
+// Разделы карточек KPI разворачиваются по отдельности — кликом по строке
+// раздела: касса, лиды, сделки, ДРР, конверсия. Кнопка внизу карточки
+// разворачивает / сворачивает все разом. Состояние общее для трёх карточек,
+// помним его в браузере зрителя.
+const KPI_SECTIONS = ['sales', 'leads', 'deals', 'drr', 'conv'];
+let _kpiOpen = (() => {
+  const st = {};
+  let saved = null, all = false;
+  try {
+    saved = JSON.parse(localStorage.getItem('wg_kpi_sections') || 'null');
+    all = localStorage.getItem('wg_kpi_expanded') === '1';   // прежняя общая кнопка «Подробнее»
+  } catch (e) {}
+  for (const k of KPI_SECTIONS) st[k] = saved ? !!saved[k] : all;
+  return st;
+})();
+function _kpiApplyOpen() {
+  const box = document.getElementById('kpi-3col');
+  if (!box) return;
+  for (const k of KPI_SECTIONS) box.classList.toggle('kpi-open-' + k, !!_kpiOpen[k]);
+  const allOpen = KPI_SECTIONS.every(k => _kpiOpen[k]);
+  box.querySelectorAll('.kpi-more').forEach(b => { b.textContent = allOpen ? 'Свернуть всё ▴' : 'Развернуть всё ▾'; });
+}
+function _kpiSaveOpen() { try { localStorage.setItem('wg_kpi_sections', JSON.stringify(_kpiOpen)); } catch (e) {} }
+function toggleKpiSection(k) { _kpiOpen[k] = !_kpiOpen[k]; _kpiSaveOpen(); _kpiApplyOpen(); }
+function toggleKpiDetails() {
+  const open = !KPI_SECTIONS.every(k => _kpiOpen[k]);
+  for (const k of KPI_SECTIONS) _kpiOpen[k] = open;
+  _kpiSaveOpen(); _kpiApplyOpen();
+}
 function _kpiColHTML(label, badge, kd, borderColor, periodType, opts) {
+  // Карточки Месяц / Спринт / Вчера / Сегодня — wide; узкие полосы спринтов
+  // (periodType 'sprint') — только основные строки, без разделов.
+  const wide = periodType !== 'sprint';
+  const val = (text, color) => `<div class="kpi-row-val"${color ? ` style="color:${color}"` : ''}>${text}</div>`;
+  // Основная строка; sec — раздел, который она разворачивает.
+  const row = (label, valHTML, sub, sec) => `<div class="kpi-row${sec ? ' kpi-toggle' : ''}"${sec ? ` data-sec="${sec}" onclick="toggleKpiSection('${sec}')" title="Развернуть / свернуть"` : ''}>
+      <span class="kpi-row-label">${sec ? '<i class="kpi-caret">▸</i>' : ''}${label}</span>
+      <div>${valHTML}${sub ? `<div class="kpi-row-sub">${sub}</div>` : ''}</div>
+    </div>`;
+  // Строка раздела. opt.term — термин маркетинга второй строкой подписи;
+  // opt.nested — строка внутри предыдущей («из них»); opt.title — подсказка.
+  const detail = (sec, label, color, v, sub, opt = {}) => `<div class="kpi-row kpi-split kpi-detail kpi-d-${sec}${opt.nested ? ' kpi-nested' : ''}"${opt.title ? ` title="${opt.title}"` : ''}>
+      <span class="kpi-row-label${opt.term ? ' has-term' : ''}"><i class="kpi-split-dot" style="background:${color}"></i><span>${label}${opt.term ? `<span class="kpi-term">${opt.term}</span>` : ''}</span></span>
+      <div><div class="kpi-row-val"${v === null ? ' style="color:var(--muted)"' : ''}>${v === null ? '—' : v}</div>${sub ? `<div class="kpi-row-sub">${sub}</div>` : ''}</div>
+    </div>`;
+  const share = (v, tot) => tot ? `${Math.round(v / tot * 100)}%` : '';
+  const drrClrOf = v => v<=15?'#16a34a':v<=25?'#ca8a04':'#c0392b';
+  const chkClr = kd.avgCheck>=80000?'#16a34a':'#ca8a04';
+  const head = `<div class="kpi-col-title"><span class="kpi-dot" style="background:${borderColor}"></span>${label} <span class="kpi-period-badge">${badge}</span></div>`;
+  const more = wide ? `<button class="kpi-more" onclick="toggleKpiDetails()">Развернуть всё ▾</button>` : '';
+
+  // ── Продуктовый режим (Коллаген / KIDS): касса товаров направления во всех
+  //    воронках, штуки, сделки с этим товаром, средний чек, ДРР по каналу. ──
+  if (kd.productView) {
+    const items = Object.entries(PRODUCT_PRICE_DIR)
+      .filter(([lbl, pc]) => pc.dir === activeProd && kd.byProduct[lbl] && (kd.byProduct[lbl].units || kd.byProduct[lbl].cash));
+    const prodDetail = wide && items.length > 1
+      ? items.map(([lbl, pc]) => detail('sales', pc.short, borderColor, fmtM(kd.byProduct[lbl].cash),
+                                        `${share(kd.byProduct[lbl].cash, kd.budget)} · ${fmt(kd.byProduct[lbl].units)} шт`)).join('')
+      : '';
+    const drrP = kd.adKnown && kd.budget ? +(kd.adTotal / kd.budget * 100).toFixed(1) : null;
+    return `<div class="kpi-col" style="border-top-color:${borderColor}">
+    ${head}
+    ${row('Продажи', val(kd.covered ? fmtM(kd.budget) : '—', kd.covered ? borderColor : 'var(--muted)'),
+          kd.covered ? `${fmt(kd.units)} шт` : '', prodDetail ? 'sales' : '')}
+    ${prodDetail}
+    ${row('Сделки', val(kd.dealsKnown ? fmt(kd.deals) : '—', kd.dealsKnown ? '' : 'var(--muted)'))}
+    ${row('Средний чек', val(kd.avgCheck ? fmt(kd.avgCheck) + ' ₸' : '—', kd.avgCheck ? chkClr : 'var(--muted)'))}
+    ${row('ДРР', val(drrP === null ? '—' : drrP + '%', drrP === null ? 'var(--muted)' : drrClrOf(drrP)), kd.adKnown ? `расход ${fmtM(kd.adTotal)}` : '')}
+    ${prodDetail ? more : ''}
+  </div>`;
+  }
+
+  // ── Вся компания ──
   // For 'day' cards (Вчера/Сегодня): show daily plan and daily execution.
   //   Внутри спринта план дня — догоняющий (см. _dayPlanBySprint); opts.day —
   //   дата карточки DD.MM.YYYY. Иначе — план периода / дней в месяце.
@@ -3224,57 +3610,95 @@ function _kpiColHTML(label, badge, kd, borderColor, periodType, opts) {
   ) : 0;
   // План спринта уже закрыт — дневного плана нет, «выполнение» не считаем.
   const planDone = !!(sprDay && !displayPlan);
-  const drr = kd.budget ? +(kd.adTotal/kd.budget*100).toFixed(1) : 0;
+  const sales = kd.budget;
+  const drr = sales ? +(kd.adTotal/sales*100).toFixed(1) : 0;
   const cpl = periodType === 'day'
     ? (kd.leads ? Math.round(kd.adTotal / kd.leads) : 0)
     : (kd.cplMonth || 0);
   const pctClr = pct>=100?'#16a34a':pct>=80?'#ca8a04':'#c0392b';
-  const drrClr = drr<=15?'#16a34a':drr<=25?'#ca8a04':'#c0392b';
-  const convClr = kd.conv>=12?'#16a34a':'#c0392b';
-  const chkClr = kd.avgCheck>=80000?'#16a34a':'#ca8a04';
   const cplClr = cpl<=3000?'#16a34a':cpl<=6000?'#ca8a04':'#c0392b';
+  // Нет плана — выполнение не считаем.
+  const noPct = planDone || !displayPlan;
+
+  const cu = wide ? kd.cust : null;          // первичные / повторные (Era CRM, с 01.06.2026)
+  const custCash = cu ? cu.newBudget + cu.repeatBudget + cu.unknownBudget : 0;
+  // Касса по клиентам в терминах маркетинга:
+  //   • привлечение — первые покупки новых клиентов («Первичные»);
+  //   • удержание (retention) — повторные покупки («Повторные»), из них:
+  //       платное (ремаркетинг) — клиент вернулся по рекламе: касание рекламы
+  //         за 30 дней до заказа (repeatAdBudget);
+  //       органическое — без рекламы (passive).
+  // Касса с рекламы = привлечение + платное удержание; ДРР реальный = расход ÷
+  // касса с рекламы. Касания рекламы CRM пишет с 28.10.2026 — раньше «—».
+  const passive = cu && cu.passiveOk ? cu.repeatBudget - cu.repeatAdBudget : null;
+  const adCash  = passive === null ? null : custCash - passive;
+  const drrReal = adCash ? +(kd.adTotal / adCash * 100).toFixed(1) : null;
+
+  // Раздел «Продажи»: касса по товарам и по клиентам.
+  let salesDetail = '';
+  if (wide) {
+    if (kd.cashSplit) {
+      salesDetail += kd.cashSplit.map(sp => detail('sales', sp.label, sp.color, fmtM(sp.budget),
+        share(sp.budget, kd.budget) + (sp.units === null ? '' : ` · ${fmt(sp.units)} шт`))).join('');
+    }
+    const repeatAd = passive === null ? null : cu.repeatAdBudget;
+    salesDetail += detail('sales', 'Первичные', '#16a34a', cu ? fmtM(cu.newBudget) : null, cu ? share(cu.newBudget, custCash) : '',
+                          { term: 'привлечение', title: 'Привлечение (acquisition): первые покупки новых клиентов' });
+    salesDetail += detail('sales', 'Повторные', '#7c3aed', cu ? fmtM(cu.repeatBudget) : null, cu ? share(cu.repeatBudget, custCash) : '',
+                          { term: 'удержание', title: 'Удержание (retention): покупки клиентов, которые уже покупали' });
+    salesDetail += detail('sales', 'по рекламе', '#ca8a04', repeatAd === null ? null : fmtM(repeatAd), repeatAd === null ? '' : share(repeatAd, custCash),
+                          { nested: true, term: 'платное', title: 'Платное удержание (ремаркетинг): клиент вернулся по рекламе — касание рекламы за 30 дней до заказа' });
+    salesDetail += detail('sales', 'без рекламы', '#0891b2', passive === null ? null : fmtM(passive), passive === null ? '' : share(passive, custCash),
+                          { nested: true, term: 'органическое', title: 'Органическое удержание: повторные покупки без рекламы' });
+    if (cu && cu.unknownBudget >= 1) salesDetail += detail('sales', 'Без телефона', '#94a3b8', fmtM(cu.unknownBudget), share(cu.unknownBudget, custCash));
+  }
+  // Раздел «Лиды»: первичные (ещё не покупали) и повторные (уже клиенты).
+  const retPrim = cu ? cu.adReturnPrimary : 0, retRep = cu ? cu.adReturnLeads - cu.adReturnPrimary : 0;
+  const leadsDetail = !wide ? ''
+    : detail('leads', 'Первичные', '#16a34a', cu ? fmt(cu.primaryLeads) : null, retPrim ? `по рекламе ${fmt(retPrim)}` : '')
+    + detail('leads', 'Повторные', '#7c3aed', cu ? fmt(cu.knownLeads) : null, retRep ? `по рекламе ${fmt(retRep)}` : '');
+  // Раздел «Сделки».
+  const dealsDetail = !wide ? ''
+    : detail('deals', 'Первичные', '#16a34a', cu ? fmt(cu.newDeals) : null, '')
+    + detail('deals', 'Повторные', '#7c3aed', cu ? fmt(cu.repeatDeals) : null, '')
+    + (cu && cu.unknownDeals ? detail('deals', 'Без телефона', '#94a3b8', fmt(cu.unknownDeals), '') : '');
+  // Раздел «ДРР»: расход, реальный ДРР и касса, от которой он считается.
+  const drrDetail = !wide ? ''
+    : detail('drr', 'Расход на рекламу', '#94a3b8', fmtM(kd.adTotal), '')
+    + detail('drr', 'ДРР реальный', '#ca8a04', drrReal === null ? null : drrReal + '%', '',
+             { title: 'Расход ÷ касса с рекламы (привлечение + платное удержание)' })
+    + detail('drr', 'Касса с рекламы', '#ca8a04', adCash === null ? null : fmtM(adCash), adCash === null ? '' : share(adCash, custCash),
+             { title: 'Касса с рекламы = привлечение + платное удержание' });
+  // Раздел «Конверсия»: основная — первичных (первичные продажи ÷ первичные
+  // лиды), если есть разбивка; иначе прежняя общая. Внутри — когорта и повторных.
+  const pctOf = (a, b) => b ? +(a / b * 100).toFixed(1) : null;
+  const convMain = cu ? pctOf(cu.newDeals, cu.primaryLeads) : kd.conv;
+  const pctTxt = v => v === null ? null : v + '%';
+  const convDetail = !wide ? ''
+    : detail('conv', 'Когорта', '#16a34a', cu ? pctTxt(pctOf(cu.primaryBought, cu.primaryLeads)) : null, '',
+             { title: 'Из первичных лидов периода уже купили (для свежих периодов ещё растёт)' })
+    + detail('conv', 'Повторных', '#7c3aed', cu ? pctTxt(pctOf(cu.repeatDeals, cu.knownLeads)) : null, '',
+             { title: 'Повторные продажи ÷ повторные лиды' });
+  const sec = k => wide ? k : '';
 
   return `<div class="kpi-col" style="border-top-color:${borderColor}">
-    <div class="kpi-col-title"><span class="kpi-dot" style="background:${borderColor}"></span>${label} <span class="kpi-period-badge">${badge}</span></div>
-    <div class="kpi-row">
-      <span class="kpi-row-label">План</span>
-      <div><div class="kpi-row-val">${displayPlan?fmtM(displayPlan):'—'}</div>${sprDay
-        ? `<div class="kpi-row-sub">${planDone ? 'план спринта выполнен' : `остаток ${fmtM(sprDay.remain)} · ${sprDay.daysLeft} дн.`}</div>`
-        : ''}</div>
-    </div>
-    <div class="kpi-row">
-      <span class="kpi-row-label">Продажи</span>
-      <div><div class="kpi-row-val" style="color:${borderColor}">${fmtM(kd.budget)}</div></div>
-    </div>
-    <div class="kpi-row">
-      <span class="kpi-row-label">Выполнение</span>
-      <div><div class="kpi-row-val" style="color:${planDone ? 'var(--muted)' : pctClr}">${planDone ? '—' : pct + '%'}</div></div>
-    </div>
-    <div class="kpi-row">
-      <span class="kpi-row-label">Лиды</span>
-      <div><div class="kpi-row-val">${fmt(kd.leads)}</div></div>
-    </div>
-    <div class="kpi-row">
-      <span class="kpi-row-label">Сделки</span>
-      <div><div class="kpi-row-val">${fmt(kd.deals)}</div></div>
-    </div>
-    <div class="kpi-row">
-      <span class="kpi-row-label">ДРР</span>
-      <div><div class="kpi-row-val" style="color:${drrClr}">${drr}%</div>
-      <div class="kpi-row-sub">расход ${fmtM(kd.adTotal)}</div></div>
-    </div>
-    <div class="kpi-row">
-      <span class="kpi-row-label">Конверсия</span>
-      <div><div class="kpi-row-val" style="color:${convClr}">${kd.conv}%</div></div>
-    </div>
-    <div class="kpi-row">
-      <span class="kpi-row-label">Средний чек</span>
-      <div><div class="kpi-row-val" style="color:${chkClr}">${fmt(kd.avgCheck)} ₸</div></div>
-    </div>
-    <div class="kpi-row">
-      <span class="kpi-row-label">Ст-ть за лид</span>
-      <div><div class="kpi-row-val" style="color:${cpl?cplClr:'var(--muted)'}">${cpl?fmt(cpl)+' ₸':'—'}</div></div>
-    </div>
+    ${head}
+    ${row('План', val(displayPlan ? fmtM(displayPlan) : '—'),
+          sprDay ? (planDone ? 'план спринта выполнен' : `остаток ${fmtM(sprDay.remain)} · ${sprDay.daysLeft} дн.`) : '')}
+    ${row('Продажи', val(fmtM(sales), borderColor), '', sec('sales'))}
+    ${salesDetail}
+    ${row('Выполнение', val(noPct ? '—' : pct + '%', noPct ? 'var(--muted)' : pctClr))}
+    ${row('Лиды', val(fmt(kd.leads)), '', sec('leads'))}
+    ${leadsDetail}
+    ${row('Сделки', val(fmt(kd.deals)), '', sec('deals'))}
+    ${dealsDetail}
+    ${row('ДРР', val(drr + '%', drrClrOf(drr)), wide ? (drrReal === null ? '' : `реальный ${drrReal}%`) : `расход ${fmtM(kd.adTotal)}`, sec('drr'))}
+    ${drrDetail}
+    ${row(cu ? 'Конверсия перв.' : 'Конверсия', val(convMain === null ? '—' : convMain + '%', convMain === null ? 'var(--muted)' : (convMain >= 12 ? '#16a34a' : '#c0392b')), '', sec('conv'))}
+    ${convDetail}
+    ${row('Средний чек', val(fmt(kd.avgCheck) + ' ₸', chkClr))}
+    ${row('Ст-ть за лид', val(cpl ? fmt(cpl) + ' ₸' : '—', cpl ? cplClr : 'var(--muted)'))}
+    ${more}
   </div>`;
 }
 // Агрегация под сквозной спринт n. Временно подменяет activePeriod на
@@ -3346,8 +3770,36 @@ function _histCardHTML(opts){
       <div class="shc-row"><span title="Менеджеров, закрывших хотя бы 1 сделку">С ≥1 сделкой</span><b>${ppl}</b></div>
     </div>`;
 }
-// История: все НАЧАВШИЕСЯ спринты, сгруппированные по марафонам, плюс
-// карточка каникул между марафонами. Учитывает активный РОП/продукт-фильтр.
+// План спринта под активными фильтрами (как в aggregate): отдел(ы) или вся
+// компания; у направления (Коллаген / KIDS) плана нет.
+function _sprintPlanG(g){
+  if (activeProd !== 'all') return 0;
+  return activeMainRop !== 'all'
+    ? _mainRopNames().reduce((s,r)=>s+sprintPlanFor(r,g),0)
+    : sprintPlanTotal(g);
+}
+// Развёрнутые марафоны в «Истории по спринтам». По умолчанию открыт только
+// идущий (или последний начавшийся); выбор зрителя помним в его браузере.
+let _histOpen = (() => {
+  try { const v = JSON.parse(localStorage.getItem('wg_hist_open') || 'null'); return Array.isArray(v) ? new Set(v) : null; }
+  catch (e) { return null; }
+})();
+function _histOpenSet(){
+  if (_histOpen) return _histOpen;
+  const started = _sprintsStarted();
+  const cur = sprintByNum(sprintNumForDate(_now()) || (started.length ? started[started.length-1].g : 0));
+  return new Set(cur ? [cur.m] : []);
+}
+function toggleHistMarathon(m){
+  const set = new Set(_histOpenSet());
+  set.has(m) ? set.delete(m) : set.add(m);
+  _histOpen = set;
+  try { localStorage.setItem('wg_hist_open', JSON.stringify([...set])); } catch (e) {}
+  renderSprintHistory();
+}
+// История: начавшиеся спринты по марафонам. Заголовок марафона — кнопка с
+// итогом (план начавшихся спринтов и факт); спринты и каникулы после марафона
+// показываются, когда он развёрнут. Учитывает активный РОП/продукт-фильтр.
 function renderSprintHistory(){
   const sec  = document.getElementById('sprint-history-sec');
   const wrap = document.getElementById('sprint-history');
@@ -3358,27 +3810,41 @@ function renderSprintHistory(){
   const started  = _sprintsStarted();
   if (!started.length){ wrap.innerHTML = ''; sec.style.display = 'none'; return; }
 
-  // Единая лента по датам: спринты + начавшиеся каникулы.
-  const items = started.map(s => ({ kind:'sprint', fromISO:s.fromISO, s }));
-  for (const h of _HOLIDAYS) if (h.fromISO <= todayISO) items.push({ kind:'holiday', fromISO:h.fromISO, h });
-  items.sort((a,b) => a.fromISO < b.fromISO ? -1 : 1);
-
-  let html = '', prevM = null;
-  for (const it of items){
-    if (it.kind === 'sprint'){
-      const s = it.s;
-      if (s.m !== prevM){
-        if (MARATHONS.length > 1) html += `<div class="shc-marathon">Марафон ${s.m}</div>`;
-        prevM = s.m;
-      }
+  const open = _histOpenSet();
+  let html = '';
+  for (const M of MARATHONS){
+    const ss = started.filter(s => s.m === M.n);
+    if (!ss.length) continue;
+    const r = _marathonRange(M.n);
+    const isOpen = open.has(M.n);
+    const hasCur = ss.some(s => s.g === curG);
+    const plan = ss.reduce((sum, x) => sum + _sprintPlanG(x.g), 0);
+    const fact = _aggregateForKpi({ from:_sprDisp(r.fromISO), to:_sprDisp(r.toISO) }).budget || 0;
+    // Процент — только когда план задан на все начавшиеся спринты марафона,
+    // иначе факт всего марафона сравнивался бы с планом его части.
+    const planned = ss.filter(x => _sprintPlanG(x.g) > 0).length;
+    const fullPlan = planned === ss.length && plan > 0;
+    const pct  = fullPlan ? Math.round(fact / plan * 100) : 0;
+    const sum  = fullPlan ? `План ${fmtM(plan)} · Факт ${fmtM(fact)} · ${pct}%`
+               : `Факт ${fmtM(fact)}` + (planned ? ` · план задан на ${planned} из ${ss.length} спринтов` : '');
+    html += `<button class="shc-marathon shc-mar-btn" onclick="toggleHistMarathon(${M.n})" title="${isOpen ? 'Свернуть' : 'Показать спринты'}">
+        <span class="shc-caret">${isOpen ? '▾' : '▸'}</span>
+        <span class="shc-mar-name">Марафон ${M.n}</span>
+        <span class="shc-mar-range">${_sprShort(r.fromISO)}–${_sprShort(r.toISO)}${hasCur ? ' · идёт сейчас' : ''}</span>
+        <span class="shc-mar-sum">${sum}</span>
+      </button>`;
+    if (!isOpen) continue;
+    for (const s of ss){
       html += _histCardHTML({
         title: `Спринт ${s.i}`,
         range: `${_sprShort(s.fromISO)}–${_sprShort(s.toISO)}`,
         isCur: s.g === curG,
         g: s.g,
       });
-    } else {
-      const h = it.h;
+    }
+    // Каникулы после этого марафона (если уже начались).
+    const h = _HOLIDAYS.find(x => x.afterM === M.n && x.fromISO <= todayISO);
+    if (h){
       html += _histCardHTML({
         title: 'Каникулы',
         range: `${_sprShort(h.fromISO)}–${_sprShort(h.toISO)}`,
@@ -3413,7 +3879,7 @@ function _superPlanStripHTML(){
   // Факт — продажи 4 РОПов за весь календарный месяц, даже в группе «Все»:
   // совпадает с «Продажами» карточки «Месяц» при группе «4 РОПа».
   const mp     = _makeMonthPreset(y, m);
-  const raw    = _mainRopDailyRaw(_mainRop4());
+  const raw    = _mainRopDailyRaw(_mainRop4(), null);   // план компании — без фильтра направления
   const fact   = getDatesInRange(mp.from, mp.to).reduce((s, d) => s + ((raw[d] && raw[d][2]) || 0), 0);
   const pct    = Math.round(fact / plan * 100);
   const remain = Math.max(0, plan - fact);
@@ -3465,18 +3931,20 @@ function renderKPI(d){
   const _kpiMainG = activeSprintNum();
   const _kpiMainS = _kpiMainG ? sprintByNum(_kpiMainG) : null;
   const _kpiIsHol = /^holiday_\d+$/.test((activePeriod && activePeriod.preset) || '');
-  const _kpiMainTitle = _kpiMainS ? _sprTitle(_kpiMainS) : (_kpiIsHol ? 'Каникулы' : 'Месяц');
+  const _kpiMar = activeMarathonNum();
+  const _kpiMainTitle = _kpiMainS ? _sprTitle(_kpiMainS) : _kpiMar ? `Марафон ${_kpiMar}` : (_kpiIsHol ? 'Каникулы' : 'Месяц');
   const _kpiMainBadge = _kpiMainS
     ? (MARATHONS.length > 1
         ? `М${_kpiMainS.m} · ${_sprShort(_kpiMainS.fromISO)}–${_sprShort(_kpiMainS.toISO)}`
         : `${_sprShort(_kpiMainS.fromISO)}–${_sprShort(_kpiMainS.toISO)}`)
-    : (activePeriod.label || '').replace(/^Каникулы\s*·\s*/, '');
+    : (activePeriod.label || '').replace(/^Каникулы\s*·\s*/, '').replace(/^Марафон \d+\s*·\s*/, '');
 
   _lastKpi = { month: monthData, yesterday: yesterdayData, today: todayData, periodLabel: `${_kpiMainTitle} · ${_kpiMainBadge}`, yd: _yd, td: _td };
   document.getElementById('kpi-3col').innerHTML =
     _kpiColHTML(_kpiMainTitle, _kpiMainBadge, monthData, clr, 'month') +
     _kpiColHTML('Вчера', _yd, yesterdayData, 'var(--gold)', 'day', { day: _yd }) +
     _kpiColHTML('Сегодня', _td, todayData, 'var(--green)', 'day', { day: _td });
+  _kpiApplyOpen();
 
   // История по спринтам (1..текущий) — карточки план/факт/возвраты/люди.
   try { renderSprintHistory(); } catch(e){ console.error('renderSprintHistory error:', e); }
@@ -3484,13 +3952,13 @@ function renderKPI(d){
   // Карточки спринтов — текущий + следующий сквозной спринт, для которых
   // директор задал план (SPRINT_PLANS), а под ними — сверх план месяца.
   // Если ни планов спринтов, ни сверх плана нет — блок скрыт.
-  // Выбранный в выпадашке спринт не дублируем (он уже основная колонка).
+  // Текущий и следующий спринт показываем всегда — даже если один из них
+  // выбран в фильтре периода (по просьбе владельца).
   const spWrap = document.getElementById('kpi-sprints');
   if (!spWrap) return;
   // В каникулы текущего спринта нет — берём ближайший предстоящий.
   const curN = _sprintNowOrNextG();
-  const _selN = activeSprintNum();
-  const spNums = [curN, curN+1].filter(n => sprintPlanTotal(n) > 0 && n !== _selN);
+  const spNums = [curN, curN+1].filter(n => sprintPlanTotal(n) > 0);
   const spColors = ['var(--acc)', '#7c3aed'];
   let html = '';
   spNums.forEach((n, i) => {
@@ -3546,8 +4014,68 @@ function _ropReturnPrevSprint(ropName){
   }
   return sum;
 }
+// Таблица «Выполнение плана по группам»: группы колонок, которые включаются
+// кнопками над таблицей (выбор помним в браузере зрителя). Всегда видны:
+// Группа · План · Факт · Выполнение · Лиды · Сделки · конверсия · Ср. чек.
+// Колонки определяем по тексту заголовка — набор колонок в таблице фиксирован.
+const PLAN_COL_GROUPS = {
+  plan: ['План период ₸', 'Возврат ₸', 'План с возвр. ₸', 'Прогноз', 'Остаток', 'Нужно/день'],
+  cust: ['Факт перв. ₸', 'Факт повт. ₸', 'Повт. по рекламе ₸', 'Повт. без рекламы ₸', 'Перв. лиды', 'Перв. продажи', 'Повт. продажи',
+         'Когорта', 'Конв. повт.', 'Клиенты по рекламе'],
+  prod: PRODUCT_GROUPS.map(g => g.label + ' ₸'),
+  base: ['База', 'LTV', 'Вернулись 60 дн.', 'Ждут звонка'],
+  ads:  ['Ст.лида рекл.', 'Ст.лида прод.', 'ДРР', 'Прод./мен.'],
+};
+// Продуктовый режим (Коллаген / KIDS): только то, что считается по товарам.
+const _PLAN_PRODUCT_MODE_COLS = new Set(['Группа', 'Факт ₸', 'Сделки', 'Ср.чек']);
+const _PLAN_COLS_DEFAULT = { plan: true, cust: false, prod: false, base: false, ads: false };
+let _planCols = (() => {
+  try { return Object.assign({}, _PLAN_COLS_DEFAULT, JSON.parse(localStorage.getItem('wg_plan_cols') || '{}')); }
+  catch (e) { return Object.assign({}, _PLAN_COLS_DEFAULT); }
+})();
+function togglePlanCols(key) {
+  _planCols[key] = !_planCols[key];
+  try { localStorage.setItem('wg_plan_cols', JSON.stringify(_planCols)); } catch (e) {}
+  // «База» подгружается только когда включена — перерисовываем таблицу целиком.
+  if (key === 'base' && _planLastStats) { renderPlanTable(_planLastStats); return; }
+  _applyPlanCols();
+}
+// Скрывает колонки выключенных групп (nth-child по позиции заголовка) и
+// подстраивает ширину таблицы под число видимых колонок.
+function _applyPlanCols() {
+  const wrap = document.getElementById('plan-table');
+  if (!wrap) return;
+  const heads = [...wrap.querySelectorAll('thead th')].map(th => th.textContent.trim());
+  const hasCust = heads.includes('Конв. повт.');   // есть разбивка первичные / повторные
+  const prodMode = activeProd !== 'all';
+  const hidden = [];
+  heads.forEach((h, i) => {
+    const grp = Object.keys(PLAN_COL_GROUPS).find(k => PLAN_COL_GROUPS[k].includes(h));
+    let off;
+    if (prodMode) off = grp ? !(grp === 'prod' && _planCols.prod) : !_PLAN_PRODUCT_MODE_COLS.has(h);
+    // Без разбивки «Конв. перв.» пустая — вместо неё видна общая «Конверсия».
+    else off = grp ? (!_planCols[grp] || (grp === 'cust' && !hasCust)) : (h === 'Конв. перв.' && !hasCust);
+    if (off) hidden.push(i + 1);
+  });
+  let st = document.getElementById('plan-col-style');
+  if (!st) { st = document.createElement('style'); st.id = 'plan-col-style'; document.head.appendChild(st); }
+  st.textContent = hidden.length ? hidden.map(n => `#plan-table tr > :nth-child(${n})`).join(',') + '{display:none}' : '';
+  wrap.style.minWidth = Math.max(prodMode ? 420 : 680, (heads.length - hidden.length) * 96) + 'px';
+  document.querySelectorAll('.plan-col-btn').forEach(b => {
+    const k = b.dataset.k;
+    const na = prodMode && k !== 'prod';     // в продуктовом режиме доступны только товары
+    b.classList.toggle('active', !!_planCols[k] && !na);
+    b.disabled = na;
+  });
+}
+let _planLastStats = null;   // для перерисовки, когда догрузилась «База»
 function renderPlanTable(stats){
+  _planLastStats = stats;
+  let _cbNote = '';            // подпись под кнопками, если «База» включена, а данных нет
   let rows = '';
+  // Есть ли разбивка первичные / повторные за период — для шапки (конверсия
+  // повторных вместо общей).
+  let _planHasCust = false;
 
   // ── ROP plan execution ──
   {
@@ -3556,7 +4084,9 @@ function renderPlanTable(stats){
     const _fromD = parseDate(_planFrom);
     const _toD = parseDate(_planTo);
     const _now = new Date();
-    const selectedProdName = activeProd==='all' ? null : (PROD_CFG[activeProd]?.rawKey||null);
+    // Продуктовый режим (Коллаген / KIDS): «Факт» и «Сделки» отдела — по товарам
+    // направления во всех воронках (_productCash по сделкам).
+    const _prodMode = activeProd !== 'all';
 
     // Period info
     const _periodDays = Math.max(1, Math.round((_toD - _fromD) / 86400000) + 1);
@@ -3567,15 +4097,15 @@ function renderPlanTable(stats){
     const _curPassedDays = _now.getDate();
     // Дней до конца периода для «нужно/день»: в режиме спринта — до конца
     // спринта, иначе — до конца месяца.
-    const _daysLeft = activeSprintNum()
+    const _daysLeft = activePlanSprints()
       ? Math.max(0, Math.round((_toD - _now) / 86400000))
       : _curTotalDays - _curPassedDays;
 
     // Calculate proportional plan for period (may span multiple months)
     function _getRopPlanPeriod(ropName) {
-      // Спринт: план периода = полный план спринта (без пропорции по дням).
-      const _spN = activeSprintNum();
-      if (_spN) return sprintPlanFor(ropName, _spN);
+      // Спринт / марафон: план периода = полный план спринтов (без пропорции по дням).
+      const _gs = activePlanSprints();
+      if (_gs) return _gs.reduce((s,g)=>s+sprintPlanFor(ropName,g),0);
       let total = 0;
       const months = new Set();
       for (let d = new Date(_fromD); d <= _toD; d.setDate(d.getDate()+1)) months.add(getMonthKey(d));
@@ -3597,13 +4127,49 @@ function renderPlanTable(stats){
     // Колонка «ПЛАН ₸»: в режиме спринта — план спринта, иначе — полный
     // месячный план (он же база для прогноза в месячном режиме).
     function _getRopMonthPlan(ropName) {
-      const _spN = activeSprintNum();
-      if (_spN) return sprintPlanFor(ropName, _spN);
+      const _gs = activePlanSprints();
+      if (_gs) return _gs.reduce((s,g)=>s+sprintPlanFor(ropName,g),0);
       const mk = `${String(_now.getMonth()+1).padStart(2,'0')}.${_now.getFullYear()}`;
       return getRopPlan(ropName, mk);
     }
 
-    let rTotPlan=0,rTotFullPlan=0,rTotFact=0,rTotLeads=0,rTotDeals=0,rTotAd=0,rTotFcFact=0,rTotReturn=0;
+    // Первичные / повторные (ropCust): лиды, продажи — для колонок и «ИТОГО РОП».
+    // «Клиенты по рекламе»: уже покупавшие клиенты отдела, которые вернулись в
+    // старый чат через рекламу, а не через менеджера (возврат засчитан
+    // ответственному сделки — видно, чья база уходит в рекламу). Доля — от
+    // повторных лидов отдела. Касания рекламы CRM пишет с 28.10.2026.
+    const _adDataOk = _toD >= new Date(2026, 9, 28);
+    const _clientsAdTd = (c, bold) => {
+      if (!c || !_adDataOk) return _noCust;
+      const n = c.adReturnLeads - c.adReturnPrimary;
+      const share = c.knownLeads > 0 ? Math.round(n / c.knownLeads * 100) : 0;
+      return `<td style="font-weight:${bold ? 700 : 600}">${bold ? '<strong>' + fmt(n) + '</strong>' : fmt(n)}`
+        + `<div style="font-size:10px;color:var(--muted);font-weight:500">${share}% повторных</div></td>`;
+    };
+    // Факт первичных / повторных в тенге (без продаж без телефона — их почти нет).
+    const _custMoneyTd = (v, color, bold) => v === null ? _noCust
+      : `<td style="color:${color};font-weight:${bold ? 700 : 600}">${bold ? '<strong>' + fmt(v) + '</strong>' : fmt(v)}</td>`;
+    // Удержание в тенге: платное (клиент вернулся по рекламе) и органическое
+    // (без рекламы). c — { passiveOk, repeatBudget, repeatAdBudget }.
+    const _retTds = (c, bold) => (!c || !c.passiveOk) ? _noCust + _noCust
+      : _custMoneyTd(Math.round(c.repeatAdBudget), '#ca8a04', bold) + _custMoneyTd(Math.round(c.repeatBudget - c.repeatAdBudget), '#0891b2', bold);
+    // Товары отдела по группам (PRODUCT_GROUPS): касса и штуки. pr — { covered, groups }.
+    const _prodTds = (pr, bold) => PRODUCT_GROUPS.map(g => {
+      if (!pr || !pr.covered) return _noCust;
+      const v = pr.groups[g.key], cash = fmt(Math.round(v.cash));
+      return `<td style="font-weight:${bold ? 700 : 600}">${bold ? '<strong>' + cash + '</strong>' : cash}`
+           + `<div style="font-size:10px;color:var(--muted);font-weight:500">${fmt(v.units)} шт</div></td>`;
+    }).join('');
+    // Ячейка «—», когда данных нет (период до 01.06.2026 или расчёт не выкачен).
+    const _noCust = '<td style="color:var(--muted)">—</td>';
+    const _custTd = (v, bold) => v === null ? _noCust : `<td${bold ? ' style="font-weight:700"' : ''}>${bold ? '<strong>' + fmt(v) + '</strong>' : fmt(v)}</td>`;
+    const _pctTd = (n, d, bold) => d > 0
+      ? `<td class="${convCls(n / d * 100)}" style="font-weight:700">${bold ? '<strong>' : ''}${(n / d * 100).toFixed(1)}%${bold ? '</strong>' : ''}</td>`
+      : _noCust;
+    const _convPrimTd   = (c, bold) => !c ? _noCust : _pctTd(c.newDeals, c.primaryLeads, bold);
+    const _convCohortTd = (c, bold) => !c ? _noCust : _pctTd(c.primaryBought, c.primaryLeads, bold);
+    // Конверсия повторных (уже клиенты) — вместо общей, когда есть разбивка.
+    const _convRepeatTd = (c, bold) => !c ? _noCust : _pctTd(c.repeatDeals, c.knownLeads, bold);
 
     // Forecast: ALWAYS based on current month (1st → today), independent of selected period filter
     const _fcMonthStart = `01.${String(_now.getMonth()+1).padStart(2,'0')}.${_now.getFullYear()}`;
@@ -3629,14 +4195,16 @@ function renderPlanTable(stats){
 
     // Collect all ROP row data first
     const _ropRows = [];
+    const _planDates = getDatesInRange(_planFrom, _planTo);   // для первичных/повторных и товаров
     for (const [ropName, ropCfg] of Object.entries(ROP_GROUPS)) {
       if (ropName === 'all') continue;
       if (activeMainRop !== 'all' && !_mainRopNames().includes(ropName)) continue; // фильтр по РОПу
       if (_historyGroups.has(ropName) && _fromD > _historyCutoff) continue;
       if (_ropOutOfEra(ropName)) continue;
-      const ropCrms = ROP_CRM_MAP[ropName] || [];
-      if (selectedProdName && !ropCrms.includes(selectedProdName)) continue;
-      const crms = selectedProdName ? ropCrms.filter(c=>c===selectedProdName) : ropCrms;
+      const crms = ROP_CRM_MAP[ropName] || [];
+      // Партнёры (B1): своя система — сделки создают сами, рекламы у них нет.
+      // Показываем только кассу и средний чек (решение владельца).
+      const cashOnly = MGR_CAT_ROPS[ropName] === 'partners';
 
       let ropLeads=0, ropDeals=0, ropFact=0;
       crms.forEach(crm => {
@@ -3645,10 +4213,22 @@ function renderPlanTable(stats){
           ropLeads+=m.leads||0; ropDeals+=m.deals||0; ropFact+=m.budget||0;
         });
       });
+      // Товары отдела (по сделкам; covered = false — разбивки за период нет).
+      const ropProd = _productCash(_planDates, [ropName]);
+      let ropUnits = 0, dealsKnown = true;
+      if (_prodMode) {
+        const pv = ropProd[activeProd];
+        ropFact = ropProd.covered ? pv.cash : 0;
+        ropDeals = ropProd.dealsKnown ? pv.deals : 0;
+        dealsKnown = ropProd.dealsKnown;
+        ropUnits = pv.units;
+        ropLeads = 0;
+        if (!ropFact && !ropUnits) continue;   // отдел этот товар не продавал
+      }
 
-      const planPeriod = _getRopPlanPeriod(ropName);
-      const fullMonthPlan = _getRopMonthPlan(ropName);
-      const ropReturn = _ropReturnPrevSprint(ropName);     // возврат прошлого спринта
+      const planPeriod = _prodMode ? 0 : _getRopPlanPeriod(ropName);
+      const fullMonthPlan = _prodMode ? 0 : _getRopMonthPlan(ropName);
+      const ropReturn = _prodMode ? 0 : _ropReturnPrevSprint(ropName);     // возврат прошлого спринта
       const planWithReturn = planPeriod + ropReturn;       // план периода + этот возврат
       const execPct = planPeriod>0 ? Math.round(ropFact/planPeriod*100) : (ropFact>0?100:0);
       const remain = planPeriod>0 ? Math.max(0, planPeriod-ropFact) : 0;
@@ -3662,12 +4242,14 @@ function renderPlanTable(stats){
       const dailyRate = _forecastDays > 0 ? _fcFact / _forecastDays : 0;
       // Прогноз — только в месячном режиме (месячная проекция против плана
       // спринта бессмысленна). В режиме спринта показываем «—».
-      const forecast = !activeSprintNum() && dailyRate > 0 && fullMonthPlan > 0 ? Math.round(dailyRate * _curTotalDays) : 0;
+      const forecast = !activePlanSprints() && dailyRate > 0 && fullMonthPlan > 0 ? Math.round(dailyRate * _curTotalDays) : 0;
 
       const conv = ropLeads>0?(ropDeals/ropLeads*100).toFixed(1):'0.0';
 
       let adSpend=0;
-      if (AD_SPEND[ropName]) {
+      if (cashOnly || _prodMode) {
+        // у партнёров рекламы нет; в продуктовом режиме расход по отделам не делим
+      } else if (AD_SPEND[ropName]) {
         // Direct ad spend key (e.g. БОТА AI) — use own data from ad cabinet
         const ad=AD_SPEND[ropName]||{};
         Object.entries(ad).forEach(([d,v])=>{try{const dd=parseDate(d);if(dd>=_fromD&&dd<=_toD)adSpend+=v;}catch(e){}});
@@ -3699,81 +4281,164 @@ function renderPlanTable(stats){
       const ropMgrCount = _ropMgrNames.size;
       const salesPerMgr = ropMgrCount>0?Math.round(ropFact/ropMgrCount):0;
 
-      _ropRows.push({ ropName, ropCfg, ropFact, ropLeads, ropDeals, planPeriod, fullMonthPlan, ropReturn, planWithReturn, execPct, remain, perDay, forecast, conv, adSpend, cplM, rpl, ropDrr, salesPerMgr, _fcFact });
+      // Первичные / повторные отдела (null — нет данных за период или продуктовый режим).
+      const ropCust = _prodMode ? null : _custSplitFor(_planDates, 'all', [ropName]);
+      _ropRows.push({ ropName, ropCfg, ropFact, ropLeads, ropDeals, ropUnits, dealsKnown, planPeriod, fullMonthPlan, ropReturn, planWithReturn, execPct, remain, perDay, forecast, conv, adSpend, cplM, rpl, ropDrr, salesPerMgr, _fcFact, ropCust, ropProd, cashOnly });
     }
 
     // Sort by fact descending
     _ropRows.sort((a,b) => b.ropFact - a.ropFact);
 
-    // Render sorted rows + accumulate totals
-    for (const r of _ropRows) {
-      const {ropName,ropCfg,ropFact,ropLeads,ropDeals,planPeriod,fullMonthPlan,ropReturn,planWithReturn,execPct,remain,perDay,forecast,conv,adSpend,cplM,rpl,ropDrr,salesPerMgr,_fcFact} = r;
-      rTotPlan+=planPeriod; rTotFullPlan+=fullMonthPlan; rTotFact+=ropFact; rTotLeads+=ropLeads; rTotDeals+=ropDeals; rTotAd+=adSpend; rTotFcFact+=_fcFact; rTotReturn+=ropReturn;
+    // Отделы продаж (РОПы, в т.ч. KAZ и Астана) и отдельно партнёры + AI-бот
+    // (MGR_CAT_ROPS): РОПы → ИТОГО РОП → B1 Partners / БОТА AI → ОБЩЕЕ ИТОГО.
+    // ИТОГО РОП — только отделы: партнёров и бота оцифровываем отдельно.
+    const _ropSection   = _ropRows.filter(r => !MGR_CAT_ROPS[r.ropName]);
+    const _otherSection = _ropRows.filter(r =>  MGR_CAT_ROPS[r.ropName])
+      .sort((a, b) => (a.ropName === 'РОП B1 Partners' ? -1 : b.ropName === 'РОП B1 Partners' ? 1 : b.ropFact - a.ropFact));
+
+    const _d = _noCust;   // ячейка «—»
+    // «База» (кнопка над таблицей): клиентская база отдела из Era CRM
+    // (_cbGet — под токеном входа). Отдел → РОП на конец периода (_ropOnDate).
+    const _cbRes = (_planCols.base && !_prodMode) ? _cbGet(_cbRangeOfPeriod(activePeriod)) : null;
+    const _cbMap = _cbRes && _cbRes.state === 'ok' ? _cbByRop(_cbRes.data, _ropSplitISO(activePeriod.to)) : null;
+    if (_cbRes && _cbRes.state !== 'ok') _cbNote = _cbStateNote(_cbRes.state);
+    const _baseTds = (names, bold) => {
+      if (!_cbMap) return _d.repeat(4);
+      const x = _cbZero(); let any = false;
+      for (const n of names) if (_cbMap.byRop[n]) { _cbAdd(x, _cbMap.byRop[n]); any = true; }
+      return any ? _cbCellsHTML(x, _cbMap.all, bold) : _d.repeat(4);
+    };
+    const _unitsSub = u => _prodMode ? `<div style="font-size:10px;color:var(--muted);font-weight:500">${fmt(u)} шт</div>` : '';
+    // Порядок ячеек = порядок заголовков таблицы (см. шапку ниже).
+    const _rowHTML = r => {
+      const {ropName,ropCfg,ropFact,ropLeads,ropDeals,ropUnits,dealsKnown,planPeriod,fullMonthPlan,ropReturn,planWithReturn,execPct,remain,perDay,forecast,conv,cplM,rpl,ropDrr,salesPerMgr,ropCust,ropProd,cashOnly} = r;
+      if (ropCust) _planHasCust = true;
+      const nameTd  = `<td><div class="prod-name"><div class="prod-dot" style="background:${ropCfg.color}"></div>${ropName}</div></td>`;
+      const factTd  = `<td style="color:${ropCfg.color};font-weight:700">${fmt(ropFact)}${_unitsSub(ropUnits)}</td>`;
+      const moneyTd = _custMoneyTd(ropCust ? Math.round(ropCust.newBudget) : null, '#16a34a')
+                    + _custMoneyTd(ropCust ? Math.round(ropCust.repeatBudget) : null, '#7c3aed') + _retTds(ropCust);
+      const checkTd = `<td style="font-weight:700;white-space:nowrap">${ropDeals>0?fmt(Math.round(ropFact/ropDeals))+' ₸':'—'}</td>`;
+      // Партнёры: только касса и средний чек.
+      if (cashOnly) return `<tr>${nameTd}${_d.repeat(4)}${factTd}${moneyTd}${_d.repeat(13)}${_prodTds(ropProd)}${_baseTds([ropName])}${checkTd}${_d.repeat(4)}</tr>`;
 
       const remainCell = planPeriod>0
         ? remain===0
           ? `<td style="color:#16a34a;font-weight:700">✓</td><td style="color:#16a34a">—</td>`
           : `<td style="color:#ca8a04;font-weight:700">${fmt(remain)}</td><td style="color:#6366f1;font-weight:700">${perDay?fmt(perDay):'—'}</td>`
         : `<td style="color:var(--muted)">—</td><td style="color:var(--muted)">—</td>`;
-
       const fcPct = fullMonthPlan>0&&forecast>0?Math.round(forecast/fullMonthPlan*100):0;
       const fcClr = fcPct>=100?'#16a34a':fcPct>=80?'#ca8a04':'#dc2626';
-
-      rows += `<tr>
-        <td><div class="prod-name"><div class="prod-dot" style="background:${ropCfg.color}"></div>${ropName}</div></td>
+      return `<tr>
+        ${nameTd}
         <td>${fmt(fullMonthPlan)}</td>
         <td style="color:var(--slate);font-weight:600">${fmt(planPeriod)}</td>
         <td style="color:${ropReturn?'#dc2626':'var(--muted)'};font-weight:600">${ropReturn?fmt(ropReturn):'—'}</td>
         <td style="color:var(--slate);font-weight:700">${planWithReturn?fmt(planWithReturn):'—'}</td>
-        <td style="color:${ropCfg.color};font-weight:700">${fmt(ropFact)}</td>
+        ${factTd}
+        ${moneyTd}
         <td><div class="bar-wrap"><span style="font-weight:700;font-size:13px;min-width:36px;text-align:right;color:${execPct>=100?'#16a34a':execPct>=80?'#ca8a04':'#dc2626'}">${execPct}%</span></div></td>
         <td style="font-weight:700;color:${forecast?fcClr:'var(--muted)'}">${forecast?fmt(forecast):'—'}</td>
         ${remainCell}
-        <td>${fmt(ropLeads)}</td><td>${fmt(ropDeals)}</td>
-        <td class="${convCls(parseFloat(conv))}" style="font-weight:700">${conv}%</td>
-        <td style="font-weight:700">${ropDeals>0?fmt(Math.round(ropFact/ropDeals))+' ₸':'—'}</td>
+        <td>${fmt(ropLeads)}</td>${_custTd(ropCust ? ropCust.primaryLeads : null)}
+        <td>${dealsKnown ? fmt(ropDeals) : '—'}</td>${_custTd(ropCust ? ropCust.newDeals : null)}${_custTd(ropCust ? ropCust.repeatDeals : null)}
+        ${_convPrimTd(ropCust)}${_convCohortTd(ropCust)}
+        ${ropCust ? _convRepeatTd(ropCust) : `<td class="${convCls(parseFloat(conv))}" style="font-weight:700">${conv}%</td>`}
+        ${_clientsAdTd(ropCust)}
+        ${_prodTds(ropProd)}
+        ${_baseTds([ropName])}
+        ${checkTd}
         <td style="color:${cplM?cplM<=3000?'#16a34a':cplM<=6000?'#ca8a04':'#c0392b':'var(--muted)'};font-weight:700">${cplM?fmt(cplM)+' ₸':'—'}</td>
         <td style="color:#6366f1;font-weight:700">${rpl?fmt(rpl)+' ₸':'—'}</td>
         <td style="color:${parseFloat(ropDrr)<=15?'#16a34a':parseFloat(ropDrr)<=25?'#ca8a04':'#dc2626'};font-weight:700">${parseFloat(ropDrr)>0?ropDrr+'%':'—'}</td>
         <td style="color:#6366f1;font-weight:600">${salesPerMgr?fmt(salesPerMgr)+' ₸':'—'}</td>
       </tr>`;
-    }
+    };
 
-    // ROP totals row
-    const rTotPlanWithReturn = rTotPlan + rTotReturn;
-    const rTotConv = rTotLeads>0?(rTotDeals/rTotLeads*100).toFixed(1):'0.0';
-    const rTotCpl = rTotLeads>0&&rTotAd>0?Math.round(rTotAd/rTotLeads):0;
-    const rTotRpl = rTotLeads>0&&rTotFact>0?Math.round(rTotFact/rTotLeads):0;
-    const rTotDrr = rTotFact>0&&rTotAd>0?parseFloat((rTotAd/rTotFact*100).toFixed(1)):0;
-    const rTotExecPct = rTotPlan>0?Math.round(rTotFact/rTotPlan*100):0;
-    const rTotRemain = rTotPlan>0?Math.max(0,rTotPlan-rTotFact):0;
-    const rTotPerDay = _daysLeft>0&&rTotRemain>0?Math.round(rTotRemain/_daysLeft):0;
-    const rTotDailyRate = _forecastDays>0?rTotFcFact/_forecastDays:0;
-    const rTotFc = rTotDailyRate>0&&rTotPlan>0?Math.round(rTotDailyRate*_curTotalDays):0;
-    const rTotFcPct = rTotPlan>0&&rTotFc>0?Math.round(rTotFc/rTotPlan*100):0;
-    const rTotRemainCell = rTotPlan>0
-      ? rTotRemain===0?`<td style="color:#16a34a;font-weight:700"><strong>✓</strong></td><td>—</td>`
-        :`<td style="color:#ca8a04;font-weight:700"><strong>${fmt(rTotRemain)}</strong></td><td style="color:#6366f1;font-weight:700"><strong>${rTotPerDay?fmt(rTotPerDay):'—'}</strong></td>`
-      : `<td>—</td><td>—</td>`;
-
-    rows += `<tr class="tr-sum" style="border-top:1.5px solid var(--line)">
-      <td><div class="prod-name"><div class="prod-dot" style="background:#6366f1"></div><strong>ИТОГО РОП</strong></div></td>
-      <td><strong>${fmt(rTotFullPlan)}</strong></td>
-      <td style="color:var(--slate);font-weight:600"><strong>${fmt(rTotPlan)}</strong></td>
-      <td style="color:${rTotReturn?'#dc2626':'var(--muted)'};font-weight:700"><strong>${rTotReturn?fmt(rTotReturn):'—'}</strong></td>
-      <td style="color:var(--slate);font-weight:700"><strong>${rTotPlanWithReturn?fmt(rTotPlanWithReturn):'—'}</strong></td>
-      <td style="color:#6366f1;font-weight:700"><strong>${fmt(rTotFact)}</strong></td>
-      <td><div class="bar-wrap"><span style="font-weight:700;font-size:13px;color:${rTotExecPct>=100?'#16a34a':rTotExecPct>=80?'#ca8a04':'#dc2626'};min-width:36px;text-align:right">${rTotExecPct}%</span></div></td>
-      <td style="font-weight:700;color:${rTotFc?rTotFcPct>=100?'#16a34a':rTotFcPct>=80?'#ca8a04':'#dc2626':'var(--muted)'}"><strong>${rTotFc?fmt(rTotFc):'—'}</strong></td>
-      ${rTotRemainCell}
-      <td><strong>${fmt(rTotLeads)}</strong></td><td><strong>${fmt(rTotDeals)}</strong></td>
-      <td class="${convCls(parseFloat(rTotConv))}" style="font-weight:700"><strong>${rTotConv}%</strong></td>
-      <td style="font-weight:700"><strong>${rTotDeals>0?fmt(Math.round(rTotFact/rTotDeals))+' ₸':'—'}</strong></td>
-      <td style="color:${rTotCpl?rTotCpl<=3000?'#16a34a':rTotCpl<=6000?'#ca8a04':'#c0392b':'var(--muted)'};font-weight:700"><strong>${rTotCpl?fmt(rTotCpl)+' ₸':'—'}</strong></td>
-      <td style="color:#6366f1;font-weight:700"><strong>${rTotRpl?fmt(rTotRpl)+' ₸':'—'}</strong></td>
-      <td style="color:${rTotDrr<=15?'#16a34a':rTotDrr<=25?'#ca8a04':'#dc2626'};font-weight:700"><strong>${rTotDrr>0?rTotDrr+'%':'—'}</strong></td>
+    // Сумма по набору строк (ИТОГО РОП / ОБЩЕЕ ИТОГО). Касса, сделки и товары —
+    // по всем строкам; лиды и всё, что считается от лидов (конверсии, когорта,
+    // клиенты по рекламе), — без партнёров: их «лиды» — свои же сделки.
+    const _sumRows = set => {
+      const t = { plan:0, fullPlan:0, fact:0, units:0, leads:0, deals:0, dealsL:0, ad:0, fcFact:0, ret:0,
+                  hasCust:false, passiveOk:false, pl:0, kl:0, nd:0, rd:0, ndL:0, rdL:0, pb:0, nb:0, rb:0, rab:0, ra:0,
+                  names: set.map(r => r.ropName),
+                  prod: { covered: set.length > 0, groups: {} } };
+      for (const g of PRODUCT_GROUPS) t.prod.groups[g.key] = { cash: 0, units: 0 };
+      for (const r of set) {
+        t.plan += r.planPeriod; t.fullPlan += r.fullMonthPlan; t.fact += r.ropFact; t.units += r.ropUnits || 0;
+        t.deals += r.ropDeals; t.ad += r.adSpend; t.fcFact += r._fcFact; t.ret += r.ropReturn;
+        if (!r.cashOnly) { t.leads += r.ropLeads; t.dealsL += r.ropDeals; }
+        const c = r.ropCust;
+        if (c) {
+          t.hasCust = true; if (c.passiveOk) t.passiveOk = true;
+          t.nd += c.newDeals; t.rd += c.repeatDeals; t.nb += c.newBudget; t.rb += c.repeatBudget; t.rab += c.repeatAdBudget;
+          if (!r.cashOnly) {
+            t.pl += c.primaryLeads; t.kl += c.knownLeads; t.pb += c.primaryBought;
+            t.ndL += c.newDeals; t.rdL += c.repeatDeals; t.ra += c.adReturnLeads - c.adReturnPrimary;
+          }
+        }
+        const pr = r.ropProd;
+        if (!pr || !pr.covered) t.prod.covered = false;
+        else for (const g of PRODUCT_GROUPS) { t.prod.groups[g.key].cash += pr.groups[g.key].cash; t.prod.groups[g.key].units += pr.groups[g.key].units; }
+      }
+      return t;
+    };
+    const _totalHTML = (title, color, t, grand) => {
+      const planWithReturn = t.plan + t.ret;
+      const conv = t.leads>0?(t.dealsL/t.leads*100).toFixed(1):'0.0';
+      const cpl = t.leads>0&&t.ad>0?Math.round(t.ad/t.leads):0;
+      const rpl = t.leads>0&&t.fact>0?Math.round(t.fact/t.leads):0;
+      const drr = t.fact>0&&t.ad>0?parseFloat((t.ad/t.fact*100).toFixed(1)):0;
+      const execPct = t.plan>0?Math.round(t.fact/t.plan*100):0;
+      const remain = t.plan>0?Math.max(0,t.plan-t.fact):0;
+      const perDay = _daysLeft>0&&remain>0?Math.round(remain/_daysLeft):0;
+      const dailyRate = _forecastDays>0?t.fcFact/_forecastDays:0;
+      // Как и в строках РОПов: прогноз — месячная проекция, в режиме спринта и
+      // марафона (план периода — не месячный) не показываем.
+      const fc = !activePlanSprints()&&dailyRate>0&&t.plan>0?Math.round(dailyRate*_curTotalDays):0;
+      const fcPct = t.plan>0&&fc>0?Math.round(fc/t.plan*100):0;
+      const remainCell = t.plan>0
+        ? remain===0?`<td style="color:#16a34a;font-weight:700"><strong>✓</strong></td><td>—</td>`
+          :`<td style="color:#ca8a04;font-weight:700"><strong>${fmt(remain)}</strong></td><td style="color:#6366f1;font-weight:700"><strong>${perDay?fmt(perDay):'—'}</strong></td>`
+        : `<td>—</td><td>—</td>`;
+      const c = t.hasCust;
+      return `<tr class="tr-sum${grand ? ' tr-grand' : ''}" style="border-top:${grand ? '2.5px' : '1.5px'} solid var(--line)">
+      <td><div class="prod-name"><div class="prod-dot" style="background:${color}"></div><strong>${title}</strong></div></td>
+      <td><strong>${fmt(t.fullPlan)}</strong></td>
+      <td style="color:var(--slate);font-weight:600"><strong>${fmt(t.plan)}</strong></td>
+      <td style="color:${t.ret?'#dc2626':'var(--muted)'};font-weight:700"><strong>${t.ret?fmt(t.ret):'—'}</strong></td>
+      <td style="color:var(--slate);font-weight:700"><strong>${planWithReturn?fmt(planWithReturn):'—'}</strong></td>
+      <td style="color:${color};font-weight:700"><strong>${fmt(t.fact)}</strong>${_unitsSub(t.units)}</td>
+      ${_custMoneyTd(c ? Math.round(t.nb) : null, '#16a34a', true)}${_custMoneyTd(c ? Math.round(t.rb) : null, '#7c3aed', true)}
+      ${_retTds(c ? { passiveOk: t.passiveOk, repeatBudget: t.rb, repeatAdBudget: t.rab } : null, true)}
+      <td><div class="bar-wrap"><span style="font-weight:700;font-size:13px;color:${execPct>=100?'#16a34a':execPct>=80?'#ca8a04':'#dc2626'};min-width:36px;text-align:right">${execPct}%</span></div></td>
+      <td style="font-weight:700;color:${fc?fcPct>=100?'#16a34a':fcPct>=80?'#ca8a04':'#dc2626':'var(--muted)'}"><strong>${fc?fmt(fc):'—'}</strong></td>
+      ${remainCell}
+      <td><strong>${fmt(t.leads)}</strong></td>${_custTd(c ? t.pl : null, true)}
+      <td><strong>${fmt(t.deals)}</strong></td>${_custTd(c ? t.nd : null, true)}${_custTd(c ? t.rd : null, true)}
+      ${_convPrimTd(c ? { primaryLeads: t.pl, newDeals: t.ndL } : null, true)}${_convCohortTd(c ? { primaryLeads: t.pl, primaryBought: t.pb } : null, true)}
+      ${c ? _convRepeatTd({ repeatDeals: t.rdL, knownLeads: t.kl }, true) : `<td class="${convCls(parseFloat(conv))}" style="font-weight:700"><strong>${conv}%</strong></td>`}
+      ${_clientsAdTd(c ? { adReturnLeads: t.ra, adReturnPrimary: 0, knownLeads: t.kl } : null, true)}
+      ${_prodTds(t.prod, true)}
+      ${_baseTds(t.names, true)}
+      <td style="font-weight:700;white-space:nowrap"><strong>${t.deals>0?fmt(Math.round(t.fact/t.deals))+' ₸':'—'}</strong></td>
+      <td style="color:${cpl?cpl<=3000?'#16a34a':cpl<=6000?'#ca8a04':'#c0392b':'var(--muted)'};font-weight:700"><strong>${cpl?fmt(cpl)+' ₸':'—'}</strong></td>
+      <td style="color:#6366f1;font-weight:700"><strong>${rpl?fmt(rpl)+' ₸':'—'}</strong></td>
+      <td style="color:${drr<=15?'#16a34a':drr<=25?'#ca8a04':'#dc2626'};font-weight:700"><strong>${drr>0?drr+'%':'—'}</strong></td>
       <td style="color:#6366f1;font-weight:600"><strong>—</strong></td>
     </tr>`;
+    };
+
+    if (_prodMode && !_ropRows.length) {
+      rows += `<tr><td colspan="35" style="text-align:center;color:var(--muted);padding:22px 16px">${
+        _ERA_PROD_STATE === 'ok' ? 'Нет продаж этого направления за период'
+          : 'Продажи товаров по отделам появятся после выкатки расчёта в Era CRM'}</td></tr>`;
+    }
+    rows += _ropSection.map(_rowHTML).join('');
+    if (_ropSection.length) rows += _totalHTML('ИТОГО РОП', '#6366f1', _sumRows(_ropSection));
+    if (_otherSection.length) {
+      rows += _otherSection.map(_rowHTML).join('');
+      if (_ropSection.length) rows += _totalHTML('ОБЩЕЕ ИТОГО', '#0f172a', _sumRows(_ropRows), true);
+    }
   }
 
   const isCur = (stats.parts ? Object.values(stats.parts)[0] : stats).isCurrentMonth;
@@ -3784,13 +4449,20 @@ function renderPlanTable(stats){
       <th>План период ₸</th>
       <th style="color:#dc2626">Возврат ₸</th>
       <th style="color:var(--slate)">План с возвр. ₸</th>
-      <th>Факт ₸</th>
+      <th title="${activeProd === 'all' ? 'Касса отдела' : 'Касса товаров направления во всех воронках'}">Факт ₸</th>
+      <th style="color:#16a34a" title="Привлечение: касса первых покупок клиентов">Факт перв. ₸</th>
+      <th style="color:#7c3aed" title="Удержание: касса покупок клиентов, которые уже покупали">Факт повт. ₸</th>
+      <th style="color:#ca8a04" title="Платное удержание (ремаркетинг): клиент вернулся по рекламе — касание рекламы за 30 дней до заказа. Данные с 28.10.2026">Повт. по рекламе ₸</th>
+      <th style="color:#0891b2" title="Органическое удержание: повторные покупки без рекламы. Данные с 28.10.2026">Повт. без рекламы ₸</th>
       <th>Выполнение</th>
       <th style="color:${isCur?'#6366f1':'var(--muted)'}">Прогноз</th>
       <th style="color:${isCur?'#ca8a04':'var(--muted)'}">Остаток</th>
       <th style="color:${isCur?'#6366f1':'var(--muted)'}">Нужно/день</th>
-      <th>Лиды</th><th>Сделки</th><th>Конверсия</th><th>Ср.чек</th><th style="color:#6366f1">Ст.лида рекл.</th><th style="color:#6366f1">Ст.лида прод.</th><th style="color:#ca8a04">ДРР</th><th style="color:#6366f1">Прод./мен.</th>
+      <th>Лиды</th><th style="color:#16a34a" title="Ещё не покупали: новые и писавшие раньше без покупки, в т.ч. вернувшиеся по рекламе">Перв. лиды</th><th title="${activeProd === 'all' ? 'Все сделки отдела' : 'Сделки с товаром направления'}">Сделки</th><th style="color:#16a34a" title="Первая покупка клиента">Перв. продажи</th><th style="color:#7c3aed" title="Клиент уже покупал раньше">Повт. продажи</th><th title="Первичные продажи ÷ первичные лиды">Конв. перв.</th><th title="Из первичных лидов периода (ещё не покупавших) уже купили — для свежих периодов ещё растёт">Когорта</th>${_planHasCust ? '<th title="Повторные продажи ÷ повторные лиды (уже клиенты)">Конв. повт.</th>' : '<th title="Все сделки ÷ все лиды">Конверсия</th>'}<th style="color:#ca8a04" title="Клиенты отдела, которые уже покупали и вернулись в старый чат через рекламу, а не через менеджера (данные с 28.10.2026). Доля — от повторных лидов отдела">Клиенты по рекламе</th>${PRODUCT_GROUPS.map(g => `<th title="${g.title}: касса и штуки, по составу заказов">${g.label} ₸</th>`).join('')}<th title="Клиенты отдела с доставленным заказом (этапы «Успешно реализовано» и «Курьерская доставка») и число таких сделок. Клиент относится к отделу менеджера последней покупки. На сегодня">База</th><th title="Сколько денег в среднем принёс один клиент отдела за всё время, и покупок на клиента. На сегодня">LTV</th><th title="Из покупок, которым в этом периоде исполнилось 60 дней, — у скольких клиент купил снова. Цвет — относительно компании">Вернулись 60 дн.</th><th title="Клиенты, у которых курс заканчивается или недавно закончился, а звонка в этом цикле нет. Охват — скольким из таких уже позвонили. Клиенты, которых ведёт отдел заботы, считаются ему">Ждут звонка</th><th>Ср.чек</th><th style="color:#6366f1">Ст.лида рекл.</th><th style="color:#6366f1">Ст.лида прод.</th><th style="color:#ca8a04">ДРР</th><th style="color:#6366f1">Прод./мен.</th>
     </tr></thead><tbody>${rows}</tbody></table>`;
+  const _noteEl = document.getElementById('plan-base-note');
+  if (_noteEl) { _noteEl.innerHTML = _cbNote; _noteEl.hidden = !_cbNote; }
+  _applyPlanCols();
 }
 // ═══════════════════ ROP KPI CARDS ════════════════════════════════
 function renderRopKPI(stats) {
@@ -3840,8 +4512,6 @@ function renderRopKPI(stats) {
   const curPassedDays = now.getDate();
   const daysLeft = curTotalDays - curPassedDays;
 
-  // Filter ROPs by selected product
-  const selectedProdName = activeProd === 'all' ? null : (PROD_CFG[activeProd]?.rawKey || null);
 
   let html = '<div class="rop-section-label">Показатели по группам</div><div class="kpi-grid rop-grid">';
 
@@ -3854,11 +4524,7 @@ function renderRopKPI(stats) {
     if (_hGroups.has(ropName) && _kpiFromD > _hCutoff) continue;
     const ropCrms = ROP_CRM_MAP[ropName] || [];
 
-    // Skip ROPs that don't work in the selected product's CRM
-    if (selectedProdName && !ropCrms.includes(selectedProdName)) continue;
-
-    // Use only filtered CRMs (if product selected, only that CRM)
-    const crms = selectedProdName ? ropCrms.filter(c => c === selectedProdName) : ropCrms;
+    const crms = ropCrms;
     let leads=0, deals=0, budget=0;
     // Уникальные люди: один менеджер встречается в нескольких воронках.
     const _mgrNames = new Set();
@@ -3984,6 +4650,10 @@ function setSummaryDept(v,el){ summaryDept=v; el.parentElement.querySelectorAll(
 function setSummaryMetric(v,el){ summaryMetric=v; el.parentElement.querySelectorAll('.cf-btn').forEach(b=>b.classList.remove('active')); el.classList.add('active'); renderSummaryChart(); }
 function setSummaryProd(v,el){ summaryProd=v; el.parentElement.querySelectorAll('.cf-btn').forEach(b=>b.classList.remove('active')); el.classList.add('active'); renderSummaryChart(); }
 
+// Отделы на графике «Динамика продаж по РОПам» — только действующие отделы
+// продаж (по просьбе владельца). Партнёров, бота, KIDS и расформированные
+// группы не рисуем; прежние названия сведены в эти же (_OLD_ROP_RENAME).
+const LINE_ROPS = new Set(['РОП Айша', 'РОП Аслиддин', 'РОП Аяулым', 'РОП Мухамеджан', 'РОП Шыңғыс Астана', 'РОП KAZ Отдел']);
 function renderLine(stats){
   if(!stats)return;
   const ctx=document.getElementById('lineChart').getContext('2d');
@@ -4001,14 +4671,16 @@ function renderLine(stats){
 
   for(const [ropName,ropCfg] of Object.entries(ROP_GROUPS)){
     if(ropName==='all') continue;
+    if(!LINE_ROPS.has(ropName)) continue;
     if(activeMainRop!=='all' && !_mainRopNames().includes(ropName)) continue; // фильтр по РОПу
     if(_chGroups.has(ropName) && _chFromD > _chCutoff) continue;
-    const ropCrms = ROP_CRM_MAP[ropName]||[];
-    const selectedProdName = activeProd==='all'?null:(PROD_CFG[activeProd]?.rawKey||null);
-    const crms = selectedProdName ? ropCrms.filter(c=>c===selectedProdName) : ropCrms;
-    if(selectedProdName && crms.length===0) continue;
+    const crms = ROP_CRM_MAP[ropName]||[];
 
-    const dailyData = dateList.map(date=>{
+    // Продуктовый режим (Коллаген / KIDS) — касса товаров направления у отдела
+    // по дням (по сделкам); вся компания — касса отдела во всех воронках.
+    const dailyData = activeProd!=='all'
+      ? dateList.map(date=>_productCash([date],[ropName])[activeProd].cash)
+      : dateList.map(date=>{
       let dayBudget=0;
       crms.forEach(crm=>{
         const mgrList = MANAGERS[crm]||[];
@@ -4019,6 +4691,7 @@ function renderLine(stats){
       });
       return dayBudget;
     });
+    if(!dailyData.some(v=>v>0)) continue;   // отдел без продаж за период линию не рисуем
 
     datasets.push({
       label:ropName, data:dailyData,
@@ -4031,6 +4704,12 @@ function renderLine(stats){
   const _hasData = datasets.some(d=>d.data.some(v=>v>0));
   const _ph = document.getElementById('lineChart-empty');
   if(_ph) _ph.hidden = _hasData;
+  // Продуктовый режим без разбивки по сделкам (RPC ещё не выкачен): продаж
+  // товаров по отделам нет — так и пишем, а не «нет продаж».
+  const _noSplit = activeProd!=='all' && _ERA_PROD_STATE!=='ok';
+  const _phT = document.getElementById('lineChart-empty-t'), _phS = document.getElementById('lineChart-empty-s');
+  if(_phT) _phT.textContent = _noSplit ? 'Продажи товаров по отделам пока не считаются' : 'Нет продаж за выбранный период';
+  if(_phS) _phS.textContent = _noSplit ? 'Появятся после выкатки расчёта в Era CRM' : 'Смените период или группу в шапке';
   _renderRopTotals(datasets);
 
   const scales={
@@ -4082,6 +4761,11 @@ function toggleRopSeries(i, el){
 // ═══ LEADS + DEALS combined chart ═══
 function renderLeadsDeals(stats){
   if(!stats)return;
+  // Продуктовый режим: у лида товара ещё нет, а воронки с товарами не
+  // совпадают — график лидов для направления не показываем.
+  const _ldRow=document.getElementById('leads-deals-row');
+  if(_ldRow) _ldRow.style.display = activeProd==='all' ? '' : 'none';
+  if(activeProd!=='all'){ if(chartLeadsDeals){chartLeadsDeals.destroy();chartLeadsDeals=null;} return; }
   const ctx=document.getElementById('leadsDealsChart').getContext('2d');
   if(chartLeadsDeals)chartLeadsDeals.destroy();
   const{from,to}=activePeriod;
@@ -4099,7 +4783,7 @@ function renderLeadsDeals(stats){
   const leadsData=[], dealsData=[];
   dateList.forEach(date=>{
     let dayLeads=0,dayDeals=0;
-    const crms=activeProd==='all'?['Коллаген','Ummi','Ербол','Кофе (Архив)','B1 Partners']:[PROD_CFG[activeProd]?.rawKey].filter(Boolean);
+    const crms=ALL_BUCKETS;
     crms.forEach(crm=>{
       if(!_isFiltered){
         const v=(RAW[crm]||{})[date]||[0,0,0];
@@ -4122,6 +4806,30 @@ function renderLeadsDeals(stats){
     {label:'Сделки',data:dealsData,borderColor:'#16a34a',backgroundColor:'#16a34a18',borderWidth:2,tension:.4,pointRadius:2,fill:true}
   ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:TICK,font:{family:FONT,size:11},boxWidth:10}},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.raw}`}}},scales:{x:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10},maxTicksLimit:16}},y:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10}}}}}});
 }
+
+// ═══ ИНДЕКСЫ ERA CRM ПО ВОРОНКАМ ═══
+// Для кассы по товарам (_productCash), с 01.06.2026 — запасной путь, пока нет
+// разбивки по сделкам (_ERA_PROD_IDX):
+//   _ERA_PIPE_BUDGET[день][воронка]   = касса воронки за день (только воронки с бакетом);
+//   _ERA_PIPE_PRODUCTS[день][воронка] = { label товара (lower-case): оплаченные штуки }.
+let _ERA_PIPE_BUDGET = {};
+let _ERA_PIPE_PRODUCTS = {};
+// Направление бакета — ключ DIRECTIONS (куда отнести кассу без товаров в снимке AmoCRM).
+const _DIR_OF_BUCKET = { 'Коллаген':'col', 'Кофе (Архив)':'col', 'Ummi':'kids', 'Ербол':'kids', 'B1 Partners':'b1' };
+
+// Входит ли строка Era CRM (менеджер + день) в активный фильтр по РОПу.
+// Повторяет то, как overlay раскладывает дни по отделам: текущий РОП
+// менеджера (getRop) + смена РОПа отдела по дате (ROP_DATE_SPLITS) + личные
+// переходы (MGR_ROP_HISTORY) — чтобы разбивки сходились с карточками KPI.
+function _eraRowRopMatch(mgrName, ddmmyyyy, names) {
+  if (!mgrName) return false;   // строки без менеджера в отделы не попадают (как и в MANAGERS)
+  const iso  = _ropSplitISO(ddmmyyyy);
+  const hist = MGR_ROP_HISTORY.find(r => r.name === mgrName && iso <= r.untilISO);
+  const cur  = getRop(mgrName);
+  const rop  = hist ? hist.prevRop : (cur ? _ropOnDate(cur, iso) : '');
+  return names.some(t => t === 'БОТА AI' ? mgrName === 'БОТА AI' : (!!rop && rop === t));
+}
+
 
 // ═══ MONTHLY SUMMARY CHART ═══
 function renderSummaryChart(){
@@ -5025,6 +5733,10 @@ async function loadFromSupabase() {
       // подходе era CRM данных. Если era CRM упал — рендерим без него.
       // Бейдж со временем снимка (18.05) вводил в заблуждение: цифры уже
       // живые из era CRM. После удачного overlay показываем время загрузки.
+      // Первичные / повторные — до overlay: возвраты по рекламе в старый чат
+      // overlay добавляет к лидам (см. loadEraCrmCustomerSplit).
+      try { await loadEraCrmCustomerSplit(); } catch (e) { console.warn('[era-crm customer split]', e); }
+      try { await loadEraCrmProductSplit(); } catch (e) { console.warn('[era-crm product split]', e); }
       try { await loadEraCrmOverlay(); _setDataBadgeNow(); } catch (e) { console.warn('[era-crm overlay]', e); }
       try { await loadEraCrmProducts(); } catch (e) { console.warn('[era-crm products]', e); }
       try { await loadEraCrmCities();   } catch (e) { console.warn('[era-crm cities]', e); }
@@ -5480,11 +6192,24 @@ async function loadEraCrmOverlay() {
   // Полный провал (все окна упали) — не затираем прошлые данные нулями: бросаем,
   // чтобы остался последний удачный overlay/snapshot.
   if (!rows.length) throw new Error('era-crm overlay: пусто (все окна упали) — оставляем прошлые данные');
+  // Возвраты по рекламе в старый чат — повторные лиды (решение владельца
+  // 11.11.2026): новой сделки нет, поэтому в get_dashboard_metrics их нет.
+  // Подмешиваем строкой «только лиды» с той же воронкой / менеджером / днём —
+  // дальше они идут по тем же путям (RAW, MANAGERS, РОПы, таблица воронок),
+  // и «Лиды» везде на дашборде одинаковые.
+  for (const r of _ERA_AD_RETURN_ROWS) {
+    rows.push({ pipeline_title: r.pipeline_title, manager_name: r.manager_name, group_title: r.group_title,
+                day: r.day, leads: r.leads, deals: 0, budget: 0,
+                new_deals: 0, new_budget: 0, base_deals: 0, base_budget: 0 });
+  }
   if (_skippedWindows) console.warn('[era-crm overlay] частичные данные: пропущено окон —', _skippedWindows);
 
   // Чистим RAW/MANAGERS от era-дат перед мерджем — иначе исчезнувшие
   // строки с прошлого цикла останутся «прилипшими».
   _purgeEraDates();
+  // Касса по настоящим воронкам и дням — для кассы по товарам (бакеты ниже
+  // воронки сливают: «KAZ Коллаген» → «Коллаген»).
+  const pipeBudget = {};
 
   // pipeRoll[acc][date] = [l,d,b,nd,nb,bd,bb]
   const pipeRoll = {};
@@ -5496,6 +6221,10 @@ async function loadEraCrmOverlay() {
     if (!acc) continue;
     const date = _ddmmyyyy(r.day);
     if (!date) continue;
+    if (Number(r.budget)) {
+      const pb = pipeBudget[date] || (pipeBudget[date] = {});
+      pb[r.pipeline_title] = (pb[r.pipeline_title] || 0) + Number(r.budget);
+    }
 
     const l  = Number(r.leads)       || 0;
     const d  = Number(r.deals)       || 0;
@@ -5519,6 +6248,7 @@ async function loadEraCrmOverlay() {
       if (!slot.group && r.group_title) slot.group = r.group_title;
     }
   }
+  _ERA_PIPE_BUDGET = pipeBudget;
 
   // Merge into RAW.
   let _rawTouched = 0;
@@ -5634,6 +6364,33 @@ async function loadEraCrmProducts() {
     return;
   }
 
+  // Функция зовётся каждые ERA_CRM_REFRESH_MS, а штуки ниже СКЛАДЫВАЮТСЯ —
+  // без очистки era-дат (≥ 01.06.2026, снимок PRODUCTS кончается 31.05) виджет
+  // «Товары» рос на полный объём при каждом обновлении открытой вкладки.
+  for (const comp of Object.values(PRODUCTS)) {
+    for (const slot of Object.values(comp || {})) {
+      for (const k of ['daily', 'giftDaily']) {
+        const m = slot && slot[k];
+        if (!m) continue;
+        for (const date of Object.keys(m)) if (_isEraDate(date)) delete m[date];
+      }
+    }
+  }
+
+  // Штуки по воронке и дню для кассы по товарам (_productCash) — по всем
+  // воронкам, включая B1 Partners (его касса тоже делится по товарам).
+  const pipeProducts = {};
+  for (const r of rows) {
+    const date = _ddmmyyyy(r.day);
+    const label = String(r.product_label || '').toLowerCase().trim();
+    const qty = Number(r.qty) || 0;
+    if (!date || !qty || !PRODUCT_PRICE_DIR[label]) continue;
+    const day  = pipeProducts[date] || (pipeProducts[date] = {});
+    const pipe = day[r.pipeline_title] || (day[r.pipeline_title] = {});
+    pipe[label] = (pipe[label] || 0) + qty;
+  }
+  _ERA_PIPE_PRODUCTS = pipeProducts;
+
   let _cells = 0, _newProds = 0;
   for (const r of rows) {
     const comp = ERA_PIPELINE_TO_PRODUCT_COMP[r.pipeline_title];
@@ -5665,6 +6422,380 @@ async function loadEraCrmProducts() {
   console.log('[era-crm products] applied:', _cells, 'date-cells,', _newProds, 'new product entries');
 }
 window.loadEraCrmProducts = loadEraCrmProducts;
+
+// Era CRM → первичные / повторные (RPC get_dashboard_customer_metrics, миграция
+// era-crm 2026-11-11-dashboard-customer-split.sql; решение владельца «по
+// покупке»: первичный лид — человек ещё не покупал на день лида (новый или писал
+// раньше без покупки), повторный — уже клиент; первичная продажа — первая
+// покупка клиента). Строка _ERA_CUST_ROWS:
+//   [дата DD.MM.YYYY, воронка, бакет, менеджер,
+//    первичные лиды, знакомые лиды,
+//    первичные сделки, их касса, повторные сделки, их касса, без телефона, их касса,
+//    возвраты по рекламе в старый чат (повторные лиды, есть и в «Лидах»),
+//    когорта: сколько первичных лидов этого дня уже купили,
+//    сколько из возвратов по рекламе — первичные (ещё не покупали),
+//    повторные продажи с касанием рекламы за 30 дней до заказа и их касса]
+// Воронки без бакета (как «База») пропускаем — их нет и в остальных цифрах.
+// RPC ещё нет в базе (404) — состояние 'missing', разбивка просто не видна.
+let _ERA_CUST_ROWS  = [];
+let _ERA_CUST_STATE = 'none';   // 'none' | 'ok' | 'missing' | 'error'
+// Возвраты по рекламе в старый чат (ad_return_leads > 0) в форме строк
+// get_dashboard_metrics — loadEraCrmOverlay добавляет их к лидам.
+let _ERA_AD_RETURN_ROWS = [];
+let _ERA_CUST_HAS_AD = false;   // RPC отдаёт repeat_ad_* (платное / органическое удержание)
+// RPC Era CRM по календарным месяцам с 01.06.2026 (границы — полночь Алматы:
+// RPC режет по дням [from, to), соседние окна не пересекаются). Одно большое
+// окно может упереться в statement_timeout anon (как у get_dashboard_metrics),
+// месяц — нет. → по окну: { rows } | { missing: true } (RPC нет, 404) | { failed: true }.
+async function _eraRpcByMonths(name) {
+  const url = `${ERA_CRM_URL}/rest/v1/rpc/${name}`;
+  const headers = {
+    'apikey': ERA_CRM_ANON,
+    'Authorization': `Bearer ${ERA_CRM_ANON}`,
+    'Content-Type': 'application/json',
+  };
+  const [y0, m0] = ERA_CRM_OVERLAY_FROM.slice(0, 7).split('-').map(Number);
+  const now = _now();
+  const yEnd = now.getFullYear(), mEnd = now.getMonth() + 1;
+  const iso = (y, m) => `${y}-${String(m).padStart(2, '0')}-01T00:00:00+05:00`;
+  const windows = [];
+  for (let y = y0, m = m0; y < yEnd || (y === yEnd && m <= mEnd); ) {
+    const ny = m === 12 ? y + 1 : y, nm = m === 12 ? 1 : m + 1;
+    windows.push([iso(y, m), iso(ny, nm)]);
+    y = ny; m = nm;
+  }
+  return Promise.all(windows.map(async ([from, to]) => {
+    for (let i = 0; i < 3; i++) {
+      let res;
+      try {
+        res = await fetch(url, { method: 'POST', headers, body: JSON.stringify({ p_date_from: from, p_date_to: to }) });
+      } catch (e) { continue; }
+      if (res.status === 404) return { missing: true };
+      if (res.ok) {
+        const j = await res.json().catch(() => null);
+        if (Array.isArray(j)) return { rows: j };
+      }
+    }
+    return { failed: true };
+  }));
+}
+async function loadEraCrmCustomerSplit() {
+  const results = await _eraRpcByMonths('get_dashboard_customer_metrics');
+  if (results.some(r => r.missing)) {
+    _ERA_CUST_STATE = 'missing'; _ERA_CUST_ROWS = []; _ERA_AD_RETURN_ROWS = [];
+    console.log('[era-crm customer split] RPC ещё не развёрнут — разбивка скрыта');
+    return;
+  }
+  if (results.some(r => r.failed)) {
+    // Часть окон не пришла — оставляем прошлые строки, чтобы не показать дыру.
+    if (_ERA_CUST_STATE !== 'ok') _ERA_CUST_STATE = 'error';
+    console.warn('[era-crm customer split] не все окна загрузились — данные прошлого цикла');
+    return;
+  }
+  const rows = [], returns = [];
+  for (const res of results) {
+    for (const r of res.rows) {
+      const date = _ddmmyyyy(r.day);
+      if (!date) continue;
+      const adRet = Number(r.ad_return_leads) || 0;
+      if (adRet > 0) returns.push({ pipeline_title: r.pipeline_title, manager_name: r.manager_name,
+                                    group_title: r.group_title, day: r.day, leads: adRet });
+      const bucket = _eraCrmBucket(r.pipeline_title);
+      if (!bucket) continue;
+      rows.push([date, r.pipeline_title, bucket, r.manager_name || '',
+        Number(r.primary_leads) || 0, Number(r.known_leads) || 0,
+        Number(r.new_deals) || 0, Number(r.new_budget) || 0,
+        Number(r.repeat_deals) || 0, Number(r.repeat_budget) || 0,
+        Number(r.unknown_deals) || 0, Number(r.unknown_budget) || 0,
+        adRet, Number(r.primary_bought) || 0, Number(r.ad_return_primary) || 0,
+        Number(r.repeat_ad_deals) || 0, Number(r.repeat_ad_budget) || 0]);
+    }
+  }
+  _ERA_CUST_ROWS = rows;
+  _ERA_AD_RETURN_ROWS = returns;
+  // Платное / органическое удержание есть, только если RPC уже отдаёт repeat_ad_*.
+  _ERA_CUST_HAS_AD = results.some(res => res.rows.some(r => 'repeat_ad_budget' in r));
+  _ERA_CUST_STATE = 'ok';
+  console.log('[era-crm customer split] строк:', rows.length);
+}
+window.loadEraCrmCustomerSplit = loadEraCrmCustomerSplit;
+
+// Era CRM → продажи по товарам ПО СДЕЛКАМ (RPC get_dashboard_product_split,
+// миграция era-crm 2026-11-11-dashboard-product-split.sql): сумма каждой
+// сделки поделена между её товарами по qty × РРЦ на сервере; строки — день ×
+// воронка × менеджер, поэтому товары видны и по отделам.
+// _ERA_PROD_IDX['DD.MM.YYYY'] = [{ mgr, bucket, u: {label: шт}, c: {label: ₸},
+//   cNone — касса сделок без товарных полей,
+//   dCol / dCoffee / dUmmi — сделок с товаром группы (PRODUCT_GROUPS),
+//   dDirCol — сделок с любым товаром направления «Коллаген» }].
+// RPC ещё нет в базе — 'missing': _productCash считает запасным путём.
+const _PROD_RPC_FIELDS = [['red', 'коллаген красный'], ['blue', 'коллаген синий'], ['coffee', 'коллаген кофе'],
+                          ['mini', 'мини коллаген кофе'], ['ummi', 'умми']];
+let _ERA_PROD_IDX = {};
+let _ERA_PROD_STATE = 'none';   // 'none' | 'ok' | 'missing' | 'error'
+async function loadEraCrmProductSplit() {
+  const results = await _eraRpcByMonths('get_dashboard_product_split');
+  if (results.some(r => r.missing)) {
+    _ERA_PROD_STATE = 'missing'; _ERA_PROD_IDX = {};
+    console.log('[era-crm product split] RPC ещё не развёрнут — товары считаются по воронке и дню');
+    return;
+  }
+  if (results.some(r => r.failed)) {
+    if (_ERA_PROD_STATE !== 'ok') _ERA_PROD_STATE = 'error';
+    console.warn('[era-crm product split] не все окна загрузились — данные прошлого цикла');
+    return;
+  }
+  const idx = {};
+  let n = 0;
+  for (const res of results) {
+    for (const r of res.rows) {
+      const bucket = _eraCrmBucket(r.pipeline_title);
+      const date = _ddmmyyyy(r.day);
+      if (!bucket || !date) continue;
+      const u = {}, c = {};
+      for (const [k, label] of _PROD_RPC_FIELDS) {
+        const units = Number(r['units_' + k]) || 0, cash = Number(r['cash_' + k]) || 0;
+        if (units || cash) { u[label] = units; c[label] = cash; }
+      }
+      (idx[date] || (idx[date] = [])).push({ mgr: r.manager_name || '', bucket, u, c,
+        cNone: Number(r.cash_none) || 0,
+        dCol: Number(r.deals_col) || 0, dCoffee: Number(r.deals_coffee) || 0, dUmmi: Number(r.deals_ummi) || 0,
+        dDirCol: Number(r.deals_dir_col) || 0 });
+      n++;
+    }
+  }
+  _ERA_PROD_IDX = idx;
+  _ERA_PROD_STATE = 'ok';
+  console.log('[era-crm product split] строк:', n);
+}
+window.loadEraCrmProductSplit = loadEraCrmProductSplit;
+
+// ═══════════════ БАЗА КЛИЕНТОВ ПО ОТДЕЛАМ ═══════════════
+// RPC era-crm get_dashboard_client_base(p_date_from, p_date_to) (миграция
+// 2026-11-12-dashboard-client-base.sql) → { today, refreshed_at, ret_days,
+// groups: [{ group_title, clients, delivered_clients, delivered_deals, seg{…},
+// ltv_sum, purchases_sum, repeat_clients, in_care, held, due_clients,
+// due_called, waiting, new_clients, ret_purchases, ret_returned, calls{…} }] }.
+//   • снимок на сейчас: база, состав по сегментам, LTV, обзвон;
+//   • за окно: новые клиенты, отметки звонков и «вернулись за 60 дней»
+//     (покупки, которым в окне исполнилось 60 дней).
+// Клиент относится к отделу менеджера последней покупки (как в «Клиентах» CRM).
+// Отдел заботы (с 12.11.2026) может «держать» клиента: база и LTV остаются у
+// отдела продавца (in_care — сколько его клиентов сейчас у заботы), а обзвон
+// считается тому, кто клиента ведёт (held — сколько клиентов держит отдел).
+// Это коммерческие данные: RPC не выдан anon, зовём с токеном входа Era CRM
+// (_clGetToken) — как аналитику клиентов. Показывается кнопкой «База» в
+// таблице РОПов и блоком на вкладке «Клиенты».
+const _cbCache = {};      // ключ окна → ответ RPC
+const _cbState = {};      // ключ окна → 'loading' | 'ok' | 'auth' | 'noaccess' | 'missing' | 'error'
+let _cbFailedToken = null;  // токен, на который CRM ответила 401 — не дёргаем им повторно
+const _cbISO = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T00:00:00+05:00`;
+// Окно периода главного вида: [from 00:00, to + 1 день 00:00) по Алматы.
+function _cbRangeOfPeriod(p) {
+  const f = parseDate(p.from), t = parseDate(p.to);
+  t.setDate(t.getDate() + 1);
+  return { from: _cbISO(f), to: _cbISO(t) };
+}
+// Окно вкладки «Клиенты»: её фильтр периода; «Вся история» — с 2026 года по завтра.
+function _cbRangeOfClients() {
+  if (_clientsRange) return { from: _clientsRange.from, to: _clientsRange.to };
+  const t = new Date(); t.setDate(t.getDate() + 1);
+  return { from: '2026-01-01T00:00:00+05:00', to: _cbISO(t) };
+}
+async function _cbFetch(range) {
+  const token = _clGetToken();
+  if (!token || token === _cbFailedToken) throw { state: 'auth' };
+  for (let i = 0; i < 3; i++) {
+    let res;
+    try {
+      res = await fetch(`${ERA_CRM_URL}/rest/v1/rpc/get_dashboard_client_base`, {
+        method: 'POST',
+        headers: { 'apikey': ERA_CRM_ANON, 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_date_from: range.from, p_date_to: range.to }),
+      });
+    } catch (e) { await new Promise(r => setTimeout(r, 800)); continue; }
+    // токен протух / не принят — забываем и просим войти заново
+    if (res.status === 401 || res.status === 403) {
+      _cbFailedToken = token;
+      sessionStorage.removeItem('era_cl_token'); _clToken = null;
+      throw { state: 'auth' };
+    }
+    if (res.status === 404) throw { state: 'missing' };   // расчёт ещё не выкачен в Era CRM
+    if (res.ok) {
+      const d = await res.json().catch(() => undefined);
+      if (d === null) throw { state: 'noaccess' };        // роль не admin / director / accountant
+      if (d && Array.isArray(d.groups)) return d;
+    }
+    await new Promise(r => setTimeout(r, 800));
+  }
+  throw { state: 'error' };
+}
+// Состояние и данные окна. Первый вызов запускает загрузку; когда она
+// закончится, перерисовываются таблица РОПов и блок на вкладке «Клиенты».
+function _cbGet(range) {
+  const key = range.from + '|' + range.to;
+  const tok = _clGetToken();
+  if (!_cbState[key] || (_cbState[key] === 'auth' && tok && tok !== _cbFailedToken)) {
+    _cbState[key] = 'loading';
+    _cbFetch(range)
+      .then(d => { _cbCache[key] = d; _cbState[key] = 'ok'; })
+      .catch(e => { _cbState[key] = (e && e.state) || 'error'; })
+      .finally(_cbOnUpdate);
+  }
+  return { state: _cbState[key], data: _cbCache[key] || null };
+}
+function _cbOnUpdate() {
+  if (activeView === 'main' && _planLastStats && _planCols.base) renderPlanTable(_planLastStats);
+  if (activeView === 'clients') renderClientBase();
+}
+// «Повторить» после ошибки: забыть неудачные окна и перерисовать.
+function _cbRetry() {
+  for (const k in _cbState) if (_cbState[k] !== 'ok') delete _cbState[k];
+  _cbOnUpdate();
+}
+window._cbRetry = _cbRetry;
+function _cbOpenClients() {
+  const b = document.querySelector('.nav-item[onclick*="\'clients\'"]');
+  if (b) b.click();
+}
+window._cbOpenClients = _cbOpenClients;
+// Подпись под кнопками таблицы РОПов, когда «База» включена, а данных нет.
+function _cbStateNote(state) {
+  if (state === 'loading')  return 'База клиентов: загрузка…';
+  if (state === 'auth')     return 'База клиентов видна после входа учёткой Era CRM (директор, админ или бухгалтер). <a onclick="_cbOpenClients()">Войти на вкладке «Клиенты»</a>';
+  if (state === 'noaccess') return 'Эта учётка Era CRM не даёт доступа к базе клиентов — нужна роль директора, админа или бухгалтера.';
+  if (state === 'missing')  return 'База клиентов появится после выкатки расчёта в Era CRM.';
+  return 'Базу клиентов не удалось загрузить. <a onclick="_cbRetry()">Повторить</a>';
+}
+const _CB_NUM   = ['clients', 'delivered_clients', 'delivered_deals', 'ltv_sum', 'purchases_sum', 'repeat_clients',
+                   'in_care', 'held', 'due_clients', 'due_called', 'waiting', 'new_clients', 'ret_purchases', 'ret_returned'];
+const _CB_SEGS  = ['on_course', 'in_order', 'ending', 'at_risk', 'sleeping', 'lost', 'partner'];
+const _CB_CALLS = ['total', 'bought', 'postponed', 'no_money', 'no_answer', 'refused'];
+function _cbZero() {
+  const z = { seg: {}, calls: {} };
+  for (const k of _CB_NUM) z[k] = 0;
+  for (const k of _CB_SEGS) z.seg[k] = 0;
+  for (const k of _CB_CALLS) z.calls[k] = 0;
+  return z;
+}
+function _cbAdd(a, g) {
+  for (const k of _CB_NUM) a[k] += Number(g[k]) || 0;
+  for (const k of _CB_SEGS) a.seg[k] += Number((g.seg || {})[k]) || 0;
+  for (const k of _CB_CALLS) a.calls[k] += Number((g.calls || {})[k]) || 0;
+  return a;
+}
+// Группы Era CRM → РОПы дашборда (_eraCrmRopName; РОП отдела на дату iso —
+// _ropOnDate). Клиенты без ответственного и служебные группы — в none.
+// → { byRop: { 'РОП …': суммы }, none: суммы, all: суммы по всем группам }
+function _cbByRop(data, iso) {
+  const out = { byRop: {}, none: _cbZero(), all: _cbZero() };
+  const today = String((data && data.today) || '').slice(0, 10);
+  const day = today && iso > today ? today : iso;
+  for (const g of (data && data.groups) || []) {
+    _cbAdd(out.all, g);
+    let rop = g.group_title ? _eraCrmRopName(g.group_title) : null;
+    if (!rop) { _cbAdd(out.none, g); continue; }
+    rop = _ropOnDate(rop, day);
+    _cbAdd(out.byRop[rop] || (out.byRop[rop] = _cbZero()), g);
+  }
+  return out;
+}
+const _cbPct = (a, b) => b > 0 ? Math.round(a / b * 100) : null;
+// Цвет доли относительно компании: заметно выше — зелёный, заметно ниже — красный.
+const _cbClr = (v, avg) => v === null || avg === null ? 'var(--muted)' : v >= avg + 2 ? '#16a34a' : v <= avg - 2 ? '#dc2626' : 'var(--ink)';
+const _cbSub = t => `<div style="font-size:10px;color:var(--muted);font-weight:500;white-space:nowrap">${t}</div>`;
+// LTV и покупок на клиента: { ltv, ppc } или null, если клиентов нет.
+function _cbLtv(x) {
+  return x.clients > 0 ? { ltv: Math.round(x.ltv_sum / x.clients), ppc: (x.purchases_sum / x.clients).toFixed(1).replace('.', ',') } : null;
+}
+// Четыре ячейки «Базы» для таблицы РОПов: База · LTV · Вернулись 60 дн. · Ждут звонка.
+function _cbCellsHTML(x, all, bold) {
+  const b = t => bold ? `<strong>${t}</strong>` : t;
+  const l = _cbLtv(x);
+  const ret = _cbPct(x.ret_returned, x.ret_purchases), cov = _cbPct(x.due_called, x.due_clients);
+  return `<td style="font-weight:700;white-space:nowrap" title="Всего покупателей: ${fmt(x.clients)} · новых за период: ${fmt(x.new_clients)} · сейчас у отдела заботы: ${fmt(x.in_care)}">${b(fmt(x.delivered_clients))}${_cbSub(fmt(x.delivered_deals) + ' сделок')}</td>`
+       + `<td style="font-weight:700;white-space:nowrap">${l ? b(fmt(l.ltv) + ' ₸') + _cbSub(l.ppc + ' покупки') : '—'}</td>`
+       + `<td style="font-weight:700;white-space:nowrap;color:${_cbClr(ret, _cbPct(all.ret_returned, all.ret_purchases))}">${ret === null ? '—' : b(ret + '%') + _cbSub(fmt(x.ret_returned) + ' из ' + fmt(x.ret_purchases))}</td>`
+       + `<td style="font-weight:700;white-space:nowrap">${b(fmt(x.waiting))}${cov === null ? '' : `<div style="font-size:10px;font-weight:500;white-space:nowrap;color:${_cbClr(cov, _cbPct(all.due_called, all.due_clients))}">охват ${cov}%</div>`}</td>`;
+}
+// Полоска состава базы: на курсе (+ заказ в работе) / пора звонить
+// (заканчивается + под угрозой) / спящие / потеряны. Партнёры — вне полоски.
+const _CB_BAR = [['На курсе', '#14b8a6'], ['Пора звонить', '#f59e0b'], ['Спящие', '#94a3b8'], ['Потеряны', '#cbd5e1']];
+function _cbBarHTML(x) {
+  const s = x.seg, act = s.on_course + s.in_order, due = s.ending + s.at_risk;
+  const vals = [act, due, s.sleeping, s.lost];
+  const tot = vals.reduce((a, v) => a + v, 0);
+  if (!tot) return '<span style="color:var(--muted)">—</span>';
+  const tip = `На курсе ${fmt(s.on_course)} · Заказ в работе ${fmt(s.in_order)} · Заканчивается ${fmt(s.ending)} · Под угрозой ${fmt(s.at_risk)} · Спящие ${fmt(s.sleeping)} · Потеряны ${fmt(s.lost)}`
+            + (s.partner ? ` · Партнёры ${fmt(s.partner)}` : '');
+  return `<span class="cb-bar" title="${tip}">${vals.map((v, i) => v ? `<i style="width:${(v / tot * 100).toFixed(1)}%;background:${_CB_BAR[i][1]}"></i>` : '').join('')}</span>`
+       + `<div class="cb-bar-sub">${Math.round(act / tot * 100)}% на курсе · ${Math.round(due / tot * 100)}% пора звонить</div>`;
+}
+// Блок «База клиентов по отделам» на вкладке «Клиенты» (над когортной
+// аналитикой). Без токена не рисуется: форма входа — в аналитике ниже.
+function renderClientBase() {
+  const el = document.getElementById('clients-base');
+  if (!el) return;
+  if (!_clGetToken()) { el.innerHTML = ''; return; }
+  const res = _cbGet(_cbRangeOfClients());
+  const msg = body => `<div class="card" style="margin-bottom:16px"><div class="card-hdr"><span class="card-title">База клиентов по отделам</span></div>`
+                    + `<div style="padding:10px 24px 18px;font-size:13px;color:var(--muted)">${body}</div></div>`;
+  if (res.state === 'auth')     { el.innerHTML = ''; return; }
+  if (res.state === 'loading')  { el.innerHTML = msg('Загрузка…'); return; }
+  if (res.state === 'noaccess') { el.innerHTML = msg('Эта учётка Era CRM не даёт доступа к базе клиентов — нужна роль директора, админа или бухгалтера.'); return; }
+  if (res.state === 'missing')  { el.innerHTML = msg('Появится после выкатки расчёта в Era CRM.'); return; }
+  if (res.state !== 'ok')       { el.innerHTML = msg('Не удалось загрузить. <a class="cb-link" onclick="_cbRetry()">Повторить</a>'); return; }
+
+  const d = res.data, map = _cbByRop(d, String(d.today || '').slice(0, 10)), all = map.all;
+  const rows = Object.entries(map.byRop).sort((a, b) => b[1].delivered_clients - a[1].delivered_clients);
+  if (map.none.clients || map.none.delivered_deals) rows.push(['Без отдела', map.none]);
+  const retAll = _cbPct(all.ret_returned, all.ret_purchases), covAll = _cbPct(all.due_called, all.due_clients);
+  const lAll = _cbLtv(all);
+  const rowHTML = ([name, x], bold) => {
+    const b = t => bold ? `<strong>${t}</strong>` : t;
+    const l = _cbLtv(x), ret = _cbPct(x.ret_returned, x.ret_purchases), cov = _cbPct(x.due_called, x.due_clients);
+    const rep = _cbPct(x.repeat_clients, x.clients), bought = _cbPct(x.calls.bought, x.calls.total);
+    return `<tr${bold ? ' class="tr-sum" style="border-top:1.5px solid var(--line);white-space:nowrap"' : ' style="white-space:nowrap"'}>
+      <td>${b(_esc(name.replace(/^РОП\s+/, '')))}</td>
+      <td style="font-weight:700" title="Всего покупателей: ${fmt(x.clients)}">${b(fmt(x.delivered_clients))}${_cbSub(fmt(x.delivered_deals) + ' сделок')}</td>
+      <td style="color:#16a34a;font-weight:600">${x.new_clients ? '+' + fmt(x.new_clients) : '—'}</td>
+      <td>${x.in_care ? fmt(x.in_care) : '—'}${x.held ? _cbSub('ведёт ' + fmt(x.held)) : ''}</td>
+      <td style="text-align:left">${_cbBarHTML(x)}</td>
+      <td style="font-weight:700">${l ? b(fmt(l.ltv) + ' ₸') + _cbSub(l.ppc + ' покупки') : '—'}</td>
+      <td>${rep === null ? '—' : rep + '%'}</td>
+      <td style="font-weight:700;color:${bold ? 'var(--ink)' : _cbClr(ret, retAll)}">${ret === null ? '—' : b(ret + '%') + _cbSub(fmt(x.ret_returned) + ' из ' + fmt(x.ret_purchases))}</td>
+      <td style="font-weight:700">${b(fmt(x.waiting))}${cov === null ? '' : `<div style="font-size:10px;font-weight:500;color:${bold ? 'var(--muted)' : _cbClr(cov, covAll)}">охват ${cov}%</div>`}</td>
+      <td>${x.calls.total ? fmt(x.calls.total) + (bought === null ? '' : _cbSub('купили ' + bought + '%')) : '—'}</td>
+    </tr>`;
+  };
+  const upd = d.refreshed_at ? new Date(d.refreshed_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '';
+  const cards = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:14px">
+    ${_clCard('Клиентов в базе', fmt(all.delivered_clients), fmt(all.delivered_deals) + ' доставленных сделок' + (all.new_clients ? ' · +' + fmt(all.new_clients) + ' новых' : ''), '#6366f1')}
+    ${_clCard('LTV клиента', lAll ? fmt(lAll.ltv) + ' ₸' : '—', lAll ? lAll.ppc + ' покупки на клиента' : '', '#16a34a')}
+    ${_clCard('Вернулись за 60 дней', retAll === null ? '—' : retAll + '%', retAll === null ? 'нет покупок с истёкшим сроком' : fmt(all.ret_returned) + ' из ' + fmt(all.ret_purchases) + ' покупок', '#0891b2')}
+    ${_clCard('Ждут звонка', fmt(all.waiting), covAll === null ? '' : 'охват обзвона ' + covAll + '%', '#f59e0b')}
+  </div>`;
+  el.innerHTML = cards + `<div class="card" style="margin-bottom:16px">
+    <div class="card-hdr"><span class="card-title">База клиентов по отделам</span><span style="font-size:11px;color:var(--muted)">на сегодня${upd ? ' · обновлено ' + upd : ''}</span></div>
+    <div style="overflow-x:auto;padding:0 16px 10px"><table class="dt" style="min-width:1060px">
+      <thead><tr>
+        <th>Отдел</th>
+        <th title="Клиенты с доставленным заказом (этапы «Успешно реализовано» и «Курьерская доставка») и число таких сделок. Клиент относится к отделу менеджера последней покупки">База</th>
+        <th title="Клиенты, чья первая покупка пришлась на период фильтра">Новых</th>
+        <th title="Сколько клиентов отдела сейчас у отдела заботы. «Ведёт» — сколько клиентов держат сотрудники заботы этого отдела">У заботы</th>
+        <th style="text-align:left" title="На курсе — ещё пьют или заказ в работе; пора звонить — курс заканчивается или недавно закончился; спящие — закончился давно; потеряны — больше полугода без покупок">Состав базы</th>
+        <th title="Сколько денег в среднем принёс один клиент за всё время">LTV</th>
+        <th title="Доля клиентов, купивших два раза и больше">Повторных</th>
+        <th title="Из покупок, которым в периоде фильтра исполнилось 60 дней, — у скольких клиент купил снова. Цвет — относительно компании">Вернулись 60 дн.</th>
+        <th title="Клиенты «пора звонить», которым в этом цикле не звонили или подошёл срок перезвонить. Охват — скольким из «пора звонить» уже позвонили. Клиенты, которых ведёт отдел заботы, считаются ему">Ждут звонка</th>
+        <th title="Отметки звонков клиентам за период фильтра и доля с результатом «купил»">Звонков</th>
+      </tr></thead>
+      <tbody>${rows.map(r => rowHTML(r, false)).join('')}${rows.length > 1 ? rowHTML(['Вся компания', all], true) : ''}</tbody>
+    </table></div>
+    <div class="cb-leg">${_CB_BAR.map(([t, c]) => `<span><i style="background:${c}"></i>${t}</span>`).join('')}</div>
+  </div>`;
+}
+window.renderClientBase = renderClientBase;
 
 // ═══════════════ ВКЛАДКА «КЛИЕНТЫ» (когортная аналитика) ═══════════════
 // Данные считает era-crm RPC get_customer_analytics() (миграция
@@ -5783,6 +6914,7 @@ function renderClientsView(){
   const el = document.getElementById('clients-content');
   if (!el) return;
   renderClientsFilter();
+  renderClientBase();
   const key = _clientsRange ? _clientsRange.label : 'all';
   if (_clientsCache[key]){ _renderClients(el, _clientsCache[key]); return; }
   if (_clientsLoading) return;
@@ -6089,6 +7221,9 @@ window.clTabLogin = clTabLogin;
 window._clResetSession = () => {
   _clToken = null; _clLast = null;
   for (const k in _clientsCache) delete _clientsCache[k];
+  for (const k in _cbCache) delete _cbCache[k];
+  for (const k in _cbState) delete _cbState[k];
+  _cbFailedToken = null;
 };
 
 // CSV для обзвона: BOM + ';' — открывается в русском Excel без настройки.
@@ -6109,9 +7244,8 @@ window.clDownloadCsv = clDownloadCsv;
 
 // Era CRM → виджет «География заказов»: per-city per-day deals/budget из
 // custom-поля «АДРЕС ДОСТАВКИ». RPC get_city_metrics возвращает первую
-// часть адреса до запятой (например «г. Караганда»), клиентский
-// _findCityCoords уже умеет вытащить из неё имя города и резолвить
-// координаты по KZ_CITIES.
+// часть адреса до запятой (например «г. Караганда»); место по ней находит
+// _geoResolve (словарь GEO_PLACES).
 async function loadEraCrmCities() {
   const dateTo = new Date();
   dateTo.setDate(dateTo.getDate() + 1);
@@ -6256,6 +7390,8 @@ window.loadEraCrmConfig = loadEraCrmConfig;
 async function _eraCrmRefreshTick() {
   if (document.hidden) return;
   try {
+    try { await loadEraCrmCustomerSplit(); } catch (e) { console.warn('[era-crm customer split refresh]', e); }
+    try { await loadEraCrmProductSplit(); } catch (e) { console.warn('[era-crm product split refresh]', e); }
     await loadEraCrmOverlay();
     try { await loadEraCrmProducts(); } catch (e) { console.warn('[era-crm products refresh]', e); }
     try { await loadEraCrmCities();   } catch (e) { console.warn('[era-crm cities refresh]', e); }
@@ -6833,15 +7969,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ═══════════════════════════════════════════════════════════
 //  ТОВАРЫ DONUT (product breakdown)
 // ═══════════════════════════════════════════════════════════
-var _prodDonutFilter = 'all'; // 'all' | 'Коллаген' | 'Ummi'
 var _PROD_COLORS = ['#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16'];
-
-function setProdDonutFilter(val, btn) {
-  _prodDonutFilter = val;
-  document.querySelectorAll('#prod-donut-filters .cf-btn').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  renderProdByRop();
-}
 
 // «Количество "Красный"» → «Красный»: слово «Количество» и кавычки в подписи
 // только съедают ширину, полное имя остаётся в title.
@@ -6856,58 +7984,33 @@ function renderProdByRop() {
   const {from, to} = activePeriod;
   const dates = getDatesInRange(from, to);
 
-  // Determine which CRMs to include
-  const crmKeys = _prodDonutFilter === 'all'
-    ? Object.keys(PRODUCTS || {})
-    : [_prodDonutFilter];
+  // Все воронки: фильтр «Коллаген / KIDS» здесь был по воронкам и убран —
+  // товары продаются во всех воронках, виджет сам показывает разбивку по товарам.
+  const crmKeys = Object.keys(PRODUCTS || {});
 
-  // Aggregate quantities per product name + revenue from deal facts.
-  // Revenue per CRM = sum of manager budgets across ROPs mapped to that CRM
-  // (matches «Факт» in plan-by-groups table). Then split per product proportionally to qty.
+  // Штуки и выручка по товарам — тем же расчётом, что касса направлений в
+  // карточках KPI (_productCash): касса воронки за день делится между товарами
+  // по qty × РРЦ. Раньше выручку бакета делили по ШТУКАМ за весь период
+  // (одна «Умми» за 37 000 ₸ весила как мини-кофе за 7 500 ₸), и «Умми» здесь
+  // не совпадала с «Детское (Умми)» в карточках. Вся компания, включая
+  // B1 Partners (его товары тоже продаются).
+  const pcash = _productCash(dates);
+  const keyName = Object.fromEntries(Object.entries(_SNAP_PRODUCT_KEY).map(([n, k]) => [k, n]));
   const prodTotals = {};
   const prodRevenue = {};
-  const prodGifts = {};          // штуки, ушедшие подарком (акция 2+1 / подарочный бюджет)
-  const _from = activePeriod.from, _to = activePeriod.to;
-  const _fromD = parseDate(_from);
-  const _historyCutoff = new Date(2026, 2, 23);
-  const _historyGroups = new Set(['РОП Ербол', 'Кофе (Архив)']);
+  for (const [key, v] of Object.entries(pcash.byProduct)) {
+    if (!(v.units > 0)) continue;
+    const name = keyName[key] || key;
+    prodTotals[name]  = (prodTotals[name]  || 0) + v.units;
+    prodRevenue[name] = (prodRevenue[name] || 0) + v.cash;
+  }
+  // Подарки (уходят по 1 ₸, в выручку не идут) — из PRODUCTS, как и раньше.
+  const prodGifts = {};
   for (const crm of crmKeys) {
-    const prods = PRODUCTS?.[crm];
-    if (!prods) continue;
-    // Per-product qty for this CRM in period
-    const crmProdQty = {};
-    let crmTotalQty = 0;
-    for (const [name, info] of Object.entries(prods)) {
-      if (!info.daily && !info.giftDaily) continue;
-      let total = 0, gifts = 0;
-      for (const d of dates) {
-        total += (info.daily     || {})[d] || 0;
-        gifts += (info.giftDaily || {})[d] || 0;
-      }
-      // Подарки копим отдельно: в выручку они не идут (уходят по 1 ₸), но в
-      // штуках это реальный расход склада.
+    for (const [name, info] of Object.entries(PRODUCTS?.[crm] || {})) {
+      let gifts = 0;
+      for (const d of dates) gifts += (info.giftDaily || {})[d] || 0;
       if (gifts > 0) prodGifts[name] = (prodGifts[name] || 0) + gifts;
-      if (total > 0) { crmProdQty[name] = total; crmTotalQty += total; }
-    }
-    // CRM «Факт»: sum manager budgets only for managers belonging to ROPs that map to this CRM
-    const mgrs = aggregateManagersByPeriod(crm, _from, _to);
-    const seen = new Set();
-    let crmBudget = 0;
-    for (const [ropName, ropCrms] of Object.entries(ROP_CRM_MAP)) {
-      if (!ropCrms.includes(crm)) continue;
-      if (_historyGroups.has(ropName) && _fromD > _historyCutoff) continue;
-      for (const m of mgrs) {
-        if (seen.has(m.name)) continue;
-        if (!ropMatches(m.name, ropName)) continue;
-        seen.add(m.name);
-        crmBudget += m.budget || 0;
-      }
-    }
-    // Distribute revenue proportionally to qty
-    for (const [name, qty] of Object.entries(crmProdQty)) {
-      prodTotals[name] = (prodTotals[name] || 0) + qty;
-      const rev = crmTotalQty > 0 ? crmBudget * (qty / crmTotalQty) : 0;
-      prodRevenue[name] = (prodRevenue[name] || 0) + rev;
     }
   }
 
@@ -6918,7 +8021,9 @@ function renderProdByRop() {
   const revenues = labels.map(name => prodRevenue[name] || 0);
   const colors = labels.map((_, i) => _PROD_COLORS[i % _PROD_COLORS.length]);
   const grandTotal = values.reduce((a, b) => a + b, 0);
-  const grandRevenue = revenues.reduce((a, b) => a + b, 0);
+  // Касса дней без товарных полей (старые сделки) — в итоге отдельной строкой.
+  const noProdRevenue = pcash.noProd || 0;
+  const grandRevenue = revenues.reduce((a, b) => a + b, 0) + noProdRevenue;
 
   if (_prodByRopChart) _prodByRopChart.destroy();
 
@@ -6965,7 +8070,10 @@ function renderProdByRop() {
   }).join('') + `<div class="pl-total">
     <span>Продано: ${grandTotal.toLocaleString('ru-RU')} шт</span>
     <span class="pl-total-sum">${Math.round(grandRevenue).toLocaleString('ru-RU')} ₸</span>
-  </div>` + (grandGifts ? `<div class="pl-sub">
+  </div>` + (noProdRevenue >= 1 ? `<div class="pl-sub">
+    <span>в т.ч. без указания товара</span>
+    <span>${Math.round(noProdRevenue).toLocaleString('ru-RU')} ₸</span>
+  </div>` : '') + (grandGifts ? `<div class="pl-sub">
     <span class="pl-gift">🎁 Подарком: ${grandGifts.toLocaleString('ru-RU')} шт</span>
     <span>не в выручке · всего со склада ${(grandTotal + grandGifts).toLocaleString('ru-RU')} шт</span>
   </div>` : '');
@@ -6983,13 +8091,26 @@ function renderAlerts(stats) {
   const totalDays = _lastDay(now.getFullYear(), now.getMonth()+1);
   const monthPct = Math.round(dayOfMonth / totalDays * 100);
 
-  const keys = activeProd === 'all' ? ['col'] : [activeProd];
+  const keys = [activeProd];   // 'all' | 'col' | 'kids' (см. _prodCfg)
 
   keys.forEach(k => {
     const d = stats.parts ? stats.parts[k] : stats;
     if (!d) return;
-    const name = PROD_CFG[k].name;
-    const color = PROD_CFG[k].color;
+    const name = _prodCfg(k).name;
+    const color = _prodCfg(k).color;
+
+    // Продуктовый режим: плана, лидов и конверсии у направления нет — остаётся ДРР.
+    if (d.productView) {
+      if (d.adKnown && d.adTotal > 0 && d.budget > 0) {
+        const drrP = +(d.adTotal/d.budget*100).toFixed(1);
+        if (drrP > 30) {
+          alerts.push({ type:'danger', icon:'💸', color:'#c0392b', bg:'#fde8e8',
+            title: `${name} — высокий ДРР`,
+            text: `Расходы на рекламу составляют ${drrP}% от продаж товаров направления (норма до 25%). Проверьте эффективность кампаний.` });
+        }
+      }
+      return;
+    }
 
     // 1. Отставание от плана
     if (d.plan > 0 && d.isCurrentMonth) {
@@ -7026,7 +8147,7 @@ function renderAlerts(stats) {
     // 4. Нет сделок сегодня (только текущий месяц)
     if (d.isCurrentMonth && activePeriod.preset) {
       const todayStr = (() => { const t=new Date(); return `${String(t.getDate()).padStart(2,'0')}.${String(t.getMonth()+1).padStart(2,'0')}.${t.getFullYear()}`; })();
-      const raw = _mergedRaw(PROD_CFG[k].rawKey);
+      const raw = _mergedRaw(null);
       const todayDeals = raw[todayStr] ? raw[todayStr][1] : 0;
       if (todayDeals === 0 && now.getHours() >= 14) {
         alerts.push({ type:'info', icon:'ℹ️', color:'#1a56db', bg:'#e8f0fe',
@@ -7070,10 +8191,23 @@ function renderTopManager() {
 
   // Collect today's stats per manager across selected products
   const mgrToday = {};
-  const keys = activeProd === 'all' ? ['col'] : [activeProd];
+  const keys = [activeProd];   // 'all' | 'col' | 'kids' (см. _prodCfg)
 
-  keys.forEach(k => {
-    const mgrs = MANAGERS[PROD_CFG[k].rawKey] || MANAGERS[PROD_CFG[k].name] || [];
+  // Продуктовый режим: касса и сделки менеджера по товарам направления (по
+  // сделкам, _ERA_PROD_IDX); лидов у товара нет.
+  if (activeProd !== 'all') {
+    for (const r of (_ERA_PROD_IDX[todayStr] || [])) {
+      if (!r.mgr) continue;
+      let cash = 0;
+      for (const label in r.c) if (PRODUCT_PRICE_DIR[label] && PRODUCT_PRICE_DIR[label].dir === activeProd) cash += r.c[label];
+      const deals = activeProd === 'kids' ? r.dUmmi : r.dDirCol;
+      if (!cash && !deals) continue;
+      const t = mgrToday[r.mgr] || (mgrToday[r.mgr] = {leads:null, deals:0, budget:0});
+      t.deals += deals; t.budget += cash;
+    }
+  }
+  (activeProd === 'all' ? keys : []).forEach(k => {
+    const mgrs = ALL_BUCKETS.flatMap(b => MANAGERS[b] || []);   // все воронки, по имени суммируется ниже
     mgrs.forEach(m => {
       if (!m.daily || !m.daily[todayStr]) return;
       const v = m.daily[todayStr];
@@ -7109,7 +8243,7 @@ function renderTopManager() {
           </div>
           <div style="text-align:right">
             <span style="font-size:13px;font-weight:700;color:${color}">${fmt(v.budget)} ₸</span>
-            <span style="font-size:11px;color:var(--muted);margin-left:8px">${v.deals} сд · ${v.leads} лид</span>
+            <span style="font-size:11px;color:var(--muted);margin-left:8px">${v.deals} сд${v.leads === null ? '' : ` · ${v.leads} лид`}</span>
           </div>
         </div>
         <div style="height:4px;background:var(--line);border-radius:2px;overflow:hidden">
@@ -7133,13 +8267,20 @@ function renderHeatmap() {
   const today = new Date();
   const dailyData = {};
 
-  const keys = activeProd === 'all' ? ['col'] : [activeProd];
-  keys.forEach(k => {
-    const raw = _mergedRaw(PROD_CFG[k].rawKey);
+  if (activeProd === 'all') {
+    const raw = _mergedRaw(null);
     Object.entries(raw).forEach(([d, v]) => {
       dailyData[d] = (dailyData[d] || 0) + (v[2] || 0);
     });
-  });
+  } else {
+    // Продуктовый режим: касса товаров направления по дням (с фильтром отделов).
+    const names = activeMainRop !== 'all' ? _mainRopNames() : null;
+    for (let i = DAYS - 1; i >= 0; i--) {
+      const dd = new Date(today); dd.setDate(dd.getDate() - i);
+      const key = _fmt(dd);
+      dailyData[key] = _productCash([key], names)[activeProd].cash;
+    }
+  }
 
   // Build array of last DAYS days
   const days = [];
@@ -7486,48 +8627,274 @@ function closeMgrModal() {
 var _cityMap = null;
 var _cityData = {}; // { cityName: {deals, budget} }
 
-// Kazakhstan city coordinates
-const KZ_CITIES = {
-  'Алматы':[43.238,76.946],'Астана':[51.128,71.430],'Нур-Султан':[51.128,71.430],'Шымкент':[42.315,69.597],
-  'Караганда':[49.802,73.087],'Актобе':[50.283,57.167],'Актау':[43.650,51.150],'Тараз':[42.900,71.367],
-  'Павлодар':[52.283,76.967],'Усть-Каменогорск':[49.948,82.628],'Семей':[50.411,80.228],
-  'Атырау':[47.117,51.883],'Костанай':[53.214,63.633],'Кызылорда':[44.853,65.509],'Уральск':[51.233,51.367],
-  'Петропавловск':[54.867,69.150],'Темиртау':[50.061,72.964],'Туркестан':[43.303,68.254],
-  'Талдыкорган':[45.017,78.383],'Кокшетау':[53.283,69.400],'Экибастуз':[51.723,75.322],
-  'Рудный':[52.967,63.117],'Жанаозен':[43.350,52.867],'Балхаш':[46.843,74.995],
-  'Степногорск':[52.350,71.883],'Сатпаев':[47.900,67.533],'Кентау':[43.517,68.500],
-  'Риддер':[50.350,83.517],'Жезказган':[47.783,67.717],'Капчагай':[43.883,77.067],
-  'Аксай':[51.167,53.033],'Аксу':[52.040,76.926],'Щучинск':[52.933,70.200],
-  'Сарань':[49.800,72.833],'Каскелен':[43.200,76.617],'Талгар':[43.300,77.233],
-  'Текели':[44.867,78.767],'Есик':[43.350,77.450],'Байконур':[45.617,63.317],
-  'Конаев':[43.867,76.950],'Приозерск':[46.033,73.700],
-  // Variants / common misspellings
-  'алматы':[43.238,76.946],'астана':[51.128,71.430],'шымкент':[42.315,69.597],
-  'Нурсултан':[51.128,71.430],'г Алматы':[43.238,76.946],'г.Алматы':[43.238,76.946],
-  'Алмата':[43.238,76.946],'Almaty':[43.238,76.946],'Astana':[51.128,71.430],
-};
-
-function _findCityCoords(cityName) {
-  if (!cityName) return null;
-  // Direct match
-  if (KZ_CITIES[cityName]) return KZ_CITIES[cityName];
-  // Case-insensitive
-  const lower = cityName.toLowerCase();
-  for (const [k,v] of Object.entries(KZ_CITIES)) {
-    if (k.toLowerCase() === lower) return v;
+// ── География: город из адреса ───────────────────────────────────────
+// В Era CRM город пишут в поле «Адрес доставки» как угодно: по-русски и
+// по-казахски («Орал қаласы», «Өскемен»), только область («ЗКО», «Алматинская
+// область», «Атырау обл»), район, малые города, «самовывоз». Раньше карта знала
+// ~45 написаний и молча теряла остальное (~17% сделок). _geoResolve ищет в
+// строке известное место (GEO_PLACES); всё, что не нашлось, остаётся в списке
+// строкой «Город не распознан» — итог географии сходится с числом сделок.
+//   k: city — город (маркер на карте); region — известна только область;
+//      country — другая страна (каждая отдельной строкой); pickup — самовывоз.
+//   a — написания, ищутся как целые слова. Регистр, ё и казахские буквы
+//       приводятся к русским (_geoNorm): «Қарағанды» = «караганды».
+//   r — область города: «Атырау обл» — это область, а не город.
+const GEO_PLACES = [
+  // города республиканского значения и областные центры
+  { n:'Алматы',           c:[43.238,76.946], r:'Алматинская обл.',    a:['алматы','алмата','алма-ата','алма ата','алмате','алмати','almaty'] },
+  { n:'Астана',           c:[51.128,71.430], a:['астана','астане','астану','астаны','astana','нур-султан','нурсултан','нур султан','алматинский район','район нура','сарыаркинский','район сарыарка','байконурский район','район есиль'] },
+  { n:'Шымкент',          c:[42.315,69.597], r:'Туркестанская обл.',  a:['шымкент','шымкенте','шимкент','чимкент','shymkent','шымкента'] },
+  { n:'Караганда',        c:[49.802,73.087], r:'Карагандинская обл.', a:['караганда','караганды','караганде','караганду','karaganda'] },
+  { n:'Актобе',           c:[50.283,57.167], r:'Актюбинская обл.',    a:['актобе','актюбинск','aktobe'] },
+  { n:'Актау',            c:[43.650,51.150], r:'Мангистауская обл.',  a:['актау','aktau'] },
+  { n:'Тараз',            c:[42.900,71.367], r:'Жамбылская обл.',     a:['тараз','таразе','taraz','тараза'] },
+  { n:'Павлодар',         c:[52.283,76.967], r:'Павлодарская обл.',   a:['павлодар','павлодаре','павлолар','pavlodar','павлодара'] },
+  { n:'Усть-Каменогорск', c:[49.948,82.628], r:'ВКО',                 a:['усть-каменогорск','усть каменогорск','устькаменогорск','усть-каменогорске','усть-каменагорск','усть-каменогрск','оскемен','оскемень','усть-каман','усть каман','усть-каменогорска'] },
+  { n:'Семей',            c:[50.411,80.228], r:'Абайская обл.',       a:['семей','семее','семипалатинск','семея'] },
+  { n:'Атырау',           c:[47.117,51.883], r:'Атырауская обл.',     a:['атырау','atyrau'] },
+  { n:'Костанай',         c:[53.214,63.633], r:'Костанайская обл.',   a:['костанай','костанае','кустанай','костаная'] },
+  { n:'Кызылорда',        c:[44.853,65.509], r:'Кызылординская обл.', a:['кызылорда','кызылорде','кызыл-орда','кзылорда','кызылорды'] },
+  { n:'Уральск',          c:[51.233,51.367], r:'ЗКО',                 a:['уральск','уральске','орал','oral','уральска'] },
+  { n:'Петропавловск',    c:[54.867,69.150], r:'СКО',                 a:['петропавловск','петропавловске','петропавл','петропавловска'] },
+  { n:'Туркестан',        c:[43.303,68.254], r:'Туркестанская обл.',  a:['туркестан','туркестане','туркистан','туркестана'] },
+  { n:'Талдыкорган',      c:[45.017,78.383], r:'Жетысуская обл.',     a:['талдыкорган','талдыкоргане','талдыкурган','талдыкоргана'] },
+  { n:'Кокшетау',         c:[53.283,69.400], r:'Акмолинская обл.',    a:['кокшетау','кокчетав'] },
+  { n:'Жезказган',        c:[47.783,67.717], r:'Улытауская обл.',     a:['жезказган','джезказган','жесказган','жезказгана'] },
+  { n:'Конаев',           c:[43.867,77.067], a:['конаев','капчагай','капшагай','кунай'] },
+  // остальные города и крупные посёлки
+  { n:'Темиртау',   c:[50.061,72.964], a:['темиртау'] },
+  { n:'Экибастуз',  c:[51.723,75.322], a:['экибастуз','екибастуз','экибастуза'] },
+  { n:'Рудный',     c:[52.967,63.117], a:['рудный','рудном'] },
+  { n:'Жанаозен',   c:[43.350,52.867], a:['жанаозен','жана озен'] },
+  { n:'Балхаш',     c:[46.843,74.995], a:['балхаш','балкаш','балхаша'] },
+  { n:'Степногорск',c:[52.350,71.883], a:['степногорск'] },
+  { n:'Сатпаев',    c:[47.900,67.533], a:['сатпаев','сатбаев'] },
+  { n:'Кентау',     c:[43.517,68.500], a:['кентау'] },
+  { n:'Риддер',     c:[50.350,83.517], a:['риддер'] },
+  { n:'Аксай',      c:[51.167,53.033], a:['аксай'] },
+  { n:'Аксу',       c:[52.040,76.926], a:['аксу'] },
+  { n:'Щучинск',    c:[52.933,70.200], a:['щучинск'] },
+  { n:'Бурабай',    c:[53.083,70.310], a:['бурабай','боровое'] },
+  { n:'Сарань',     c:[49.800,72.833], a:['сарань','саран'] },
+  { n:'Шахтинск',   c:[49.717,72.583], a:['шахтинск'] },
+  { n:'Каражал',    c:[48.000,70.800], a:['каражал'] },
+  { n:'Каркаралинск', c:[49.410,75.470], a:['каркаралинск','каркаралы'] },
+  { n:'Каскелен',   c:[43.200,76.617], a:['каскелен'] },
+  { n:'Талгар',     c:[43.300,77.233], a:['талгар'] },
+  { n:'Есик',       c:[43.350,77.450], a:['есик'] },
+  { n:'Текели',     c:[44.867,78.767], a:['текели'] },
+  { n:'Жаркент',    c:[44.167,80.000], a:['жаркент'] },
+  { n:'Ушарал',     c:[46.167,80.933], a:['ушарал'] },
+  { n:'Уштобе',     c:[45.250,77.983], a:['уштобе'] },
+  { n:'Сарканд',    c:[45.417,79.917], a:['сарканд','саркан'] },
+  { n:'Узынагаш',   c:[43.217,76.317], a:['узынагаш'] },
+  { n:'Отеген батыр', c:[43.417,77.033], a:['отеген батыр','отеген батыра'] },
+  { n:'Боралдай',   c:[43.350,76.850], a:['боралдай'] },
+  { n:'Жетыген',    c:[43.683,77.117], a:['жетыген','жетиген'] },
+  { n:'Алатау',     c:[43.720,77.200], a:['алатау каласы','г. алатау','г.алатау','город алатау'] },
+  { n:'Шелек',      c:[43.600,78.250], a:['шелек','чилик'] },
+  { n:'Байконур',   c:[45.617,63.317], a:['байконур','байконыр'] },
+  { n:'Приозерск',  c:[46.033,73.700], a:['приозерск'] },
+  { n:'Аральск',    c:[46.800,61.667], a:['аральск','арал'] },
+  { n:'Казалинск',  c:[45.767,62.100], a:['казалинск','казалы'] },
+  { n:'Айтеке би',  c:[45.850,62.150], a:['айтеке би'] },
+  { n:'Шиели',      c:[44.170,66.730], a:['шиели'] },
+  { n:'Жанакорган', c:[43.900,67.250], a:['жанакорган'] },
+  { n:'Сарыагаш',   c:[41.467,69.167], a:['сарыагаш','сарагаш'] },
+  { n:'Жетысай',    c:[40.775,68.327], a:['жетысай','жетисай','жетсай'] },
+  { n:'Арысь',      c:[42.433,68.800], a:['арысь','арыс'] },
+  { n:'Ленгер',     c:[42.183,69.883], a:['ленгер'] },
+  { n:'Шардара',    c:[41.267,67.967], a:['шардара'] },
+  { n:'Аксукент',   c:[42.440,69.850], a:['аксукент'] },
+  { n:'Шу',         c:[43.600,73.767], a:['г. шу','г.шу','город шу','шу каласы'] },
+  { n:'Каратау',    c:[43.167,70.467], a:['каратау'] },
+  { n:'Жанатас',    c:[43.567,69.750], a:['жанатас'] },
+  { n:'Кордай',     c:[43.050,74.717], a:['кордай'] },
+  { n:'Мерке',      c:[42.867,73.183], a:['мерке','мерки'] },
+  { n:'Аягоз',      c:[47.967,80.433], a:['аягоз','аягуз'] },
+  { n:'Урджар',     c:[47.090,81.630], a:['урджар','уржар'] },
+  { n:'Курчатов',   c:[50.756,78.542], a:['курчатов'] },
+  { n:'Зайсан',     c:[47.467,84.867], a:['зайсан'] },
+  { n:'Шемонаиха',  c:[50.633,81.917], a:['шемонаиха'] },
+  { n:'Алтай',      c:[49.730,84.270], a:['зыряновск','город алтай','г. алтай','г.алтай','г алтай','алтай каласы'] },
+  { n:'Лисаковск',  c:[52.547,62.494], a:['лисаковск'] },
+  { n:'Житикара',   c:[52.183,61.200], a:['житикара','джетыгара'] },
+  { n:'Аркалык',    c:[50.248,66.911], a:['аркалык'] },
+  { n:'Тобыл',      c:[53.200,63.700], a:['тобыл','затобольск'] },
+  { n:'Хромтау',    c:[50.250,58.433], a:['хромтау'] },
+  { n:'Кандыагаш',  c:[49.467,57.417], a:['кандыагаш'] },
+  { n:'Шалкар',     c:[47.833,59.600], a:['шалкар'] },
+  { n:'Кульсары',   c:[46.950,54.017], a:['кульсары','кулсары'] },
+  { n:'Форт-Шевченко', c:[44.517,50.267], a:['форт-шевченко','форт шевченко'] },
+  { n:'Курык',      c:[43.180,51.680], a:['курык'] },
+  { n:'Жетыбай',    c:[43.590,52.080], a:['жетыбай','жетибай'] },
+  { n:'Бейнеу',     c:[45.317,55.200], a:['бейнеу'] },
+  { n:'Атбасар',    c:[51.817,68.350], a:['атбасар'] },
+  { n:'Макинск',    c:[52.633,70.417], a:['макинск'] },
+  { n:'Акколь',     c:[51.983,70.933], a:['акколь','аккол'] },
+  { n:'Ерейментау', c:[51.617,73.100], a:['ерейментау'] },
+  { n:'Косшы',      c:[50.967,71.350], a:['косшы'] },
+  { n:'Тайынша',    c:[53.850,69.770], a:['тайынша'] },
+  // только область (город в адресе не указан или это село): названия,
+  // сокращения и районы
+  { n:'Алматинская обл.',     k:'region', c:[43.95,77.85], a:['алматинская','алматинской','карасайский','илийский','талгарский','енбекшиказахский','райымбекский','уйгурский','кегенский','алматинский обл','алматинский область','алм обл'] },
+  { n:'Жетысуская обл.',      k:'region', c:[45.30,79.20], a:['жетысуская','жетысу','жетису','кербулакский','ескельдинский','каратальский','коксуский','панфиловский','алакольский','саркандский','жетисуская','жетысуской'] },
+  { n:'Акмолинская обл.',     k:'region', c:[52.10,69.60], a:['акмолинская','акмолинской','акмола облысы','акмола обл','буландынский','зерендинский','целиноградский','аршалынский','бурабайский','сандыктауский','биржан сал'] },
+  { n:'Актюбинская обл.',     k:'region', c:[49.10,58.60], a:['актюбинская','актюбинской','актобинская','мартукский','каргалинский','хромтауский','мугалжарский','алгинский','хобдинский','актюкбинская','темирский','шубаркудук','айтекебийский'] },
+  { n:'Атырауская обл.',      k:'region', c:[47.80,52.90], a:['атырауская','атырауской','жылыойский','махамбетский','индерский','макатский','исатайский','курмангазинский'] },
+  { n:'ВКО',                  k:'region', c:[49.20,83.40], a:['вко','восточно-казахстанская','восточно казахстанская','восточная казахстанская','восточно-казахстанской','шыгыс казакстан','шко','глубоковский','уланский','шемонаихинский','зайсанский','тарбагатайский','катон-карагайский'] },
+  { n:'ЗКО',                  k:'region', c:[50.20,51.90], a:['зко','западно-казахстанская','западно казахстанская','западно-казахстанской','батыс казакстан','бко','теректинский','бурлинский','зеленовский','байтерекский','таскалинский'] },
+  { n:'СКО',                  k:'region', c:[54.20,68.30], a:['ско','северо-казахстанская','северо казахстанская','северо-казахстанской','солтустик казакстан','кызылжарский','тайыншинский','мамлютский','аккайынский'] },
+  { n:'Туркестанская обл.',   k:'region', c:[42.70,68.70], a:['туркестанская','туркестанской','юко','южно-казахстанская','онтустик казакстан','сайрамский','сарыагашский','мактааральский','толебийский','ордабасинский','казыгуртский','тюлькубасский','келесский','жетысайский','туркистанская','туркистанскии','тургистанская','туркестанский область','туркестанский обл','мактаральский','сузакский','созакский','сайрам ауданы','толе би ауданы','толеби ауданы'] },
+  { n:'Жамбылская обл.',      k:'region', c:[43.60,72.40], a:['жамбылская','жамбылской','жамбылский область','жамбыл облысы','жамбыл обл','джамбулская','джамбульская','кордайский','байзакский','жуалынский','меркенский','шуский','рыскуловский','таласский','сарысуский','мойынкумский','жамбульская','жамбыльская'] },
+  { n:'Карагандинская обл.',  k:'region', c:[49.00,74.20], a:['карагандинская','карагандинской','карагандинска','бухар-жырауский','бухар жырауский','осакаровский','шетский','каркаралинский','осакаровка','караганди нская','аксу-аюлы'] },
+  { n:'Костанайская обл.',    k:'region', c:[52.30,64.60], a:['костанайская','костанайской','кустанайская','карабалыкский','мендыкаринский','федоровский','аулиекольский','костанайский район'] },
+  { n:'Кызылординская обл.',  k:'region', c:[45.40,64.40], a:['кызылординская','кызылординской','шиелийский','жанакорганский','сырдарьинский','кармакшинский','казалинский','аральский','жалагашский'] },
+  { n:'Мангистауская обл.',   k:'region', c:[44.30,53.20], a:['мангистауская','мангыстауская','мангистауской','мангыстау','мангистау','мунайлинский','тупкараганский','каракиянский','бейнеуский','мангыс обл','мангыстауский','мангистауский','мангыстаау'] },
+  { n:'Павлодарская обл.',    k:'region', c:[51.70,75.60], a:['павлодарская','павлодарской','баянаульский','иртышский','железинский','успенский'] },
+  { n:'Абайская обл.',        k:'region', c:[49.20,79.20], a:['абайская','абайской','абай облысы','абай обл','область абай','обл абай','абай область','урджарский','жарминский','аягозский','бескарагайский','кокпектинский','область абая','обл абая','обл. абая','обл.абая'] },
+  { n:'Улытауская обл.',      k:'region', c:[48.40,66.80], a:['улытауская','улытау'] },
+  // другие страны — каждая отдельной строкой; город → страна, маркер — в столице.
+  // Только однозначные названия: «Анкара», «Туркия», «Рим» — это ещё и улицы / имена.
+  { n:'Россия',         k:'country', c:[55.75,37.62],  a:['россия','россии','россию','рф','российская федерация','ресей','москва','москве','московская','санкт-петербург','петербург','спб','новосибирск','омск','екатеринбург','казань','челябинск','тюмень','оренбург','астрахань','краснодар','сочи','ростов-на-дону','ростов','калининград','красноярск','барнаул','томск','сургут','волгоград','саратов','пермь','нижний новгород','воронеж','иркутск','хабаровск','владивосток','магнитогорск','орск','прокопьевск','кемерово','новокузнецк','уфа','самара'] },
+  { n:'Крым',           k:'country', c:[44.95,34.10],  a:['крым','республика крым','симферополь','севастополь','ялта'] },
+  { n:'Кыргызстан',     k:'country', c:[42.87,74.59],  a:['кыргызстан','кыргызстана','киргизия','киргизии','бишкек','бишкеке','г. ош','г.ош','город ош','джалал-абад'] },
+  { n:'Узбекистан',     k:'country', c:[41.31,69.28],  a:['узбекистан','узбекистана','озбекстан','ташкент','ташкенте','самарканд','бухара','наманган','андижан','фергана','нукус'] },
+  { n:'Таджикистан',    k:'country', c:[38.56,68.77],  a:['таджикистан','душанбе','худжанд'] },
+  { n:'Туркменистан',   k:'country', c:[37.95,58.38],  a:['туркменистан','туркмения','ашхабад'] },
+  { n:'Азербайджан',    k:'country', c:[40.41,49.87],  a:['азербайджан','баку'] },
+  { n:'Грузия',         k:'country', c:[41.72,44.79],  a:['грузия','тбилиси','батуми'] },
+  { n:'Армения',        k:'country', c:[40.18,44.51],  a:['армения','ереван'] },
+  { n:'Беларусь',       k:'country', c:[53.90,27.57],  a:['беларусь','белоруссия','минск'] },
+  { n:'Украина',        k:'country', c:[50.45,30.52],  a:['украина','украине','киев','одесса','харьков'] },
+  { n:'Турция',         k:'country', c:[41.01,28.98],  a:['турция','турции','стамбул','анталья','анталия','аланья'] },
+  { n:'ОАЭ',            k:'country', c:[25.20,55.27],  a:['оаэ','дубай','дубае','абу-даби','эмираты','шарджа'] },
+  { n:'Германия',       k:'country', c:[52.52,13.40],  a:['германия','германии','берлин','мюнхен','гамбург','франкфурт'] },
+  { n:'Польша',         k:'country', c:[52.23,21.01],  a:['польша','варшава'] },
+  { n:'Великобритания', k:'country', c:[51.51,-0.13],  a:['великобритания','англия','лондон'] },
+  { n:'Франция',        k:'country', c:[48.86,2.35],   a:['франция','париж'] },
+  { n:'Италия',         k:'country', c:[41.90,12.50],  a:['италия','милан'] },
+  { n:'Испания',        k:'country', c:[40.42,-3.70],  a:['испания','мадрид','барселона'] },
+  { n:'Чехия',          k:'country', c:[50.08,14.44],  a:['чехия','прага'] },
+  { n:'Нидерланды',     k:'country', c:[52.37,4.90],   a:['нидерланды','голландия','амстердам'] },
+  { n:'США',            k:'country', c:[38.90,-77.04], a:['сша','америка','нью-йорк','usa'] },
+  { n:'Канада',         k:'country', c:[45.42,-75.70], a:['канада','торонто'] },
+  { n:'Китай',          k:'country', c:[39.90,116.40], a:['китай','кнр','пекин','урумчи'] },
+  { n:'Южная Корея',    k:'country', c:[37.57,126.98], a:['корея','южная корея','сеул'] },
+  { n:'Монголия',       k:'country', c:[47.92,106.92], a:['монголия','улан-батор','баян-улгий','баян-олгий'] },
+  { n:'Израиль',        k:'country', c:[31.77,35.21],  a:['израиль','тель-авив'] },
+  // другое
+  { n:'Самовывоз',     k:'pickup', a:['самовывоз','самовызов','с офиса','из офиса','офис','заберет сам','заберу сам','забрали с адреса'] },
+  { n:'Заказ через Kaspi', k:'other', a:['каспи','kaspi'] },
+];
+// Адрес по сути не заполнен: «0», «-», «г», «город», «нет», одна страна.
+const _GEO_NONE = { n:'Адрес не указан', k:'none' };
+const _GEO_JUNK = new Set(['г','гор','город','нет','не указан','не указано','адрес','уточнить','уточняется','казахстан','кз','рк','kz']);
+// Почтовый индекс (первые две цифры) — когда в адресе нет ни города, ни области.
+const _GEO_ZIP = { '01':'Астана', '02':'Акмолинская обл.', '03':'Актюбинская обл.', '04':'Алматинская обл.', '05':'Алматы',
+  '06':'Атырауская обл.', '07':'ВКО', '08':'Жамбылская обл.', '09':'ЗКО', '10':'Карагандинская обл.', '11':'Костанайская обл.',
+  '12':'Кызылординская обл.', '13':'Мангистауская обл.', '14':'Павлодарская обл.', '15':'СКО', '16':'Туркестанская обл.' };
+// Нижний регистр, ё → е, казахские буквы → русские, без невидимых символов,
+// «усть- каменогорск» → «усть-каменогорск».
+const _GEO_KZ = { 'ә':'а', 'ғ':'г', 'қ':'к', 'ң':'н', 'ө':'о', 'ұ':'у', 'ү':'у', 'һ':'х', 'і':'и', 'ё':'е' };
+function _geoNorm(v) {
+  return String(v == null ? '' : v).toLowerCase()
+    .replace(/[әғқңөұүһіё]/g, ch => _GEO_KZ[ch])
+    .replace(/[​-‏﻿]/g, '')
+    .replace(/\s*-\s*/g, '-').replace(/\s+/g, ' ').trim();
+}
+const _GEO_BY_NAME = {};
+const _GEO_ALIASES = [];
+// Сёла и посёлки словаря: для них «село …» — обычное написание. У настоящих
+// городов «село Аксу» / «Ақсу ауылы» означает одноимённое село, не город.
+const _GEO_VILLAGES = new Set(['Бурабай','Узынагаш','Отеген батыр','Боралдай','Жетыген','Шелек','Айтеке би','Шиели',
+  'Жанакорган','Аксукент','Кордай','Мерке','Урджар','Курык','Жетыбай','Бейнеу','Тобыл']);
+for (const pl of GEO_PLACES) {
+  pl.k = pl.k || 'city';
+  pl.v = _GEO_VILLAGES.has(pl.n);
+  _GEO_BY_NAME[pl.n] = pl;
+  const forms = new Set();
+  for (const al of pl.a.map(_geoNorm)) {
+    forms.add(al);
+    if (al.includes('-')) forms.add(al.replace(/-/g, ' '));   // «усть-каменогорск» = «усть каменогорск»
   }
-  // Partial match (city name contains known city)
-  for (const [k,v] of Object.entries(KZ_CITIES)) {
-    if (lower.includes(k.toLowerCase()) || k.toLowerCase().includes(lower)) return v;
-  }
-  // Try extracting city from address like "г Уральск, ..."
-  const gMatch = cityName.match(/(?:^|г\.?\s*)([А-Яа-яЁёІіҢңҒғҮүҰұҚқӘәӨө-]+)/);
-  if (gMatch) {
-    for (const [k,v] of Object.entries(KZ_CITIES)) {
-      if (k.toLowerCase() === gMatch[1].toLowerCase()) return v;
+  for (const al of forms) _GEO_ALIASES.push([al, pl]);
+}
+const _GEO_LETTER = /[a-zа-я]/;
+const _GEO_KIND_RANK = { city: 0, region: 2, country: 3, pickup: 4, other: 5 };
+const _geoCache = new Map();
+// Сырой адрес → место из GEO_PLACES, _GEO_NONE (адрес не заполнен) или null
+// (не распознано). Правила:
+//   • написание ищем как целое слово («г» может быть приклеена: «гастана»);
+//     из вложенных совпадений берём длинное («район Байконур» — это Астана);
+//   • «Алматы облысы» / «Атырау обл» — это область, а не город;
+//   • город важнее области; из нескольких городов берём стоящий раньше;
+//   • «г. …», «… қаласы» — явный город (выше приоритет);
+//   • название после «ул.», «мкр», «пр.», «ТЦ» или перед «көшесі» — улица или
+//     объект, не город; «село Аксу», «Ақсу ауылы» — одноимённое село;
+//   • «самовывоз» / «офис» — только в начале строки.
+const _GEO_STREET_HEAD = /(^|[^a-zа-я])(ул|улица|улице|кош|пр|пр-т|просп|проспект|мкр|мкрн|мкр-н|микрорайон|микр|жк|шоссе|трасса|пер|переулок|бульвар|площадь|тц|трц|бц|рынок|базар|магазин|маг|кафе|ресторан|гостиница|отель|санаторий)[\.\s-]*$/;
+const _GEO_STREET_TAIL = /^\s*(коше(си)?|дангыл[а-я]*)([^a-zа-я]|$)/;
+const _GEO_VILLAGE_HEAD = /(^|[^a-zа-я])(село|селе|с\.|аул)[\.\s]*$/;
+const _GEO_VILLAGE_TAIL = /^\s*(ауылы|аулы|селосы|ауылдык)([^a-zа-я]|$)/;
+function _geoResolve(raw) {
+  const key = String(raw == null ? '' : raw);
+  if (_geoCache.has(key)) return _geoCache.get(key);
+  const t = _geoNorm(key);
+  const found = [], blocked = [];   // blocked — названия улиц / объектов («БЦ Санкт-Петербург»)
+  if (t) {
+    for (const [alias, base] of _GEO_ALIASES) {
+      for (let pos = t.indexOf(alias); pos !== -1; pos = t.indexOf(alias, pos + 1)) {
+        const end = pos + alias.length;
+        const before = pos ? t[pos - 1] : '', after = t[end] || '';
+        const glued = before === 'г' && !(pos > 1 && _GEO_LETTER.test(t[pos - 2]));
+        if ((_GEO_LETTER.test(before) && !glued) || _GEO_LETTER.test(after)) continue;   // не целое слово
+        if (base.k === 'pickup' && pos > 3) continue;
+        const head = t.slice(Math.max(0, pos - 14), pos), tail = t.slice(end, end + 12);
+        if (_GEO_STREET_HEAD.test(head) || _GEO_STREET_TAIL.test(tail)) {                // улица / объект с таким названием
+          blocked.push([pos, end]);
+          continue;
+        }
+        let pl = base, rank, mk = false;
+        if (pl.k === 'city') {
+          if (/^\s*(обл|облыс)/.test(tail)) {              // «Атырау обл» — область города
+            pl = _GEO_BY_NAME[pl.r];
+            if (!pl) continue;
+            rank = _GEO_KIND_RANK.region;
+          }
+          else if (!base.v && (_GEO_VILLAGE_HEAD.test(head) || _GEO_VILLAGE_TAIL.test(tail))) continue;   // одноимённое село
+          else if (/^\s*(ауд|район|р-н|р\/н)/.test(tail)) rank = 2.5;   // «Талғар ауданы»: город — если больше ничего нет
+          else if (/(^|[^a-zа-я])(г|гор|город)[\.\s]*$/.test(head) || /^\s*(каласы|кал\.|к\.)/.test(tail)) rank = -1;
+          else {
+            rank = _GEO_KIND_RANK.city;
+            mk = base.n === 'Аксай' && /^[-\s]?[1-5][аб]?([^0-9а-я]|$)/.test(tail);
+          }
+        } else rank = _GEO_KIND_RANK[pl.k];
+        found.push({ pos, end, rank, pl, mk });
+      }
     }
   }
-  return null;
+  let best = null, sawRegion = false;
+  for (const c of found) {
+    // совпадение внутри более длинного («байконур» в «район байконур») не считаем
+    if (found.some(o => o !== c && o.pos <= c.pos && o.end >= c.end && o.end - o.pos > c.end - c.pos)) continue;
+    if (blocked.some(b => b[0] <= c.pos && b[1] >= c.end)) continue;   // часть названия улицы / объекта
+    if (c.pl.k === 'region') sawRegion = true;
+    if (!best || c.rank < best.rank || (c.rank === best.rank && c.pos < best.pos)) best = c;
+  }
+  let res = best ? best.pl : null;
+  // «Аксай-4» без области — микрорайон Алматы, а не город Аксай (ЗКО).
+  if (best && best.mk && !sawRegion) res = _GEO_BY_NAME['Алматы'];
+  if (!res && t) {
+    const zip = t.match(/(^|[^0-9])((0[1-9]|1[0-6])\d{4})([^0-9]|$)/);
+    if (zip) res = _GEO_BY_NAME[zip[2].startsWith('1600') ? 'Шымкент' : _GEO_ZIP[zip[3]]] || null;
+  }
+  if (!res) {
+    const letters = t.replace(/[^a-zа-я]+/g, ' ').trim();
+    if (letters.length < 2 || _GEO_JUNK.has(letters)) res = _GEO_NONE;
+  }
+  _geoCache.set(key, res);
+  return res;
 }
 
 // ── Тайлы карты по теме (theme.css): тёмные темы → CARTO dark, светлые → OSM ──
@@ -7552,22 +8919,13 @@ function renderCityMap() {
   const periodFrom = parseDate(activePeriod.from);
   const periodTo = parseDate(activePeriod.to);
 
-  // Aggregate cities with coordinates, filtered by period
-  const aggregated = {}; // { cityName: {lat, lng, deals, budget} }
+  // Сделки и касса периода по местам. Нераспознанные адреса не выбрасываем:
+  // они идут строкой «Город не распознан», чтобы итог сходился со сделками.
+  const aggregated = {}; // { name: { kind, lat, lng, deals, budget } }
+  const UNKNOWN = 'Город не распознан';
   for (const [name, dailyData] of Object.entries(_cityData)) {
-    const coords = _findCityCoords(name);
-    if (!coords) continue;
-    // Normalize to known city name
-    let normName = name;
-    for (const k of Object.keys(KZ_CITIES)) {
-      if (k.toLowerCase() === name.toLowerCase() || name.toLowerCase().includes(k.toLowerCase())) {
-        normName = k; break;
-      }
-    }
-    // Sum daily data within period
     let deals = 0, budget = 0;
     if (typeof dailyData === 'object' && !Array.isArray(dailyData)) {
-      // New format: { "dd.mm.yyyy": [deals, budget] }
       if (dailyData.deals !== undefined) {
         // Old format fallback: { deals, budget }
         deals = dailyData.deals; budget = dailyData.budget;
@@ -7583,17 +8941,38 @@ function renderCityMap() {
       }
     }
     if (deals === 0) continue;
-    if (!aggregated[normName]) aggregated[normName] = { lat: coords[0], lng: coords[1], deals: 0, budget: 0 };
-    aggregated[normName].deals += deals;
-    aggregated[normName].budget += budget;
+    const pl = _geoResolve(name);
+    const key = pl ? pl.n : UNKNOWN;
+    const agg = aggregated[key] || (aggregated[key] = { kind: pl ? pl.k : 'unknown', lat: pl && pl.c ? pl.c[0] : null, lng: pl && pl.c ? pl.c[1] : null, deals: 0, budget: 0 });
+    agg.deals += deals; agg.budget += budget;
   }
 
-  const entries = Object.entries(aggregated).sort((a,b) => b[1].deals - a[1].deals);
-  const totalDeals = entries.reduce((s,[,v]) => s + v.deals, 0);
+  const all = Object.entries(aggregated).sort((a,b) => b[1].deals - a[1].deals);
+  const ofKind = k => all.filter(([,v]) => v.kind === k);
+  const sumDeals = list => list.reduce((s,[,v]) => s + v.deals, 0);
+  const cities = ofKind('city'), regions = ofKind('region'), countries = ofKind('country');
+  const others = all.filter(([,v]) => v.kind !== 'city' && v.kind !== 'region' && v.kind !== 'country');
+  const totalDeals = sumDeals(all);
+  const unknownDeals = aggregated[UNKNOWN] ? aggregated[UNKNOWN].deals : 0;
+  const noneDeals = aggregated[_GEO_NONE.n] ? aggregated[_GEO_NONE.n].deals : 0;
+  // Сделки компании за период (как в карточках, без фильтра отделов) — для сверки.
+  let crmDeals = 0;
+  for (const b of ALL_BUCKETS) {
+    for (const [date, v] of Object.entries(RAW[b] || {})) {
+      try { const dt = parseDate(date); if (dt >= periodFrom && dt <= periodTo) crmDeals += v[1] || 0; } catch(e) {}
+    }
+  }
 
   // Update count badge
   const badge = document.getElementById('map-city-count');
-  if (badge) badge.textContent = `${entries.length} городов · ${fmt(totalDeals)} сделок`;
+  if (badge) {
+    const noAddr = Math.max(0, crmDeals - totalDeals) + noneDeals;
+    badge.textContent = `${fmt(totalDeals)} сделок · города: ${cities.length} (${fmt(sumDeals(cities))})`
+      + (regions.length ? ` · только область: ${fmt(sumDeals(regions))}` : '')
+      + (countries.length ? ` · другие страны: ${fmt(sumDeals(countries))}` : '')
+      + (unknownDeals ? ` · не распознано: ${fmt(unknownDeals)}` : '')
+      + (noAddr ? ` · без адреса: ${fmt(noAddr)}` : '');
+  }
 
   // Init map
   if (!_cityMap) {
@@ -7603,35 +8982,48 @@ function renderCityMap() {
     _cityMap.eachLayer(l => { if (l instanceof L.CircleMarker) _cityMap.removeLayer(l); });
   }
 
-  // Add circle markers
-  const maxDeals = entries.length ? entries[0][1].deals : 1;
-  for (const [city, d] of entries) {
+  // Маркеры: города — сплошные, «только область» — пунктирные в центре области,
+  // другие страны — оранжевые в столице (за краем карты: отдалите её).
+  const onMap = cities.concat(regions, countries);
+  const maxDeals = onMap.length ? Math.max(...onMap.map(([,v]) => v.deals)) : 1;
+  for (const [place, d] of onMap) {
+    if (d.lat === null) continue;
     const radius = Math.max(6, Math.min(35, 6 + (d.deals / maxDeals) * 29));
-    L.circleMarker([d.lat, d.lng], {
-      radius, fillColor: '#6366f1', color: '#4f46e5', weight: 1.5,
-      fillOpacity: 0.6
-    }).addTo(_cityMap).bindPopup(
-      `<b>${city}</b><br>${d.deals} сделок<br>${fmt(d.budget)} ₸`
+    const isRegion = d.kind === 'region', isCountry = d.kind === 'country';
+    L.circleMarker([d.lat, d.lng], isRegion
+      ? { radius, fillColor: '#0891b2', color: '#0e7490', weight: 1.5, fillOpacity: 0.25, dashArray: '4 3' }
+      : isCountry
+      ? { radius, fillColor: '#f59e0b', color: '#b45309', weight: 1.5, fillOpacity: 0.65 }
+      : { radius, fillColor: '#6366f1', color: '#4f46e5', weight: 1.5, fillOpacity: 0.6 }
+    ).addTo(_cityMap).bindPopup(
+      `<b>${place}</b>${isRegion ? '<br><i>город в адресе не указан</i>' : isCountry ? '<br><i>другая страна</i>' : ''}<br>${d.deals} сделок<br>${fmt(d.budget)} ₸`
     );
   }
 
-  // City list
-  listEl.innerHTML = entries.length === 0
-    ? '<span style="color:var(--muted)">Нет данных по городам</span>'
-    : entries.map(([city, d], i) => {
-        const pct = totalDeals ? Math.round(d.deals / totalDeals * 100) : 0;
-        return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)">
-          <span style="width:18px;text-align:right;font-weight:600;color:var(--muted);font-size:10px">${i+1}</span>
+  // Список: города, «только область», другие страны (каждая отдельно), прочее.
+  const rowHTML = ([place, d], i, color) => {
+    const pct = totalDeals ? Math.round(d.deals / totalDeals * 100) : 0;
+    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)">
+          <span style="width:18px;text-align:right;font-weight:600;color:var(--muted);font-size:10px">${i === null ? '' : i + 1}</span>
           <div style="flex:1;min-width:0">
-            <div style="font-weight:600;font-size:12px">${city}</div>
+            <div style="font-weight:600;font-size:12px">${place}</div>
             <div style="font-size:10px;color:var(--muted)">${fmt(d.budget)} ₸</div>
           </div>
           <div style="text-align:right">
-            <div style="font-weight:700;font-size:13px;color:#6366f1">${d.deals}</div>
+            <div style="font-weight:700;font-size:13px;color:${color}">${d.deals}</div>
             <div style="font-size:9px;color:var(--muted)">${pct}%</div>
           </div>
         </div>`;
-      }).join('');
+  };
+  const groupHTML = (title, list, color, numbered) => !list.length ? ''
+    : `<div style="margin:10px 0 2px;font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)">${title} · ${fmt(sumDeals(list))}</div>`
+      + list.map((e, i) => rowHTML(e, numbered ? i : null, color)).join('');
+  listEl.innerHTML = all.length === 0
+    ? '<span style="color:var(--muted)">Нет данных по городам</span>'
+    : groupHTML('Города', cities, '#6366f1', true)
+      + groupHTML('Только область', regions, '#0891b2', false)
+      + groupHTML('Другие страны', countries, '#d97706', false)
+      + groupHTML('Прочее', others, 'var(--slate)', false);
 
   // Fix Leaflet rendering after visibility change
   setTimeout(() => _cityMap.invalidateSize(), 200);
