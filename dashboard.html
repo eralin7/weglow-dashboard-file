@@ -1577,12 +1577,20 @@ const _USERS = {
   'viewer':  { h: '916f9dfe92c737c1c1be891a9e47f82f3fd7772a66d27e012d7801699adae2b4', role: 'viewer' },
   'weglow':  { h: 'f12792f9746489582b0d4b627338856f9f0871853b757f0baa7096dd5d1bbf86', role: 'viewer' }
 };
+// Версия входа. Вход — это только отметка во вкладке (sessionStorage), сервер
+// о нём не знает, поэтому после смены пароля уже вошедшие вкладки остались бы
+// внутри и после F5. Поднимите версию (например, датой смены пароля) — и
+// вкладка со входом прежней версии при следующем открытии/обновлении
+// страницы попросит войти заново. Вкладку, которую не обновляют, это не
+// закрывает: в ней крутится старый код.
+const _AUTH_VER = '2026-11-17';
 async function _sha256(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
 function _loginOk(role){
   sessionStorage.setItem('wg_auth','1');
+  sessionStorage.setItem('wg_auth_ver', _AUTH_VER);
   sessionStorage.setItem('wg_role', role);
   document.getElementById('login-overlay').style.display='none';
   document.getElementById('login-error').textContent='';
@@ -1640,6 +1648,7 @@ async function doLogin(){
 }
 function doLogout(){
   sessionStorage.removeItem('wg_auth');
+  sessionStorage.removeItem('wg_auth_ver');
   sessionStorage.removeItem('wg_role');
   sessionStorage.removeItem('wg_data');
   // Токен Era CRM открывает аналитику и список клиентов — при выходе забываем
@@ -1661,6 +1670,11 @@ const _authGuard = new MutationObserver(() => {
   }
 });
 (function(){
+  // Вход прежней версии (до смены пароля) забываем так же, как при выходе.
+  // Скрипт идёт до основного, поэтому данные и кэш (wg_data) ещё не прочитаны.
+  if (sessionStorage.getItem('wg_auth') === '1' && sessionStorage.getItem('wg_auth_ver') !== _AUTH_VER) {
+    ['wg_auth', 'wg_auth_ver', 'wg_role', 'wg_data', 'era_cl_token'].forEach(k => sessionStorage.removeItem(k));
+  }
   if(sessionStorage.getItem('wg_auth')==='1'){
     document.getElementById('login-overlay').style.display='none';
   }
