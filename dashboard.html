@@ -1572,10 +1572,10 @@ table.dt tr.tr-grand td { background: var(--line2); }
 </div>
 <script>
 // ═══ AUTH SYSTEM (SHA-256 hashed credentials) ═══════════════════════
+// Общие входы «viewer» и «weglow» убраны 18.11.2026: их пароли разошлись по
+// менеджерам. Просмотр — через аккаунт Era CRM (роль accountant → viewer).
 const _USERS = {
   'admin':   { h: '1c92535da9092ee7c1abe6d6a3adea6eb82b21706e670017f862071a4dab252a', role: 'admin' },
-  'viewer':  { h: '916f9dfe92c737c1c1be891a9e47f82f3fd7772a66d27e012d7801699adae2b4', role: 'viewer' },
-  'weglow':  { h: 'f12792f9746489582b0d4b627338856f9f0871853b757f0baa7096dd5d1bbf86', role: 'viewer' }
 };
 // Версия входа. Вход — это только отметка во вкладке (sessionStorage), сервер
 // о нём не знает, поэтому после смены пароля уже вошедшие вкладки остались бы
@@ -1583,7 +1583,7 @@ const _USERS = {
 // вкладка со входом прежней версии при следующем открытии/обновлении
 // страницы попросит войти заново. Вкладку, которую не обновляют, это не
 // закрывает: в ней крутится старый код.
-const _AUTH_VER = '2026-11-17';
+const _AUTH_VER = '2026-11-18';
 async function _sha256(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
