@@ -1156,7 +1156,7 @@ table.dt tr:hover:not(.tr-sum) { background:var(--bg); }
 
 /* ── MONTHLY SUMMARY CHART ────────────── */
 .summary-filters { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
-.summary-filter-group { display:flex; align-items:center; gap:4px; }
+.summary-filter-group { display:flex; align-items:center; flex-wrap:wrap; gap:4px; row-gap:6px; }
 .sf-label { font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-right:4px; }
 
 /* ── LOGOUT BTN ───────────────────────── */
@@ -1571,7 +1571,16 @@ table.dt.dt-stick th:first-child { box-shadow: inset -1px 0 0 var(--line2); }
 @media (max-width: 480px) { :root { --stick-pad: 10px; } }
 #plan-table table.dt.dt-stick th:first-child,
 #plan-table table.dt.dt-stick td:first-child { left: calc(-1 * var(--stick-pad)); }
-table.dt.dt-stick tr:hover:not(.tr-sum) td:first-child { background: linear-gradient(var(--bg), var(--bg)), var(--menu-bg, var(--white)); }
+/* Пока советник стоит под таблицей (≤ 1100px, см. .ai-side), карточка таблицы
+   РОПов не должна быть шире экрана: иначе вбок прокручивается вся страница и
+   закреплённая колонка уезжает вместе с карточкой. То же — карточка «Итоги за
+   месяц» с таблицей по отделам. */
+@media (max-width: 1100px) { .plan-card, .sum-card { min-width: 0 !important; } }
+/* строка-заглушка на всю ширину (нет продаж направления) — не «липкая» */
+table.dt.dt-stick td[colspan] { position: static; background: none; box-shadow: none; }
+/* у последней строки таблицы нижней линии нет — и у закреплённой ячейки тоже */
+table.dt.dt-stick tr:last-child td:first-child { box-shadow: inset -1px 0 0 var(--line2); }
+table.dt.dt-stick tr:hover:not(.tr-sum) > :first-child { background: linear-gradient(var(--bg), var(--bg)), var(--menu-bg, var(--white)); }
 table.dt.dt-stick tr.tr-sum td:first-child { background: linear-gradient(rgba(99,102,241,.03), rgba(99,102,241,.03)), var(--menu-bg, var(--white)); }
 html[data-theme] table.dt.dt-stick tr.tr-sum td:first-child { background: linear-gradient(var(--acc-l), var(--acc-l)), var(--menu-bg, var(--white)); }
 table.dt.dt-stick tr.tr-grand td:first-child { background: linear-gradient(var(--line2), var(--line2)), var(--menu-bg, var(--white)); }
@@ -1579,8 +1588,8 @@ html[data-theme] table.dt.dt-stick tr.tr-grand td:first-child { background: line
 /* «Итоги за месяц» → «На 1 продажника»: компания и отделы по месяцам */
 .sum-tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 16px 14px; }
 table.dt.sum-tbl { min-width: 540px; }
-table.dt.sum-tbl th, table.dt.sum-tbl td { padding: 8px 10px; white-space: nowrap; }
-table.dt.sum-tbl td:first-child { white-space: normal; min-width: 104px; max-width: 150px; }
+.sum-tbl-wrap table.dt.sum-tbl th, .sum-tbl-wrap table.dt.sum-tbl td { padding: 8px 10px; white-space: nowrap; }
+.sum-tbl-wrap table.dt.sum-tbl td:first-child { white-space: normal; min-width: 104px; max-width: 150px; }
 table.dt.sum-tbl .st-sub { font-size: 10px; color: var(--muted); font-weight: 500; }
 table.dt.sum-tbl tr.st-first td { border-top: 1.5px solid var(--line); }
 table.dt.sum-tbl td.st-best { color: #16a34a; }
@@ -1982,7 +1991,7 @@ const _authGuard = new MutationObserver(() => {
 
       <div class="sec-label mb20">Выполнение плана по группам</div>
       <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px">
-        <div class="card" style="flex:1;min-width:700px;overflow-x:auto;-webkit-overflow-scrolling:touch">
+        <div class="card plan-card" style="flex:1;min-width:700px;overflow-x:auto;-webkit-overflow-scrolling:touch">
           <div class="plan-col-bar">
             <span class="plan-col-lbl">Колонки:</span>
             <button class="plan-col-btn" data-k="plan" onclick="togglePlanCols('plan')">План подробно</button>
@@ -2051,7 +2060,7 @@ const _authGuard = new MutationObserver(() => {
       <!-- Monthly Summary chart -->
       <div class="sec-label mb20">Итоги за месяц</div>
       <div class="chart-row" style="gap:16px;margin-bottom:20px">
-        <div class="card" style="flex:1;min-width:500px">
+        <div class="card sum-card" style="flex:1;min-width:500px">
           <div class="card-hdr" style="flex-wrap:wrap;gap:8px">
             <span class="card-title">Итоги за месяц</span>
           </div>
@@ -2723,7 +2732,12 @@ function _isRopAccount(name) { return /(^|\s)роп(\s|$)/i.test(String(name || 
 // После смены РОПа отдела человек живёт в данных под двумя именами («Имя» и
 // «Имя (Аяулым)», см. ROP_DATE_SPLITS / MGR_ROP_HISTORY) — по компании считаем
 // его один раз.
-function _sellerBaseName(name) { return String(name).replace(/\s*\([^()]*\)$/, ''); }
+function _sellerBaseName(name) {
+  const m = /^(.*\S)\s*\(([^()]*)\)$/.exec(String(name));
+  if (!m) return String(name);
+  const tags = new Set(ROP_DATE_SPLITS.map(r => r.oldTag).concat(MGR_ROP_HISTORY.map(r => r.prevRop.replace(/^РОП\s+/, ''))));
+  return tags.has(m[2]) ? m[1] : String(name);
+}
 function _ruPlural(n, one, few, many) {
   const a = Math.abs(n) % 100, b = a % 10;
   return (a > 10 && a < 20) ? many : b === 1 ? one : (b >= 2 && b <= 4) ? few : many;
@@ -2734,6 +2748,10 @@ const _sellerMemo = new Map();    // период → расчёт; сбрасы
 function _sellerStats(from, to) {
   const key = from + '|' + to;
   if (_sellerMemo.has(key)) return _sellerMemo.get(key);
+  // До 01.05.2026 (старая AmoCRM) часть отделов расформирована и в ROP_GROUPS
+  // не входит: средняя вышла бы по части компании, а человек под старым и
+  // новым именем посчитался бы дважды. Для таких периодов — «—».
+  if (parseDate(from) < new Date(2026, 4, 1)) { const none = { byRop: {} }; _sellerMemo.set(key, none); return none; }
   const rops = _mainRop4();
   // каждую воронку сводим за период один раз, потом раскладываем по отделам
   const agg = {};
@@ -2749,8 +2767,9 @@ function _sellerStats(from, to) {
     const st = { n: 0, cash: 0, people: new Set() };
     for (const [name, v] of Object.entries(cash)) {
       if (_isRopAccount(name) || v < SELLER_MIN_CASH) continue;
-      st.n++; st.cash += v; st.people.add(_sellerBaseName(name));
+      st.cash += v; st.people.add(_sellerBaseName(name));
     }
+    st.n = st.people.size;
     byRop[rop] = st;
   }
   const res = { byRop };
