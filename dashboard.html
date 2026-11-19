@@ -1549,6 +1549,43 @@ html .kpi-col .kpi-term { display: block; font-size: 10px; font-weight: 400; col
 .cb-leg i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
 /* Таблица планов: ОБЩЕЕ ИТОГО (РОПы + партнёры + бот) */
 table.dt tr.tr-grand td { background: var(--line2); }
+/* Первая колонка остаётся на месте при прокрутке таблицы вправо — названия
+   отделов всегда в поле зрения. У «липких» ячеек при border-collapse линии
+   строк не рисуются — заменяем их внутренней тенью. Фон обязан быть
+   непрозрачным, иначе под названием просвечивают уезжающие колонки: в тёмных
+   темах --white, --line2 и --acc-l полупрозрачные, поэтому кладём их поверх
+   сплошного --menu-bg (theme.css). */
+table.dt.dt-stick th:first-child,
+table.dt.dt-stick td:first-child {
+  position: sticky; left: 0; z-index: 2;
+  background: var(--menu-bg, var(--white));
+  box-shadow: inset -1px 0 0 var(--line2), inset 0 -1px 0 var(--line2);
+}
+table.dt.dt-stick th:first-child { box-shadow: inset -1px 0 0 var(--line2); }
+/* На узких экранах у карточки есть поля (.card { padding } в media-запросах),
+   и колонка, прилипшая к краю содержимого, оставляла бы слева щель, в которой
+   видно уезжающие цифры. Сдвигаем точку прилипания на ширину поля — колонка
+   встаёт вплотную к краю карточки. */
+:root { --stick-pad: 0px; }
+@media (max-width: 768px) { :root { --stick-pad: 12px; } }
+@media (max-width: 480px) { :root { --stick-pad: 10px; } }
+#plan-table table.dt.dt-stick th:first-child,
+#plan-table table.dt.dt-stick td:first-child { left: calc(-1 * var(--stick-pad)); }
+table.dt.dt-stick tr:hover:not(.tr-sum) td:first-child { background: linear-gradient(var(--bg), var(--bg)), var(--menu-bg, var(--white)); }
+table.dt.dt-stick tr.tr-sum td:first-child { background: linear-gradient(rgba(99,102,241,.03), rgba(99,102,241,.03)), var(--menu-bg, var(--white)); }
+html[data-theme] table.dt.dt-stick tr.tr-sum td:first-child { background: linear-gradient(var(--acc-l), var(--acc-l)), var(--menu-bg, var(--white)); }
+table.dt.dt-stick tr.tr-grand td:first-child { background: linear-gradient(var(--line2), var(--line2)), var(--menu-bg, var(--white)); }
+html[data-theme] table.dt.dt-stick tr.tr-grand td:first-child { background: linear-gradient(var(--line2), var(--line2)), linear-gradient(var(--acc-l), var(--acc-l)), var(--menu-bg, var(--white)); }
+/* «Итоги за месяц» → «На 1 продажника»: компания и отделы по месяцам */
+.sum-tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 16px 14px; }
+table.dt.sum-tbl { min-width: 540px; }
+table.dt.sum-tbl th, table.dt.sum-tbl td { padding: 8px 10px; white-space: nowrap; }
+table.dt.sum-tbl td:first-child { white-space: normal; min-width: 104px; max-width: 150px; }
+table.dt.sum-tbl .st-sub { font-size: 10px; color: var(--muted); font-weight: 500; }
+table.dt.sum-tbl tr.st-first td { border-top: 1.5px solid var(--line); }
+table.dt.sum-tbl td.st-best { color: #16a34a; }
+table.dt.sum-tbl tr.st-sel td { background: var(--acc-l); }
+table.dt.dt-stick.sum-tbl tr.st-sel td:first-child { background: linear-gradient(var(--acc-l), var(--acc-l)), var(--menu-bg, var(--white)); }
 </style>
 <link rel="stylesheet" href="theme.css">
 </head>
@@ -2031,6 +2068,7 @@ const _authGuard = new MutationObserver(() => {
                 <button class="cf-btn" onclick="setSummaryMetric('drr',this)">ДРР</button>
                 <button class="cf-btn" onclick="setSummaryMetric('cpl',this)">Ст. за 1 лид</button>
                 <button class="cf-btn" onclick="setSummaryMetric('avgCheck',this)">Средний чек</button>
+                <button class="cf-btn" onclick="setSummaryMetric('perSeller',this)">На 1 продажника</button>
               </div>
               <div class="summary-filter-group">
                 <span class="sf-label">Продукт:</span>
@@ -2045,6 +2083,7 @@ const _authGuard = new MutationObserver(() => {
               </div>
             </div>
           </div>
+          <div id="summary-table" class="sum-tbl-wrap" hidden></div>
         </div>
         <div class="ai-side" style="border-left-color:#e11d48">
           <div class="ai-side-hdr"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg> Итоги</div>
@@ -2672,6 +2711,63 @@ function _mainRopNames() { return activeMainRop==='main4' ? _mainRop4() : [activ
 function _mainRopMatch(mgrName) { return _mainRopNames().some(r => ropMatches(mgrName, r)); }
 // План активного фильтра за месяц mk (сумма планов входящих РОПов).
 function _mainRopPlan(mk) { return _mainRopNames().reduce((s,r)=>s+(getRopPlan(r,mk)||0),0); }
+// ── Производительность: продажи на одного продажника ──────────────────
+// Продажник периода — менеджер продающего отдела (не партнёры, не бот, не
+// забота), у которого за период есть настоящие продажи: касса от
+// SELLER_MIN_CASH (отсекает тестовые сделки по 1 ₸). Учётки руководителей
+// (слово «РОП» в имени: «РОП Айша», «Аслиддин РОП») продажниками не считаем и
+// их кассу в среднюю не берём. Средняя = касса продажников ÷ их число. Так
+// посчитана таблица владельца от 19.11.2026 (май–октябрь сходятся до тенге).
+const SELLER_MIN_CASH = 1000;
+function _isRopAccount(name) { return /(^|\s)роп(\s|$)/i.test(String(name || '')); }
+// После смены РОПа отдела человек живёт в данных под двумя именами («Имя» и
+// «Имя (Аяулым)», см. ROP_DATE_SPLITS / MGR_ROP_HISTORY) — по компании считаем
+// его один раз.
+function _sellerBaseName(name) { return String(name).replace(/\s*\([^()]*\)$/, ''); }
+function _ruPlural(n, one, few, many) {
+  const a = Math.abs(n) % 100, b = a % 10;
+  return (a > 10 && a < 20) ? many : b === 1 ? one : (b >= 2 && b <= 4) ? few : many;
+}
+const _sellerMemo = new Map();    // период → расчёт; сбрасывается в render()
+// Продажники продающих отделов за период:
+// { byRop: { 'РОП …': { n, cash, people: Set<имя без пометки отдела> } } }.
+function _sellerStats(from, to) {
+  const key = from + '|' + to;
+  if (_sellerMemo.has(key)) return _sellerMemo.get(key);
+  const rops = _mainRop4();
+  // каждую воронку сводим за период один раз, потом раскладываем по отделам
+  const agg = {};
+  for (const rop of rops) for (const crm of (ROP_CRM_MAP[rop] || [])) {
+    if (!agg[crm]) agg[crm] = aggregateManagersByPeriod(crm, from, to).filter(m => m.budget);
+  }
+  const byRop = {};
+  for (const rop of rops) {
+    const cash = {};
+    for (const crm of (ROP_CRM_MAP[rop] || [])) {
+      for (const m of agg[crm]) if (ropMatches(m.name, rop)) cash[m.name] = (cash[m.name] || 0) + m.budget;
+    }
+    const st = { n: 0, cash: 0, people: new Set() };
+    for (const [name, v] of Object.entries(cash)) {
+      if (_isRopAccount(name) || v < SELLER_MIN_CASH) continue;
+      st.n++; st.cash += v; st.people.add(_sellerBaseName(name));
+    }
+    byRop[rop] = st;
+  }
+  const res = { byRop };
+  _sellerMemo.set(key, res);
+  return res;
+}
+// Сводно по набору отделов (null — все продающие): { n, cash, avg }.
+function _sellersOf(rops, from, to) {
+  const st = _sellerStats(from, to);
+  const people = new Set(); let cash = 0;
+  for (const rop of (rops || Object.keys(st.byRop))) {
+    const x = st.byRop[rop];
+    if (!x) continue;
+    cash += x.cash; x.people.forEach(p => people.add(p));
+  }
+  return { n: people.size, cash, avg: people.size ? Math.round(cash / people.size) : 0 };
+}
 // Рекламный расход активного фильтра за период (сумма по входящим РОПам).
 function _mainRopAd(from,to) { return _mainRopNames().reduce((s,r)=>s+_ropAdSpend(r,from,to),0); }
 // Сумма рекламного расхода по списку каналов (ключей AD_SPEND) за период.
@@ -3731,6 +3827,7 @@ function _kpiColHTML(label, badge, kd, borderColor, periodType, opts) {
     ${row(cu ? 'Конверсия перв.' : 'Конверсия', val(convMain === null ? '—' : convMain + '%', convMain === null ? 'var(--muted)' : (convMain >= 12 ? '#16a34a' : '#c0392b')), '', sec('conv'))}
     ${convDetail}
     ${row('Средний чек', val(fmt(kd.avgCheck) + ' ₸', chkClr))}
+    ${opts && opts.sellers && opts.sellers.n ? row('На 1 продажника', val(fmtM(opts.sellers.avg)), `${fmt(opts.sellers.n)} ${_ruPlural(opts.sellers.n, 'продажник', 'продажника', 'продажников')}`) : ''}
     ${row('Ст-ть за лид', val(cpl ? fmt(cpl) + ' ₸' : '—', cpl ? cplClr : 'var(--muted)'))}
     ${more}
   </div>`;
@@ -3974,8 +4071,13 @@ function renderKPI(d){
     : (activePeriod.label || '').replace(/^Каникулы\s*·\s*/, '').replace(/^Марафон \d+\s*·\s*/, '');
 
   _lastKpi = { month: monthData, yesterday: yesterdayData, today: todayData, periodLabel: `${_kpiMainTitle} · ${_kpiMainBadge}`, yd: _yd, td: _td };
+  // Продажи на одного продажника за период — только в главной карточке и
+  // только для всей компании (у товара своих продажников нет).
+  const _kpiP = _getKpiPeriod('month');
+  const _kpiSellers = activeProd === 'all'
+    ? _sellersOf(activeMainRop === 'all' ? null : _mainRopNames(), _kpiP.from, _kpiP.to) : null;
   document.getElementById('kpi-3col').innerHTML =
-    _kpiColHTML(_kpiMainTitle, _kpiMainBadge, monthData, clr, 'month') +
+    _kpiColHTML(_kpiMainTitle, _kpiMainBadge, monthData, clr, 'month', { sellers: _kpiSellers }) +
     _kpiColHTML('Вчера', _yd, yesterdayData, 'var(--gold)', 'day', { day: _yd }) +
     _kpiColHTML('Сегодня', _td, todayData, 'var(--green)', 'day', { day: _td });
   _kpiApplyOpen();
@@ -4058,7 +4160,7 @@ const PLAN_COL_GROUPS = {
          'Когорта', 'Конв. повт.', 'Клиенты по рекламе'],
   prod: PRODUCT_GROUPS.map(g => g.label + ' ₸'),
   base: ['База', 'LTV', 'Вернулись 60 дн.', 'Ждут звонка'],
-  ads:  ['Ст.лида рекл.', 'Ст.лида прод.', 'ДРР', 'Прод./мен.'],
+  ads:  ['Ст.лида рекл.', 'Ст.лида прод.', 'ДРР'],
 };
 // Продуктовый режим (Коллаген / KIDS): только то, что считается по товарам.
 const _PLAN_PRODUCT_MODE_COLS = new Set(['Группа', 'Факт ₸', 'Сделки', 'Ср.чек']);
@@ -4360,17 +4462,15 @@ function renderPlanTable(stats){
       const rpl = ropLeads>0&&ropFact>0?Math.round(ropFact/ropLeads):0;
       const ropDrr = ropFact>0&&adSpend>0?(adSpend/ropFact*100).toFixed(1):'0.0';
 
-      // Считаем ЛЮДЕЙ, а не записи: один менеджер лежит в MANAGERS отдельной
-      // записью в каждой воронке, где у него есть сделки, — без dedupe по
-      // имени «Прод./мен.» делилась на завышенное число и занижалась.
-      const _ropMgrNames = new Set();
-      crms.forEach(crm=>{ (MANAGERS[crm]||[]).filter(m=>ropMatches(m.name,ropName) && !m.name.toLowerCase().startsWith('роп ')).forEach(m=>_ropMgrNames.add(m.name)); });
-      const ropMgrCount = _ropMgrNames.size;
-      const salesPerMgr = ropMgrCount>0?Math.round(ropFact/ropMgrCount):0;
+      // Продажи на одного продажника отдела за период (_sellerStats: люди с
+      // настоящими продажами, без учёток руководителей). У партнёров, бота,
+      // заботы и «Без отдела» продажников нет; в продуктовом режиме не считаем.
+      const sellers = (cashOnly || noDept || MGR_CAT_ROPS[ropName] || _prodMode) ? null
+        : (_sellerStats(_planFrom, _planTo).byRop[ropName] || null);
 
       // Первичные / повторные отдела (null — нет данных за период или продуктовый режим).
       const ropCust = _prodMode ? null : _custSplitFor(_planDates, 'all', [ropName]);
-      _ropRows.push({ ropName, ropCfg, ropFact, ropLeads, ropDeals, ropUnits, dealsKnown, planPeriod, fullMonthPlan, ropReturn, planWithReturn, execPct, remain, perDay, forecast, conv, adSpend, cplM, rpl, ropDrr, salesPerMgr, _fcFact, ropCust, ropProd, cashOnly,
+      _ropRows.push({ ropName, ropCfg, ropFact, ropLeads, ropDeals, ropUnits, dealsKnown, planPeriod, fullMonthPlan, ropReturn, planWithReturn, execPct, remain, perDay, forecast, conv, adSpend, cplM, rpl, ropDrr, sellers, _fcFact, ropCust, ropProd, cashOnly,
                       care, noDept, tip, todayFact, factBefore, fcPartial });
     }
 
@@ -4411,7 +4511,7 @@ function renderPlanTable(stats){
     const _unitsSub = u => _prodMode ? `<div style="font-size:10px;color:var(--muted);font-weight:500">${fmt(u)} шт</div>` : '';
     // Порядок ячеек = порядок заголовков таблицы (см. шапку ниже).
     const _rowHTML = r => {
-      const {ropName,ropCfg,ropFact,ropLeads,ropDeals,ropUnits,dealsKnown,planPeriod,fullMonthPlan,ropReturn,planWithReturn,execPct,remain,perDay,forecast,conv,cplM,rpl,ropDrr,salesPerMgr,ropCust,ropProd,cashOnly,care,noDept,tip,fcPartial} = r;
+      const {ropName,ropCfg,ropFact,ropLeads,ropDeals,ropUnits,dealsKnown,planPeriod,fullMonthPlan,ropReturn,planWithReturn,execPct,remain,perDay,forecast,conv,cplM,rpl,ropDrr,sellers,ropCust,ropProd,cashOnly,care,noDept,tip,fcPartial} = r;
       if (ropCust) _planHasCust = true;
       const rowClr  = care ? MGR_CATS.care.color : ropCfg.color;
       const nameTd  = `<td${tip ? ` title="${_esc(tip)}"` : ''}><div class="prod-name"><div class="prod-dot" style="background:${rowClr}"></div>${care ? MGR_CATS.care.head : ropName}</div></td>`;
@@ -4420,6 +4520,9 @@ function renderPlanTable(stats){
       const moneyTd = _custMoneyTd(ropCust ? Math.round(ropCust.newBudget) : null, '#16a34a')
                     + _custMoneyTd(ropCust ? Math.round(ropCust.repeatBudget) : null, '#7c3aed') + _retTds(ropCust);
       const checkTd = `<td style="font-weight:700;white-space:nowrap">${ropDeals>0?fmt(Math.round(ropFact/ropDeals))+' ₸':'—'}</td>`;
+      const perSellerTd = sellers && sellers.n
+        ? `<td style="color:#6366f1;font-weight:700;white-space:nowrap">${fmt(Math.round(sellers.cash / sellers.n))} ₸<div style="font-size:10px;color:var(--muted);font-weight:500">${fmt(sellers.n)} чел</div></td>`
+        : _d;
       // Партнёры: только касса и средний чек.
       if (cashOnly) return `<tr>${nameTd}${_d.repeat(4)}${factTd}${moneyTd}${_d.repeat(13)}${_prodTds(ropProd)}${_baseTds([ropName], false, care)}${checkTd}${_d.repeat(4)}</tr>`;
 
@@ -4450,10 +4553,10 @@ function renderPlanTable(stats){
         ${_prodTds(ropProd)}
         ${_baseTds([ropName])}
         ${checkTd}
+        ${perSellerTd}
         <td style="color:${cplM?cplM<=3000?'#16a34a':cplM<=6000?'#ca8a04':'#c0392b':'var(--muted)'};font-weight:700">${cplM?fmt(cplM)+' ₸':'—'}</td>
         <td style="color:#6366f1;font-weight:700">${rpl?fmt(rpl)+' ₸':'—'}</td>
         <td style="color:${parseFloat(ropDrr)<=15?'#16a34a':parseFloat(ropDrr)<=25?'#ca8a04':'#dc2626'};font-weight:700">${parseFloat(ropDrr)>0?ropDrr+'%':'—'}</td>
-        <td style="color:#6366f1;font-weight:600">${salesPerMgr?fmt(salesPerMgr)+' ₸':'—'}</td>
       </tr>`;
     };
 
@@ -4464,6 +4567,7 @@ function renderPlanTable(stats){
       const t = { plan:0, fullPlan:0, fact:0, units:0, leads:0, deals:0, dealsL:0, ad:0, fcFact:0, ret:0, fb:0, ft:0, fcPartial:false,
                   hasCust:false, passiveOk:false, pl:0, kl:0, nd:0, rd:0, ndL:0, rdL:0, pb:0, nb:0, rb:0, rab:0, ra:0,
                   names: set.map(r => r.ropName),
+                  rops: set.filter(r => r.sellers).map(r => r.ropName),     // отделы с продажниками
                   prod: { covered: set.length > 0, groups: {} } };
       for (const g of PRODUCT_GROUPS) t.prod.groups[g.key] = { cash: 0, units: 0 };
       for (const r of set) {
@@ -4501,6 +4605,8 @@ function renderPlanTable(stats){
       const fc = t.plan>0 ? (_spr ? _sprForecast(t.fb, t.ft) : (dailyRate>0?Math.round(dailyRate*_curTotalDays):0)) : 0;
       const fcPct = t.plan>0&&fc>0?Math.round(fc/t.plan*100):0;
       const fcTip = !fc ? '' : t.fcPartial ? 'План задан не на все спринты марафона' : `${fcPct}% плана`;
+      // На одного продажника по всем отделам строки (человек считается один раз).
+      const sel = t.rops.length ? _sellersOf(t.rops, _planFrom, _planTo) : null;
       const remainCell = t.plan>0
         ? remain===0?`<td style="color:#16a34a;font-weight:700"><strong>✓</strong></td><td>—</td>`
           :`<td style="color:#ca8a04;font-weight:700"><strong>${fmt(remain)}</strong></td><td style="color:#6366f1;font-weight:700"><strong>${perDay?fmt(perDay):'—'}</strong></td>`
@@ -4526,10 +4632,10 @@ function renderPlanTable(stats){
       ${_prodTds(t.prod, true)}
       ${_baseTds(t.names, true)}
       <td style="font-weight:700;white-space:nowrap"><strong>${t.deals>0?fmt(Math.round(t.fact/t.deals))+' ₸':'—'}</strong></td>
+      ${sel && sel.n ? `<td style="color:#6366f1;font-weight:700;white-space:nowrap"><strong>${fmt(sel.avg)} ₸</strong><div style="font-size:10px;color:var(--muted);font-weight:500">${fmt(sel.n)} чел</div></td>` : _d}
       <td style="color:${cpl?cpl<=3000?'#16a34a':cpl<=6000?'#ca8a04':'#c0392b':'var(--muted)'};font-weight:700"><strong>${cpl?fmt(cpl)+' ₸':'—'}</strong></td>
       <td style="color:#6366f1;font-weight:700"><strong>${rpl?fmt(rpl)+' ₸':'—'}</strong></td>
       <td style="color:${drr<=15?'#16a34a':drr<=25?'#ca8a04':'#dc2626'};font-weight:700"><strong>${drr>0?drr+'%':'—'}</strong></td>
-      <td style="color:#6366f1;font-weight:600"><strong>—</strong></td>
     </tr>`;
     };
 
@@ -4548,7 +4654,7 @@ function renderPlanTable(stats){
 
   const isCur = (stats.parts ? Object.values(stats.parts)[0] : stats).isCurrentMonth || _planLive;
   document.getElementById('plan-table').innerHTML=`
-    <table class="dt"><thead><tr>
+    <table class="dt dt-stick"><thead><tr>
       <th>Группа</th>
       <th>План ₸</th>
       <th>План период ₸</th>
@@ -4563,7 +4669,7 @@ function renderPlanTable(stats){
       <th style="color:${isCur?'#6366f1':'var(--muted)'}" title="Сколько выйдет к концу периода при текущем темпе. Месяц — темп с 1-го числа; спринт и марафон — темп с начала периода, пока он идёт">Прогноз</th>
       <th style="color:${isCur?'#ca8a04':'var(--muted)'}">Остаток</th>
       <th style="color:${isCur?'#6366f1':'var(--muted)'}">Нужно/день</th>
-      <th>Лиды</th><th style="color:#16a34a" title="Ещё не покупали: новые и писавшие раньше без покупки, в т.ч. вернувшиеся по рекламе">Перв. лиды</th><th title="${activeProd === 'all' ? 'Все сделки отдела' : 'Сделки с товаром направления'}">Сделки</th><th style="color:#16a34a" title="Первая покупка клиента">Перв. продажи</th><th style="color:#7c3aed" title="Клиент уже покупал раньше">Повт. продажи</th><th title="Первичные продажи ÷ первичные лиды">Конв. перв.</th><th title="Из первичных лидов периода (ещё не покупавших) уже купили — для свежих периодов ещё растёт">Когорта</th>${_planHasCust ? '<th title="Повторные продажи ÷ повторные лиды (уже клиенты)">Конв. повт.</th>' : '<th title="Все сделки ÷ все лиды">Конверсия</th>'}<th style="color:#ca8a04" title="Клиенты отдела, которые уже покупали и вернулись в старый чат через рекламу, а не через менеджера (данные с 28.10.2026). Доля — от повторных лидов отдела">Клиенты по рекламе</th>${PRODUCT_GROUPS.map(g => `<th title="${g.title}: касса и штуки, по составу заказов">${g.label} ₸</th>`).join('')}<th title="Клиенты отдела с доставленным заказом (этапы «Успешно реализовано» и «Курьерская доставка») и число таких сделок. Клиент относится к отделу менеджера последней покупки. На сегодня">База</th><th title="Сколько денег в среднем принёс один клиент отдела за всё время, и покупок на клиента. На сегодня">LTV</th><th title="Из покупок, которым в этом периоде исполнилось 60 дней, — у скольких клиент купил снова. Цвет — относительно компании">Вернулись 60 дн.</th><th title="Клиенты, у которых курс заканчивается или недавно закончился, а звонка в этом цикле нет. Охват — скольким из таких уже позвонили. Клиенты, которых ведёт отдел заботы, считаются ему">Ждут звонка</th><th>Ср.чек</th><th style="color:#6366f1">Ст.лида рекл.</th><th style="color:#6366f1">Ст.лида прод.</th><th style="color:#ca8a04">ДРР</th><th style="color:#6366f1">Прод./мен.</th>
+      <th>Лиды</th><th style="color:#16a34a" title="Ещё не покупали: новые и писавшие раньше без покупки, в т.ч. вернувшиеся по рекламе">Перв. лиды</th><th title="${activeProd === 'all' ? 'Все сделки отдела' : 'Сделки с товаром направления'}">Сделки</th><th style="color:#16a34a" title="Первая покупка клиента">Перв. продажи</th><th style="color:#7c3aed" title="Клиент уже покупал раньше">Повт. продажи</th><th title="Первичные продажи ÷ первичные лиды">Конв. перв.</th><th title="Из первичных лидов периода (ещё не покупавших) уже купили — для свежих периодов ещё растёт">Когорта</th>${_planHasCust ? '<th title="Повторные продажи ÷ повторные лиды (уже клиенты)">Конв. повт.</th>' : '<th title="Все сделки ÷ все лиды">Конверсия</th>'}<th style="color:#ca8a04" title="Клиенты отдела, которые уже покупали и вернулись в старый чат через рекламу, а не через менеджера (данные с 28.10.2026). Доля — от повторных лидов отдела">Клиенты по рекламе</th>${PRODUCT_GROUPS.map(g => `<th title="${g.title}: касса и штуки, по составу заказов">${g.label} ₸</th>`).join('')}<th title="Клиенты отдела с доставленным заказом (этапы «Успешно реализовано» и «Курьерская доставка») и число таких сделок. Клиент относится к отделу менеджера последней покупки. На сегодня">База</th><th title="Сколько денег в среднем принёс один клиент отдела за всё время, и покупок на клиента. На сегодня">LTV</th><th title="Из покупок, которым в этом периоде исполнилось 60 дней, — у скольких клиент купил снова. Цвет — относительно компании">Вернулись 60 дн.</th><th title="Клиенты, у которых курс заканчивается или недавно закончился, а звонка в этом цикле нет. Охват — скольким из таких уже позвонили. Клиенты, которых ведёт отдел заботы, считаются ему">Ждут звонка</th><th>Ср.чек</th><th style="color:#6366f1" title="Касса продажников отдела ÷ их число. Продажник — менеджер отдела с продажами за период; учётки руководителей и тестовые сделки по 1 ₸ не считаются">На 1 продажника</th><th style="color:#6366f1">Ст.лида рекл.</th><th style="color:#6366f1">Ст.лида прод.</th><th style="color:#ca8a04">ДРР</th>
     </tr></thead><tbody>${rows}</tbody></table>`;
   const _noteEl = document.getElementById('plan-base-note');
   if (_noteEl) { _noteEl.innerHTML = _cbNote; _noteEl.hidden = !_cbNote; }
@@ -4945,7 +5051,13 @@ function renderSummaryChart(){
   if(chartSummary) chartSummary.destroy();
   // Продукт (Коллаген / KIDS) считаем по товарам: лидов у товара нет, а расход
   // на рекламу по отделам для товара не делится — вместо пустого графика подпись.
-  const _sNote = summaryProd==='all' ? null
+  const _sellMetric = summaryMetric==='perSeller';
+  const _sMeta = [];        // «На 1 продажника»: расчёт по месяцам — для подсказки графика
+  const _sNote = _sellMetric
+    ? (summaryProd!=='all' ? ['Продажники считаются по всем продуктам', 'Выберите «Продукт: Все»']
+      : (summaryDept!=='all' && !_mainRop4().includes(summaryDept)) ? ['Считается для отделов продаж', 'У партнёров, бота и отдела заботы продажников нет']
+      : null)
+    : summaryProd==='all' ? null
     : (summaryMetric==='conv'||summaryMetric==='cpl') ? ['У товара нет лидов', 'Конверсию и стоимость лида смотрите по всем продуктам']
     : (summaryMetric==='drr' && summaryDept!=='all') ? ['Расход на рекламу для товара по отделам не делится', 'ДРР товара смотрите по всем отделам']
     : null;
@@ -4985,6 +5097,12 @@ function renderSummaryChart(){
     const mEnd=`${String(lastDay).padStart(2,'0')}.${mk}`;
     const dateList=getDatesInRange(mStart,mEnd);
 
+    // «На 1 продажника»: касса продажников ÷ их число (_sellerStats).
+    if(_sellMetric){
+      const st=_sNote?{n:0,cash:0,avg:0}:_sellersOf(summaryDept==='all'?null:[summaryDept], mStart, mEnd);
+      _sMeta.push(st);
+      return st.avg;
+    }
     // Продукт — касса товаров направления во всех воронках (_productCash, как
     // в шапке), средний чек — по сделкам с этим товаром, ДРР — расход канала
     // направления ÷ касса товара (только вся компания).
@@ -5036,17 +5154,46 @@ function renderSummaryChart(){
     return 0;
   });
 
-  const metricLabels={budget:'Продажи ₸',conv:'Конверсия %',drr:'ДРР %',cpl:'Стоимость за лид ₸',avgCheck:'Средний чек ₸'};
-  const metricColors={budget:'#6366f1',conv:'#16a34a',drr:'#ca8a04',cpl:'#e11d48',avgCheck:'#1a56db'};
+  const metricLabels={budget:'Продажи ₸',conv:'Конверсия %',drr:'ДРР %',cpl:'Стоимость за лид ₸',avgCheck:'Средний чек ₸',perSeller:'На 1 продажника ₸'};
+  const metricColors={budget:'#6366f1',conv:'#16a34a',drr:'#ca8a04',cpl:'#e11d48',avgCheck:'#1a56db',perSeller:'#0891b2'};
   const clr=metricColors[summaryMetric]||'#6366f1';
 
   chartSummary=new Chart(ctx.getContext('2d'),{type:'bar',data:{labels,datasets:[{
     label:metricLabels[summaryMetric],data,backgroundColor:clr+'cc',borderColor:clr,borderWidth:1,borderRadius:6
   }]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{
+    if(_sellMetric){ const st=_sMeta[c.dataIndex]; return st&&st.n ? ` ${fmt(c.raw)} ₸ · ${fmt(st.n)} чел · касса ${fmt(Math.round(st.cash))} ₸` : ' —'; }
     if(summaryMetric==='budget') return ` ${fmt(c.raw)} ₸`;
     if(summaryMetric==='conv'||summaryMetric==='drr') return ` ${c.raw}%`;
     return ` ${fmt(c.raw)} ₸`;
-  }}}},scales:{x:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10}}},y:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10},callback:v=>summaryMetric==='budget'?fmtK(v):v}}}}});
+  }}}},scales:{x:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10}}},y:{grid:{color:GRID},ticks:{color:TICK,font:{family:FONT,size:10},callback:v=>(summaryMetric==='budget'||_sellMetric)?fmtK(v):v}}}}});
+  _renderSummaryTable(months, labels);
+}
+// Таблица под графиком для метрики «На 1 продажника»: компания (касса
+// продажников, их число, средняя) и средняя по каждому отделу — по месяцам
+// графика. Для остальных метрик скрыта.
+function _renderSummaryTable(months, labels) {
+  const el = document.getElementById('summary-table');
+  if (!el) return;
+  if (summaryMetric !== 'perSeller' || summaryProd !== 'all') { el.hidden = true; el.innerHTML = ''; return; }
+  const now = new Date(), curMk = getMonthKey(now);
+  const ranges = months.map(mk => { const [mm, yy] = mk.split('.'); return [`01.${mk}`, `${String(_lastDay(+yy, +mm)).padStart(2, '0')}.${mk}`]; });
+  const comp = ranges.map(([f, t]) => _sellersOf(null, f, t));
+  const rops = _mainRop4()
+    .map(rop => ({ rop, cells: ranges.map(([f, t]) => _sellerStats(f, t).byRop[rop] || { n: 0, cash: 0 }) }))
+    .filter(r => r.cells.some(c => c.n > 0))
+    .sort((a, b) => b.cells.reduce((s, c) => s + c.cash, 0) - a.cells.reduce((s, c) => s + c.cash, 0));
+  const best = Math.max(0, ...comp.map(c => c.avg));
+  const mln = v => (v / 1e6).toFixed(2).replace('.', ',') + ' млн';
+  const sub = t => `<div class="st-sub">${t}</div>`;
+  const head = labels.map((l, i) => `<th>${l.replace(/\s\d{4}$/, '')}${months[i] === curMk ? ` (1–${now.getDate()})` : ''}</th>`).join('');
+  const line = (title, cells, cls) => `<tr${cls ? ` class="${cls}"` : ''}><td>${title}</td>${cells.join('')}</tr>`;
+  el.innerHTML = `<table class="dt dt-stick sum-tbl"><thead><tr><th>Отдел продаж</th>${head}</tr></thead><tbody>
+    ${line('Касса продажников, ₸', comp.map(c => `<td>${c.n ? fmt(Math.round(c.cash)) : '—'}</td>`))}
+    ${line('Продажников', comp.map(c => `<td>${c.n ? fmt(c.n) : '—'}</td>`))}
+    ${line('На 1 продажника, ₸', comp.map(c => `<td${c.avg && c.avg === best ? ' class="st-best"' : ''}><strong>${c.avg ? fmt(c.avg) : '—'}</strong></td>`), 'tr-sum')}
+    ${rops.map((r, i) => line(_esc(r.rop.replace(/^РОП\s+/, '')), r.cells.map(c => `<td>${c.n ? mln(c.cash / c.n) + sub(fmt(c.n) + ' чел') : '—'}</td>`), ((i === 0 ? 'st-first ' : '') + (r.rop === summaryDept ? 'st-sel' : '')).trim())).join('\n    ')}
+  </tbody></table>`;
+  el.hidden = false;
 }
 
 // Stubs for removed functions
@@ -5055,6 +5202,7 @@ function renderProdStats(){}
 
 // ═══════════════════ MAIN RENDER ══════════════════════════════════
 function render(){
+  _sellerMemo.clear();      // данные могли обновиться — продажников пересчитываем
   const{from,to}=activePeriod;
   let stats;
   if(activeProd==='all'){stats=aggregateAll(from,to);}
