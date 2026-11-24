@@ -56,6 +56,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 .content{max-width:1000px;margin:0 auto;padding:32px 24px;}
 .page-title{font-size:26px;font-weight:700;margin-bottom:4px;}
 .page-sub{font-size:13px;color:var(--muted);margin-bottom:28px;}
+/* «На увольнение» — широкая таблица (блок dismiss-table.js) */
+.content.wide{max-width:1280px;}
 
 /* TABS */
 .tabs{display:flex;gap:2px;background:var(--line);border-radius:12px;padding:3px;margin-bottom:28px;width:fit-content;}
@@ -173,6 +175,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
       <button class="tab active" onclick="switchTab('plans',this)">📊 Планы менеджеров</button>
       <button class="tab" onclick="switchTab('planfact',this)">📊 План / Факт</button>
       <button class="tab" onclick="switchTab('analytics',this)">🏆 Рейтинг</button>
+      <button class="tab" onclick="switchTab('dismiss',this)">📋 На увольнение</button>
     </div>
 
     <!-- PLANS TAB -->
@@ -220,6 +223,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
         <div class="card-title">📈 Выручка по менеджерам</div>
         <div style="padding:12px 16px 16px"><canvas id="analytics-chart" height="180"></canvas></div>
       </div>
+    </div>
+
+    <!-- DISMISS TAB: рисует dismiss-table.js, данные — только из Era CRM по токену входа -->
+    <div id="tab-dismiss" style="display:none">
+      <div id="rop-dismiss"></div>
     </div>
   </div>
 </div>
@@ -277,6 +285,7 @@ let managers = [];       // list of manager names for this ROP
 let planData = {};       // { managerName: { 'MM.YYYY': plan } }
 let selectedPlanMonth = null;
 let _wgManagers = {};
+let _dismissWidget = null;   // блок «На увольнение» (dismiss-table.js), создаётся при первом открытии вкладки
 
 let _accessToken  = sessionStorage.getItem('rop_token') || null;
 let _refreshToken = sessionStorage.getItem('rop_refresh') || null;
@@ -405,6 +414,7 @@ let _dashCfg = {};
 async function _onAuthExpired(){
   ['rop_token','rop_refresh','rop_uid','rop_role','rop_groupRop','rop_current'].forEach(k=>sessionStorage.removeItem(k));
   _accessToken = _refreshToken = _userId = _userRole = _userGroupRop = null;
+  if (_dismissWidget) _dismissWidget.clear();   // «На увольнение»: имена под окном входа не оставляем
   document.getElementById('app').style.display = 'none';
   document.getElementById('pw-screen').style.display = 'flex';
   _showErr('Сессия истекла — войдите снова');
@@ -637,6 +647,7 @@ function startApp(){
   document.getElementById('top-rop-label').textContent = currentRop;
   document.getElementById('app-title').textContent = `Кабинет ${currentRop}`;
   loadAll();
+  if (_dismissTabOpen()) renderDismissTab();
 }
 // Auto-start app если сессия восстановлена (currentRop уже установлен выше).
 if (currentRop) startApp();
@@ -650,8 +661,40 @@ function switchTab(tab, el){
   document.getElementById('tab-plans').style.display     = tab==='plans'?'block':'none';
   document.getElementById('tab-planfact').style.display  = tab==='planfact'?'block':'none';
   document.getElementById('tab-analytics').style.display = tab==='analytics'?'block':'none';
+  document.getElementById('tab-dismiss').style.display   = tab==='dismiss'?'block':'none';
+  document.querySelector('.content').classList.toggle('wide', tab==='dismiss');
   if (tab === 'planfact') renderPlanFact();
   if (tab === 'analytics') renderAnalytics();
+  if (tab === 'dismiss') renderDismissTab();
+}
+
+// ══════════════════════════════════════════════
+// НА УВОЛЬНЕНИЕ (ТЗ от 23.11.2026)
+// Список считает и хранит база Era CRM, наружу отдаёт только RPC
+// get_dashboard_dismissal по токену входа: РОПу — свой отдел, директору и
+// админу — все. Рисует общий блок dismiss-table.js (он же в dashboard.html).
+// ══════════════════════════════════════════════
+function _dismissTabOpen(){
+  const t = document.getElementById('tab-dismiss');
+  return !!t && t.style.display !== 'none';
+}
+function renderDismissTab(){
+  const el = document.getElementById('rop-dismiss');
+  if (!el) return;
+  if (!window.WGDismiss) { el.textContent = 'Блок таблицы не загрузился — обновите страницу.'; return; }
+  // админу и директору видны все отделы — в кабинете РОПа сразу выбираем его отдел
+  const group = String(currentRop || '').replace(/^РОП\s+/, '');
+  if (!_dismissWidget) {
+    _dismissWidget = WGDismiss.create({
+      el, url: SUPABASE_URL, anonKey: SUPABASE_KEY,
+      getToken: () => _accessToken,
+      onDenied: () => _onAuthExpired(),
+      group,
+    });
+  } else {
+    _dismissWidget.setGroup(group);
+  }
+  _dismissWidget.refresh();
 }
 
 // ══════════════════════════════════════════════
@@ -1072,6 +1115,7 @@ function _storeWgManagers(mgrs) { _wgManagers = mgrs; window._wgManagers = mgrs;
 function fmt(n){ if(!n&&n!==0) return '—'; if(n>=1e6) return (n/1e6).toFixed(2)+' М'; if(n>=1e3) return (n/1e3).toFixed(0)+' К'; return n.toLocaleString('ru-RU'); }
 
 </script>
+<script src="dismiss-table.js?v=20261124"></script>
 <script src="theme.js"></script>
 </body>
 </html>
