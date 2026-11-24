@@ -1669,6 +1669,8 @@ html[data-theme="glow"], html[data-theme="forest"] { --ds-blue: #9cc3ff; --ds-bl
 .ds-empty { padding: 26px 18px; font-size: 13px; color: var(--muted); }
 .ds-note { font-size: 12px; color: var(--muted); line-height: 1.5; margin: 0 2px 10px; max-width: 980px; }
 .ds-note a { color: var(--acc); cursor: pointer; text-decoration: underline; }
+/* узкий экран: шапка становится колонкой (.view-hdr), flex-end увёл бы заголовок вправо */
+@media (max-width: 768px) { .ds-hdr { align-items: stretch; } }
 /* Телефон: строка — карточка (имя и статус сверху, под ними причина и цифры) */
 @media (max-width: 760px) {
   .ds-grid, .ds-grid.nofc { min-width: 0; }
@@ -3289,6 +3291,7 @@ window.downloadDataSnapshot = downloadDataSnapshot;
 // ═══════════════════ VIEW SWITCH ══════════════════════════════════
 function switchView(v,el){
   activeView=v;
+  if (v !== 'managers') activeMgrTab = 'rating';   // «На увольнение» открывается только явным нажатием
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('view-main').style.display=v==='main'?'block':'none';
@@ -5704,13 +5707,16 @@ function aggregateManagersByPeriod(prodKey, from, to) {
 // ТЗ «таблица увольнений» от 23.11.2026. Список формируется по ЗАКРЫТОМУ
 // календарному месяцу и только подсказывает: решение принимают директор по
 // продажам и РОП. Откуда цифры (та же логика, что в остальном дашборде):
-//   • продажи — касса менеджера за месяц, как в «Итогах за месяц» по отделу;
+//   • продажи — касса менеджера за месяц, как в «Итогах за месяц» по отделу
+//     (возвраты повторно не вычитаем: сумма сделки в CRM уже за их вычетом);
 //   • первичные лиды и первичные продажи — «Перв. лиды» / «Перв. продажи»
 //     таблицы «Выполнение плана по группам» (_ERA_CUST_ROWS, с 01.06.2026);
 //   • средняя конверсия — «Конв. перв.» строки «ИТОГО РОП» за тот же месяц;
 //   • стаж — от первой продажи (продаж ещё не было — от первого лида), на
 //     1-е число оцениваемого месяца.
 // Настройки (минимумы, границы стажа) — DISMISS_CFG.
+// Вход проверяется только в браузере, как и у всего дашборда: это защита от
+// случайного взгляда, а не от того, кто целенаправленно откроет консоль.
 const DISMISS_DEFAULTS = {
   minSales: 2500000,        // продажи в месяц, 2–6-й месяц работы
   minSalesSenior: 4000000,  // продажи в месяц, с 7-го месяца
@@ -5725,6 +5731,12 @@ const DISMISS_BUCKETS = ['Коллаген', 'Ummi', 'Ербол', 'Кофе (А
 const DISMISS_FC_DAY = 8;         // прогноз месяца — с 8-го числа: по первым дням он слишком неточный
 const DISMISS_IDLE_DAYS = 14;     // «неактивен»: за столько последних дней…
 const DISMISS_IDLE_MIN = 3;       // …меньше стольких дней с лидами или продажами
+// Менеджеры под нынешними именами есть в данных с 01.05.2026 (переезд на Era
+// CRM; раньше — AmoCRM под другими именами). У кого первая продажа пришлась на
+// первую неделю этих данных, тот работал и раньше — когда именно, не видно.
+// Его стаж считаем «старшим» (минимум как с 7-го месяца): иначе минимум зависел
+// бы от случайности — 1-го или 2-го мая у человека прошла первая сделка.
+const DISMISS_VET_FROM = '2026-05-01', DISMISS_VET_TO = '2026-05-07';
 const DS_FIRE = 'Увольнение', DS_REVIEW = 'Разбор РОПом', DS_WARN = 'Предупреждение', DS_OK = 'Норма';
 const DS_ORDER = { [DS_FIRE]: 0, [DS_REVIEW]: 1, [DS_WARN]: 2 };
 const DS_CLS   = { [DS_FIRE]: 'fire', [DS_REVIEW]: 'review', [DS_WARN]: 'warn' };
@@ -5780,9 +5792,14 @@ let activeMgrTab = 'rating';      // 'rating' | 'dismiss'
 let _dsMonthSel = null;           // 'YYYY-MM'; null — последний закрытый месяц
 let _dsRopSel = 'all', _dsStatusSel = 'all', _dsShowIdle = false;
 const _dsMemo = new Map();        // расчёты; сбрасывается в render() вместе с данными
+// Живые продажи Era CRM поверх истории (loadEraCrmOverlay): 'none' — ещё не
+// подмешаны (вход, очередная перезагрузка истории или CRM не ответила), 'ok' —
+// подмешаны целиком, 'partial' — часть дней CRM не отдала. Список строим только
+// при 'ok': по неполным продажам он показал бы работающих людей отстающими.
+let _ERA_OVERLAY_STATE = 'none';
 
 // Таблицу видят директор и админ (вход 'admin'); бухгалтерский просмотр — нет.
-function _dsCanSee() { return sessionStorage.getItem('wg_role') === 'admin'; }
+function _dsCanSee() { return sessionStorage.getItem('wg_auth') === '1' && sessionStorage.getItem('wg_role') === 'admin'; }
 const _dsMk = (y, m) => y + '-' + String(m).padStart(2, '0');
 function _dsShift(mk, n) {
   let [y, m] = mk.split('-').map(Number);
@@ -5793,6 +5810,7 @@ function _dsShift(mk, n) {
 }
 function _dsLastClosed() { const n = _now(); return _dsShift(_dsMk(n.getFullYear(), n.getMonth() + 1), -1); }
 function _dsISO(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+const _dsMonthEnd = mk => { const [y, m] = mk.split('-').map(Number); return mk + '-' + String(new Date(y, m, 0).getDate()).padStart(2, '0'); };
 // Отдел, сменивший РОПа или название, — под нынешним именем.
 function _dsRopNow(rop) {
   for (const r of ROP_DATE_SPLITS) if (rop === r.oldRop) rop = r.newRop;
@@ -5802,9 +5820,13 @@ const _dsRopLabel = rop => String(rop || '').replace(/^РОП\s+/, '');
 
 // Сотрудники Era CRM: имя → { role, fired, firedISO, createdISO }. Это точнее
 // догадки по активности (кто уволен, кто не продажник, когда появилась
-// учётка), но читается только со входом учёткой Era CRM. Без него или при
-// ошибке работаем по одной активности.
-let _dsStaff = null, _dsStaffState = 'none', _dsStaffTok = null;   // 'none' | 'loading' | 'ok' | 'error'
+// учётка), но читается только со входом учёткой Era CRM. Состояния: 'none' —
+// входа CRM нет, 'loading', 'ok', 'denied' — CRM этот вход не приняла (истёк),
+// 'error' — не ответила. Без списка работаем по одной активности и говорим об
+// этом под таблицей.
+let _dsStaff = null, _dsStaffState = 'none', _dsStaffTok = null, _dsStaffAt = 0, _dsStaffBusy = false;
+const DS_STAFF_TTL = 5 * 60000;   // перечитываем раз в 5 минут: уволенный днём уходит из списка без перезахода
+const DS_STAFF_RETRY = 60000;     // после сбоя — не чаще раза в минуту
 const DS_NOT_SELLER_ROLES = new Set(['rop', 'admin', 'director', 'accountant', 'courier', 'advertiser']);
 function _dsAlmatyDay(ts) {       // timestamptz → 'YYYY-MM-DD' по Алматы (UTC+5)
   const t = Date.parse(ts);
@@ -5812,11 +5834,24 @@ function _dsAlmatyDay(ts) {       // timestamptz → 'YYYY-MM-DD' по Алма�
 }
 function _dsStaffLoad() {
   const tok = _clGetToken();
-  if (!tok || _dsStaffTok === tok) return;                // нет входа Era CRM или этим токеном уже спрашивали
-  _dsStaffTok = tok; _dsStaffState = 'loading';
+  if (!tok) {                                             // входа Era CRM нет (или его только что забыли)
+    if (_dsStaffTok) { _dsStaff = null; _dsStaffState = 'none'; _dsStaffTok = null; _dsMemo.clear(); }
+    return;
+  }
+  if (_dsStaffBusy) return;
+  const same = _dsStaffTok === tok, age = Date.now() - _dsStaffAt;
+  if (same && _dsStaffState === 'denied') return;         // этот вход CRM уже отклонила
+  if (same && _dsStaffState === 'ok' && age < DS_STAFF_TTL) return;
+  if (same && _dsStaffState === 'error' && age < DS_STAFF_RETRY) return;
+  if (!same) { _dsStaff = null; _dsStaffState = 'loading'; _dsMemo.clear(); }   // другой вход — прежний список не его
+  _dsStaffTok = tok; _dsStaffBusy = true;
   fetch(`${ERA_CRM_URL}/rest/v1/profiles?select=name,team_role,fired,fired_at,created_at`, {
     headers: { 'apikey': ERA_CRM_ANON, 'Authorization': 'Bearer ' + tok },
-  }).then(r => r.ok ? r.json() : Promise.reject(new Error('http ' + r.status)))
+  }).then(r => {
+      if (r.status === 401 || r.status === 403) { const e = new Error('http ' + r.status); e.denied = true; throw e; }
+      if (!r.ok) throw new Error('http ' + r.status);
+      return r.json();
+    })
     .then(rows => {
       if (!Array.isArray(rows)) throw new Error('unexpected response');
       const m = new Map(), dup = new Set();
@@ -5833,10 +5868,14 @@ function _dsStaffLoad() {
       _dsStaff = m; _dsStaffState = 'ok';
     })
     .catch(e => {
-      if (_dsStaffTok === tok) { _dsStaff = null; _dsStaffState = 'error'; }
+      if (_dsStaffTok === tok) {
+        if (e && e.denied) { _dsStaff = null; _dsStaffState = 'denied'; }
+        else if (_dsStaffState !== 'ok') { _dsStaff = null; _dsStaffState = 'error'; }   // сбой обновления — оставляем прошлый список
+      }
       console.warn('[dismiss staff]', e && e.message);
     })
     .finally(() => {
+      _dsStaffBusy = false; _dsStaffAt = Date.now();
       _dsMemo.clear();
       if (activeView === 'managers' && activeMgrTab === 'dismiss') renderDismiss();
     });
@@ -5848,21 +5887,41 @@ function _dsPeople() {
   let P = _dsMemo.get('people');
   if (P) return P;
   P = new Map();
+  // Возвраты по рекламе в старый чат overlay добавляет к «Лидам» того, на ком
+  // висит старая сделка, — в том числе давно ушедшего. Это написал клиент, а не
+  // работа менеджера: в днях активности и в «первом лиде» их не считаем.
+  const adRet = new Map();                                // 'имя|YYYY-MM-DD' → лиды-возвраты
+  for (const r of _ERA_AD_RETURN_ROWS) {
+    if (!r.manager_name || !DISMISS_BUCKETS.includes(_eraCrmBucket(r.pipeline_title))) continue;
+    const k = r.manager_name + '|' + String(r.day).slice(0, 10);
+    adRet.set(k, (adRet.get(k) || 0) + (Number(r.leads) || 0));
+  }
   for (const crm of DISMISS_BUCKETS) for (const m of (MANAGERS[crm] || [])) {
     if (!m || !m.name || !m.daily) continue;
     const base = _sellerBaseName(m.name);
     let p = P.get(base);
-    if (!p) P.set(base, p = { name: base, names: new Set(), cash: {}, firstSale: null, firstLead: null, act: new Set() });
+    if (!p) P.set(base, p = { name: base, names: new Set(), cash: {}, firstSale: null, firstLead: null, act: new Set(), day: new Map() });
     p.names.add(m.name);
     for (const [d, v] of Object.entries(m.daily)) {
       const leads = v[0] || 0, deals = v[1] || 0, cash = v[2] || 0;
       if (!leads && !deals && !cash) continue;
       const iso = _ropSplitISO(d);
       if (cash) { const mk = iso.slice(0, 7); p.cash[mk] = (p.cash[mk] || 0) + cash; }
-      if (deals > 0 && (!p.firstSale || iso < p.firstSale)) p.firstSale = iso;
-      if (leads > 0 && (!p.firstLead || iso < p.firstLead)) p.firstLead = iso;
-      if (leads > 0 || deals > 0) p.act.add(iso);
+      // первая НАСТОЯЩАЯ продажа: тестовые сделки по 1 ₸ и без суммы стаж не начинают (как в _sellerStats)
+      if (deals > 0 && cash >= SELLER_MIN_CASH && (!p.firstSale || iso < p.firstSale)) p.firstSale = iso;
+      if (leads > 0 || deals > 0) {                       // человек в нескольких воронках — день складываем
+        const x = p.day.get(iso);
+        if (x) { x[0] += leads; x[1] += deals; } else p.day.set(iso, [leads, deals]);
+      }
     }
+  }
+  for (const p of P.values()) {
+    for (const [iso, x] of p.day) {
+      const own = x[0] - (adRet.get(p.name + '|' + iso) || 0);   // лиды без возвратов по рекламе
+      if (own > 0 && (!p.firstLead || iso < p.firstLead)) p.firstLead = iso;
+      if (own > 0 || x[1] > 0) p.act.add(iso);
+    }
+    delete p.day;
   }
   const main = _mainRop4();
   const staff = _dsStaffState === 'ok' ? _dsStaff : null;
@@ -5870,17 +5929,28 @@ function _dsPeople() {
     const cur = p.names.has(p.name) ? p.name : [...p.names][0];
     p.rop = _dsRopNow(getRop(cur) || '');
     const st = p.staff = (staff && staff.get(p.name)) || null;
-    // Начало стажа — первая продажа. Продаж ещё не было — первый лид, но не
-    // раньше появления учётки: старые лиды переходят новичку вместе с датами.
+    // Начало стажа — первая продажа, продаж ещё не было — первый лид. С данными
+    // Era CRM — не раньше появления учётки: сделки и лиды ушедшего сотрудника
+    // передают преемнику вместе с датами, и без этой границы новичок получил бы
+    // чужой стаж, чужой минимум и «прошлые месяцы», в которые ещё не работал.
     p.start = p.firstSale || p.firstLead;
     p.startKind = p.firstSale ? 'sale' : 'lead';
-    if (!p.firstSale && p.firstLead && st && st.createdISO && st.createdISO > p.firstLead) { p.start = st.createdISO; p.startKind = 'acct'; }
+    p.created = (st && st.createdISO) || null;
+    if (p.start && p.created && p.created > p.start) { p.start = p.created; p.startKind = 'acct'; }
+    p.vet = p.startKind === 'sale' && p.start >= DISMISS_VET_FROM && p.start <= DISMISS_VET_TO;
     // продажник: в продающем отделе, не учётка руководителя («РОП Айша») и не служебная роль
     p.seller = !!p.start && main.includes(p.rop) && ![...p.names].some(_isRopAccount)
       && !(st && DS_NOT_SELLER_ROLES.has(st.role));
   }
   _dsMemo.set('people', P);
   return P;
+}
+// Стаж для оценки на 1-е число месяца: у работавших до Era CRM (p.vet) — не
+// меньше старшей границы. raw — как он считается по данным (для показа).
+function _dsTenureOf(p, y, m) {
+  const raw = _dismissTenure(p.start, y, m);
+  const senior = DISMISS_CFG.tenureSenior;
+  return p.vet && raw < senior ? { t: senior, raw, floor: true } : { t: raw, raw, floor: false };
 }
 // Первичные лиды и первичные продажи по месяцам — теми же строками и с теми же
 // отборами, что «ИТОГО РОП» таблицы плана (_custSplitFor по всем продающим
@@ -5891,17 +5961,21 @@ function _dsCust() {
   C = {};
   if (_ERA_CUST_STATE === 'ok') {
     const main = _mainRop4(), ropB = _ropBuckets(main);
+    const since = Object.entries(ROP_SINCE);              // отделы с датой старта
     for (const r of _ERA_CUST_ROWS) {
       const pl = (r[4] || 0) + (r[14] || 0), nd = r[6] || 0;
       if (!pl && !nd) continue;
       if (ropB && !ropB.includes(r[2])) continue;
       if (!_eraRowRopMatch(r[3], r[0], main)) continue;
       const mk = r[0].slice(6) + '-' + r[0].slice(3, 5);
-      const c = C[mk] || (C[mk] = { per: new Map(), PL: 0, ND: 0 });
-      c.PL += pl; c.ND += nd;
+      const c = C[mk] || (C[mk] = { per: new Map(), PL: 0, ND: 0, end: _dsMonthEnd(mk) });
       let x = c.per.get(r[3]);
       if (!x) c.per.set(r[3], x = { pl: 0, nd: 0 });
       x.pl += pl; x.nd += nd;
+      // Средняя — ровно как «ИТОГО РОП»: строки отдела, который в этом месяце ещё не
+      // начал работать (ROP_SINCE), таблица плана не показывает и в итог не берёт.
+      if (since.some(([rop, iso]) => c.end < iso && _eraRowRopMatch(r[3], r[0], [rop]))) continue;
+      c.PL += pl; c.ND += nd;
     }
   }
   _dsMemo.set('cust', C);
@@ -5909,13 +5983,15 @@ function _dsCust() {
 }
 // Оценка месяца: { ok, avg, minConv, rows: Map(имя → запись) }. Статус зависит
 // от прошлого месяца (правила «после разбора» и «2 месяца подряд»), поэтому
-// месяцы считаются цепочкой от DISMISS_FROM.
+// месяцы считаются цепочкой от DISMISS_FROM. ok = false — данных для оценки
+// нет (не догрузились или за месяц их не было): список не строим.
 function _dsEval(mk) {
   const key = 'eval|' + mk;
   if (_dsMemo.has(key)) return _dsMemo.get(key);
   const S = DISMISS_CFG;
   const res = { mk, ok: false, avg: null, minConv: null, rows: new Map() };
   _dsMemo.set(key, res);
+  if (_ERA_OVERLAY_STATE !== 'ok') return res;            // продажи из CRM ещё не подмешаны целиком
   const cust = _dsCust()[mk];
   if (!cust || !(cust.PL > 0)) return res;
   res.ok = true;
@@ -5924,19 +6000,21 @@ function _dsEval(mk) {
   const prevMk = _dsShift(mk, -1);
   const prev = prevMk >= DISMISS_FROM ? _dsEval(prevMk) : null;
   const [y, m] = mk.split('-').map(Number);
+  const end = _dsMonthEnd(mk);
   for (const p of _dsPeople().values()) {
     if (!p.seller) continue;
+    if (p.created && end < p.created) continue;           // учётки ещё не было: это месяцы предшественника
     const c = cust.per.get(p.name);
     const sales = p.cash[mk] || 0;
-    let worked = !!c || sales > 0;
+    let worked = sales > 0;                               // были продажи или свои (не «возвратные») лиды
     if (!worked) for (const a of p.act) if (a.slice(0, 7) === mk) { worked = true; break; }
     if (!worked) continue;                                // в этом месяце человека не было
     const leads = c ? c.pl : 0, newDeals = c ? c.nd : 0;
-    const tenure = _dismissTenure(p.start, y, m);
+    const ten = _dsTenureOf(p, y, m);
     const pr = prev && prev.ok ? prev.rows.get(p.name) : null;
-    const j = _dismissJudge({ tenure, sales, leads, newDeals, avgConv: res.avg,
+    const j = _dismissJudge({ tenure: ten.t, sales, leads, newDeals, avgConv: res.avg,
                               prev: pr && pr.assessed ? { reviewed: pr.reviewed, lowConv: pr.lowConv } : null }, S);
-    res.rows.set(p.name, { ...j, name: p.name, tenure, sales, leads, newDeals,
+    res.rows.set(p.name, { ...j, name: p.name, tenure: ten.t, tenureFloor: ten.floor, sales, leads, newDeals,
                            conv: leads > 0 ? newDeals / leads * 100 : null,
                            prevStatus: pr && pr.assessed ? pr.status : null });
   }
@@ -5949,28 +6027,25 @@ function _dsForecast(p) {
   const S = DISMISS_CFG, now = _now();
   const y = now.getFullYear(), m = now.getMonth() + 1, day = now.getDate();
   if (day < DISMISS_FC_DAY || !p || !p.start) return null;
-  const tenure = _dismissTenure(p.start, y, m);
+  const tenure = _dsTenureOf(p, y, m).t;
   if (!(tenure >= S.tenureFrom)) return null;
   const min = tenure >= S.tenureSenior ? S.minSalesSenior : S.minSales;
   const fact = p.cash[_dsMk(y, m)] || 0;
   const forecast = Math.round(fact / day * new Date(y, m, 0).getDate());
   return { fact, forecast, min, low: forecast < min };
 }
-// Человека уже нет: 'fired' — уволен по данным Era CRM, 'idle' — неактивен
+// Человека уже нет: 'fired' — уволен по отметке Era CRM, 'idle' — неактивен
 // (за DISMISS_IDLE_DAYS дней меньше DISMISS_IDLE_MIN дней с лидами или
-// продажами), null — работает. Для последнего закрытого месяца смотрим на
-// сегодня (кого уже нет — в списке на решение не нужен), для прошлых — на
-// момент оценки (первые две недели после месяца): уволенный по этому списку
-// остаётся в истории.
+// продажами), null — работает. Последний закрытый месяц — список на решение:
+// смотрим на сегодня (кого уже нет, тот в нём не нужен). Прошлые месяцы —
+// история: прячем только тех, кого не было уже к концу того месяца; уволенный
+// позже (в том числе по этому самому списку) в истории остаётся.
 function _dsGone(p, mk) {
   const cur = mk === _dsLastClosed();
-  const [y, m] = mk.split('-').map(Number);
+  const endISO = _dsMonthEnd(mk);
   const st = p.staff;
-  if (st && st.fired) {
-    const endISO = mk + '-' + String(new Date(y, m, 0).getDate()).padStart(2, '0');
-    if (cur || !st.firedISO || st.firedISO <= endISO) return 'fired';
-  }
-  const ref = cur ? _dsISO(_now()) : _dsShift(mk, 1) + '-' + String(DISMISS_IDLE_DAYS).padStart(2, '0');
+  if (st && st.fired) return cur || !st.firedISO || st.firedISO <= endISO ? 'fired' : null;
+  const ref = cur ? _dsISO(_now()) : endISO;
   const from = _dsISO(new Date(+ref.slice(0, 4), +ref.slice(5, 7) - 1, +ref.slice(8, 10) - (DISMISS_IDLE_DAYS - 1)));
   let n = 0;
   for (const a of p.act) if (a >= from && a <= ref && ++n >= DISMISS_IDLE_MIN) return null;
@@ -5988,7 +6063,7 @@ function _dsView(mk) {
   out.fcMonth = now.getMonth();                           // 0..11 — месяц прогноза
   out.fcOn = isCur && now.getDate() >= DISMISS_FC_DAY;
   const [y, m] = mk.split('-').map(Number);
-  const lastISO = mk + '-' + String(new Date(y, m, 0).getDate()).padStart(2, '0');
+  const lastISO = _dsMonthEnd(mk);
   const add = (p, r) => {
     const fc = isCur ? _dsForecast(p) : null;
     let status = r && r.assessed ? r.status : DS_OK;
@@ -6006,6 +6081,7 @@ function _dsView(mk) {
     const pct = r && r.assessed ? r.sales / r.min : (fc ? fc.forecast / fc.min : 0);
     const st = p.staff;
     out.rows.push({ p, r: r || null, fc, status, reasons, pct, gone,
+                    ten: r ? { t: r.tenure, floor: r.tenureFloor } : _dsTenureOf(p, y, m),
                     firedLater: !gone && st && st.fired && st.firedISO ? st.firedISO : null,
                     ropThen: split ? { rop: split.oldRop, until: split.cutoffISO } : null });
   };
@@ -6022,10 +6098,19 @@ function _dsMoney(v) {
   if (v >= 1000) return fmt(Math.floor(v / 1000)) + ' тыс';
   return fmt(v) + ' ₸';
 }
-const _dsPct1 = v => v.toFixed(1).replace('.', ',') + '%';
-function _dsTenureTxt(t) {
-  if (t < 0) return '—';
-  const x = Math.floor(t * 10 + 1e-9) / 10;
+const _dsPctN = (v, n) => v.toFixed(n).replace('.', ',') + '%';
+const _dsPct1 = v => _dsPctN(v, 1);
+// Конверсия в ячейке — с одним знаком; если так она совпала бы на вид со
+// средней или с минимумом, хотя на деле отличается, — с двумя.
+function _dsConvTxt(conv, ev) {
+  const one = _dsPct1(conv);
+  const clash = t => one === _dsPct1(t) && Math.abs(conv - t) > 1e-9;
+  return clash(ev.avg) || clash(ev.minConv) ? _dsPctN(conv, 2) : one;
+}
+function _dsTenureTxt(ten) {
+  if (!ten || ten.t < 0) return '—';
+  if (ten.floor) return DISMISS_CFG.tenureSenior + '+ мес';
+  const x = Math.floor(ten.t * 10 + 1e-9) / 10;
   return (x % 1 ? x.toFixed(1).replace('.', ',') : String(x)) + ' мес';
 }
 const _dsMonthName = mk => { const [y, m] = mk.split('-').map(Number); return MONTH_NAMES[m - 1] + ' ' + y; };
@@ -6035,24 +6120,28 @@ function setDsMonth(v) { _dsMonthSel = v; _dsStatusSel = 'all'; renderDismiss();
 function setDsRop(v) { _dsRopSel = v; renderDismiss(); }
 function setDsStatus(v) { _dsStatusSel = v; renderDismiss(); }
 function toggleDsIdle() { _dsShowIdle = !_dsShowIdle; renderDismiss(); }
-// Выход из дашборда: список с именами и статусами не должен оставаться на странице под окном входа.
-function _dsWipe() {
-  _dsStaff = null; _dsStaffState = 'none'; _dsStaffTok = null;
-  _dsMemo.clear();
-  activeMgrTab = 'rating'; _dsMonthSel = null; _dsRopSel = 'all'; _dsStatusSel = 'all'; _dsShowIdle = false;
+function _dsClearDom() {
   for (const id of ['ds-grid', 'ds-tabs', 'ds-sub', 'ds-idle', 'ds-note', 'ds-rop', 'ds-month']) {
     const el = document.getElementById(id);
-    if (el) el.innerHTML = '';
+    if (el && el.innerHTML) el.innerHTML = '';
   }
-  const tabs = document.getElementById('mgr-tabs'), a = document.getElementById('mgr-rating'), b = document.getElementById('mgr-dismiss');
-  if (tabs) tabs.hidden = true;
-  if (a) a.hidden = false;
-  if (b) b.hidden = true;
 }
+// Выход из дашборда (или вкладку открыл тот, кому список не положен): имена со
+// статусами не должны оставаться на странице — ни под окном входа, ни в памяти.
+function _dsWipe() {
+  _dsStaff = null; _dsStaffState = 'none'; _dsStaffTok = null; _dsStaffAt = 0;
+  _dsMemo.clear();
+  activeMgrTab = 'rating'; _dsMonthSel = null; _dsRopSel = 'all'; _dsStatusSel = 'all'; _dsShowIdle = false;
+  _dsClearDom();
+  _mgrTabApply();
+}
+// Страницу вернули кнопкой «Назад» из памяти браузера: вход с тех пор мог
+// смениться (вышли, вошёл бухгалтер) — список в такой копии не оставляем.
+window.addEventListener('pageshow', e => { if (e.persisted && !_dsCanSee()) _dsWipe(); });
 // Переключатель «Рейтинг / На увольнение» на вкладке «Менеджеры».
 function _mgrTabApply() {
   const can = _dsCanSee();
-  if (!can) activeMgrTab = 'rating';
+  if (!can) { activeMgrTab = 'rating'; _dsClearDom(); }
   const dis = activeMgrTab === 'dismiss';
   const tabs = document.getElementById('mgr-tabs');
   if (tabs) {
@@ -6069,6 +6158,7 @@ function _mgrTabApply() {
 function renderDismiss() {
   const grid = document.getElementById('ds-grid');
   if (!grid) return;
+  if (!_dsCanSee()) { _dsWipe(); return; }
   _dsStaffLoad();
   const S = DISMISS_CFG;
   const $ = id => document.getElementById(id);
@@ -6082,7 +6172,9 @@ function renderDismiss() {
   const minTxt = _dsMoney(S.minSales), minSenTxt = _dsMoney(S.minSalesSenior);
 
   if (!ev.ok) {
-    const why = _ERA_CUST_STATE === 'none' ? 'Загружаем данные из CRM…'
+    const why = _ERA_OVERLAY_STATE === 'none' ? 'Загружаем продажи из CRM… Если надпись не исчезает больше минуты, CRM сейчас не отвечает — список появится сам при следующем обновлении.'
+      : _ERA_OVERLAY_STATE !== 'ok' ? 'CRM отдала продажи не за все дни. По неполным данным список не строим — он появится сам при следующем обновлении (раз в 5 минут).'
+      : _ERA_CUST_STATE === 'none' ? 'Загружаем данные из CRM…'
       : _ERA_CUST_STATE !== 'ok' ? 'Не удалось загрузить первичные лиды и продажи из CRM — без них конверсию не оценить. Обновите страницу чуть позже.'
       : 'За этот месяц нет данных о первичных лидах и продажах.';
     $('ds-sub').textContent = 'Оценка за ' + _dsMonthName(mk).toLowerCase();
@@ -6095,14 +6187,14 @@ function renderDismiss() {
     return;
   }
 
-  const idleN = v.rows.filter(x => x.gone).length;
-  const shown = _dsShowIdle ? v.rows : v.rows.filter(x => !x.gone);
-  // фильтр РОП — из тех, кто есть в списке
-  const rops = [...new Set(shown.map(x => x.p.rop))].sort((a, b) => _dsRopLabel(a).localeCompare(_dsRopLabel(b), 'ru'));
+  // фильтр РОП — из всех, кто попал в список (и скрытых тоже: их можно показать)
+  const rops = [...new Set(v.rows.map(x => x.p.rop))].sort((a, b) => _dsRopLabel(a).localeCompare(_dsRopLabel(b), 'ru'));
   if (_dsRopSel !== 'all' && !rops.includes(_dsRopSel)) _dsRopSel = 'all';
   $('ds-rop').innerHTML = '<option value="all">Все РОПы</option>'
     + rops.map(r => `<option value="${_esc(r)}"${r === _dsRopSel ? ' selected' : ''}>${_esc(_dsRopLabel(r))}</option>`).join('');
-  const byRop = _dsRopSel === 'all' ? shown : shown.filter(x => x.p.rop === _dsRopSel);
+  const inRop = _dsRopSel === 'all' ? v.rows : v.rows.filter(x => x.p.rop === _dsRopSel);
+  const goneN = inRop.filter(x => x.gone).length;
+  const byRop = _dsShowIdle ? inRop : inRop.filter(x => !x.gone);
   if (_dsStatusSel !== 'all' && !DS_CLS[_dsStatusSel]) _dsStatusSel = 'all';
   const rows = _dsStatusSel === 'all' ? byRop : byRop.filter(x => x.status === _dsStatusSel);
 
@@ -6122,8 +6214,9 @@ function renderDismiss() {
   }).join('');
 
   const fcHead = 'Прогноз ' + fcGen;
+  const convTip = 'средняя ' + _dsPctN(ev.avg, 2) + ', минимум ' + _dsPctN(ev.minConv, 2);
   const head = `<div class="ds-row ds-head" role="row">
-    <span role="columnheader">Менеджер</span><span role="columnheader">Стаж</span><span role="columnheader">Продажи / минимум</span>
+    <span role="columnheader" class="ds-c-name">Менеджер</span><span role="columnheader">Стаж</span><span role="columnheader">Продажи / минимум</span>
     <span role="columnheader" class="ds-c-num" title="Ещё не покупали: как «Перв. лиды» в таблице плана по группам">Перв. лиды</span>
     <span role="columnheader" class="ds-c-num" title="Первичные продажи ÷ первичные лиды">Конв. перв.</span>
     <span role="columnheader">Прошлый месяц</span><span role="columnheader" class="ds-c-fc" title="Касса с 1-го числа ÷ прошедшие дни × дней в месяце">${fcHead}</span>
@@ -6134,30 +6227,30 @@ function renderDismiss() {
       + (x.ropThen ? ' · по ' + _isoToDispDate(x.ropThen.until).slice(0, 5) + ' — ' + _esc(_dsRopLabel(x.ropThen.rop)) : '');
     const startTxt = 'с ' + _isoToDispDate(p.start)
       + (p.startKind === 'lead' ? ' · по первому лиду' : p.startKind === 'acct' ? ' · по дате учётки' : '')
-      + (p.start >= '2026-05-01' && p.start < '2026-05-08' ? ' · раньше данных нет' : '');
+      + (p.vet ? ' · раньше данных нет' : '');
     const goneTxt = x.gone === 'fired' ? ' · уволен' : x.gone ? ' · неактивен'
       : x.firedLater ? ' · уволен ' + _isoToDispDate(x.firedLater).slice(0, 5) : '';
     const sales = r ? r.sales : 0;
     let salesHTML;
     if (a) {
-      const pct = Math.min(999, Math.floor(sales / r.min * 100));
+      const pct = Math.min(999, Math.floor(sales * 100 / r.min));
       salesHTML = `<span class="ds-sl"><b title="${fmt(sales)} ₸">${_dsMoney(sales)}</b><span class="ds-sub">из ${_dsMoney(r.min)} · ${pct}%</span></span>`
         + `<span class="ds-bar"><i class="${r.lowSales ? 'lo' : ''}" style="width:${Math.min(100, pct)}%"></i></span>`;
     } else {
-      salesHTML = `<span class="ds-sl"><b title="${fmt(sales)} ₸">${_dsMoney(sales)}</b></span><span class="ds-sub">первый месяц — не оцениваем</span>`;
+      salesHTML = `<span class="ds-sl"><b title="${fmt(sales)} ₸">${_dsMoney(sales)}</b></span><span class="ds-sub">${r ? 'первый месяц — не оцениваем' : 'за месяц ни лидов, ни продаж'}</span>`;
     }
     const leads = r ? r.leads : 0, conv = r ? r.conv : null;
     let convHTML;
     if (!a) convHTML = `<span class="ds-conv na">${conv == null ? '—' : _dsPct1(conv)}</span>`;
     else if (!r.convKnown) convHTML = `<span class="ds-conv na" title="${conv == null ? 'лидов не было' : 'по факту ' + _dsPct1(conv)}">&lt; ${fmt(S.minLeads)} лидов</span>`;
-    else convHTML = `<span class="ds-conv ${conv < r.minConv ? 'lo' : conv < ev.avg ? 'mid' : 'ok'}">${_dsPct1(conv)}</span>`;
+    else convHTML = `<span class="ds-conv ${r.lowConv ? 'lo' : conv < ev.avg - 1e-9 ? 'mid' : 'ok'}" title="${_dsPctN(conv, 2)} · ${convTip}">${_dsConvTxt(conv, ev)}</span>`;
     const fc = x.fc;
     const fcHTML = !v.isCur ? '' : !v.fcOn ? `<span class="ds-sub">с ${DISMISS_FC_DAY}-го числа</span>`
       : !fc ? '<span class="ds-sub">первый месяц</span>'
       : `<b class="${fc.low ? 'lo' : ''}" title="${fmt(fc.forecast)} ₸ · касса с 1-го числа ${fmt(fc.fact)} ₸">${_dsMoney(fc.forecast)}</b><span class="ds-sub">из ${_dsMoney(fc.min)}</span>`;
     return `<div class="ds-row${x.gone ? ' ds-idle' : ''}" role="row">
       <div class="ds-c ds-c-name" role="cell"><b>${_esc(p.name)}</b><span class="ds-sub">${ropTxt}${goneTxt}</span></div>
-      <div class="ds-c ds-c-ten" role="cell" data-l="Стаж"><span>${r ? _dsTenureTxt(r.tenure) : '—'}</span><span class="ds-sub">${startTxt}</span></div>
+      <div class="ds-c ds-c-ten" role="cell" data-l="Стаж"><span>${_dsTenureTxt(x.ten)}</span><span class="ds-sub">${startTxt}</span></div>
       <div class="ds-c ds-c-sales" role="cell" data-l="Продажи / минимум">${salesHTML}</div>
       <div class="ds-c ds-c-num" role="cell" data-l="Перв. лиды">${fmt(leads)}</div>
       <div class="ds-c ds-c-num" role="cell" data-l="Конв. перв.">${convHTML}</div>
@@ -6171,17 +6264,25 @@ function renderDismiss() {
   grid.innerHTML = head + (body || '<div class="ds-empty">По этому фильтру никого нет.</div>');
 
   const idleEl = $('ds-idle');
-  idleEl.hidden = !idleN;
-  if (idleN) {
+  idleEl.hidden = !goneN;
+  if (goneN) {
+    const who = v.isCur ? `уволены или почти не работают последние ${DISMISS_IDLE_DAYS} дней`
+      : 'к концу того месяца уже не работали';
     idleEl.innerHTML = _dsShowIdle
-      ? `Показаны и те, кого уже нет (${idleN}), — они помечены. <a onclick="toggleDsIdle()">Скрыть</a>`
-      : `Не показаны ${idleN}: уволены или почти не работают последние ${DISMISS_IDLE_DAYS} дней. <a onclick="toggleDsIdle()">Показать</a>`;
+      ? `Показаны и те, кого уже нет (${goneN}), — они помечены. <a onclick="toggleDsIdle()">Скрыть</a>`
+      : `Не показаны ${goneN}: ${who}. <a onclick="toggleDsIdle()">Показать</a>`;
   }
   const nth = n => (n === 2 ? 'со ' : 'с ') + n + '-го';
+  const staffTxt = _dsStaffState === 'ok' ? 'Уволенных скрываем по отметке в Era CRM, а ещё тех, кто почти не работает. '
+    : _dsStaffState === 'loading' ? ''
+    : (_dsStaffState === 'none' ? 'Вход без учётки Era CRM' : _dsStaffState === 'denied' ? 'Вход в Era CRM устарел (войдите в дашборд заново)' : 'Список сотрудников из Era CRM не загрузился')
+      + ' — отметок об увольнении нет, уволенных определяем только по активности. ';
   $('ds-note').textContent = `Минимум продаж: ${minTxt} ₸ в месяц ${nth(S.tenureFrom + 1)} по ${S.tenureSenior}-й месяц работы, ${minSenTxt} ₸ ${nth(S.tenureSenior + 1)}; первый месяц не оцениваем. `
     + `Стаж — от первой продажи (продаж ещё не было — от первого лида), на 1-е число оцениваемого месяца. `
+    + `Данные по именам есть с мая 2026: у кого первая продажа пришлась на 1–7 мая, тот работал и раньше — его стаж считаем «${S.tenureSenior}+ мес». `
     + `Конверсию оцениваем от ${fmt(S.minLeads)} первичных лидов за месяц: красным — ниже минимума ${minConvTxt}, жёлтым — ниже средней ${avgTxt}. `
     + `Продажи, первичные лиды и первичные продажи считаются так же, как в таблице «Выполнение плана по группам». `
+    + staffTxt
     + `Таблица только формирует список — решение принимают директор по продажам и РОП.`;
 }
 
@@ -6427,7 +6528,7 @@ async function loadFromSupabase() {
 
       // Reassign mutable globals
       if (d.RAW)      RAW      = d.RAW;
-      if (d.MANAGERS) MANAGERS = d.MANAGERS;
+      if (d.MANAGERS) { MANAGERS = d.MANAGERS; _ERA_OVERLAY_STATE = 'none'; }
 
       // Merge archive data (backup ≤ 31.03.2026) into RAW and MANAGERS
       // Archive OVERWRITES live for dates ≤ 31.03.2026 (live data is incomplete due to pipeline split)
@@ -7075,6 +7176,7 @@ async function loadEraCrmOverlay() {
       }
       if (res.status !== 500 && res.status !== 504 && res.status !== 408) {
         console.warn('[era-crm overlay] metrics http', res.status);  // не таймаут — split не поможет
+        _skippedWindows++;                 // дыра в продажах: «На увольнение» по неполным данным не строим
         return [];
       }
       if (!leaf) break;                    // таймаут крупного окна → в split
@@ -7235,6 +7337,7 @@ async function loadEraCrmOverlay() {
   if (typeof clearRopCache === 'function') clearRopCache();
   if (typeof rebuildRopGroups === 'function') rebuildRopGroups();
 
+  _ERA_OVERLAY_STATE = _skippedWindows ? 'partial' : 'ok';   // для «На увольнение»: список строим только по полным продажам
   console.log('[era-crm overlay] applied:', _rawTouched, 'date-cells,', _mgrMatched, 'mgrs matched,', _mgrAdded, 'mgrs new,', _ropMapped, 'rops mapped');
 }
 window.loadEraCrmOverlay = loadEraCrmOverlay;
